@@ -4,10 +4,23 @@ import Lexer
 import Test.HUnit
 import Token
 
-testLexer = TestCase (assertEqual "testing import of lexer" getLexer "Lexer")
+testParseStringToToken =
+  TestCase
+    ( assertEqual
+        "testing token parsing"
+        [ Token {typ = ASSIGN, literal = "="},
+          Token {typ = PLUS, literal = "+"},
+          Token {typ = COMMA, literal = ","},
+          Token {typ = SEMICOLON, literal = ";"},
+          Token {typ = LPAREN, literal = "("},
+          Token {typ = RPAREN, literal = ")"},
+          Token {typ = LBRACE, literal = "{"},
+          Token {typ = RBRACE, literal = "}"},
+          Token {typ = EOF, literal = "EOF"}
+        ]
+        (parseStringToToken "=+,;(){} ")
+    )
 
-testNextToken = TestCase (assertEqual "testing nextToken" nextToken (Token {typ = ILLEGAL, literal = "ILLEGAL"}))
-
-tests = TestList [testLexer, testNextToken]
+tests = TestList [testParseStringToToken]
 
 main = runTestTT tests
