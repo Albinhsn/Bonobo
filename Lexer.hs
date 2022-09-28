@@ -10,25 +10,40 @@ isValidSpecialChar ch = ch == '=' || ch == '+' || ch == ',' || ch == ';' || ch =
 isEmptyChar :: Char -> Bool
 isEmptyChar ch = ch == ' ' || ch == '\n' || ch == '\t'
 
+parseChar :: Char -> Token
+parseChar ch = t
+  where
+    t
+      | ch == '=' = Token {typ = ASSIGN, literal = "="}
+      | ch == '+' = Token {typ = PLUS, literal = "+"}
+      | ch == ',' = Token {typ = COMMA, literal = ","}
+      | ch == ';' = Token {typ = SEMICOLON, literal = ";"}
+      | ch == '(' = Token {typ = LPAREN, literal = "("}
+      | ch == ')' = Token {typ = RPAREN, literal = ")"}
+      | ch == '{' = Token {typ = LBRACE, literal = "{"}
+      | ch == '}' = Token {typ = RBRACE, literal = "}"}
+      | otherwise = Token {typ = ILLEGAL, literal = "ILLEGAL"}
+
 isInvalid :: Char -> Bool
 isInvalid ch = True
 
 getCurrentChar :: Lexer -> [Char]
 getCurrentChar lexer = [input lexer !! position lexer]
 
+eof :: Lexer -> Lexer
+eof l =
+  Lexer
+    { input = input l,
+      position = position l,
+      readPosition = readPosition l,
+      tokens = tokens l ++ [Token {typ = EOF, literal = "EOF"}]
+    }
+
 getToken :: Lexer -> Lexer
 getToken lexer = l
   where
     l
-      | length (input lexer) < readPosition lexer = lexer
-      | isEmptyChar (head (getCurrentChar lexer)) =
-        getToken
-          Lexer
-            { input = input lexer,
-              position = readPosition lexer,
-              readPosition = readPosition lexer + 1,
-              tokens = tokens lexer
-            }
+      | length (input lexer) < readPosition lexer = Lexer {input = input lexer, position = position lexer, readPosition = readPosition lexer, tokens = (tokens lexer) ++ [Token {typ = EOF, literal = "EOF"}]}
       | isValidSpecialChar (head (getCurrentChar lexer)) =
         getToken
           Lexer
@@ -37,11 +52,7 @@ getToken lexer = l
               readPosition = readPosition lexer + 1,
               tokens =
                 tokens lexer
-                  ++ [ Token
-                         { typ = ASSIGN,
-                           literal = getCurrentChar lexer
-                         }
-                     ]
+                  ++ [parseChar (head (getCurrentChar lexer))]
             }
       | isLetter (head (getCurrentChar lexer)) =
         getToken
@@ -59,19 +70,28 @@ getToken lexer = l
                           }
                 }
           )
+      | isEmptyChar (head (getCurrentChar lexer)) =
+        getToken
+          Lexer
+            { input = input lexer,
+              position = readPosition lexer,
+              readPosition = readPosition lexer + 1,
+              tokens = tokens lexer
+            }
       | otherwise =
-        Lexer
-          { input = input lexer,
-            position = readPosition lexer,
-            readPosition = readPosition lexer + 1,
-            tokens =
-              tokens lexer
-                ++ [ Token
-                       { typ = EOF,
-                         literal = "EOF"
-                       }
-                   ]
-          }
+        getToken
+          Lexer
+            { input = input lexer,
+              position = readPosition lexer,
+              readPosition = readPosition lexer + 1,
+              tokens =
+                tokens lexer
+                  ++ [ Token
+                         { typ = ILLEGAL,
+                           literal = "ILLEGAL"
+                         }
+                     ]
+            }
 
 isLetter :: Char -> Bool
 isLetter c = b
@@ -84,7 +104,13 @@ readIdentifier :: Lexer -> Lexer
 readIdentifier lexer = l
   where
     l
-      | readPosition lexer > length (input lexer) = lexer
+      | readPosition lexer > length (input lexer) =
+        Lexer
+          { input = input lexer,
+            position = readPosition lexer,
+            readPosition = readPosition lexer + 1,
+            tokens = pop (tokens lexer) ++ validateIdentifier (last (tokens lexer))
+          }
       | isLetter (input lexer !! position lexer) =
         readIdentifier
           Lexer
@@ -92,18 +118,19 @@ readIdentifier lexer = l
               position = readPosition lexer,
               readPosition = readPosition lexer + 1,
               tokens =
-                [ Token
-                    { typ = IDENT,
-                      literal = literal (getLastToken lexer) ++ getCurrentChar lexer
-                    }
-                ]
+                pop (tokens lexer)
+                  ++ [ Token
+                         { typ = IDENT,
+                           literal = literal (getLastToken lexer) ++ getCurrentChar lexer
+                         }
+                     ]
             }
       | otherwise =
         Lexer
           { input = input lexer,
             position = position lexer,
             readPosition = readPosition lexer,
-            tokens = pop (tokens lexer) ++ validateIdentifier (head (tokens lexer))
+            tokens = pop (tokens lexer) ++ validateIdentifier (last (tokens lexer))
           }
 
 getLastToken :: Lexer -> Token
@@ -114,7 +141,7 @@ validateIdentifier t = token
   where
     token
       | literal t == "int" = [Token {typ = INT, literal = "int"}]
-      | literal t == "function" = [Token {typ = FUNCTION, literal = "functiofunctionn"}]
+      | literal t == "fn" = [Token {typ = FUNCTION, literal = "fn"}]
       | literal t == "let" = [Token {typ = LET, literal = "let"}]
       | otherwise = [Token {typ = IDENT, literal = literal t}]
 
