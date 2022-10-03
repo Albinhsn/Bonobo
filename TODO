@@ -1,0 +1,3 @@
+Utils file 
+move actual parse logic outside of parse, have other func call it 
+throw error on case etc 

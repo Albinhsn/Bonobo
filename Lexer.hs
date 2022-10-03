@@ -2,18 +2,32 @@ module Lexer where
 
 import Token
 
-parse :: (String, [Token]) -> (String, [Token])
-parse (s, t) = (str, tok)
+parseTokens :: (String, [Token]) -> (String, [Token])
+parseTokens (s, t) = (str, tok)
   where
     (str, tok)
-      | isEmptyString s = (s, t ++ [Token {typ = EOF, literal = "EOF"}])
-      | isValidSpecialChar (head s) = parse (removeFirstChar s, t ++ [parseChar (head s)])
-      | isLetter (head s) = parse (readIdentifier (s, (t ++ [Token {typ = IDENT, literal = ""}])))
-      | isEmptyChar (head s) = parse (removeFirstChar s, t)
-      | otherwise = parse (removeFirstChar s, t ++ [Token {typ = ILLEGAL, literal = "ILLEGAL"}])
+      | null s = (s, t ++ [Token {typ = EOF, literal = "EOF"}])
+      | isValidSpecialChar (head s) = parseTokens (removeFirstChar s, t ++ [parseChar (head s)])
+      | isDoubleChar (head s) = parseTokens (parseDoubleChar (head s, removeFirstChar s, t))
+      | isNumber (head s) = parseTokens (readNumber (s, t ++ [Token {typ = INT, literal = ""}]))
+      | isLetter (head s) = parseTokens (readIdentifier (s, t ++ [Token {typ = IDENT, literal = ""}]))
+      | isEmptyChar (head s) = parseTokens (removeFirstChar s, t)
+      | otherwise = parseTokens (removeFirstChar s, t ++ [Token {typ = ILLEGAL, literal = "ILLEGAL"}])
 
 isValidSpecialChar :: Char -> Bool
-isValidSpecialChar ch = ch == '=' || ch == '+' || ch == ',' || ch == ';' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+isValidSpecialChar ch = ch == '-' || ch == '>' || ch == '<' || ch == '*' || ch == '/' || ch == '+' || ch == ',' || ch == ';' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+
+isDoubleChar :: Char -> Bool
+isDoubleChar ch = ch == '=' || ch == '!'
+
+parseDoubleChar :: (Char, String, [Token]) -> (String, [Token])
+parseDoubleChar (ch, s, t) = (string, token)
+  where
+    (string, token)
+      | ch == '=' && ch == head s = (removeFirstChar s, t ++ [Token {typ = EQUALS, literal = "=="}])
+      | ch == '!' && '=' == head s = (removeFirstChar s, t ++ [Token {typ = NOT_EQUALS, literal = "!="}])
+      | ch == '!' = (s, t ++ [Token {typ = BANG, literal = "!"}])
+      | ch == '=' = (s, t ++ [Token {typ = ASSIGN, literal = "="}])
 
 isEmptyChar :: Char -> Bool
 isEmptyChar ch = ch == ' ' || ch == '\n' || ch == '\t'
@@ -24,9 +38,6 @@ isLetter c = b
     b
       | 'a' <= c && c >= 'z' || 'A' <= c && c >= 'Z' || c == '_' = True
       | otherwise = False
-
-isEmptyString :: String -> Bool
-isEmptyString s = s == ""
 
 removeFirstChar :: String -> String
 removeFirstChar xs = case xs of
@@ -44,6 +55,9 @@ readIdentifier (s, t) = (str, tok)
 addIdentifierTolastToken :: (Char, [Token]) -> [Token]
 addIdentifierTolastToken (ch, t) = pop t ++ [Token {typ = IDENT, literal = getLastLiteral t ++ [ch]}]
 
+addNumberToLastToken :: (Char, [Token]) -> [Token]
+addNumberToLastToken (c, t) = pop t ++ [Token {typ = INT, literal = getLastLiteral t ++ [c]}]
+
 getLastLiteral :: [Token] -> String
 getLastLiteral t = s
   where
@@ -59,20 +73,54 @@ validateIdentifier :: Token -> Token
 validateIdentifier t = tok
   where
     tok
-      | literal t == "int" = Token {typ = INT, literal = "int"}
-      | literal t == "fn" = Token {typ = FUNCTION, literal = "fn"}
-      | literal t == "let" = Token {typ = LET, literal = "let"}
+      | literal t == "int" = Token {typ = INT, literal = literal t}
+      | literal t == "fn" = Token {typ = FUNCTION, literal = literal t}
+      | literal t == "let" = Token {typ = LET, literal = literal t}
+      | literal t == "if" = Token {typ = IF, literal = literal t}
+      | literal t == "else" = Token {typ = ELSE, literal = literal t}
+      | literal t == "return" = Token {typ = RETURN, literal = literal t}
+      | literal t == "true" = Token {typ = TRUE, literal = literal t}
+      | literal t == "false" = Token {typ = FALSE, literal = literal t}
       | otherwise = Token {typ = IDENT, literal = literal t}
+
+readNumber :: (String, [Token]) -> (String, [Token])
+readNumber (s, t) = (str, tok)
+  where
+    (str, tok)
+      | s == "" = (s, t)
+      | isNumber (head s) = readNumber (removeFirstChar s, addNumberToLastToken (head s, t))
+      | otherwise = (s, t)
+
+isNumber :: Char -> Bool
+isNumber ch =
+  case ch of
+    '1' -> True
+    '2' -> True
+    '3' -> True
+    '4' -> True
+    '5' -> True
+    '6' -> True
+    '7' -> True
+    '8' -> True
+    '9' -> True
+    '0' -> True
+    _ -> False
 
 parseChar :: Char -> Token
 parseChar ch =
   case ch of
     '=' -> Token {typ = ASSIGN, literal = "="}
     '+' -> Token {typ = PLUS, literal = "+"}
+    '-' -> Token {typ = MINUS, literal = "-"}
     ',' -> Token {typ = COMMA, literal = ","}
     ';' -> Token {typ = SEMICOLON, literal = ";"}
     '(' -> Token {typ = LPAREN, literal = "("}
     ')' -> Token {typ = RPAREN, literal = ")"}
     '{' -> Token {typ = LBRACE, literal = "{"}
     '}' -> Token {typ = RBRACE, literal = "}"}
+    '*' -> Token {typ = ASTERISK, literal = "*"}
+    '/' -> Token {typ = SLASH, literal = "/"}
+    '<' -> Token {typ = LESS_T, literal = "<"}
+    '>' -> Token {typ = GREATER_T, literal = ">"}
+    '!' -> Token {typ = BANG, literal = "!"}
     _ -> Token {typ = ILLEGAL, literal = "ILLEGAL"}

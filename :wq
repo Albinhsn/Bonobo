@@ -1,0 +1,23 @@
+module TestParser where
+
+import Ast
+import Lexer
+import Parser
+import Test.HUnit
+
+testLetStatment =
+  TestCase
+    ( assertEqual
+        "testing let statement"
+        ([], [LetStatement {statementType = LET_S, identifier = "five", expression = Expression {expr = "Expression"}}])
+        ( ( parseStatements
+              ( snd (parseTokens ("let five = 5", [])),
+                []
+              )
+          )
+        )
+    )
+
+tests = TestList [testLetStatment]
+
+main = runTestTT tests
