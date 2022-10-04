@@ -23,7 +23,7 @@ parseLetStatement (t, s) = (tokens, statements)
   where
     (tokens, statements)
       | identifier (last s) == "" = parseLetStatement (parseTokenIdentifier (t, s))
-      | expr (expression (last s)) == "" && typ (head t) == ASSIGN = parseLetExpression (removeFirstToken t, s)
+      | expr (expression (last s)) == "" && typ (head t) == ASSIGN = parseExpression (removeFirstToken t, s)
       | typ (head t) == EOF = (removeFirstToken t, s)
       | otherwise = error "couldn't parse letStatement"
 
@@ -34,8 +34,8 @@ parseTokenIdentifier (t, s) = (tokens, statements)
       | typ (head t) == IDENT = (removeFirstToken t, pop s ++ [LetStatement {identifier = literal (head t), expression = Expression {expr = ""}}])
       | otherwise = error "Couldn't parse literal"
 
-parseLetExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parseLetExpression (t, s) = (tokens, statements)
+parseExpression :: ([Token], [Statement]) -> ([Token], [Statement])
+parseExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
       | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, pop s ++ [LetStatement {identifier = identifier (last s), expression = IntegerLiteralExpression {integerLiteral = stringToInt (literal (head t))}}])
@@ -46,26 +46,24 @@ parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == PLUS
-          || typ (head t) == ASTERISK
-          || typ (head t) == SLASH
-          || typ (head t) == MINUS =
-          parseOperatorExpression
-            ( removeFirstToken t,
-              pop s
-                ++ [ LetStatement
-                       { identifier = identifier (last s),
-                         expression =
-                           OperatorExpression
-                             { leftOperator = expression (last s), -- Always integer literal?
-                               operator = head t,
-                               rightOperator = Expression {expr = ""}
-                             }
-                       }
-                   ]
+      | isArtithmetic (head t) =
+          parseIntegerExpression
+            ( parseOperatorExpression
+                ( removeFirstToken t,
+                  pop s
+                    ++ [ LetStatement
+                           { identifier = identifier (last s),
+                             expression =
+                               OperatorExpression
+                                 { leftOperator = expression (last s), -- Always integer literal?
+                                   operator = head t,
+                                   rightOperator = Expression {expr = ""}
+                                 }
+                           }
+                       ]
+                )
             )
       | typ (head t) == LPAREN = (t, s) -- parseGroupedExpression
-      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = (t, s)
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
@@ -94,6 +92,9 @@ parseOperatorExpression (t, s) = (tokens, statements)
       | typ (head t) == LPAREN = (t, s) -- parseGroupedExpression
       | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = (t, s)
+
+isArtithmetic :: Token -> Bool
+isArtithmetic t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS
 
 stringToInt :: String -> Int
 stringToInt s = read s :: Int

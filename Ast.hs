@@ -26,6 +26,8 @@ data Identifier = Identifier {identifierToken :: Token, identifierValue :: !Stri
 --   }
 -- }
 
+-- let x = 5 + 5 + 5;
+
 -- let foobar = add(5, 5);
 -- LetStatement
 -- {
