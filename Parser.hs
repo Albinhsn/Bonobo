@@ -16,7 +16,7 @@ parseStatements (t, s) = (tokens, statements)
       | typ (head t) == RETURN = (t, s)
       | typ (head t) == IF = (t, s)
       | typ (head t) == EOF = (removeFirstToken t, s)
-      | otherwise = error "couldn't parse token for statement"
+      | otherwise = (t, s)
 
 parseLetStatement :: ([Token], [Statement]) -> ([Token], [Statement])
 parseLetStatement (t, s) = (tokens, statements)
@@ -64,6 +64,7 @@ parseIntegerExpression (t, s) = (tokens, statements)
                 )
             )
       | typ (head t) == LPAREN = (t, s) -- parseGroupedExpression
+      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = (t, s)
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])

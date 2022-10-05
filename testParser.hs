@@ -90,7 +90,7 @@ testAsteriskOperator =
 testMinusOperator =
   TestCase
     ( assertEqual
-        "testing 'let five = 5 - 5;'"
+        "testing 'let five = 5 - 5;"
         ( [],
           [ LetStatement
               { identifier = "five",

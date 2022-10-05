@@ -6,7 +6,6 @@ data NodeType = STATEMENT | EXPRESSION deriving (Eq, Show)
 
 data ReturnStatement = ReturnStatement {} deriving (Eq, Show)
 
-data Identifier = Identifier {identifierToken :: Token, identifierValue :: !String} deriving (Eq, Show)
 
 --  let x = 5;
 -- LetStatement
@@ -45,10 +44,10 @@ data Expression
   | Expression {expr :: String}
   deriving (Eq, Show)
 
-data Statement = LetStatement {identifier :: String, expression :: Expression}
+data Statement = LetStatement {letIdentifier :: String, letExpression :: Expression}
+  | ReturnSatement {returnExpression :: Expression }
+  -- | IfStatement {}
   deriving
-    ( -- | ReturnSatement {}
-      -- | IfStatement {}
       Eq,
       Show
     )
