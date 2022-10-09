@@ -70,18 +70,17 @@ pop [] = []
 pop a = init a
 
 validateIdentifier :: Token -> Token
-validateIdentifier t = tok
-  where
-    tok
-      | literal t == "int" = Token {typ = INT, literal = literal t}
-      | literal t == "fn" = Token {typ = FUNCTION, literal = literal t}
-      | literal t == "let" = Token {typ = LET, literal = literal t}
-      | literal t == "if" = Token {typ = IF, literal = literal t}
-      | literal t == "else" = Token {typ = ELSE, literal = literal t}
-      | literal t == "return" = Token {typ = RETURN, literal = literal t}
-      | literal t == "true" = Token {typ = TRUE, literal = literal t}
-      | literal t == "false" = Token {typ = FALSE, literal = literal t}
-      | otherwise = Token {typ = IDENT, literal = literal t}
+validateIdentifier t =
+  case literal t of
+    "int" -> Token {typ = INT, literal = literal t}
+    "fn" -> Token {typ = FUNCTION, literal = literal t}
+    "let" -> Token {typ = LET, literal = literal t}
+    "if" -> Token {typ = IF, literal = literal t}
+    "else" -> Token {typ = ELSE, literal = literal t}
+    "return" -> Token {typ = RETURN, literal = literal t}
+    "true" -> Token {typ = TRUE, literal = literal t}
+    "false" -> Token {typ = FALSE, literal = literal t}
+    _ -> Token {typ = IDENT, literal = literal t}
 
 readNumber :: (String, [Token]) -> (String, [Token])
 readNumber (s, t) = (str, tok)

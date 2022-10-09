@@ -1,3 +1,12 @@
-Utils file 
-move actual parse logic outside of parse, have other func call it 
-throw error on case etc 
+TODO: 
+  infix and prefix operators? 
+  parse expressions 
+    Expressions to parse: 
+      -5; 
+      5 * -5; 
+      (5 - 4) * 1
+    
+Non prio: 
+  move into actual project structure with cabal 
+  Restructure code more haskell isch 
+  

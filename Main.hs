@@ -4,12 +4,12 @@ import Ast
 import Lexer
 import Parser
 import Token
+import Utils
 
 main = do
   let s =
         parseStatements
-          ( snd (parseTokens ("let five = 5 / 5 + 5 * 5;", [])),
+          ( snd (parseTokens ("let five = 5;", [])),
             []
           )
-
-  print s
+  printStatement (head (snd s))

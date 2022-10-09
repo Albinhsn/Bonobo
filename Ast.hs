@@ -1,53 +1,50 @@
 module Ast where
 
+import Data.Map (Map ())
+import qualified Data.Map.Strict as Map
 import Token
 
-data NodeType = STATEMENT | EXPRESSION deriving (Eq, Show)
+precedenceMap :: [(TokenType, Int)]
+precedenceMap =
+  [ (EQUALS, 1),
+    (GREATER_T, 2),
+    (LESS_T, 2),
+    (MINUS, 3),
+    (PLUS, 3),
+    (ASTERISK, 4),
+    (SLASH, 4),
+    (PREFIX, 5),
+    (INFIX, 5),
+    (CALL, 6)
+  ]
 
-data ReturnStatement = ReturnStatement {} deriving (Eq, Show)
+getPrecedence :: TokenType -> Int
+getPrecedence t = head [snd n | n <- precedenceMap, fst n == t]
 
-
---  let x = 5;
--- LetStatement
---   {
---    identifier = x,
---    expression = IntegerLiteralExpression{integerLiteral = 5}
---    }
-
--- let x = 5 + 5;
--- LetStatement
--- {
---   identifier = x,
---   expression = OperatorExpression{
---     leftOperator = IntegerLiteralExpression {integerLiteral= 5},
---     operator = PLUS,
---     rightOperator = IntegerLiteralExpression {integerLiteral=5}
---   }
--- }
-
--- let x = 5 + 5 + 5;
-
--- let foobar = add(5, 5);
--- LetStatement
--- {
---     identifier = "foobar",
---     expression =
---   }
-
--- let barfoo = 5 * 5 / 10 + 18 - add(5, 5) + multiply(124);
--- let anotherName = barfoo;
+hasPrecedence :: (TokenType, TokenType) -> Bool
+hasPrecedence (t1, t2) = getPrecedence t1 > getPrecedence t2
 
 data Expression
-  = OperatorExpression {leftOperator :: Expression, operator :: Token, rightOperator :: Expression}
-  | IntegerLiteralExpression {integerLiteral :: Int}
-  | GroupedExpression {literalGrouped :: Token}
-  | Expression {expr :: String}
+  = OperatorExpression {leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
+  | IntegerLiteralExpression {integerLiteral :: !String}
+  | GroupedExpression {literalGrouped :: !Token}
+  | Expression {}
   deriving (Eq, Show)
 
-data Statement = LetStatement {letIdentifier :: String, letExpression :: Expression}
-  | ReturnSatement {returnExpression :: Expression }
-  -- | IfStatement {}
+data Statement = Statement
+  { statementType :: !StatementType,
+    expression :: !Expression
+  }
   deriving
-      Eq,
+    ( Eq,
+      Show
+    )
+
+data StatementType
+  = LetStatement {identifier :: !String}
+  | ReturnStatement {}
+  | IfStatement {}
+  deriving
+    ( Eq,
       Show
     )

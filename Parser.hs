@@ -3,6 +3,7 @@ module Parser where
 import Ast
 import Lexer
 import Token
+import Utils
 
 parseProgram :: String -> [Token]
 parseProgram s = snd (parseTokens (s, []))
@@ -12,95 +13,52 @@ parseStatements (t, s) = (tokens, statements)
   where
     (tokens, statements)
       | null t = (t, s)
-      | typ (head t) == LET = parseStatements (parseLetStatement (removeFirstToken t, s ++ [LetStatement {identifier = "", expression = Expression {expr = ""}}]))
-      | typ (head t) == RETURN = (t, s)
+      | typ (head t) == LET =
+        parseStatements
+          ( parseExpression
+              ( parseIdentifier
+                  ( removeFirstToken t,
+                    s
+                      ++ [ Statement
+                             { statementType =
+                                 LetStatement {identifier = ""},
+                               expression = Expression {}
+                             }
+                         ]
+                  )
+              )
+          )
+      | typ (head t) == RETURN =
+        parseStatements
+          ( parseExpression
+              ( removeFirstToken t,
+                s
+                  ++ [ Statement
+                         { statementType = ReturnStatement {},
+                           expression = Expression {}
+                         }
+                     ]
+              )
+          )
       | typ (head t) == IF = (t, s)
       | typ (head t) == EOF = (removeFirstToken t, s)
       | otherwise = (t, s)
-
-parseLetStatement :: ([Token], [Statement]) -> ([Token], [Statement])
-parseLetStatement (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | identifier (last s) == "" = parseLetStatement (parseTokenIdentifier (t, s))
-      | expr (expression (last s)) == "" && typ (head t) == ASSIGN = parseExpression (removeFirstToken t, s)
-      | typ (head t) == EOF = (removeFirstToken t, s)
-      | otherwise = error "couldn't parse letStatement"
-
-parseTokenIdentifier :: ([Token], [Statement]) -> ([Token], [Statement])
-parseTokenIdentifier (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == IDENT = (removeFirstToken t, pop s ++ [LetStatement {identifier = literal (head t), expression = Expression {expr = ""}}])
-      | otherwise = error "Couldn't parse literal"
 
 parseExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, pop s ++ [LetStatement {identifier = identifier (last s), expression = IntegerLiteralExpression {integerLiteral = stringToInt (literal (head t))}}])
-      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
+      | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, s ++ [Statement {statementType = statementType (last s), expression = IntegerLiteralExpression {integerLiteral = literal (head t)}}])
+      | isValidPrefix (head t) = (t, s)
       | otherwise = (t, s)
 
 parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | isArtithmetic (head t) =
-          parseIntegerExpression
-            ( parseOperatorExpression
-                ( removeFirstToken t,
-                  pop s
-                    ++ [ LetStatement
-                           { identifier = identifier (last s),
-                             expression =
-                               OperatorExpression
-                                 { leftOperator = expression (last s), -- Always integer literal?
-                                   operator = head t,
-                                   rightOperator = Expression {expr = ""}
-                                 }
-                           }
-                       ]
-                )
-            )
-      | typ (head t) == LPAREN = (t, s) -- parseGroupedExpression
+      | isArtithmetic (head t) = (t, s)
       | typ (head t) == SEMICOLON = (removeFirstToken t, s)
-      | otherwise = (t, s)
+      | otherwise = error "failed to parse integer expression"
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parseOperatorExpression (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == INT =
-          parseOperatorExpression
-            ( removeFirstToken t,
-              pop s
-                ++ [ LetStatement
-                       { identifier = identifier (last s),
-                         expression =
-                           OperatorExpression
-                             { leftOperator = leftOperator (expression (last s)),
-                               operator = operator (expression (last s)),
-                               rightOperator =
-                                 IntegerLiteralExpression
-                                   { integerLiteral = stringToInt (literal (head t))
-                                   }
-                             }
-                       }
-                   ]
-            )
-      | typ (head t) == IDENT = (t, s) -- How to handle this
-      | typ (head t) == LPAREN = (t, s) -- parseGroupedExpression
-      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
-      | otherwise = (t, s)
-
-isArtithmetic :: Token -> Bool
-isArtithmetic t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS
-
-stringToInt :: String -> Int
-stringToInt s = read s :: Int
-
-removeFirstToken :: [Token] -> [Token]
-removeFirstToken xs = case xs of
-  [] -> []
-  x : xs -> xs
+parseOperatorExpression (t, s) = (t, s)
