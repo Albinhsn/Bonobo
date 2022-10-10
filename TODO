@@ -5,8 +5,14 @@ TODO:
       -5; 
       5 * -5; 
       (5 - 4) * 1
-    
+       5 * 5 + 5 * 5 #(5 * 5) + (5 * 5)  
+       5 * 5 
+        CHECK PRECEDENCE 
+       5 * 5 + 5 
+        CHECK PRECEDENCE 
+        5 * 5 + (5 * 5) 
+
 Non prio: 
   move into actual project structure with cabal 
   Restructure code more haskell isch 
-  
+  rethink precedence implementation 

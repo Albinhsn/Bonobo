@@ -40,15 +40,14 @@ parseStatements (t, s) = (tokens, statements)
                      ]
               )
           )
-      | typ (head t) == IF = (t, s)
       | typ (head t) == EOF = (removeFirstToken t, s)
-      | otherwise = (t, s)
+      | otherwise = (t, s) -- Parse expression statement
 
 parseExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, s ++ [Statement {statementType = statementType (last s), expression = IntegerLiteralExpression {integerLiteral = literal (head t)}}])
+      | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = IntegerLiteralExpression {integerLiteral = literal (head t)}}])
       | isValidPrefix (head t) = (t, s)
       | otherwise = (t, s)
 
@@ -56,9 +55,15 @@ parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | isArtithmetic (head t) = (t, s)
+      | isInfix (head t) = (t, s)
       | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = error "failed to parse integer expression"
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseOperatorExpression (t, s) = (t, s)
+
+parseInfix :: ([Token], [Statement]) -> ([Token], [Statement])
+parseInfix (t, s) = (t, s)
+
+parsePrefix :: ([Token], [Statement]) -> ([Token], [Statement])
+parsePrefix (t, s) = (t, s)

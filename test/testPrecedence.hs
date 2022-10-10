@@ -8,7 +8,7 @@ testPlusMinus =
   TestCase
     ( assertEqual
         "testing plus vs minus"
-        False
+        True
         (hasPrecedence (MINUS, PLUS))
     )
 
@@ -17,7 +17,7 @@ testCallPlus =
     ( assertEqual
         "testing plus vs minus"
         True
-        (hasPrecedence (CALL, PLUS))
+        (hasPrecedence (FUNCTION, PLUS))
     )
 
 testList = TestList [testPlusMinus, testCallPlus]
