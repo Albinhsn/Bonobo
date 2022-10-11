@@ -1,0 +1,11 @@
+Test suite tests: RUNNING...
+Cases: 2  Tried: 0  Errors: 0  Failures: 0Cases: 2  Tried: 1  Errors: 0  Failures: 0                                          Cases: 2  Tried: 2  Errors: 0  Failures: 0
+Cases: 2  Tried: 0  Errors: 0  Failures: 0Cases: 2  Tried: 1  Errors: 0  Failures: 0                                          Cases: 2  Tried: 2  Errors: 0  Failures: 0
+Cases: 2  Tried: 0  Errors: 0  Failures: 0Cases: 2  Tried: 1  Errors: 0  Failures: 0                                          ### Failure in: 1
+test/TestParser.hs:137
+testing 'return 5 + 5 + 5;'
+expected: "return 5 + 5 + 5;"
+ but got: "return 5;"
+Cases: 2  Tried: 2  Errors: 0  Failures: 1
+Test suite tests: PASS
+Test suite logged to: /home/arla/dev/interpretor/dist-newstyle/build/x86_64-linux/ghc-8.10.7/interpretor-0.1.0.0/t/tests/test/interpretor-0.1.0.0-tests.log
