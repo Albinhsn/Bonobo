@@ -39,8 +39,8 @@ data Expression
   = OperatorExpression {leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
   | IntegerLiteralExpression {integerLiteral :: !String}
   | GroupedExpression {literalGrouped :: !Token}
-  | PrefixExpression {prefixOperator :: !Token, prefixExpression :: !Expression}
-  | InfixExpression {leftExpression :: !Expression, infixOperator :: !Token, rightExpression :: !Expression}
+  | InfixExpression {infixOperator :: !Token, infixExpression :: !Expression}
+  | PrefixExpression {leftExpression :: !Expression, infixOperator :: !Token, rightExpression :: !Expression}
   | Expression {}
   deriving (Eq, Show)
 

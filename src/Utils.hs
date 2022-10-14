@@ -19,8 +19,8 @@ parseAssign (t, s) = (tokens, statements)
       | typ (head t) == ASSIGN = (removeFirstToken t, s)
       | otherwise = error "can't do let without =="
 
-isInfix :: Token -> Bool
-isInfix t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS || typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
+isPrefix :: Token -> Bool
+isPrefix t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS || typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
 
 stringToInt :: String -> Int
 stringToInt s = read s :: Int
@@ -30,8 +30,8 @@ removeFirstToken xs = case xs of
   [] -> []
   x : xs -> xs
 
-isValidPrefix :: Token -> Bool
-isValidPrefix t = typ t == MINUS || typ t == BANG
+isValidInfix :: Token -> Bool
+isValidInfix t = typ t == MINUS || typ t == BANG
 
 statementToString :: Statement -> String
 statementToString s = str

@@ -11,8 +11,24 @@ TODO:
        5 * 5 + 5 
         CHECK PRECEDENCE 
         5 * 5 + (5 * 5) 
+parseIntegerExp
+parseOperator 
+parseIntegerExp 
+hasPrecedence? #If no 
+#Create operator exp with left = 5 * 5 exp and op = + 
+parseExp 
+
+
+5 + 5 * 5 + 5 
+5 + 5 
+5 + (5 *)
+5 + (5 * 5
+5 + (5 * 5) + 
+5 + (5 * 5) + 5  
+
+
+
 
 Non prio: 
-  move into actual project structure with cabal 
   Restructure code more haskell isch 
   rethink precedence implementation 
