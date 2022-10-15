@@ -9,7 +9,7 @@ parseIdentifier :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIdentifier (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == IDENT = parseAssign (removeFirstToken t, pop s ++ [Statement {statementType = LetStatement {identifier = literal (head t)}, expression = Expression {}}])
+      | typ (head t) == IDENT = parseAssign (removeFirstToken t, pop s ++ [Statement {statementType = LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}])
       | otherwise = error "Couldn't parse literal"
 
 parseAssign :: ([Token], [Statement]) -> ([Token], [Statement])
@@ -39,18 +39,22 @@ statementToString s = str
     str
       | statementType s == ReturnStatement = "return " ++ expressionToString (expression s) ++ ";"
       | statementType s == IfStatement = "doesn't exist yet" -- TODO FIX THIS
-      | typeOf (statementType s) == typeRep LetStatement = "let " ++ expressionToString (expression s) ++ ";"
+      | typeOf (statementType s) == typeRep LetStatement =
+        "let "
+          ++ identifier s
+          ++ expressionToString (expression s)
+          ++ ";"
       | otherwise = error "error parsing statement to string "
 
 expressionToString :: Expression -> String
 expressionToString e = s
   where
     s
-      | typeOf e == typeRep OperatorExpression = expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e)
-      | typeOf e == typeRep IntegerLiteralExpression = integerLiteral e
-      | typeOf e == typeRep GroupedExpression = "doesn't exist yet" -- TODO fix this
-      | typeOf e == typeRep PrefixExpression = literal (prefixOperator e) ++ " " ++ expressionToString (prefixExpression e)
-      | typeOf e == typeRep InfixExpression = expressionToString (leftExpression e) ++ " " ++ literal (infixOperator e) ++ " " ++ expressionToString (rightExpression e)
+      | expressionType e == OPERATOREXP = expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e)
+      | expressionType e == INFIXEXP = literal (infixOperator e) ++ " " ++ expressionToString (infixExpression e)
+      | expressionType e == INTEGERLITERALEXP = integerLiteral e
+      | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
+      | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String

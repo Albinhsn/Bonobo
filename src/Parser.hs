@@ -22,7 +22,7 @@ parseStatements (t, s) = (tokens, statements)
                       ++ [ Statement
                              { statementType =
                                  LetStatement {identifier = ""},
-                               expression = Expression {}
+                               expression = Expression {expressionType = EMPTYEXP}
                              }
                          ]
                   )
@@ -35,7 +35,7 @@ parseStatements (t, s) = (tokens, statements)
                 s
                   ++ [ Statement
                          { statementType = ReturnStatement {},
-                           expression = Expression {}
+                           expression = Expression {expressionType = EMPTYEXP}
                          }
                      ]
               )
@@ -47,14 +47,28 @@ parseExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = parseIntegerExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = IntegerLiteralExpression {integerLiteral = literal (head t)}}])
+      | null t = (t, s)
+      | typ (head t) == INT =
+        parseIntegerExpression
+          ( removeFirstToken t,
+            pop s
+              ++ [ Statement
+                     { statementType = statementType (last s),
+                       expression =
+                         IntegerLiteralExpression
+                           { expressionType = INTEGERLITERALEXP,
+                             integerLiteral = literal (head t)
+                           }
+                     }
+                 ]
+          )
       | isValidInfix (head t) =
         parseInfixExpression
           ( removeFirstToken t,
             pop s
               ++ [ Statement
                      { statementType = statementType (last s),
-                       expression = InfixExpression {infixOperator = head t, infixExpression = Expression {}} -- Parse infix and then parseIntegerExpression?
+                       expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}} -- Parse infix and then parseIntegerExpression?
                      }
                  ]
           )
@@ -71,11 +85,9 @@ parseIntegerExpression (t, s) = (tokens, statements)
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseOperatorExpression (t, s) = (t, s)
 
-parseInfix :: ([Token], [Statement]) -> ([Token], [Statement])
-parseInfix (t, s) = (t, s)
-
 parseInfixExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parseInfixExpression (t, s) = (t, s)
-
-parsePrefix :: ([Token], [Statement]) -> ([Token], [Statement])
-parsePrefix (t, s) = (t, s)
+parseInfixExpression (t, s) = (tokens, statements)
+  where
+    (tokens, statements)
+      | typ (head t) == INT = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
+      | otherwise = (t, s)

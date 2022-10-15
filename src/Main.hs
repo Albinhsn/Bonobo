@@ -1,6 +1,7 @@
 module Main where
 
 import Ast
+import Data.Typeable
 import Lexer
 import Parser
 import Token
@@ -10,8 +11,10 @@ main = do
   let s =
         snd
           ( parseStatements
-              ( snd (parseTokens ("return 5;", [])),
+              ( snd (parseTokens ("let five = -5;", [])),
                 []
               )
           )
-  print s
+  let a = statementToString (head s)
+  -- print s
+  print a

@@ -35,13 +35,22 @@ getPrecedence t = head [snd n | n <- precedenceMap, fst n == getPrecedenceTypeFr
 hasPrecedence :: (TokenType, TokenType) -> Bool
 hasPrecedence (t1, t2) = getPrecedence t1 > getPrecedence t2
 
+data ExpressionType
+  = OPERATOREXP
+  | INTEGERLITERALEXP
+  | GROUPEDEXP
+  | INFIXEXP
+  | PREFIXEXP
+  | EMPTYEXP
+  deriving (Eq, Show)
+
 data Expression
-  = OperatorExpression {leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
-  | IntegerLiteralExpression {integerLiteral :: !String}
-  | GroupedExpression {literalGrouped :: !Token}
-  | InfixExpression {infixOperator :: !Token, infixExpression :: !Expression}
-  | PrefixExpression {leftExpression :: !Expression, infixOperator :: !Token, rightExpression :: !Expression}
-  | Expression {}
+  = OperatorExpression {expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
+  | IntegerLiteralExpression {expressionType :: !ExpressionType, integerLiteral :: !String}
+  | GroupedExpression {expressionType :: !ExpressionType, literalGrouped :: !Token}
+  | InfixExpression {expressionType :: !ExpressionType, infixOperator :: !Token, infixExpression :: !Expression}
+  | PrefixExpression {expressionType :: !ExpressionType, leftExpression :: !Expression, prefixOperator :: !Token, rightExpression :: !Expression}
+  | Expression {expressionType :: !ExpressionType}
   deriving (Eq, Show)
 
 data Statement = Statement
