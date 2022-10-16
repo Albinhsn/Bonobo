@@ -1,4 +1,4 @@
-module Main where
+module TestPrecedence where
 
 import Ast
 import Test.HUnit
@@ -27,7 +27,3 @@ testList = TestList [testPlusMinus, testCallPlus]
 
 runPrecedenceTests :: IO Counts
 runPrecedenceTests = runTestTT testList
-
-main = do
-  testCallPlus
-  testPlusMinus
