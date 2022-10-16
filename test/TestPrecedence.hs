@@ -1,4 +1,4 @@
-module TestPrecedence where
+module Main where
 
 import Ast
 import Test.HUnit
@@ -9,7 +9,7 @@ testPlusMinus =
   TestCase
     ( assertEqual
         "testing plus vs minus"
-        True
+        False
         (hasPrecedence (MINUS, PLUS))
     )
 
@@ -27,3 +27,7 @@ testList = TestList [testPlusMinus, testCallPlus]
 
 runPrecedenceTests :: IO Counts
 runPrecedenceTests = runTestTT testList
+
+main = do
+  testCallPlus
+  testPlusMinus

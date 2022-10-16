@@ -14,32 +14,32 @@ parseStatements (t, s) = (tokens, statements)
     (tokens, statements)
       | null t = (t, s)
       | typ (head t) == LET =
-        parseStatements
-          ( parseExpression
-              ( parseIdentifier
-                  ( removeFirstToken t,
-                    s
-                      ++ [ Statement
-                             { statementType =
-                                 LetStatement {identifier = ""},
-                               expression = Expression {expressionType = EMPTYEXP}
-                             }
-                         ]
-                  )
-              )
-          )
+          parseStatements
+            ( parseExpression
+                ( parseIdentifier
+                    ( removeFirstToken t,
+                      s
+                        ++ [ Statement
+                               { statementType =
+                                   LetStatement {identifier = ""},
+                                 expression = Expression {expressionType = EMPTYEXP}
+                               }
+                           ]
+                    )
+                )
+            )
       | typ (head t) == RETURN =
-        parseStatements
-          ( parseExpression
-              ( removeFirstToken t,
-                s
-                  ++ [ Statement
-                         { statementType = ReturnStatement {},
-                           expression = Expression {expressionType = EMPTYEXP}
-                         }
-                     ]
-              )
-          )
+          parseStatements
+            ( parseExpression
+                ( removeFirstToken t,
+                  s
+                    ++ [ Statement
+                           { statementType = ReturnStatement {},
+                             expression = Expression {expressionType = EMPTYEXP}
+                           }
+                       ]
+                )
+            )
       | typ (head t) == EOF = (removeFirstToken t, s)
       | otherwise = (t, s) -- Parse expression statement
 
@@ -49,29 +49,29 @@ parseExpression (t, s) = (tokens, statements)
     (tokens, statements)
       | null t = (t, s)
       | typ (head t) == INT =
-        parseIntegerExpression
-          ( removeFirstToken t,
-            pop s
-              ++ [ Statement
-                     { statementType = statementType (last s),
-                       expression =
-                         IntegerLiteralExpression
-                           { expressionType = INTEGERLITERALEXP,
-                             integerLiteral = literal (head t)
-                           }
-                     }
-                 ]
-          )
+          parseIntegerExpression
+            ( removeFirstToken t,
+              pop s
+                ++ [ Statement
+                       { statementType = statementType (last s),
+                         expression =
+                           IntegerLiteralExpression
+                             { expressionType = INTEGERLITERALEXP,
+                               integerLiteral = literal (head t)
+                             }
+                       }
+                   ]
+            )
       | isValidInfix (head t) =
-        parseInfixExpression
-          ( removeFirstToken t,
-            pop s
-              ++ [ Statement
-                     { statementType = statementType (last s),
-                       expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}} -- Parse infix and then parseIntegerExpression?
-                     }
-                 ]
-          )
+          parseInfixExpression
+            ( removeFirstToken t,
+              pop s
+                ++ [ Statement
+                       { statementType = statementType (last s),
+                         expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}} -- Parse infix and then parseIntegerExpression?
+                       }
+                   ]
+            )
       | otherwise = (t, s)
 
 parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])

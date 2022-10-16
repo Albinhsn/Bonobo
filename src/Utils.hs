@@ -40,10 +40,10 @@ statementToString s = str
       | statementType s == ReturnStatement = "return " ++ expressionToString (expression s) ++ ";"
       | statementType s == IfStatement = "doesn't exist yet" -- TODO FIX THIS
       | typeOf (statementType s) == typeRep LetStatement =
-        "let "
-          ++ identifier s
-          ++ expressionToString (expression s)
-          ++ ";"
+          "let "
+            ++ identifier (statementType s)
+            ++ expressionToString (expression s)
+            ++ ";"
       | otherwise = error "error parsing statement to string "
 
 expressionToString :: Expression -> String

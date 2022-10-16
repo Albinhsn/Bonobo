@@ -141,7 +141,7 @@ testArithmeticReturnStatement =
             ( head
                 ( snd
                     ( parseStatements
-                        ( snd (parseTokens ("return 5 + 5 + 5;", [])),
+                        ( snd (parseTokens ("return 5 + 5;", [])),
                           []
                         )
                     )
@@ -150,9 +150,8 @@ testArithmeticReturnStatement =
         )
     )
 
--- tests = TestList [testPlusOperator, testMinusOperator, testSlashOperator, testAsteriskOperator, testAssignment]
 tests :: Test
-tests = TestList [testReturnStatement, testArithmeticReturnStatement]
+tests = TestList [testPlusOperator, testMinusOperator, testSlashOperator, testAsteriskOperator, testAssignment]
 
 runParserTests :: IO Counts
 runParserTests = runTestTT tests
