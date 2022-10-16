@@ -63,14 +63,23 @@ parseExpression (t, s) = (tokens, statements)
                    ]
             )
       | isValidInfix (head t) =
+          parseExpression (
           parseInfixExpression
             ( removeFirstToken t,
               pop s
-                ++ [ Statement
-                       { statementType = statementType (last s),
-                         expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}} -- Parse infix and then parseIntegerExpression?
-                       }
-                   ]
+                ++ 
+              [ Statement
+                     { statementType = statementType (last s),
+                       expression = 
+                        InfixExpression 
+                          {
+                            expressionType = INFIXEXP, 
+                            infixOperator = head t, 
+                            infixExpression = Expression {expressionType = EMPTYEXP}
+                          } -- Parse infix and then parseIntegerExpression?
+                     }
+              ]
+            )
             )
       | otherwise = (t, s)
 
@@ -85,9 +94,17 @@ parseIntegerExpression (t, s) = (tokens, statements)
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseOperatorExpression (t, s) = (t, s)
 
+parsePotentialOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
+parsePotentialOperatorExpression (t, s) = (tok, sta)
+  where 
+    (tok, sta)
+      | isOperator (head t) = (t, s) 
+      | otherwise = (t, s)
+   
+
 parseInfixExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseInfixExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
+      | typ (head t) == INT = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
       | otherwise = (t, s)

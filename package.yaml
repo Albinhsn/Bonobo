@@ -1,4 +1,4 @@
-name:                src
+name:               interpretor 
 version:             0.1.0.0
 github:              "githubuser/src"
 license:             BSD3
@@ -37,7 +37,7 @@ library:
   source-dirs: src
 
 executables:
-  src-exe:
+  interpretor-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -48,7 +48,7 @@ executables:
     - src
 
 tests:
-  src-test:
+  interpretor-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -56,4 +56,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - src
+    - src 

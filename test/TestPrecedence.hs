@@ -1,29 +1,12 @@
 module TestPrecedence where
 
 import Ast
-import Test.HUnit
 import Token
 
-testPlusMinus :: Test
+testPlusMinus :: Bool  
 testPlusMinus =
-  TestCase
-    ( assertEqual
-        "testing plus vs minus"
-        False
-        (hasPrecedence (MINUS, PLUS))
-    )
+  hasPrecedence (MINUS, PLUS)
 
-testCallPlus :: Test
+testCallPlus :: Bool 
 testCallPlus =
-  TestCase
-    ( assertEqual
-        "testing plus vs minus"
-        True
-        (hasPrecedence (FUNCTION, PLUS))
-    )
-
-testList :: Test
-testList = TestList [testPlusMinus, testCallPlus]
-
-runPrecedenceTests :: IO Counts
-runPrecedenceTests = runTestTT testList
+  hasPrecedence (FUNCTION, PLUS)

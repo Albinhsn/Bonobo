@@ -33,6 +33,9 @@ removeFirstToken xs = case xs of
 isValidInfix :: Token -> Bool
 isValidInfix t = typ t == MINUS || typ t == BANG
 
+isOperator :: Token -> Bool 
+isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH 
+
 statementToString :: Statement -> String
 statementToString s = str
   where
@@ -42,6 +45,7 @@ statementToString s = str
       | typeOf (statementType s) == typeRep LetStatement =
           "let "
             ++ identifier (statementType s)
+            ++ " = "
             ++ expressionToString (expression s)
             ++ ";"
       | otherwise = error "error parsing statement to string "
@@ -51,7 +55,7 @@ expressionToString e = s
   where
     s
       | expressionType e == OPERATOREXP = expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e)
-      | expressionType e == INFIXEXP = literal (infixOperator e) ++ " " ++ expressionToString (infixExpression e)
+      | expressionType e == INFIXEXP = literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e)
       | expressionType e == INTEGERLITERALEXP = integerLiteral e
       | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
