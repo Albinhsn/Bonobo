@@ -21,8 +21,8 @@ getPrecedenceTypeFromTokenType :: TokenType -> PrecedenceType
 getPrecedenceTypeFromTokenType t = p
   where
     p
-      | t == PLUS = SUM
-      | t == MINUS || t == BANG = PREFIX
+      | t == PLUS || t == MINUS = SUM
+      | t == BANG = PREFIX
       | t == EQUALS = EQUAL
       | t == ASTERISK = PRODUCT
       | t == GREATER_T || t == LESS_T = LESSGREATER
@@ -37,7 +37,7 @@ hasPrecedence (t1, t2) = getPrecedence t1 > getPrecedence t2
 
 data ExpressionType
   = OPERATOREXP
-  | INTEGERLITERALEXP
+  | INTEXP
   | GROUPEDEXP
   | INFIXEXP
   | PREFIXEXP

@@ -30,31 +30,43 @@ main = hspec $ do
       do 
         testMultipleOperators
         `shouldBe`
-        "let five = 5 + 5 + 5 ;"
+        "let five = ((5 + 5) + 5);"
   
     it "testing slash operators" $ 
       do 
         testSlashOperator
         `shouldBe`
-        "let five = 5 / 5;"
+        "let five = (5 / 5);"
 
     it "testing asterisk operator" $ 
       do 
         testAsteriskOperator
         `shouldBe`
-        "let five = 5 * 5;"
+        "let five = (5 * 5);"
 
-    it "testing minus operator" $ 
+    it "testing plus asterisk" $
       do 
-        testMinusOperator
+        testPlusAsteriskOperators
         `shouldBe`
-        "let five = 5 - 5;"
+        "let five = (5 + (5 * 5));"
+
+    it "testing asterisk plus " $
+      do 
+        testAsteriskPlusOperators
+        `shouldBe`
+        "let five = ((5 * 5) + 5);"
+
+    -- it "testing minus operator" $ 
+    --   do 
+    --     testMinusOperator
+    --     `shouldBe`
+    --     "let five = (5 - 5);"
 
     it "testing arithmetic return statement" $ 
       do 
         testArithmeticReturnStatement 
         `shouldBe`
-        "return 5 + 5 + 5;"
+        "return (5 + 5);"
 
     it "testing infix" $ 
       do 
@@ -67,7 +79,7 @@ main = hspec $ do
       do 
         testPlusMinus 
         `shouldBe`
-        True
+        False  
 
     it "testing call plus" $ 
       do 

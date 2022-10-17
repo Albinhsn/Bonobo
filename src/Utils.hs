@@ -54,12 +54,31 @@ expressionToString :: Expression -> String
 expressionToString e = s
   where
     s
-      | expressionType e == OPERATOREXP = expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e)
+      | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
       | expressionType e == INFIXEXP = literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e)
-      | expressionType e == INTEGERLITERALEXP = integerLiteral e
+      | expressionType e == INTEXP = integerLiteral e
       | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
-tokenToString = literal
+tokenToString t = literal t
+
+
+getLastExpressionType:: [Statement] -> ExpressionType  
+getLastExpressionType s = expressionType (expression (last s))
+
+getLastExpression:: [Statement] -> Expression
+getLastExpression s = expression (last s)
+
+getLastOperator :: [Statement] -> Token 
+getLastOperator s = operator (expression (last s))
+
+getLastLeftOperator :: [Statement] -> Expression 
+getLastLeftOperator s = leftOperator (expression (last s))
+
+getLastRightOperator :: [Statement] -> Expression 
+getLastRightOperator s = rightOperator (expression (last s))
+
+getLastInfixOperator :: [Statement] -> Token 
+getLastInfixOperator s = infixOperator (expression (last s))

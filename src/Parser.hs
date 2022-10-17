@@ -5,6 +5,7 @@ import Lexer
 import Token
 import Utils
 
+
 -- isOperator :: Token -> Bool 
 -- isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH 
 
@@ -52,62 +53,110 @@ parseExpression (t, s) = (tokens, statements)
     (tokens, statements)
       | null t = (t, s)
       | typ (head t) == INT =
-          parseIntegerExpression
-            ( removeFirstToken t,
-              pop s
-                ++ [ Statement
-                       { statementType = statementType (last s),
-                         expression =
-                           IntegerLiteralExpression
-                             { expressionType = INTEGERLITERALEXP,
-                               integerLiteral = literal (head t)
-                             }
-                       }
-                   ]
-            )
-      | isValidInfix (head t) =
-          parseExpression (
-          parseInfixExpression
-            ( removeFirstToken t,
-              pop s
-                ++ 
-              [ Statement
-                     { statementType = statementType (last s),
-                       expression = 
-                        InfixExpression 
-                          {
-                            expressionType = INFIXEXP, 
-                            infixOperator = head t, 
-                            infixExpression = Expression {expressionType = EMPTYEXP}
-                          } -- Parse infix and then parseIntegerExpression?
-                     }
-              ]
-            )
-            )
-      | isOperator (head t) && expressionType (expression (last s)) == INFIXEXP = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator= expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
+        parseExpression (
+          parseIntegerExpression (t, s)
+          )
+      | isOperator (head t) = 
+        parseExpression (
+          parseOperatorExpression (t, s) 
+          )
+      | isValidInfix (head t)=
+        parseExpression (
+          parseInfixExpression (t,s )
+          )
+      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = (t, s)
 
 parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | isOperator (head t) = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
-      -- | isPrefix (head t) = (t, s)
-      | typ (head t) == SEMICOLON = (removeFirstToken t, s)
+      | getLastExpressionType s == EMPTYEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = literal (head t)}}])  
+      | getLastExpressionType s == INFIXEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = getLastInfixOperator s, infixExpression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = literal (head t)}}}])
+      | getLastExpressionType s == OPERATOREXP = 
+        (
+          removeFirstToken t, 
+          pop s ++ [
+            Statement 
+              {
+                statementType = statementType (last s), 
+                expression = OperatorExpression 
+                  {
+                    expressionType = OPERATOREXP,
+                    leftOperator = leftOperator (getLastExpression s),
+                    operator = getLastOperator s,
+                    rightOperator = addToLastRightOperator (head t, getLastRightOperator s)
+                  }
+              }
+          ]
+        ) 
       | otherwise = error "failed to parse integer expression"
+
+
+addToLastRightOperator :: (Token, Expression) -> Expression
+addToLastRightOperator (t, e) = exp 
+  where
+    exp 
+      | expressionType e == EMPTYEXP = IntegerLiteralExpression{expressionType = INTEXP, integerLiteral = literal t}
+      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addToLastRightOperator (t, rightOperator e))}
+      | otherwise = error "addToLastRightOperator"
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseOperatorExpression (t, s) = (tok, sta)
   where
     (tok,sta)
-      | typ(head t) == INT && expressionType (expression (last s)) == OPERATOREXP && expressionType (leftOperator (expression (last s))) == INTEGERLITERALEXP = parseIntegerExpression(removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator (expression (last s)), operator = operator (expression (last s)), rightOperator = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
-      | otherwise = (t, s)
+      | getLastExpressionType s == INTEXP = (removeFirstToken t, pop s ++[Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
+      | getLastExpressionType s == OPERATOREXP && checkPrecedence (head t, last s) == True = 
+        (
+          removeFirstToken t,
+          pop s ++ [
+            Statement {
+              statementType = statementType (last s),
+              expression = OperatorExpression 
+                {
+                  expressionType = OPERATOREXP,
+                  leftOperator = getLastLeftOperator s,
+                  operator = getLastOperator s,
+                  rightOperator = OperatorExpression 
+                    {
+                      expressionType = OPERATOREXP,
+                      leftOperator = getLastRightOperator s,
+                      operator = head t,
+                      rightOperator = Expression {expressionType = EMPTYEXP}
+                    }
+                }
+              }
+            ]
+          )
+      | getLastExpressionType s == OPERATOREXP && checkPrecedence (head t, last s) == False = 
+        (
+          removeFirstToken t,
+          pop s ++ [
+            Statement {
+              statementType = statementType (last s),
+              expression = OperatorExpression 
+                {
+                  expressionType = OPERATOREXP,
+                  leftOperator = getLastExpression s,
+                  operator = head t,
+                  rightOperator = Expression {expressionType = EMPTYEXP} 
+                }
+              }
+            ]
+          )
 
+      | otherwise = error "error parsing operator exp"
 
+-- If precedence of operator compared to last:
+--  X + Y * = X + (Y *)
+-- Else:
+--  X * Y + = (X * Y) +  
+checkPrecedence :: (Token, Statement) -> Bool
+checkPrecedence (t, s)= getPrecedence (typ t) > getPrecedence (typ (operator (expression s))) 
 
 parseInfixExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseInfixExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = parseExpression(removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
-      | otherwise = (t, s)
+      | getLastExpressionType s == EMPTYEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}}}]) 
+      | otherwise = error "couldn't parse infix expression" 

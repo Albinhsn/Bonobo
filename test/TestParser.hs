@@ -20,6 +20,32 @@ testInfix =
       )
     )
 
+testPlusAsteriskOperators :: String 
+testPlusAsteriskOperators = 
+  statementToString 
+    ( head
+      ( snd 
+        ( parseStatements
+          ( snd (parseTokens("let five = 5 + 5 * 5;", [])),
+            []
+          )
+        )
+      )
+    )
+testAsteriskPlusOperators :: String 
+testAsteriskPlusOperators = 
+  statementToString 
+    ( head
+      ( snd 
+        ( parseStatements
+          ( snd (parseTokens("let five = 5 * 5 + 5;", [])),
+            []
+          )
+        )
+      )
+    )
+
+
 testAssignment :: String 
 testAssignment = 
    statementToString

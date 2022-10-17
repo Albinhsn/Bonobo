@@ -8,12 +8,9 @@ import Token
 import Utils
 
 main = do
-  let s =
-          ( parseStatements
-              ( snd (parseTokens ("let five = 5 + 5 + 5;", [])),
-                []
-              )
-          )
+  let tokens = (parseTokens ("let five = 5 + 5 + 5;", []))
+  print tokens 
+  let s = parseStatements (snd tokens, [])
   print s 
   let a = statementToString (head (snd s))
   print a
