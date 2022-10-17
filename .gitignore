@@ -1,1 +1,5 @@
-dist-newstyle/
+dist-newstyle/**
+*.o
+*.hi
+Main
+.stack-work/**

@@ -28,6 +28,8 @@ test-suite interpretor-test
     , Parser 
     , Ast 
     , TestLexer
+    , TestPrecedence
+    , TestParser
   hs-source-dirs:
       test 
     , src

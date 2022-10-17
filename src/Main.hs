@@ -9,12 +9,11 @@ import Utils
 
 main = do
   let s =
-        snd
           ( parseStatements
-              ( snd (parseTokens ("let five = -5;", [])),
+              ( snd (parseTokens ("let five = 5 + 5 + 5;", [])),
                 []
               )
           )
-  let a = statementToString (head s)
-  -- print s
+  print s 
+  let a = statementToString (head (snd s))
   print a

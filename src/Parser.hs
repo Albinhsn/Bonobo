@@ -5,6 +5,9 @@ import Lexer
 import Token
 import Utils
 
+-- isOperator :: Token -> Bool 
+-- isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH 
+
 parseProgram :: String -> [Token]
 parseProgram s = snd (parseTokens (s, []))
 
@@ -81,30 +84,30 @@ parseExpression (t, s) = (tokens, statements)
               ]
             )
             )
+      | isOperator (head t) && expressionType (expression (last s)) == INFIXEXP = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator= expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
       | otherwise = (t, s)
 
 parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | isPrefix (head t) = (t, s)
+      | isOperator (head t) = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
+      -- | isPrefix (head t) = (t, s)
       | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = error "failed to parse integer expression"
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parseOperatorExpression (t, s) = (t, s)
-
-parsePotentialOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parsePotentialOperatorExpression (t, s) = (tok, sta)
-  where 
-    (tok, sta)
-      | isOperator (head t) = (t, s) 
+parseOperatorExpression (t, s) = (tok, sta)
+  where
+    (tok,sta)
+      | typ(head t) == INT && expressionType (expression (last s)) == OPERATOREXP && expressionType (leftOperator (expression (last s))) == INTEGERLITERALEXP = parseIntegerExpression(removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator (expression (last s)), operator = operator (expression (last s)), rightOperator = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
       | otherwise = (t, s)
-   
+
+
 
 parseInfixExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseInfixExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
-      | typ (head t) == INT = parseOperatorExpression (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
+      | typ (head t) == INT = parseExpression(removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator (expression (last s)), infixExpression = IntegerLiteralExpression {expressionType = INTEGERLITERALEXP, integerLiteral = literal (head t)}}}])
       | otherwise = (t, s)
