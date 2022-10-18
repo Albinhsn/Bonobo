@@ -30,6 +30,7 @@ test-suite interpretor-test
     , TestLexer
     , TestPrecedence
     , TestParser
+    , TestBool
   hs-source-dirs:
       test 
     , src

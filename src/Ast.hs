@@ -9,8 +9,8 @@ data PrecedenceType = EQUAL | LESSGREATER | SUM | PRODUCT | PREFIX | CALL | LOWE
 precedenceMap :: [(PrecedenceType, Int)]
 precedenceMap =
   [ (LOWEST, 0),
-    (EQUAL, 1),
-    (LESSGREATER, 2),
+    (EQUAL, 2),
+    (LESSGREATER, 1),
     (SUM, 3),
     (PRODUCT, 4),
     (PREFIX, 5),
@@ -37,6 +37,7 @@ hasPrecedence (t1, t2) = getPrecedence t1 > getPrecedence t2
 
 data ExpressionType
   = OPERATOREXP
+  | BOOLEXP
   | INTEXP
   | GROUPEDEXP
   | INFIXEXP
@@ -50,6 +51,7 @@ data Expression
   | GroupedExpression {expressionType :: !ExpressionType, literalGrouped :: !Token}
   | InfixExpression {expressionType :: !ExpressionType, infixOperator :: !Token, infixExpression :: !Expression}
   | PrefixExpression {expressionType :: !ExpressionType, leftExpression :: !Expression, prefixOperator :: !Token, rightExpression :: !Expression}
+  | BoolExpression {expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
   | Expression {expressionType :: !ExpressionType}
   deriving (Eq, Show)
 

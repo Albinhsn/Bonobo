@@ -19,8 +19,9 @@ parseAssign (t, s) = (tokens, statements)
       | typ (head t) == ASSIGN = (removeFirstToken t, s)
       | otherwise = error "can't do let without =="
 
-isPrefix :: Token -> Bool
-isPrefix t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS || typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
+
+isBoolPrefix :: Token -> Bool
+isBoolPrefix t = typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
 
 stringToInt :: String -> Int
 stringToInt s = read s :: Int
@@ -34,7 +35,7 @@ isValidInfix :: Token -> Bool
 isValidInfix t = typ t == MINUS || typ t == BANG
 
 isOperator :: Token -> Bool 
-isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH 
+isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS 
 
 statementToString :: Statement -> String
 statementToString s = str
@@ -55,10 +56,11 @@ expressionToString e = s
   where
     s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
-      | expressionType e == INFIXEXP = literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e)
+      | expressionType e == INFIXEXP = "(" ++ literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e) ++ ")"
       | expressionType e == INTEXP = integerLiteral e
       | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
+      | expressionType e == BOOLEXP = expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
@@ -82,3 +84,12 @@ getLastRightOperator s = rightOperator (expression (last s))
 
 getLastInfixOperator :: [Statement] -> Token 
 getLastInfixOperator s = infixOperator (expression (last s))
+
+getLastLeftBool :: [Statement] -> Expression
+getLastLeftBool s = leftBool (expression (last s))
+
+getLastRightBool :: [Statement] -> Expression
+getLastRightBool s = rightBool (expression (last s))
+
+getLastBoolOperator :: [Statement] -> Token 
+getLastBoolOperator s = boolOperator (expression (last s))

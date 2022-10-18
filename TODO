@@ -1,34 +1,11 @@
 TODO: 
-  infix and prefix operators? 
-  parse expressions 
-    Expressions to parse: 
-      -5; 
-      5 * -5; 
-      (5 - 4) * 1
-       5 * 5 + 5 * 5 #(5 * 5) + (5 * 5)  
-       5 * 5 
-        CHECK PRECEDENCE 
-       5 * 5 + 5 
-        CHECK PRECEDENCE 
-        5 * 5 + (5 * 5) 
-parseIntegerExp
-parseOperator 
-parseIntegerExp 
-hasPrecedence? #If no 
-#Create operator exp with left = 5 * 5 exp and op = + 
-parseExp 
-
-
-5 + 5 * 5 + 5 
-5 + 5 
-5 + (5 *)
-5 + (5 * 5
-5 + (5 * 5) + 
-5 + (5 * 5) + 5  
-
+  figure out how to do "5 > 4 == 3 < 4"
+    ((5 > 4 ) == (3 < 4))
 
 
 
 Non prio: 
   Restructure code more haskell isch 
   rethink precedence implementation 
+  error handling
+  do general bugtesting for non valid code
