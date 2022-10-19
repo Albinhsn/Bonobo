@@ -5,7 +5,5 @@ TODO:
 
 
 Non prio: 
-  Restructure code more haskell isch 
-  rethink precedence implementation 
   error handling
   do general bugtesting for non valid code

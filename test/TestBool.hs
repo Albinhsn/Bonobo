@@ -67,3 +67,16 @@ testFiveEqualsFivePlusMinusFiveTimesMinusFive =
         )
       )
     )
+
+testMultipleBools :: String 
+testMultipleBools = 
+  statementToString 
+    ( head
+      ( snd 
+        ( parseStatements
+          ( snd (parseTokens("let five = 5 > 5 * 2 == 2 + -3 * 5 > 1;", [])),
+            []
+          )
+        )
+      )
+    )

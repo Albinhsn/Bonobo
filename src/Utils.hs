@@ -60,7 +60,7 @@ expressionToString e = s
       | expressionType e == INTEXP = integerLiteral e
       | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
-      | expressionType e == BOOLEXP = expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)
+      | expressionType e == BOOLEXP = "(" ++ expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e) ++ ")"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
