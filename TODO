@@ -1,6 +1,4 @@
 TODO: 
-  figure out how to do "5 > 4 == 3 < 4"
-    ((5 > 4 ) == (3 < 4))
 
 
 

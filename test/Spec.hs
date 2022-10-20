@@ -87,7 +87,16 @@ main = hspec $ do
         testCallPlus 
         `shouldBe`
         True
-
+    it "testing basic grouped" $
+      do 
+        testBasicGrouped
+        `shouldBe`
+        "let five = ((2 + 3) * 5);"
+    it "testing adv grouped" $
+      do 
+        testAdvGrouped
+        `shouldBe`
+        "let five = (((2 + (-3)) * (-4)) + ((10 / 5));"
 
   describe "Testing bools" $ do
     it "testing five equals five" $ 

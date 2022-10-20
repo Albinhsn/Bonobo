@@ -34,6 +34,19 @@ removeFirstToken xs = case xs of
 isValidInfix :: Token -> Bool
 isValidInfix t = typ t == MINUS || typ t == BANG
 
+isValidMinus:: Expression -> Bool
+isValidMinus e = b
+  where   
+    b 
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == EMPTYEXP = True 
+      | expressionType e == OPERATOREXP = isValidMinus (rightOperator e) 
+      | expressionType e == BOOLEXP && expressionType (rightBool e) == EMPTYEXP = True 
+      | expressionType e == BOOLEXP = isValidMinus (rightBool e)
+      | expressionType e == GROUPEDEXP = isValidMinus (groupedExpression e)
+      | expressionType e == EMPTYEXP = True
+      | otherwise = False 
+
+
 isOperator :: Token -> Bool 
 isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS 
 
@@ -58,9 +71,12 @@ expressionToString e = s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
       | expressionType e == INFIXEXP = "(" ++ literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e) ++ ")"
       | expressionType e == INTEXP = integerLiteral e
-      | expressionType e == GROUPEDEXP = "doesn't exist yet" -- TODO fix this
+      | expressionType e == GROUPEDEXP && closed e == False= "(" ++ expressionToString (groupedExpression e) 
+      | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
       | expressionType e == BOOLEXP = "(" ++ expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e) ++ ")"
+      | expressionType e == TFEXP && bool e == TRUE = "true"
+      | expressionType e == TFEXP && bool e == FALSE = "false"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String

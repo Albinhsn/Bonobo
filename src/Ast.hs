@@ -43,15 +43,17 @@ data ExpressionType
   | INFIXEXP
   | PREFIXEXP
   | EMPTYEXP
+  | TFEXP
   deriving (Eq, Show)
 
 data Expression
   = OperatorExpression {expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
   | IntegerLiteralExpression {expressionType :: !ExpressionType, integerLiteral :: !String}
-  | GroupedExpression {expressionType :: !ExpressionType, literalGrouped :: !Token}
+  | GroupedExpression {expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
   | InfixExpression {expressionType :: !ExpressionType, infixOperator :: !Token, infixExpression :: !Expression}
   | PrefixExpression {expressionType :: !ExpressionType, leftExpression :: !Expression, prefixOperator :: !Token, rightExpression :: !Expression}
   | BoolExpression {expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
+  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType} -- TRUE || FALSE
   | Expression {expressionType :: !ExpressionType}
   deriving (Eq, Show)
 

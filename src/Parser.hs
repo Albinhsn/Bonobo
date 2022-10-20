@@ -4,6 +4,7 @@ import Ast
 import Lexer
 import Token
 import Utils
+import ParserUtils
 
 
 parseProgram :: String -> [Token]
@@ -54,12 +55,7 @@ parseExpression (t, s) = (tokens, statements)
           parseIntegerExpression (t, s)
           )
       | 
-        (
-          (getLastExpressionType s == OPERATOREXP && expressionType (rightOperator (getLastExpression s)) == EMPTYEXP) 
-          || getLastExpressionType s== EMPTYEXP
-          || getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == EMPTYEXP
-          || getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == OPERATOREXP  
-        ) 
+          isValidMinus (getLastExpression s)  
         && 
           typ (head t) == MINUS = 
             parseExpression (
@@ -77,8 +73,41 @@ parseExpression (t, s) = (tokens, statements)
         parseExpression (
           parseBoolExpression (t, s)
         )
+      | isTF (head t) = 
+        parseExpression(
+          parseTFExpression (t, s) 
+        )
+      | typ (head t) == LPAREN = 
+        parseExpression (
+          parseGroupedExpression(t, s)
+          )
+      | typ (head t) == RPAREN = 
+        parseExpression(
+          removeFirstToken t, pop s ++ [
+          Statement {
+            statementType = statementType (last s), 
+            expression = closeLastExpression (getLastExpression s)}])
       | typ (head t) == SEMICOLON = (removeFirstToken t, s)
       | otherwise = (t, s)
+
+parseGroupedExpression :: ([Token], [Statement]) -> ([Token], [Statement])
+parseGroupedExpression (t, s) = (tok, sta)
+  where 
+    (tok, sta)
+      | typ (head t) == RPAREN = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = closeLastExpression (getLastExpression s)}])
+      | typ (head t) == EOF || typ (head t) == SEMICOLON = error "found eof/semicolon in grouped exp"
+      | getLastExpressionType s == OPERATOREXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = addGroupToLastExp(getLastExpression s)}])
+      | getLastExpressionType s == BOOLEXP = (removeFirstToken t, pop s ++ [
+        Statement {statementType = statementType (last s), expression = BoolExpression {
+            expressionType = BOOLEXP, leftBool = getLastLeftBool s, boolOperator = getLastBoolOperator s, rightBool = addGroupToLastExp (getLastRightBool s) 
+          }}
+      ])
+      | getLastExpressionType s == EMPTYEXP = (removeFirstToken t, pop s ++ [
+        Statement {statementType = statementType (last s), expression = GroupedExpression {expressionType = GROUPEDEXP, groupedExpression = Expression {expressionType = EMPTYEXP}, closed = False}}
+      ])
+      | otherwise = error "error parsing grouped exp" 
+
+
 
 parseIntegerExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseIntegerExpression (t, s) = (tokens, statements)
@@ -119,60 +148,20 @@ parseIntegerExpression (t, s) = (tokens, statements)
               }
           ]
         ) 
+      | getLastExpressionType s == GROUPEDEXP = (removeFirstToken t, pop s ++ [
+        Statement {statementType = statementType (last s), expression = GroupedExpression {
+            expressionType = GROUPEDEXP, closed = closed (getLastExpression s), groupedExpression = addIntToLastExp (head t, groupedExpression (getLastExpression s ))
+          }}
+      ])
       | otherwise = error "failed to parse integer expression"
 
-
-addIntToLastExp:: (Token, Expression) -> Expression
-addIntToLastExp(t, e) = exp 
-  where
-    exp 
-      | expressionType e == EMPTYEXP = IntegerLiteralExpression{expressionType = INTEXP, integerLiteral = literal t}
-      | expressionType e == INFIXEXP = InfixExpression {expressionType = INFIXEXP, infixOperator = infixOperator e, infixExpression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = literal t}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIntToLastExp(t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIntToLastExp(t, rightBool e)}
-      | expressionType e == INTEXP = error "shouldn't call this with int"
-      | otherwise = error "addToLastRightOperator"
-
-addBoolToLastExp :: (Token, Expression) -> Expression
-addBoolToLastExp (t, e) = exp
-  where
-    exp 
-      | 
-        expressionType e == INTEXP 
-        || 
-        expressionType e == INFIXEXP 
-        || 
-        expressionType e == OPERATOREXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
-      | otherwise = error "addBoolToLastExp"
-
-
-addOperatorToLastExp:: (Token, Expression) -> Expression 
-addOperatorToLastExp(t, e) = exp
-  where
-    exp
-      | expressionType e == INTEXP || expressionType e == INFIXEXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addOperatorToLastExp(t, rightBool e)}
-      | expressionType e == OPERATOREXP && (expressionType (rightOperator e) /= INTEXP || expressionType (rightOperator e) /= INFIXEXP) = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addOperatorToLastExp(t, rightOperator e))}
-      | expressionType e == OPERATOREXP && checkPrecedence (t, e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = OperatorExpression {expressionType = OPERATOREXP, leftOperator = rightOperator e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e,operator = t,rightOperator = Expression {expressionType = EMPTYEXP}}
-      | otherwise = error "addOperatorToLastExpression" 
-
-addInfixToLastExp:: (Token, Expression) ->  Expression 
-addInfixToLastExp(t, e) = exp 
-  where
-    exp 
-      | expressionType e == EMPTYEXP = InfixExpression {expressionType = INFIXEXP, infixOperator = t, infixExpression = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addInfixToLastExp(t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addInfixToLastExp(t, rightBool e)}
-      | otherwise = error "addInfixToLastRightOperator"
 
 parseOperatorExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseOperatorExpression (t, s) = (tok, sta)
   where
     (tok,sta)
       | getLastExpressionType s == INTEXP = (removeFirstToken t, pop s ++[Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = expression (last s), operator = head t, rightOperator = Expression {expressionType = EMPTYEXP}}}])
-      | getLastExpressionType s == OPERATOREXP && checkPrecedence (head t, expression (last s)) == True = 
+      | getLastExpressionType s == OPERATOREXP && opHasNoGroup (getLastExpression s) && checkPrecedence (head t, expression (last s)) == True = 
         (
           removeFirstToken t,
           pop s ++ [
@@ -194,7 +183,7 @@ parseOperatorExpression (t, s) = (tok, sta)
               }
             ]
           )
-      | getLastExpressionType s == OPERATOREXP && checkPrecedence (head t, expression (last s)) == False = 
+      | getLastExpressionType s == OPERATOREXP && opHasNoGroup (getLastExpression s) && checkPrecedence (head t, expression (last s)) == False = 
         (
           removeFirstToken t,
           pop s ++ [
@@ -210,6 +199,15 @@ parseOperatorExpression (t, s) = (tok, sta)
               }
             ]
           )
+      | getLastExpressionType s == OPERATOREXP = 
+        (removeFirstToken t, pop s ++ [
+          Statement {statementType = statementType (last s), expression = OperatorExpression {
+              expressionType = OPERATOREXP,
+              leftOperator = leftOperator (getLastExpression s),
+              operator = getLastOperator s,
+              rightOperator = addOperatorToLastExp (head t, rightOperator (getLastExpression s))
+            }}
+        ])
       | getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == INTEXP = 
         (removeFirstToken t, 
         pop s ++ [
@@ -261,17 +259,18 @@ parseOperatorExpression (t, s) = (tok, sta)
               }
           ]
         ) 
+      | getLastExpressionType s == GROUPEDEXP && closed (getLastExpression s) == True = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = groupedExpression (getLastExpression s), operator = head t, rightOperator = Expression {expressionType= EMPTYEXP }}}])
+      | getLastExpressionType s == GROUPEDEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = GroupedExpression {expressionType = GROUPEDEXP, closed= closed (getLastExpression s), groupedExpression = addOperatorToLastExp(head t, groupedExpression (getLastExpression s))}}])
       | otherwise = error "error parsing operator exp"
 
-checkPrecedence :: (Token, Expression) -> Bool
-checkPrecedence (t, e)= getPrecedence (typ t) > getPrecedence (typ (operator e)) 
 
 parseInfixExpression :: ([Token], [Statement]) -> ([Token], [Statement])
 parseInfixExpression (t, s) = (tokens, statements)
   where
     (tokens, statements)
       | getLastExpressionType s == EMPTYEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}}}]) 
-      | getLastExpressionType s == OPERATOREXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = getLastLeftOperator s, operator = getLastOperator s, rightOperator= InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}}}}])
+      | getLastExpressionType s == OPERATOREXP && expressionType (rightOperator (getLastExpression s)) == EMPTYEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = getLastLeftOperator s, operator = getLastOperator s, rightOperator = InfixExpression {expressionType = INFIXEXP, infixOperator = head t, infixExpression = Expression {expressionType = EMPTYEXP}}}}]) 
+      | getLastExpressionType s == OPERATOREXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = OperatorExpression {expressionType = OPERATOREXP, leftOperator = getLastLeftOperator s, operator = getLastOperator s, rightOperator= addInfixToLastExp (head t, getLastExpression s)}}])
       | getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == OPERATOREXP = (
         removeFirstToken t, 
         pop s ++ [
@@ -300,12 +299,35 @@ parseInfixExpression (t, s) = (tokens, statements)
             }
           }
         }]) 
+      | getLastExpressionType s == GROUPEDEXP = (removeFirstToken t, pop s ++ [
+        Statement {
+            statementType = statementType (last s),
+            expression = GroupedExpression {
+                expressionType = GROUPEDEXP,
+                closed = closed (getLastExpression s),
+                groupedExpression = addInfixToLastExp (head t, getLastExpression s)
+              }
+          }
+      ])
       | otherwise = error "error parsing infix exp" 
 
 
 parseBoolExpression :: ([Token], [Statement]) -> ([Token], [Statement])
-parseBoolExpression (t, s) = (tok ,sta)
+parseBoolExpression (t, s) = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = BoolExpression {expressionType = BOOLEXP, leftBool = getLastExpression s, boolOperator = head t, rightBool = Expression {expressionType = EMPTYEXP}}}]) 
+  -- where
+  --   (tok, sta)
+  --     | otherwise = 
+
+parseTFExpression :: ([Token], [Statement]) -> ([Token], [Statement])
+parseTFExpression (t,s ) = (tok ,sta)
   where
-    (tok, sta)
-      | otherwise = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = BoolExpression {expressionType = BOOLEXP, leftBool = getLastExpression s, boolOperator = head t, rightBool = Expression {expressionType = EMPTYEXP}}}]) 
-      -- | otherwise = error "error parsing bool expression"
+    (tok ,sta)
+      | getLastExpressionType s == EMPTYEXP = (removeFirstToken t,s) 
+      | getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == EMPTYEXP = (removeFirstToken t, pop s ++ [Statement {statementType = statementType (last s), expression = BoolExpression {expressionType = BOOLEXP, leftBool = getLastLeftBool s, boolOperator = getLastBoolOperator s, rightBool = TFExpression {expressionType = TFEXP, bool = typ (head t)}}}]) 
+      | getLastExpressionType s == BOOLEXP && expressionType (getLastRightBool s) == BOOLEXP = (removeFirstToken t, pop s ++ [
+        Statement {statementType = statementType (last s), expression = BoolExpression {expressionType = BOOLEXP, leftBool = getLastLeftBool s, boolOperator = getLastOperator s, rightBool = addTFToLastBool (head t, getLastRightBool s)}}
+      ]) 
+      | getLastExpressionType s == INFIXEXP && typ (getLastInfixOperator s) == BANG = (removeFirstToken t, pop s ++ [
+        Statement {statementType = statementType (last s), expression = InfixExpression{expressionType = INFIXEXP, infixOperator = getLastInfixOperator s, infixExpression = TFExpression {expressionType = TFEXP, bool = typ (head t)}}}
+      ]) 
+      | otherwise = error "error parsing TF"
