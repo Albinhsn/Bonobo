@@ -59,17 +59,21 @@ data Expression
 
 data Statement = Statement
   { statementType :: !StatementType,
+    statementUni :: !StatementUni,
     expression :: !Expression
   }
   deriving
     ( Eq,
       Show
     )
+data BlockType = CON | ALT | EXP deriving(Eq, Show) 
 
-data StatementType
+data StatementType = LETSTA | RETSTA | IFSTA deriving (Eq, Show)
+
+data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
-  | IfStatement {}
+  | IfStatement {con:: ![Statement], alt :: ![Statement]}
   deriving
     ( Eq,
       Show

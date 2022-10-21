@@ -5,12 +5,6 @@ import Data.Typeable
 import Lexer
 import Token
 
-parseIdentifier :: ([Token], [Statement]) -> ([Token], [Statement])
-parseIdentifier (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == IDENT = parseAssign (removeFirstToken t, pop s ++ [Statement {statementType = LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}])
-      | otherwise = error "Couldn't parse literal"
 
 parseAssign :: ([Token], [Statement]) -> ([Token], [Statement])
 parseAssign (t, s) = (tokens, statements)
@@ -54,11 +48,11 @@ statementToString :: Statement -> String
 statementToString s = str
   where
     str
-      | statementType s == ReturnStatement = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == IfStatement = "doesn't exist yet" -- TODO FIX THIS
-      | typeOf (statementType s) == typeRep LetStatement =
+      | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
+      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ "{" ++ (concat [statementToString x | x <- con (statementUni s)]) ++ "}" ++ "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+      | statementType s == LETSTA=
           "let "
-            ++ identifier (statementType s)
+            ++ identifier (statementUni s)
             ++ " = "
             ++ expressionToString (expression s)
             ++ ";"
@@ -110,3 +104,4 @@ getLastRightBool s = rightBool (expression (last s))
 
 getLastBoolOperator :: [Statement] -> Token 
 getLastBoolOperator s = boolOperator (expression (last s))
+

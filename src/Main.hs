@@ -6,11 +6,11 @@ import Lexer
 import Parser
 import Token
 import Utils
---  / ((-7 - 8))
 main = do
-  let tokens = (parseTokens ("return ((1 + 2) + 2);", []))
-  let s = parseStatements (snd tokens, [])
+  let tokens = (parseTokens ("if(5 == 5){let five =5;", []))
+  -- print tokens
+  let s = parseStatements (EXP, (snd tokens, []))
   print s 
 
-  let a = statementToString (head (snd s))
+  let a = statementToString (head (snd(snd s)))
   print a

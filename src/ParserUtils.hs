@@ -2,6 +2,7 @@ module ParserUtils where
 
 import Ast 
 import Token 
+import Lexer 
 import Utils 
 
 checkPrecedence :: (Token, Expression) -> Bool
@@ -140,3 +141,40 @@ findGrouped e = b
 
 opHasNoGroup:: Expression -> Bool 
 opHasNoGroup e = expressionType (rightOperator e) /= GROUPEDEXP
+
+addToStatement :: (BlockType, [Statement], Statement) -> [Statement]
+addToStatement (b, s, sta) = 
+  case b of 
+    CON -> pop s ++ [
+      Statement {
+        statementType = statementType (last s), 
+        statementUni = IfStatement {
+          alt = alt (statementUni (last s)),
+          con = (pop (con (statementUni (last s)))) ++ [sta]},
+        expression = expression (last s) 
+        }] 
+    ALT -> pop s ++ [
+      Statement {
+        statementType = statementType (last s), 
+        statementUni = IfStatement {
+          alt = alt (statementUni (last s)),
+          con = (pop (con (statementUni (last s)))) ++ [sta]},
+        expression = expression (last s) 
+        }] 
+    EXP -> pop s ++ [sta] 
+    _ -> error "wat"
+
+addToExpression :: (BlockType, [Statement], Expression) -> [Statement]
+addToExpression (b, s, e) =
+  case b of 
+    CON -> s 
+    ALT -> s 
+    EXP -> s 
+    _ -> error "wat"
+
+parseIdentifier :: (BlockType, ([Token], [Statement])) -> ([Token], [Statement])
+parseIdentifier (b, (t, s)) = (tokens, statements)
+  where
+    (tokens, statements)
+      | typ (head t) == IDENT = parseAssign (removeFirstToken t, addToStatement(b, s, Statement {statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}))
+      | otherwise = error "Couldn't parse literal"
