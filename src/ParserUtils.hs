@@ -27,13 +27,10 @@ addBoolToLastExp :: (Token, Expression) -> Expression
 addBoolToLastExp (t, e) = exp
   where
     exp 
-      | 
-        expressionType e == INTEXP 
-        || 
-        expressionType e == INFIXEXP 
-        || 
-        expressionType e == OPERATOREXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
+      | expressionType e == INTEXP || expressionType e == INFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
       | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
+      | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addBoolToLastExp (t, groupedExpression e)} 
+      | expressionType e == GROUPEDEXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
       | otherwise = error "addBoolToLastExp"
 
 
@@ -43,10 +40,12 @@ addOperatorToLastExp(t, e) = exp
     exp
       | expressionType e == INTEXP || expressionType e == INFIXEXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}
       | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addOperatorToLastExp(t, rightBool e)}
-      | expressionType e == OPERATOREXP && (expressionType (rightOperator e) /= INTEXP || expressionType (rightOperator e) /= INFIXEXP) = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addOperatorToLastExp(t, rightOperator e))}
+      | expressionType e == GROUPEDEXP && closed e == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e,operator = t, rightOperator = Expression {expressionType = EMPTYEXP}} 
+      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP && closed (rightOperator e) == True && checkPrecedence(t, e) == False = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) /= INTEXP && expressionType (rightOperator e) /= INFIXEXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addOperatorToLastExp(t, rightOperator e))}
       | expressionType e == OPERATOREXP && checkPrecedence (t, e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = OperatorExpression {expressionType = OPERATOREXP, leftOperator = rightOperator e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}}
       | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e,operator = t,rightOperator = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
       | otherwise = error "addOperatorToLastExpression" 
 
 addInfixToLastExp:: (Token, Expression) ->  Expression 
@@ -77,6 +76,7 @@ addGroupToLastExp e = exp
       | expressionType e == EMPTYEXP = GroupedExpression {expressionType = GROUPEDEXP, closed=False, groupedExpression = Expression{expressionType = EMPTYEXP}}
       | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = addGroupToLastExp (rightOperator e)}
       | expressionType e == BOOLEXP =  BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addGroupToLastExp( rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addGroupToLastExp (groupedExpression e)}
       | otherwise = error "error adding group to lat exp"
 
 closeLastExpression :: Expression -> Expression 
@@ -84,10 +84,11 @@ closeLastExpression e = exp
   where 
     exp 
       | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression e}
-      | expressionType e == OPERATOREXP && findGrouped (leftOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = closeLastGrouped e, operator = operator e, rightOperator = rightOperator e}
-      | expressionType e == OPERATOREXP && findGrouped (rightOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = closeLastGrouped e}
-      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = closeLastGrouped e, boolOperator = boolOperator e, rightBool = rightBool e}
-      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = closeLastGrouped e} 
+      | expressionType e == OPERATOREXP && findGrouped (leftOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = closeLastGrouped (leftOperator e), operator = operator e, rightOperator = rightOperator e}
+      | expressionType e == OPERATOREXP && findGrouped (rightOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = closeLastGrouped (rightOperator e)}
+      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = closeLastGrouped (leftBool e), boolOperator = boolOperator e, rightBool = rightBool e}
+      | expressionType e == BOOLEXP && findGrouped (rightBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = closeLastGrouped (rightBool e)} 
+      | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed=closed e, groupedExpression = closeLastExpression (groupedExpression e)}
       | otherwise = error "error closing expression"
 
 
@@ -96,20 +97,17 @@ closeLastGrouped :: Expression -> Expression
 closeLastGrouped e = exp 
   where 
     exp 
-      -- Found grouped in left
+      -- Found last grouped  
       | expressionType e == GROUPEDEXP && findGrouped (groupedExpression e) == False = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression e}  
-      | expressionType e == GROUPEDEXP = closeLastGrouped (groupedExpression e)
-      | expressionType e == OPERATOREXP && expressionType (leftOperator e ) == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression (leftOperator e)}   
-      | expressionType e == BOOLEXP && expressionType (leftBool e) == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression (leftOperator e)}    
-      -- Check left if possible
-      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == OPERATOREXP = closeLastGrouped(leftOperator e) 
-      | expressionType e == BOOLEXP && expressionType (leftBool e) == BOOLEXP = closeLastGrouped(leftBool e)
+      -- Found grouped nested 
+      | expressionType e == GROUPEDEXP = GroupedExpression {closed = closed e, expressionType = GROUPEDEXP, groupedExpression = closeLastGrouped (groupedExpression e)}
+
+      --Exists deeper inside left
+      | expressionType e == OPERATOREXP && findGrouped (leftOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, operator = operator e, leftOperator = closeLastGrouped (leftOperator e), rightOperator = rightOperator e}   
+      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = closeLastGrouped (leftBool e), boolOperator = boolOperator e, rightBool = rightBool e} 
       -- Found grouped in right 
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression (rightOperator e)}     
-      | expressionType e == BOOLEXP && expressionType (rightBool e) == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression (rightBool e)}      
-      --Check if right is possible
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == OPERATOREXP = closeLastGrouped(rightOperator e) 
-      | expressionType e == BOOLEXP && expressionType (rightBool e) == BOOLEXP = closeLastGrouped(rightBool e)
+      | expressionType e == OPERATOREXP && findGrouped (rightOperator e) == True= OperatorExpression {expressionType = OPERATOREXP, operator = operator e, rightOperator= closeLastGrouped (rightOperator e), leftOperator = leftOperator e} 
+      | expressionType e == BOOLEXP && findGrouped (rightBool e) ==True = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = closeLastGrouped (rightBool e)}
       -- didn't find 
       | otherwise = error "couldn't close last grouped" 
 
@@ -119,23 +117,26 @@ findGrouped :: Expression -> Bool
 findGrouped e = b 
   where
     b 
-      -- Found grouped in left
-      | expressionType e == GROUPEDEXP = True 
+      -- Found grouped 
+      | expressionType e == GROUPEDEXP && closed e == False = True 
+      | expressionType e == GROUPEDEXP = findGrouped (groupedExpression e)  
       | expressionType e == OPERATOREXP && expressionType (leftOperator e) == GROUPEDEXP && closed (leftOperator e) == False= True 
       | expressionType e == BOOLEXP && expressionType (leftBool e) == GROUPEDEXP && closed (leftBool e) == False= True 
       -- Check left if possible
-      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == OPERATOREXP = findGrouped (leftOperator e) 
-      | expressionType e == BOOLEXP && expressionType (leftBool e) == BOOLEXP = findGrouped (leftBool e)
+      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == OPERATOREXP && findGrouped (leftOperator e) == True = True 
+      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == BOOLEXP && findGrouped (leftBool e) == True =True  
+      | expressionType e == BOOLEXP && expressionType (leftBool e) == BOOLEXP && findGrouped (leftBool e)= True 
+      | expressionType e == BOOLEXP && expressionType (leftBool e) == OPERATOREXP && findGrouped (leftOperator e)=True 
       -- Found grouped in right 
       | expressionType e == OPERATOREXP && expressionType (rightOperator e)  == GROUPEDEXP  && closed (rightOperator e) == False= True 
       | expressionType e == BOOLEXP && expressionType (rightBool e) == GROUPEDEXP && closed (rightBool e) == False= True 
       --Check if right is possible
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == OPERATOREXP = findGrouped (rightOperator e) 
-      | expressionType e == BOOLEXP && expressionType (rightBool e) == BOOLEXP = findGrouped (rightBool e)
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == OPERATOREXP && findGrouped (rightOperator e) = True 
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == BOOLEXP && findGrouped (rightBool e) = True
+      | expressionType e == BOOLEXP && expressionType (rightBool e) == BOOLEXP && findGrouped (rightBool e)= True 
+      | expressionType e == BOOLEXP && expressionType (rightBool e) == OPERATOREXP && findGrouped (rightOperator e)=True  
       -- didn't find 
       | otherwise = False
 
 opHasNoGroup:: Expression -> Bool 
 opHasNoGroup e = expressionType (rightOperator e) /= GROUPEDEXP
-
-

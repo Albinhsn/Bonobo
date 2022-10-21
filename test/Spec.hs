@@ -91,42 +91,72 @@ main = hspec $ do
       do 
         testBasicGrouped
         `shouldBe`
-        "let five = ((2 + 3) * 5);"
+        "let five = (((2 + 3)) * 5);"
     it "testing adv grouped" $
       do 
         testAdvGrouped
         `shouldBe`
-        "let five = (((2 + (-3)) * (-4)) + ((10 / 5));"
+        "let five = ((((2 + (-3))) * (-4)) + ((10 / 5)));"
+    it "testing bool grouped" $ 
+      do 
+        testBoolGrouped 
+        `shouldBe` 
+        "let five = ((((-3) + 5)) + 2) == (8 / 5);"
+    it "testing bool grouped2" $ 
+      do 
+        testBoolGrouped2 
+        `shouldBe` 
+        "let five = (((5 + 2)) * 5) > ((-4) / 1);"
+    it "testing grouped" $ 
+      do 
+        testGrouped2
+        `shouldBe` 
+        "let five = ((((2 + 2)) * ((5 * 2))) / (((-4) - (-4))));"
+    it "testing 1" $ 
+      do 
+        test1 
+        `shouldBe`
+        "return ((((((1 + 2) + 3))) * ((4 * ((5 + 6))))) / ((((-7) - 8))));"
+    it "testing 2" $ 
+      do 
+        test2 
+        `shouldBe`
+        "return (((1 + 2)));"
+    it "testing 3" $ 
+      do 
+        test3 
+        `shouldBe`
+        "let five = ((((3 * 4) + 1))) == ((-13));"
 
   describe "Testing bools" $ do
     it "testing five equals five" $ 
       do 
         testFiveEqualsFive
         `shouldBe`
-        "let five = (5 == 5);"
+        "let five = 5 == 5;"
     it "testing five equals five + 5" $
       do
         testFiveEqualsFivePlusFive 
         `shouldBe`
-        "let five = (5 == (5 + 5));"
+        "let five = 5 == (5 + 5);"
     it "testing five equals 5 plus 5 times 5" $ 
       do 
         testFiveEqualsFivePlusFiveTimesFive 
         `shouldBe`
-        "let five = (5 == (5 + (5 * 5)));"
+        "let five = 5 == (5 + (5 * 5));"
     it "testing five equals five plus five minus five" $
       do 
         testFiveEqualsFivePlusMinusFive 
         `shouldBe`
-        "let five = (5 == (5 + (-5)));"
+        "let five = 5 == (5 + (-5));"
     it "testing five equals five plus minus five times minues five" $ 
       do 
         testFiveEqualsFivePlusMinusFiveTimesMinusFive 
         `shouldBe`
-        "let five = (5 == (5 + ((-5) * (-5))));"
+        "let five = 5 == (5 + ((-5) * (-5)));"
     it "testing random shit" $ 
       do 
         testMultipleBools
         `shouldBe`
-        "let five = (((5 > (5 * 2)) == (2 + ((-3) * 5))) > 1);"
+        "let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1;"
 

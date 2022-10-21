@@ -6,9 +6,9 @@ import Lexer
 import Parser
 import Token
 import Utils
--- 
+--  / ((-7 - 8))
 main = do
-  let tokens = (parseTokens ("let five = (2 + -3) * (-4 + 3;", []))
+  let tokens = (parseTokens ("return ((1 + 2) + 2);", []))
   let s = parseStatements (snd tokens, [])
   print s 
 

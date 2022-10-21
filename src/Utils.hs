@@ -71,12 +71,13 @@ expressionToString e = s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
       | expressionType e == INFIXEXP = "(" ++ literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e) ++ ")"
       | expressionType e == INTEXP = integerLiteral e
-      | expressionType e == GROUPEDEXP && closed e == False= "(" ++ expressionToString (groupedExpression e) 
+      | expressionType e == GROUPEDEXP && closed e == False= "XX" ++ expressionToString (groupedExpression e) 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
-      | expressionType e == BOOLEXP = "(" ++ expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e) ++ ")"
+      | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "true"
       | expressionType e == TFEXP && bool e == FALSE = "false"
+      | expressionType e == EMPTYEXP = " empty "
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String

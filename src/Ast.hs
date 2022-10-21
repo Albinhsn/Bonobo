@@ -24,7 +24,7 @@ getPrecedenceTypeFromTokenType t = p
       | t == PLUS || t == MINUS = SUM
       | t == BANG = PREFIX
       | t == EQUALS = EQUAL
-      | t == ASTERISK = PRODUCT
+      | t == ASTERISK || t == SLASH = PRODUCT
       | t == GREATER_T || t == LESS_T = LESSGREATER
       | t == FUNCTION = CALL
       | otherwise = error "can't map tokentype to precedence"
