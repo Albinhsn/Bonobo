@@ -7,8 +7,9 @@ import Parser
 import Token
 import Utils
 main = do
-  let tokens = (parseTokens ("if(5 == 5){let five =5;", []))
-  -- print tokens
+  
+  let tokens = (parseTokens ("five = -5;", []))
+  print tokens
   let s = parseStatements (EXP, (snd tokens, []))
   print s 
 

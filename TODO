@@ -1,17 +1,28 @@
 TODO: 
-  If statements 
-    #ParseBlock 
-
+  funcexpressions
+    five = 5;
+    five(5){};
+    five(5);
+    "let" Ident -> Assign
+    Ident -> Assign
+    Ident -> Grouped -> Call
+    "func" -> Ident -> Grouped -> Func
 
 Non prio: 
   error handling
   do general bugtesting for non valid code
+    fix the problems relating 
+  relook con/alt
+  relook assign/ident things
+  check close last grouped infix?
 
 Longer term:
- 
+  Line number to errors etc
+  Server to fetch and install compiler
 
 Longest of terms:
   Lsp 
-  Server to fetch and install compiler
+
+
 
 

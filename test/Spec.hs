@@ -5,6 +5,9 @@ import TestLexer
 import TestParser
 import TestPrecedence
 import TestBool
+import TestIf 
+import TestIdent
+import TestFunc
 
 main :: IO ()
 main = hspec $ do
@@ -116,7 +119,7 @@ main = hspec $ do
       do 
         test1 
         `shouldBe`
-        "return ((((((1 + 2) + 3))) * ((4 * ((5 + 6))))) / ((((-7) - 8))));"
+        "return ((((((1 + 2)) + 3)) * ((4 * ((5 + 6))))) / ((((-7) - 8))));"
     it "testing 2" $ 
       do 
         test2 
@@ -126,7 +129,7 @@ main = hspec $ do
       do 
         test3 
         `shouldBe`
-        "let five = ((((3 * 4) + 1))) == ((-13));"
+        "let five = ((((3 * 4) + 1)) == ((-13)));"
 
   describe "Testing bools" $ do
     it "testing five equals five" $ 
@@ -159,4 +162,91 @@ main = hspec $ do
         testMultipleBools
         `shouldBe`
         "let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1;"
-
+  describe "Testing if" $ do
+    it "testing empty if" $ 
+      do 
+        testEmptyIf 
+        `shouldBe`
+        "if ( empty ){}"
+    it "testing empty if else" $ 
+      do 
+        testEmptyIfElse 
+        `shouldBe`
+        "if ( empty ){}"
+    it "testing con" $ 
+      do 
+        testCon 
+        `shouldBe`
+        "if ( empty ){let five = 5;}"
+    it "testing alt" $ 
+      do 
+        testAlt
+        `shouldBe`
+        "if ( empty ){}{let five = 5;}"
+    it "testingMultipleCon" $ 
+      do 
+        testMultipleCon
+        `shouldBe`
+        "if ( empty ){let five = 5;let ten = (5 + 5);}"
+    it "testingMultipleAlt" $ 
+      do 
+        testMultipleAlt
+        `shouldBe`
+        "if ( empty ){}{let five = 5;let ten = (5 + 5);}"
+    it "testingConAlt" $ 
+      do 
+        testConAlt
+        `shouldBe`
+        "if ( empty ){let five = 5;}{let five = 5;}"
+    it "testingMultipleConAlt" $ 
+      do 
+        testMultipleConAlt
+        `shouldBe`
+        "if ( empty ){let five = 5;let ten = 10;}{let five = 5;let ten = 10;}"
+  describe "Testing Ident" $ do
+    it "testing ident" $ 
+      do 
+        testIdent 
+        `shouldBe`
+        "five = 5;"
+    it "Testing Op Ident" $
+      do 
+        testOpIdent 
+        `shouldBe`
+        "five = (5 * 5);"
+    it "Testing Bool Ident" $
+      do 
+        testBoolIdent 
+        `shouldBe`
+        "five = 5 == 5;"
+    it "Testing Infix Ident" $
+      do 
+        testInfixIdent 
+        `shouldBe`
+        "five = (-5);"
+    it "Testing Grouped Ident" $
+      do 
+        testGroupedIdent 
+        `shouldBe`
+        "five = ((5 + 5));"
+  describe "Testing Func" $ do
+    it "testing empty func" $
+      do
+        testEmptyFunc 
+        `shouldBe`
+        "func(){};"
+    it "testing param func" $
+      do
+        testParamFunc 
+        `shouldBe`
+        "func(a, b){};"
+    it "testing return func" $
+      do
+        testReturnFunc 
+        `shouldBe`
+        "func(){return 5;};"
+    it "testing param return func" $
+      do
+        testParamReturnFunc 
+        `shouldBe`
+        "func(a,b){return 5;};"

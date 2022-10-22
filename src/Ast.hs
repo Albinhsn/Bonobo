@@ -44,6 +44,9 @@ data ExpressionType
   | PREFIXEXP
   | EMPTYEXP
   | TFEXP
+  | IDENTEXP
+  | FUNCEXP 
+  | ASSIGNEXP
   deriving (Eq, Show)
 
 data Expression
@@ -53,8 +56,11 @@ data Expression
   | InfixExpression {expressionType :: !ExpressionType, infixOperator :: !Token, infixExpression :: !Expression}
   | PrefixExpression {expressionType :: !ExpressionType, leftExpression :: !Expression, prefixOperator :: !Token, rightExpression :: !Expression}
   | BoolExpression {expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
-  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType} -- TRUE || FALSE
+  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType}
   | Expression {expressionType :: !ExpressionType}
+  | IdentExpression {expressionType :: !ExpressionType, ident:: !String}
+  | AssignExpression {expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
+  | CallExpression {expressionType :: !ExpressionType, funcIdentifier :: !String, callParams:: ![Statement]}
   deriving (Eq, Show)
 
 data Statement = Statement
@@ -68,12 +74,15 @@ data Statement = Statement
     )
 data BlockType = CON | ALT | EXP deriving(Eq, Show) 
 
-data StatementType = LETSTA | RETSTA | IFSTA deriving (Eq, Show)
+data StatementType = NOSTA | LETSTA | RETSTA | IFSTA | FUNCSTA | ASSIGNSTA deriving (Eq, Show)
 
 data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
-  | IfStatement {con:: ![Statement], alt :: ![Statement]}
+  | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
+  | FuncStatement {params :: ![Statement], body :: ![Statement]}
+  | AssignStatement{}
+  | NoStatement {}
   deriving
     ( Eq,
       Show

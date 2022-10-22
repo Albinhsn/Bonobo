@@ -6,12 +6,6 @@ import Lexer
 import Token
 
 
-parseAssign :: ([Token], [Statement]) -> ([Token], [Statement])
-parseAssign (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == ASSIGN = (removeFirstToken t, s)
-      | otherwise = error "can't do let without =="
 
 
 isBoolPrefix :: Token -> Bool
@@ -49,14 +43,29 @@ statementToString s = str
   where
     str
       | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ "{" ++ (concat [statementToString x | x <- con (statementUni s)]) ++ "}" ++ "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ ifToString(s) ++ elseToString (s) 
       | statementType s == LETSTA=
           "let "
             ++ identifier (statementUni s)
             ++ " = "
             ++ expressionToString (expression s)
             ++ ";"
+      | statementType s == ASSIGNSTA = expressionToString(assignIdent (expression s)) ++ " = " ++ expressionToString(assignExpression (expression s))  ++ ";"
       | otherwise = error "error parsing statement to string "
+
+elseToString :: Statement -> String
+elseToString s = str 
+  where 
+    str 
+      | null (alt (statementUni s)) = "" 
+      | otherwise = "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+
+ifToString :: Statement -> String
+ifToString s = str 
+  where 
+    str 
+      | null (con (statementUni s)) = "{}"
+      | otherwise = "{" ++(concat [statementToString x | x <- con (statementUni s)]) ++  "}" 
 
 expressionToString :: Expression -> String
 expressionToString e = s
@@ -71,15 +80,25 @@ expressionToString e = s
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "true"
       | expressionType e == TFEXP && bool e == FALSE = "false"
+      | expressionType e == IDENTEXP = ident e 
       | expressionType e == EMPTYEXP = " empty "
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
 tokenToString t = literal t
 
-
-getLastExpressionType:: [Statement] -> ExpressionType  
-getLastExpressionType s = expressionType (expression (last s))
+getLastExpressionType:: (BlockType, [Statement]) -> ExpressionType  
+getLastExpressionType (b, s) = e 
+  where   
+    e 
+      | b == EXP || statementType (last s) /= IFSTA = expressionType (expression (last s)) 
+      | b == CON && null (alt (statementUni (last s))) == True = getLastExpressionType (b, con(statementUni (last (s))))
+      | b == CON = getLastExpressionType(b, alt(statementUni (last s)))
+      | b == ALT && closedCon (statementUni (last s)) == True = getLastExpressionType (b, alt(statementUni (last (s))))
+      | b == ALT = getLastExpressionType(b, con(statementUni (last s)))
+      | b == CON = error "con"
+      | b == ALT = error "alt"
+      | otherwise = error "get last expressiontype"
 
 getLastExpression:: [Statement] -> Expression
 getLastExpression s = expression (last s)

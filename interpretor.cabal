@@ -32,6 +32,9 @@ test-suite interpretor-test
     , TestPrecedence
     , TestParser
     , TestBool
+    , TestIf
+    , TestIdent
+    , TestFunc
   hs-source-dirs:
       test 
     , src
