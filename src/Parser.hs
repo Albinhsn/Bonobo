@@ -78,6 +78,8 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
           statementType = IFSTA,
           statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = False},
           expression = Expression {expressionType = EMPTYEXP}})))))
+      | b == PAR = error "par"
+      | b == EXP = (b, (t,s)) 
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
       | otherwise = error "error parsing statement" 
 
@@ -140,16 +142,45 @@ parseFunc(b, (t, s)) = (block, (tokens, statements))
   where
     (block, (tokens, statements))
       | typ (head t) == LBRACE = parseStatements(BOD, (removeFirstToken t, s))
-      | typ (head t) == SEMICOLON = (b, (removeFirstToken t, changeFuncToCall(s)))
-      | typ (head t) == LPAREN = error "wat"
-      | otherwise = error "parseFunc" 
+      | typ (head t) == RPAREN && b == PAR && paramHasOpen(b, s) = error"param was open in func"--parseFunc(
+        -- b, 
+        -- (
+        --   removeFirstToken t, 
+        --   pop s ++ [Statement{
+        --     statementType = statementType (last s),
+        --     statementUni = statementUni (last s),
+        --     expression = CallExpression{
+        --         expressionType = CALLEXP, 
+        --         callIdent = callIdent (expression (last s)),
+        --         callParams = pop (callParams (expression (last s))) ++ [closeLastGrouped(last (callParams (expression (last s))))]
+        --       }
+        --   }] 
+        -- )
+        -- )
+      | typ (head t) == RPAREN && b == PAR = parseFunc(EXP, (removeFirstToken t, closeLastOpen(b, s))) 
+      | typ (head t) == EOF = (b, (t,s))
+      | otherwise = (EXP, (removeFirstToken t, changeFuncToCall(s))) 
 
 parseExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseExpression (b, (t, s)) = (block, (tokens, statements))
   where
     (block, (tokens, statements))
       | null t = (b, (t, s))
-      -- | typ (head t) == RPAREN && b == PAR && paramHasOpen()= parseFunc(EXP, (removeFirstToken t, s))
+      | typ (head t) == RPAREN && b == PAR && paramHasOpen(b, s) = parseFunc(
+        b, 
+        (
+          removeFirstToken t, 
+          pop s ++ [Statement{
+            statementType = statementType (last s),
+            statementUni = statementUni (last s),
+            expression = CallExpression{
+                expressionType = CALLEXP, 
+                callIdent = callIdent (expression (last s)),
+                callParams = pop (callParams (expression (last s))) ++ [closeLastGrouped(last (callParams (expression (last s))))]
+              }
+          }] 
+        )
+        )
       | typ (head t) == RPAREN && b == PAR = parseFunc(EXP, (removeFirstToken t, s)) --
       | typ (head t) == RBRACE && b == BOD= parseExpression(EXP, (removeFirstToken t, s)) --Only reason for parseExp is to remove SEMICOLON 
       | typ (head t) == COMMA && b == PAR = parseExpression(

@@ -53,7 +53,7 @@ statementToString s = str
       | statementType s == ASSIGNSTA = expressionToString(assignIdent (expression s)) ++ " = " ++ expressionToString(assignExpression (expression s))  ++ ";"
       | statementType s == NOSTA = expressionToString(expression (s))
       | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(s) ++ bodyToString(s) ++ ""
-      | statementType s == CALLSTA = expressionToString(expression s) ++ callParamToString(s) ++ ";"
+      | statementType s == CALLSTA = expressionToString(expression s)
       | otherwise = error "error parsing statement to string "
 
 elseToString :: Statement -> String
@@ -69,13 +69,13 @@ paramToString s = str
     str 
       | null (params (statementUni s)) = "()"
       | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- params (statementUni s)]) ++ ")"
-
-callParamToString :: Statement -> String 
-callParamToString s = str 
+callParamsToString :: Expression -> String 
+callParamsToString e = s 
   where   
-    str 
-      | null (callParams (statementUni s)) = "()"
-      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- callParams (statementUni s)]) ++ ")"
+    s 
+      | null (callParams e) = ""
+      | otherwise = deleteLast (concat [expressionToString x ++ "," | x <- (callParams e)])
+
 
 deleteLast :: [a] -> [a]
 deleteLast [] = []
@@ -111,6 +111,7 @@ expressionToString e = s
       | expressionType e == TFEXP && bool e == FALSE = "false"
       | expressionType e == IDENTEXP = ident e 
       | expressionType e == EMPTYEXP = " empty "
+      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ");"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
@@ -120,7 +121,9 @@ getLastExpressionType:: (BlockType, [Statement]) -> ExpressionType
 getLastExpressionType (b, s) = e 
   where   
     e 
+      | statementType (last s) == FUNCSTA = expressionType (last(params(statementUni(last s))))
       | b == EXP || statementType (last s) /= IFSTA = expressionType (expression (last s)) 
+      | b == PAR = error "getLastExpressionType not implemented for PAR"
       | b == CON && null (alt (statementUni (last s))) == True = getLastExpressionType (b, con(statementUni (last (s))))
       | b == CON = getLastExpressionType(b, alt(statementUni (last s)))
       | b == ALT && closedCon (statementUni (last s)) == True = getLastExpressionType (b, alt(statementUni (last (s))))
@@ -128,6 +131,21 @@ getLastExpressionType (b, s) = e
       | b == CON = error "con"
       | b == ALT = error "alt"
       | otherwise = error "get last expressiontype"
+
+getLastNestedExpression:: (BlockType, [Statement]) -> Expression
+getLastNestedExpression(b, s) = e 
+  where   
+    e 
+      | statementType (last s) == FUNCSTA = last(params(statementUni(last s)))
+      | b == EXP || statementType (last s) /= IFSTA = expression (last s)
+      | b == PAR = error "getLastExpressionType not implemented for PAR"
+      | b == CON && null (alt (statementUni (last s))) == True = getLastNestedExpression(b, con(statementUni (last (s))))
+      | b == CON = getLastNestedExpression(b, alt(statementUni (last s)))
+      | b == ALT && closedCon (statementUni (last s)) == True = getLastNestedExpression(b, alt(statementUni (last (s))))
+      | b == ALT = getLastNestedExpression(b, con(statementUni (last s)))
+      | b == CON = error "con"
+      | b == ALT = error "alt"
+      | otherwise = error "get last nested expression"
 
 getLastExpression:: [Statement] -> Expression
 getLastExpression s = expression (last s)

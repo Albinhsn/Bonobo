@@ -30,12 +30,12 @@ version :: Version
 version = Version [0,1,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
-bindir     = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/bin"
-libdir     = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/lib/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0-Jan7QH5QjXDHfCPexdeDOU-interpretor-test"
-dynlibdir  = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/lib/x86_64-linux-ghc-9.0.2"
-datadir    = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/share/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0"
-libexecdir = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/libexec/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0"
-sysconfdir = "/home/arlaharen/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/f2bfd0e764dc484fa379b51d6feb9f76a38377ffef8e05f31ead72c87916f08b/9.0.2/etc"
+bindir     = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/bin"
+libdir     = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/lib/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0-Jan7QH5QjXDHfCPexdeDOU-interpretor-test"
+dynlibdir  = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/lib/x86_64-linux-ghc-9.0.2"
+datadir    = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/share/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0"
+libexecdir = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/libexec/x86_64-linux-ghc-9.0.2/interpretor-0.1.0.0"
+sysconfdir = "/home/arla/dev/interpretor/.stack-work/install/x86_64-linux-tinfo6/aa58564c18976a12add44406ba88a5976a5e010aea6291ccc2ea1b3c38c418ff/9.0.2/etc"
 
 getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
 getBinDir = catchIO (getEnv "interpretor_bindir") (\_ -> return bindir)

@@ -47,6 +47,7 @@ data ExpressionType
   | IDENTEXP
   | FUNCEXP 
   | ASSIGNEXP
+  | CALLEXP
   deriving (Eq, Show)
 
 data Expression
@@ -60,7 +61,7 @@ data Expression
   | Expression {expressionType :: !ExpressionType}
   | IdentExpression {expressionType :: !ExpressionType, ident:: !String}
   | AssignExpression {expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
-  | CallExpression {expressionType :: !ExpressionType, callParams :: !Expression}
+  | CallExpression {expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression}
   deriving (Eq, Show)
 
 data Statement = Statement

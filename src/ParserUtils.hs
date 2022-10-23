@@ -108,12 +108,12 @@ closeLastGrouped e = exp
       | otherwise = error "couldn't close last grouped" 
 
 
-
 findGrouped :: Expression -> Bool 
 findGrouped e = b 
   where
     b 
       -- Found grouped 
+      | 1 == 1  = error "find"
       | expressionType e == GROUPEDEXP && closed e == False = True 
       | expressionType e == GROUPEDEXP = findGrouped (groupedExpression e)  
       | expressionType e == OPERATOREXP && expressionType (leftOperator e) == GROUPEDEXP && closed (leftOperator e) == False= True 
@@ -368,6 +368,7 @@ changeSta (t,s) = sta
           expression = expression (last s) 
         }]
       | otherwise = s 
+
 changeBlock :: (BlockType, Token, [Statement]) -> BlockType 
 changeBlock (b, t,s) = sta 
   where   
@@ -380,20 +381,24 @@ changeFuncToCall s = sta
   where
     sta   
       | statementType (last s) == FUNCSTA && null (body (statementUni(last s))) = pop s ++ [Statement{
-          statementUni=CallStatement{callParams = params (statementUni(last s))},
+          statementUni=CallStatement{},
           statementType=CALLSTA, 
-          expression = expression (last s)
-          }]
+          expression = CallExpression {
+            expressionType = CALLEXP,
+            callParams = params (statementUni (last s)),
+            callIdent= expression  (last s)
+          }}]
       | otherwise = error "changeFuncToCall"
 -- TODO USE THIS 
 findLastFunc :: [Statement] -> Bool 
 findLastFunc s = True
 
-paramHasOpen :: [Statement] -> Bool
-paramHasOpen s = b
+
+paramHasOpen :: (BlockType, [Statement]) -> Bool
+paramHasOpen (b,s) = bo
   where 
-    b 
+    bo 
       | null s == True = False 
-      | 
-      -- | statementType (last s) == CALLSTA  
-      | otherwise = False
+      | getLastExpressionType(b, s) == GROUPEDEXP && closed (getLastNestedExpression(b, s))== False = True 
+      | getLastExpressionType(b, s) == GROUPEDEXP &&  findGrouped(last (callParams (expression(last s)))) == True = True 
+      | otherwise = False 
