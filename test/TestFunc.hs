@@ -13,7 +13,7 @@ testEmptyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("func(){};", [])),
+          (EXP,( snd (parseTokens("fn five(){}", [])),
             []
           )))
         )
@@ -25,7 +25,7 @@ testParamFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("func(a, b){};", [])),
+          (EXP,( snd (parseTokens("fn five(a, b){}", [])),
             []
           )))
         )
@@ -37,7 +37,7 @@ testReturnFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("func(){return 5;};", [])),
+          (EXP,( snd (parseTokens("fn five(){return 5;}", [])),
             []
           )))
         )
@@ -49,7 +49,115 @@ testParamReturnFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("func(a, b){return 5;};", [])),
+          (EXP,( snd (parseTokens("fn five(a, b){return 5;}", [])),
+            []
+          )))
+        )
+      )
+    )
+testMultipleBodyFunc :: String 
+testMultipleBodyFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){let five = 5; return five;}", [])),
+            []
+          )))
+        )
+      )
+    )
+testOperatorBodyFunc :: String 
+testOperatorBodyFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){let five = 2 + 3;}", [])),
+            []
+          )))
+        )
+      )
+    )
+testGroupedOperatorBodyFunc :: String 
+testGroupedOperatorBodyFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){let five = (2 + 3);}", [])),
+            []
+          )))
+        )
+      )
+    )
+testInfixBodyFunc :: String 
+testInfixBodyFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){let five = -5;}", [])),
+            []
+          )))
+        )
+      )
+    )
+testBoolBodyFunc :: String 
+testBoolBodyFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){let five = 5 == 5;}", [])),
+            []
+          )))
+        )
+      )
+    )
+testFuncCall :: String 
+testFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("add(5);", [])),
+            []
+          )))
+        )
+      )
+    )
+testOpFuncCall :: String 
+testOpFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("add(5 + 5);", [])),
+            []
+          )))
+        )
+      )
+    )
+testInfixFuncCall :: String 
+testInfixFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("add(-5);", [])),
+            []
+          )))
+        )
+      )
+    )
+testGroupedOpFuncCall :: String 
+testGroupedOpFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("add((5 + 3) * 2);", [])),
             []
           )))
         )

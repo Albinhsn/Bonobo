@@ -60,7 +60,7 @@ data Expression
   | Expression {expressionType :: !ExpressionType}
   | IdentExpression {expressionType :: !ExpressionType, ident:: !String}
   | AssignExpression {expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
-  | CallExpression {expressionType :: !ExpressionType, funcIdentifier :: !String, callParams:: ![Statement]}
+  | CallExpression {expressionType :: !ExpressionType, callParams :: !Expression}
   deriving (Eq, Show)
 
 data Statement = Statement
@@ -72,15 +72,24 @@ data Statement = Statement
     ( Eq,
       Show
     )
-data BlockType = CON | ALT | EXP deriving(Eq, Show) 
+data BlockType = CON | ALT | EXP | PAR | BOD deriving(Eq, Show) 
 
-data StatementType = NOSTA | LETSTA | RETSTA | IFSTA | FUNCSTA | ASSIGNSTA deriving (Eq, Show)
+data StatementType = 
+  NOSTA 
+  | LETSTA 
+  | RETSTA 
+  | IFSTA 
+  | FUNCSTA 
+  | ASSIGNSTA 
+  | CALLSTA
+  deriving (Eq, Show)
 
 data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
   | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
-  | FuncStatement {params :: ![Statement], body :: ![Statement]}
+  | FuncStatement {params :: ![Expression], body :: ![Statement]} 
+  | CallStatement {} 
   | AssignStatement{}
   | NoStatement {}
   deriving

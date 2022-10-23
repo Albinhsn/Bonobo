@@ -234,19 +234,64 @@ main = hspec $ do
       do
         testEmptyFunc 
         `shouldBe`
-        "func(){};"
+        "fn five(){}"
     it "testing param func" $
       do
         testParamFunc 
         `shouldBe`
-        "func(a, b){};"
+        "fn five(a,b){}"
     it "testing return func" $
       do
         testReturnFunc 
         `shouldBe`
-        "func(){return 5;};"
+        "fn five(){return 5;}"
     it "testing param return func" $
       do
         testParamReturnFunc 
         `shouldBe`
-        "func(a,b){return 5;};"
+        "fn five(a,b){return 5;}"
+    it "testing multiple body" $ 
+      do 
+        testMultipleBodyFunc 
+          `shouldBe`
+          "fn five(){let five = 5; return five;}"
+    it "testing operator body func" $ 
+      do 
+        testOperatorBodyFunc 
+          `shouldBe`
+          "fn five(){let five = (2 + 3);}"
+    it "testing grouped operator body func" $ 
+      do 
+        testGroupedOperatorBodyFunc 
+          `shouldBe`
+          "fn five(){let five = ((2 + 3));}"
+    it "testing grouped operator body func" $ 
+      do 
+        testInfixBodyFunc 
+          `shouldBe`
+          "fn five(){let five = (-5);}"
+    it "testing bool body func" $ 
+      do 
+        testBoolBodyFunc 
+          `shouldBe`
+          "fn five(){let five = 5 == 5;}"
+    it "testing func call" $ 
+      do 
+        testFuncCall 
+          `shouldBe`
+          "add(5);"
+    it "testing op func call" $ 
+      do 
+        testOpFuncCall 
+          `shouldBe`
+          "add((5 + 5));"
+    it "testing infix func call" $ 
+      do 
+        testInfixFuncCall 
+          `shouldBe`
+          "add((-5));"
+    it "testing grouped op func call" $ 
+      do 
+        testGroupedOpFuncCall 
+          `shouldBe`
+          "add((((5 + 3)) * 2));"

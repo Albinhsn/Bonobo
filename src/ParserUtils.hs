@@ -22,7 +22,6 @@ addIntToLastExp(t, e) = exp
       | expressionType e == GROUPEDEXP && expressionType (groupedExpression e) == EMPTYEXP= GroupedExpression {expressionType = GROUPEDEXP, closed= False, groupedExpression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = literal t}}
       | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed= False, groupedExpression = addIntToLastExp (t, groupedExpression e)}
       | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIntToLastExp(t, assignExpression e)}
-      | expressionType e == IDENTEXP = error "wat"
       | expressionType e == INTEXP = error "shouldn't call this with int"
       | otherwise = error "addIntToLastExp"
 
@@ -86,7 +85,7 @@ addGroupToLastExp e = exp
       | expressionType e == BOOLEXP =  BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addGroupToLastExp( rightBool e)}
       | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addGroupToLastExp (groupedExpression e)}
       | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addGroupToLastExp(assignExpression e)}
-      | otherwise = error "error adding group to lat exp"
+      | otherwise = error "error AddingGroupToLastExp"
 
 
 closeLastGrouped :: Expression -> Expression
@@ -162,6 +161,15 @@ noPopAddToStatement(b, s, sta) =
         },
         expression = expression (last s) 
         }] 
+    BOD ->  pop s ++ [
+      Statement {
+        statementType = statementType (last s), 
+        statementUni = FuncStatement{
+          params = params (statementUni (last s)),
+          body = body (statementUni (last s)) ++ [sta] 
+        },
+        expression = expression (last s) 
+        }] 
     EXP -> pop s ++ [sta] 
 addToStatement :: (BlockType, [Statement], Statement) -> [Statement]
 addToStatement (b, s, sta) = 
@@ -187,6 +195,26 @@ addToStatement (b, s, sta) =
         },
         expression = expression (last s) 
         }] 
+    PAR -> pop s ++ [
+      Statement {
+          statementType = statementType(last s),
+          statementUni = FuncStatement{
+              params = pop (params (statementUni (last s))) ++ [last (params(statementUni(sta)))],
+              body = []
+            },
+          expression = expression (last s)
+        }
+      ]
+    BOD -> pop s ++ [
+      Statement {
+          statementType = statementType(last s),
+          statementUni = FuncStatement{
+              params = params (statementUni (last s)),
+              body = pop (body (statementUni (last s))) ++ [last (body (statementUni(sta)))]
+            },
+          expression = expression (last s)
+        }
+      ]
     EXP -> pop s ++ [sta] 
 
 
@@ -194,14 +222,34 @@ addToLastStatement :: (BlockType, Token, ExpressionType, [Statement]) ->Statemen
 addToLastStatement (b, t, e, s) = sta 
   where 
     sta 
-      | statementType (last s) /= IFSTA = Statement{statementType = statementType (last s), statementUni = statementUni (last s), expression = addXToExp (t, e, expression (last s))}
+      | statementType (last s) /= IFSTA && (b /= PAR && b /= BOD) = Statement{statementType = statementType (last s), statementUni = statementUni (last s), expression = addXToExp (t, e, expression (last s))}
       | b == EXP && null (con (statementUni (last s))) = Statement{statementType = statementType (last s), statementUni = statementUni (last s), expression = addXToExp (t, e, expression (last s))}
+      | b == BOD = Statement {
+          statementType = statementType (last s), 
+          statementUni = FuncStatement{
+            params = params (statementUni (last s)),
+            body = pop (body (statementUni (last s))) ++ [addToLastStatement(EXP, t, e, body(statementUni(last s)))]}, 
+          expression = expression (last s)
+          }
+      | b == PAR = Statement{
+        statementType = FUNCSTA,
+        statementUni = FuncStatement{
+          params = pop (params (statementUni (last s))) ++ [addXToExp(t, e, getLastParam(params (statementUni(last s))))],
+          body = []
+          },
+        expression = expression (last s)
+        } 
       --Assumes if it's null both other checks covers EXP
-      | closedCon (statementUni (last s)) == False = addToLastStatement(b,t,e, con(statementUni (last s))) 
-      | closedAlt (statementUni (last s)) == False = addToLastStatement(b,t,e, alt(statementUni (last s))) 
-      | null (con (statementUni (last s))) = error "null con"
-      | null (alt (statementUni (last s))) = error "null alt"
+      | (b == CON || b == ALT ) && closedCon (statementUni (last s)) == False = addToLastStatement(b,t,e, con(statementUni (last s))) 
+      | (b == CON || b == ALT ) && closedAlt (statementUni (last s)) == False = addToLastStatement(b,t,e, alt(statementUni (last s))) 
       | otherwise = error "addToLastStatement" 
+
+getLastParam :: [Expression] -> Expression 
+getLastParam e = 
+  case e of 
+    [] -> Expression{expressionType = EMPTYEXP}
+    _ -> last e
+
 
 addXToExp :: (Token, ExpressionType, Expression) -> Expression 
 addXToExp (t,et, e) = exp 
@@ -232,13 +280,13 @@ addAssignToLastExp e = exp
     exp  
       | expressionType e == IDENTEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = e, assignExpression = Expression {expressionType = EMPTYEXP}} 
       | expressionType e == EMPTYEXP = Expression {expressionType = EMPTYEXP}
-      | otherwise = error "parseAssign"
+      | otherwise = error "parseAssignToLastExp"
 
-parseIdentifierToLet :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
-parseIdentifierToLet (b, (t, s)) = (block, (tokens, statements))
+parseIdentifierToLet :: [Token] -> Statement
+parseIdentifierToLet t = s
   where
-    (block, (tokens, statements))
-      | typ (head t) == IDENT = (b, (removeFirstToken t, addToStatement(b, s, Statement {statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}})))
+    s  
+      | typ (head t) == IDENT = Statement {statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}
       | otherwise = error "parseIdentifierToLet"
 
 addIdentifierToLastExp:: (Token, Expression) ->  Expression 
@@ -246,9 +294,9 @@ addIdentifierToLastExp(t, e) = exp
   where
     exp 
       | expressionType e == EMPTYEXP = IdentExpression{expressionType = IDENTEXP,  ident = literal t}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addInfixToLastExp(t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addInfixToLastExp(t, rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addInfixToLastExp(t, groupedExpression e)}
+      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIdentifierToLastExp(t, rightOperator e))}
+      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIdentifierToLastExp(t, rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addIdentifierToLastExp(t, groupedExpression e)}
       | otherwise = error "addIdentifierToLastExp"
 
 closeLastOpen:: (BlockType, [Statement]) -> [Statement]
@@ -302,4 +350,50 @@ findLastOpen(s) = bool
       | null s == True = False
       | statementType (last s) == IFSTA && closedCon (statementUni (last s)) == False = True 
       | statementType (last s) == IFSTA && closedAlt (statementUni (last s)) == False = True 
+      | otherwise = False
+
+
+changeSta :: (Token, [Statement]) -> [Statement]
+changeSta (t,s) = sta 
+  where   
+    sta 
+      | statementType (last s) == NOSTA && typ t == ASSIGN = pop s ++ [Statement{
+          statementType = ASSIGNSTA,
+          statementUni = AssignStatement{}, 
+          expression = expression (last s)
+        }]
+      | statementType (last s) == NOSTA && typ t == LPAREN = pop s ++ [Statement{
+          statementType = FUNCSTA,
+          statementUni = FuncStatement{params = [], body = []},
+          expression = expression (last s) 
+        }]
+      | otherwise = s 
+changeBlock :: (BlockType, Token, [Statement]) -> BlockType 
+changeBlock (b, t,s) = sta 
+  where   
+    sta 
+      | statementType (last s) == ASSIGNSTA && typ t == LPAREN && b == EXP = PAR 
+      | otherwise = b 
+
+changeFuncToCall :: [Statement] -> [Statement] 
+changeFuncToCall s = sta
+  where
+    sta   
+      | statementType (last s) == FUNCSTA && null (body (statementUni(last s))) = pop s ++ [Statement{
+          statementUni=CallStatement{callParams = params (statementUni(last s))},
+          statementType=CALLSTA, 
+          expression = expression (last s)
+          }]
+      | otherwise = error "changeFuncToCall"
+-- TODO USE THIS 
+findLastFunc :: [Statement] -> Bool 
+findLastFunc s = True
+
+paramHasOpen :: [Statement] -> Bool
+paramHasOpen s = b
+  where 
+    b 
+      | null s == True = False 
+      | 
+      -- | statementType (last s) == CALLSTA  
       | otherwise = False

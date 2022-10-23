@@ -51,6 +51,9 @@ statementToString s = str
             ++ expressionToString (expression s)
             ++ ";"
       | statementType s == ASSIGNSTA = expressionToString(assignIdent (expression s)) ++ " = " ++ expressionToString(assignExpression (expression s))  ++ ";"
+      | statementType s == NOSTA = expressionToString(expression (s))
+      | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(s) ++ bodyToString(s) ++ ""
+      | statementType s == CALLSTA = expressionToString(expression s) ++ callParamToString(s) ++ ";"
       | otherwise = error "error parsing statement to string "
 
 elseToString :: Statement -> String
@@ -59,6 +62,32 @@ elseToString s = str
     str 
       | null (alt (statementUni s)) = "" 
       | otherwise = "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+
+paramToString :: Statement -> String 
+paramToString s = str 
+  where   
+    str 
+      | null (params (statementUni s)) = "()"
+      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- params (statementUni s)]) ++ ")"
+
+callParamToString :: Statement -> String 
+callParamToString s = str 
+  where   
+    str 
+      | null (callParams (statementUni s)) = "()"
+      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- callParams (statementUni s)]) ++ ")"
+
+deleteLast :: [a] -> [a]
+deleteLast [] = []
+deleteLast [h] = []
+deleteLast (h:t) = [h] ++ deleteLast t
+
+bodyToString :: Statement -> String 
+bodyToString s = str 
+  where   
+    str 
+      | otherwise = "{" ++ pop (concat [statementToString x ++ " "| x <- body (statementUni s)]) ++ "}"
+
 
 ifToString :: Statement -> String
 ifToString s = str 
