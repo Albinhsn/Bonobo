@@ -1,16 +1,28 @@
 TODO: 
-  If statements 
+  func calls
+    rework callStatement with CallExpression
+    differentiate between func(){ and func() 
+    add func calls in other expression #let five = 2 + addThree();
+  testing nested if
 
-Non prio: 
+
+ Non prio: 
   error handling
   do general bugtesting for non valid code
+    fix the problems relating 
+  relook con/alt
+  relook assign/ident things
+  list statement for func calls
+  add funcs to validate next tokens #True?
+  weird 'A' bug?
+
 
 Longer term:
- 
+  Line number to errors etc
+  Server to fetch and install compiler
 
 Longest of terms:
   Lsp 
   Server to fetch and install compiler
 
-figure out logic with braces/else etc 
 

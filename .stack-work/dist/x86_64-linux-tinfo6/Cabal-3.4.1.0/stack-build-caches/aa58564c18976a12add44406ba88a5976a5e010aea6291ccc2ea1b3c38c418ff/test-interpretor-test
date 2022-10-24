@@ -1,0 +1,36 @@
+/home/arla/dev/interpretor/src/Parser.hs:
+  hash: 2337a230ecb64007cca2d069ba0858eb3bf16351327bb8c8edc9e6f1967a920c
+/home/arla/dev/interpretor/test/TestBool.hs:
+  hash: 43448f6d11c547c71833d0863ee777177d8f8d643ad442c1295e34f05c8a4350
+/home/arla/dev/interpretor/test/TestLexer.hs:
+  hash: a3ad5892106feb652e72c93aa4fdbbbda3857b0817b6f654955da6d1a799608a
+/home/arla/dev/interpretor/interpretor.cabal:
+  hash: e8e0113ee964187b69cd2a711634588add4a38ef1c05adaac809bc752b3c5aec
+/home/arla/dev/interpretor/src/Lexer.hs:
+  hash: 03f9e90bf1e4e84caafc100d8938786f831cf9ba58490ea404ba70962223e42e
+/home/arla/dev/interpretor/src/ParserUtils.hs:
+  hash: 706cf5a9d7af30eed911ae8e7f23e0425cc9addc32b57a8369b6584bf52b4eb7
+/home/arla/dev/interpretor/test/TestIf.hs:
+  hash: 2fc69ab00475dbecf6f45a1ee82d8b985da884875bb9c2bf36b20f9ac01ec939
+/home/arla/dev/interpretor/README.md:
+  hash: 595588a11ce38025b994598e3dd3fdddb17c3e05d8344481c98394a2c2ffb9c7
+/home/arla/dev/interpretor/CHANGELOG.md:
+  hash: 469c0ac8b0a7b8278c3ea80f7d657b6750354aafdf4236d39f7a355e03222721
+/home/arla/dev/interpretor/src/Utils.hs:
+  hash: e545a12149fc626b3625ca23ae82c8b87460583ac2746bec8166914aaacde261
+/home/arla/dev/interpretor/test/TestFunc.hs:
+  hash: 529cbca0aba5b2cb7af87573e5fc76f14d3967fb3ce9fdae29a508bb9e9c1204
+/home/arla/dev/interpretor/test/Spec.hs:
+  hash: 10bee7c0031961e2cc12b85a4e490bcefeda0baf7c9145844957648f5b6b35d7
+/home/arla/dev/interpretor/src/Ast.hs:
+  hash: e117cc0792ba871aafeed372c851d19d2b590b9d2552b4fc651429b55f44d007
+/home/arla/dev/interpretor/src/Token.hs:
+  hash: 7420b5e457358176bdef181b46654722be8506a0af9505c879fc7d5fee0e60b4
+/home/arla/dev/interpretor/test/TestIdent.hs:
+  hash: 04009b46b85db9957bf155cf0f72b31ef85eb5e638abab795e6809d7c5d51559
+/home/arla/dev/interpretor/test/TestParser.hs:
+  hash: cc04aa7981b2e7fcf1bb4975b94e17c7f53826b20c03c7a6134a461da1ff3dca
+/home/arla/dev/interpretor/package.yaml:
+  hash: 4bb06751e93ab835143176a395ef35e656bbd4bf5a3dc797804a527f160c68ef
+/home/arla/dev/interpretor/test/TestPrecedence.hs:
+  hash: b4c8c930903f54ce3ea8719c2530278e41ba0065c9070887192d5b3dcf61dea7

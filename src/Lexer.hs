@@ -24,6 +24,8 @@ parseDoubleChar :: (Char, String, [Token]) -> (String, [Token])
 parseDoubleChar (ch, s, t) = (string, token)
   where
     (string, token)
+      | null s && ch == '!' = (s, t ++ [Token {typ = BANG, literal = "!"}])
+      | null s && ch == '=' = (s, t ++ [Token {typ = ASSIGN, literal = "="}])
       | ch == '=' && ch == head s = (removeFirstChar s, t ++ [Token {typ = EQUALS, literal = "=="}])
       | ch == '!' && '=' == head s = (removeFirstChar s, t ++ [Token {typ = NOT_EQUALS, literal = "!="}])
       | ch == '!' = (s, t ++ [Token {typ = BANG, literal = "!"}])
@@ -36,7 +38,7 @@ isLetter :: Char -> Bool
 isLetter c = b
   where
     b
-      | 'a' <= c && c >= 'z' || 'A' <= c && c >= 'Z' || c == '_' = True
+      | ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_' = True
       | otherwise = False
 
 removeFirstChar :: String -> String

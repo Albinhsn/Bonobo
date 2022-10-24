@@ -41,9 +41,12 @@ data ExpressionType
   | INTEXP
   | GROUPEDEXP
   | INFIXEXP
-  | PREFIXEXP
   | EMPTYEXP
   | TFEXP
+  | IDENTEXP
+  | FUNCEXP 
+  | ASSIGNEXP
+  | CALLEXP
   deriving (Eq, Show)
 
 data Expression
@@ -51,25 +54,43 @@ data Expression
   | IntegerLiteralExpression {expressionType :: !ExpressionType, integerLiteral :: !String}
   | GroupedExpression {expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
   | InfixExpression {expressionType :: !ExpressionType, infixOperator :: !Token, infixExpression :: !Expression}
-  | PrefixExpression {expressionType :: !ExpressionType, leftExpression :: !Expression, prefixOperator :: !Token, rightExpression :: !Expression}
   | BoolExpression {expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
-  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType} -- TRUE || FALSE
+  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType}
   | Expression {expressionType :: !ExpressionType}
+  | IdentExpression {expressionType :: !ExpressionType, ident:: !String}
+  | AssignExpression {expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
+  | CallExpression {expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression, closedCall :: !Bool}
   deriving (Eq, Show)
 
 data Statement = Statement
   { statementType :: !StatementType,
+    statementUni :: !StatementUni,
     expression :: !Expression
   }
   deriving
     ( Eq,
       Show
     )
+data BlockType = CON | ALT | EXP | PAR | BOD deriving(Eq, Show) 
 
-data StatementType
+data StatementType = 
+  NOSTA 
+  | LETSTA 
+  | RETSTA 
+  | IFSTA 
+  | FUNCSTA 
+  | ASSIGNSTA 
+  | CALLSTA
+  deriving (Eq, Show)
+
+data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
-  | IfStatement {}
+  | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
+  | FuncStatement {params :: ![Expression], body :: ![Statement]} 
+  | CallStatement {} 
+  | AssignStatement{}
+  | NoStatement {}
   deriving
     ( Eq,
       Show

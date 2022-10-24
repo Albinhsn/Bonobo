@@ -5,19 +5,7 @@ import Data.Typeable
 import Lexer
 import Token
 
-parseIdentifier :: ([Token], [Statement]) -> ([Token], [Statement])
-parseIdentifier (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == IDENT = parseAssign (removeFirstToken t, pop s ++ [Statement {statementType = LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}])
-      | otherwise = error "Couldn't parse literal"
 
-parseAssign :: ([Token], [Statement]) -> ([Token], [Statement])
-parseAssign (t, s) = (tokens, statements)
-  where
-    (tokens, statements)
-      | typ (head t) == ASSIGN = (removeFirstToken t, s)
-      | otherwise = error "can't do let without =="
 
 
 isBoolPrefix :: Token -> Bool
@@ -54,15 +42,59 @@ statementToString :: Statement -> String
 statementToString s = str
   where
     str
-      | statementType s == ReturnStatement = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == IfStatement = "doesn't exist yet" -- TODO FIX THIS
-      | typeOf (statementType s) == typeRep LetStatement =
+      | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
+      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ ifToString(s) ++ elseToString (s) ++ ";" 
+      | statementType s == LETSTA=
           "let "
-            ++ identifier (statementType s)
+            ++ identifier (statementUni s)
             ++ " = "
             ++ expressionToString (expression s)
             ++ ";"
+      | statementType s == ASSIGNSTA = expressionToString(assignIdent (expression s)) ++ " = " ++ expressionToString(assignExpression (expression s))  ++ ";"
+      | statementType s == NOSTA = expressionToString(expression (s))
+      | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(s) ++ bodyToString(s) ++ ";"
+      | statementType s == CALLSTA = expressionToString(expression s) ++ ";"
       | otherwise = error "error parsing statement to string "
+
+elseToString :: Statement -> String
+elseToString s = str 
+  where 
+    str 
+      | null (alt (statementUni s)) = "" 
+      | otherwise = "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+
+paramToString :: Statement -> String 
+paramToString s = str 
+  where   
+    str 
+      | null (params (statementUni s)) = "()"
+      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- params (statementUni s)]) ++ ")"
+callParamsToString :: Expression -> String 
+callParamsToString e = s 
+  where   
+    s 
+      | null (callParams e) = ""
+      | otherwise = deleteLast (concat [expressionToString x ++ "," | x <- (callParams e)])
+
+
+deleteLast :: [a] -> [a]
+deleteLast [] = []
+deleteLast [h] = []
+deleteLast (h:t) = [h] ++ deleteLast t
+
+bodyToString :: Statement -> String 
+bodyToString s = str 
+  where   
+    str 
+      | otherwise = "{" ++ pop (concat [statementToString x ++ " "| x <- body (statementUni s)]) ++ "}"
+
+
+ifToString :: Statement -> String
+ifToString s = str 
+  where 
+    str 
+      | null (con (statementUni s)) = "{}"
+      | otherwise = "{" ++(concat [statementToString x | x <- con (statementUni s)]) ++  "}" 
 
 expressionToString :: Expression -> String
 expressionToString e = s
@@ -73,19 +105,33 @@ expressionToString e = s
       | expressionType e == INTEXP = integerLiteral e
       | expressionType e == GROUPEDEXP && closed e == False= "XX" ++ expressionToString (groupedExpression e) 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
-      | expressionType e == PREFIXEXP = expressionToString (leftExpression e) ++ " " ++ literal (prefixOperator e) ++ " " ++ expressionToString (rightExpression e)
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "true"
       | expressionType e == TFEXP && bool e == FALSE = "false"
+      | expressionType e == IDENTEXP = ident e 
       | expressionType e == EMPTYEXP = " empty "
+      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
 tokenToString t = literal t
 
+getLastExpressionType:: (BlockType, [Statement]) -> ExpressionType  
+getLastExpressionType (b, s) = e 
+  where   
+    e 
+      | statementType (last s) == FUNCSTA && null (params (statementUni (last s))) = EMPTYEXP
+      | statementType (last s) == FUNCSTA = expressionType (last(params(statementUni(last s))))
+      | b == EXP || statementType (last s) /= IFSTA = expressionType (expression (last s)) 
+      | b == PAR = error "getLastExpressionType not implemented for PAR"
+      | b == CON && null (alt (statementUni (last s))) == True = getLastExpressionType (b, con(statementUni (last (s))))
+      | b == CON = getLastExpressionType(b, alt(statementUni (last s)))
+      | b == ALT && closedCon (statementUni (last s)) == True = getLastExpressionType (b, alt(statementUni (last (s))))
+      | b == ALT = getLastExpressionType(b, con(statementUni (last s)))
+      | b == CON = error "con"
+      | b == ALT = error "alt"
+      | otherwise = error "get last expressiontype"
 
-getLastExpressionType:: [Statement] -> ExpressionType  
-getLastExpressionType s = expressionType (expression (last s))
 
 getLastExpression:: [Statement] -> Expression
 getLastExpression s = expression (last s)
@@ -110,3 +156,4 @@ getLastRightBool s = rightBool (expression (last s))
 
 getLastBoolOperator :: [Statement] -> Token 
 getLastBoolOperator s = boolOperator (expression (last s))
+
