@@ -163,3 +163,99 @@ testGroupedOpFuncCall =
         )
       )
     )
+testLetWithFuncCall :: String 
+testLetWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = five();", [])),
+            []
+          )))
+        )
+      )
+    )
+testReturnWithFuncCall :: String 
+testReturnWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("return five();", [])),
+            []
+          )))
+        )
+      )
+    )
+testOperatorWithFuncCall :: String 
+testOperatorWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = 2 + addThree();", [])),
+            []
+          )))
+        )
+      )
+    )
+testInfixWithFuncCall :: String 
+testInfixWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = -five();", [])),
+            []
+          )))
+        )
+      )
+    )
+testBoolWithFuncCall :: String 
+testBoolWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = five() == five();", [])),
+            []
+          )))
+        )
+      )
+    )
+testGroupedWithFuncCall :: String 
+testGroupedWithFuncCall = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = (2 + addThree());", [])),
+            []
+          )))
+        )
+      )
+    )
+testFuncCallWithParam :: String 
+testFuncCallWithParam  = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = addThree(a);", [])),
+            []
+          )))
+        )
+      )
+    )
+testFuncCallWithMulParams :: String 
+testFuncCallWithMulParams = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = addThree(a,b);", [])),
+            []
+          )))
+        )
+      )
+    )

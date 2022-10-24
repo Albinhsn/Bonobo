@@ -167,42 +167,52 @@ main = hspec $ do
       do 
         testEmptyIf 
         `shouldBe`
-        "if ( empty ){}"
+        "if ( empty ){};"
     it "testing empty if else" $ 
       do 
         testEmptyIfElse 
         `shouldBe`
-        "if ( empty ){}"
+        "if ( empty ){};"
     it "testing con" $ 
       do 
         testCon 
         `shouldBe`
-        "if ( empty ){let five = 5;}"
+        "if ( empty ){let five = 5;};"
     it "testing alt" $ 
       do 
         testAlt
         `shouldBe`
-        "if ( empty ){}{let five = 5;}"
+        "if ( empty ){}{let five = 5;};"
     it "testingMultipleCon" $ 
       do 
         testMultipleCon
         `shouldBe`
-        "if ( empty ){let five = 5;let ten = (5 + 5);}"
+        "if ( empty ){let five = 5;let ten = (5 + 5);};"
     it "testingMultipleAlt" $ 
       do 
         testMultipleAlt
         `shouldBe`
-        "if ( empty ){}{let five = 5;let ten = (5 + 5);}"
+        "if ( empty ){}{let five = 5;let ten = (5 + 5);};"
     it "testingConAlt" $ 
       do 
         testConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;}{let five = 5;}"
+        "if ( empty ){let five = 5;}{let five = 5;};"
     it "testingMultipleConAlt" $ 
       do 
         testMultipleConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;let ten = 10;}{let five = 5;let ten = 10;}"
+        "if ( empty ){let five = 5;let ten = 10;}{let five = 5;let ten = 10;};"
+    it "testing multiple if" $ 
+      do 
+        testMultipleIf
+        `shouldBe`
+        "if (5 == 5){if(5 == 5){let five = 5;}else{return 5;}};"
+    it "testing param if" $ 
+      do 
+        testIfParam
+        `shouldBe`
+        "if (5 == 5){return 5;};"
   describe "Testing Ident" $ do
     it "testing ident" $ 
       do 
@@ -229,52 +239,72 @@ main = hspec $ do
         testGroupedIdent 
         `shouldBe`
         "five = ((5 + 5));"
+    it "Testing let op Ident" $
+      do 
+        testLetOpIdent 
+        `shouldBe`
+        "let five = (2 + three);"
+    it "Testing let assign Ident" $
+      do 
+        testLetAssignIdent 
+        `shouldBe`
+        "let five = three;"
+    it "test let infix ident" $
+      do 
+        testLetInfixIdent 
+        `shouldBe`
+        "let five = (-five);"
+    it "test let bool ident" $
+      do 
+        testLetBoolIdent 
+        `shouldBe`
+        "let five = three == 3;"
   describe "Testing Func" $ do
     it "testing empty func" $
       do
         testEmptyFunc 
         `shouldBe`
-        "fn five(){}"
+        "fn five(){};"
     it "testing param func" $
       do
         testParamFunc 
         `shouldBe`
-        "fn five(a,b){}"
+        "fn five(a,b){};"
     it "testing return func" $
       do
         testReturnFunc 
         `shouldBe`
-        "fn five(){return 5;}"
+        "fn five(){return 5;};"
     it "testing param return func" $
       do
         testParamReturnFunc 
         `shouldBe`
-        "fn five(a,b){return 5;}"
+        "fn five(a,b){return 5;};"
     it "testing multiple body" $ 
       do 
         testMultipleBodyFunc 
           `shouldBe`
-          "fn five(){let five = 5; return five;}"
+          "fn five(){let five = 5; return five;};"
     it "testing operator body func" $ 
       do 
         testOperatorBodyFunc 
           `shouldBe`
-          "fn five(){let five = (2 + 3);}"
+          "fn five(){let five = (2 + 3);};"
     it "testing grouped operator body func" $ 
       do 
         testGroupedOperatorBodyFunc 
           `shouldBe`
-          "fn five(){let five = ((2 + 3));}"
+          "fn five(){let five = ((2 + 3));};"
     it "testing grouped operator body func" $ 
       do 
         testInfixBodyFunc 
           `shouldBe`
-          "fn five(){let five = (-5);}"
+          "fn five(){let five = (-5);};"
     it "testing bool body func" $ 
       do 
         testBoolBodyFunc 
           `shouldBe`
-          "fn five(){let five = 5 == 5;}"
+          "fn five(){let five = 5 == 5;};"
     it "testing func call" $ 
       do 
         testFuncCall 
@@ -295,3 +325,45 @@ main = hspec $ do
         testGroupedOpFuncCall 
           `shouldBe`
           "add((((5 + 3)) * 2));"
+
+    it "testing let with func call" $
+      do 
+        testLetWithFuncCall 
+        `shouldBe`
+        "let five = five();"
+
+    it "test return with func call" $
+      do 
+        testReturnWithFuncCall 
+        `shouldBe`
+        "return five();"
+    it "test operator with func call" $
+      do 
+        testOperatorWithFuncCall 
+        `shouldBe`
+        "let five = (2 + addThree());"
+    it "test infix with func call" $
+      do 
+        testInfixWithFuncCall 
+        `shouldBe`
+        "let five = (-five());"
+    it "test bool with func call" $
+      do 
+        testBoolWithFuncCall 
+        `shouldBe`
+        "let five = five() == five();"
+    it "test grouped with func call" $
+      do 
+        testGroupedWithFuncCall 
+        `shouldBe`
+        "let five = ((2 + addThree()));"
+    it "test func call with param" $
+      do 
+        testFuncCallWithParam 
+        `shouldBe`
+        "let five = addThree(a);"
+    it "test func call with multiple param" $
+      do 
+        testFuncCallWithMulParams  
+        `shouldBe`
+        "let five = addThree(a,b);"

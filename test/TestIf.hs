@@ -102,3 +102,27 @@ testMultipleConAlt=
             )
         ))
     )
+testMultipleIf:: String 
+testMultipleIf=
+  statementToString
+    ( head
+        (snd( snd
+            ( parseStatements
+                (EXP,( snd (parseTokens ("if(5 == 5){if(5 == 5){let five = 5;}else{return 5;}}", [])),
+                  []
+                ))
+            )
+        ))
+    )
+testIfParam:: String 
+testIfParam=
+  statementToString
+    ( head
+        (snd( snd
+            ( parseStatements
+                (EXP,( snd (parseTokens ("if(5 == 5){return 5;}", [])),
+                  []
+                ))
+            )
+        ))
+    )

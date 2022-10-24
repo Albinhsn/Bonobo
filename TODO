@@ -1,20 +1,21 @@
-TODO: 
-  func calls
-    rework callStatement with CallExpression
-    differentiate between func(){ and func() 
-    add func calls in other expression #let five = 2 + addThree();
-  testing nested if
-
+TODO:   
+  test normal ident statements
+  test nested if 
+  TFT tests 
+  
 
  Non prio: 
+  list statement for func calls
+  func call in func? 
+  remove AddToStatement -> pop s ++ addToLastStatement
+    figure out if no pop is used well or just s ++ addToLastStatement?
+  add funcs to validate next tokens #True?
+
+
+
   error handling
   do general bugtesting for non valid code
     fix the problems relating 
-  relook con/alt
-  relook assign/ident things
-  list statement for func calls
-  add funcs to validate next tokens #True?
-  weird 'A' bug?
 
 
 Longer term:

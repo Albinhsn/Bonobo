@@ -67,3 +67,63 @@ testGroupedIdent=
         )
       )
     )
+testLetOpIdent:: String 
+testLetOpIdent= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = 2 + three;", [])),
+            []
+          )))
+        )
+      )
+    )
+testLetAssignIdent:: String 
+testLetAssignIdent= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = three;", [])),
+            []
+          )))
+        )
+      )
+    )
+testLetGroupedIdent:: String 
+testLetGroupedIdent= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = (three + two);", [])),
+            []
+          )))
+        )
+      )
+    )
+testLetInfixIdent:: String 
+testLetInfixIdent= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = -five", [])),
+            []
+          )))
+        )
+      )
+    )
+testLetBoolIdent:: String 
+testLetBoolIdent= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("let five = three == 3", [])),
+            []
+          )))
+        )
+      )
+    )
