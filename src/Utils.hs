@@ -11,9 +11,6 @@ import Token
 isBoolPrefix :: Token -> Bool
 isBoolPrefix t = typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
 
-stringToInt :: String -> Int
-stringToInt s = read s :: Int
-
 removeFirstToken :: [Token] -> [Token]
 removeFirstToken xs = case xs of
   [] -> []
@@ -34,7 +31,6 @@ isValidMinus e = b
       | expressionType e == EMPTYEXP = True
       | otherwise = False 
 
-
 isOperator :: Token -> Bool 
 isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS 
 
@@ -43,7 +39,7 @@ statementToString s = str
   where
     str
       | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ ifToString(s) ++ elseToString (s) ++ ";" 
+      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ ifToString(closedCon (statementUni s), s) ++ elseToString (closedAlt (statementUni s), s) ++ ";" 
       | statementType s == LETSTA=
           "let "
             ++ identifier (statementUni s)
@@ -56,12 +52,13 @@ statementToString s = str
       | statementType s == CALLSTA = expressionToString(expression s) ++ ";"
       | otherwise = error "error parsing statement to string "
 
-elseToString :: Statement -> String
-elseToString s = str 
+elseToString :: (Bool, Statement) -> String
+elseToString (b,s)= str 
   where 
     str 
       | null (alt (statementUni s)) = "" 
-      | otherwise = "{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
+      | b == False = "else{" ++(concat [statementToString x | x <- alt(statementUni s)]) 
+      | otherwise = "else{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
 
 paramToString :: Statement -> String 
 paramToString s = str 
@@ -69,13 +66,13 @@ paramToString s = str
     str 
       | null (params (statementUni s)) = "()"
       | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- params (statementUni s)]) ++ ")"
+
 callParamsToString :: Expression -> String 
 callParamsToString e = s 
   where   
     s 
       | null (callParams e) = ""
       | otherwise = deleteLast (concat [expressionToString x ++ "," | x <- (callParams e)])
-
 
 deleteLast :: [a] -> [a]
 deleteLast [] = []
@@ -89,10 +86,11 @@ bodyToString s = str
       | otherwise = "{" ++ pop (concat [statementToString x ++ " "| x <- body (statementUni s)]) ++ "}"
 
 
-ifToString :: Statement -> String
-ifToString s = str 
+ifToString :: (Bool, Statement) -> String
+ifToString (b, s) = str 
   where 
     str 
+      | b == False= "{" ++(concat [statementToString x | x <- con (statementUni s)]) 
       | null (con (statementUni s)) = "{}"
       | otherwise = "{" ++(concat [statementToString x | x <- con (statementUni s)]) ++  "}" 
 
@@ -111,6 +109,7 @@ expressionToString e = s
       | expressionType e == IDENTEXP = ident e 
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
+      | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e)
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String
@@ -131,7 +130,6 @@ getLastExpressionType (b, s) = e
       | b == CON = error "con"
       | b == ALT = error "alt"
       | otherwise = error "get last expressiontype"
-
 
 getLastExpression:: [Statement] -> Expression
 getLastExpression s = expression (last s)

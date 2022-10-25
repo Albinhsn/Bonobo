@@ -35,6 +35,7 @@ test-suite interpretor-test
     , TestIf
     , TestIdent
     , TestFunc
+    , TestTFT
   hs-source-dirs:
       test 
     , src

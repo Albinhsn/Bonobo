@@ -115,6 +115,30 @@ testBoolBodyFunc =
         )
       )
     )
+testIfFunc :: String 
+testIfFunc = 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){if(5 == 5){let five = 5;}else{return 10;};};", [])),
+            []
+          )))
+        )
+      )
+    )
+testFuncCallInFunc:: String 
+testFuncCallInFunc= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( snd (parseTokens("fn five(){return five();};", [])),
+            []
+          )))
+        )
+      )
+    )
 testFuncCall :: String 
 testFuncCall = 
   statementToString 

@@ -8,6 +8,7 @@ import TestBool
 import TestIf 
 import TestIdent
 import TestFunc
+-- import TestTFT
 
 main :: IO ()
 main = hspec $ do
@@ -17,7 +18,7 @@ main = hspec $ do
         testActualNumbers 
         `shouldBe`
         ["let", "five", "=", "5", ";", "let", "ten", "=", "10", ";", "let", "add", "=", "fn", "(", "five", ",", "ten", ")", "{", "return", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "!", "-", "/", "*", "5", ";", "5", "<", "10", ">", "5", ";", "if", "(", "5", "<", "10", ")", "{", "return", "true", ";", "}", "else", "{", "return", "false", ";", "}", "10", "==", "10", ";", "10", "!=", "9", ";", "EOF"]
-    it "test actual" $
+    it "testing actual" $
       do 
         testActual 
         `shouldBe`
@@ -182,7 +183,7 @@ main = hspec $ do
       do 
         testAlt
         `shouldBe`
-        "if ( empty ){}{let five = 5;};"
+        "if ( empty ){}else{let five = 5;};"
     it "testingMultipleCon" $ 
       do 
         testMultipleCon
@@ -192,22 +193,22 @@ main = hspec $ do
       do 
         testMultipleAlt
         `shouldBe`
-        "if ( empty ){}{let five = 5;let ten = (5 + 5);};"
+        "if ( empty ){}else{let five = 5;let ten = (5 + 5);};"
     it "testingConAlt" $ 
       do 
         testConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;}{let five = 5;};"
+        "if ( empty ){let five = 5;}else{let five = 5;};"
     it "testingMultipleConAlt" $ 
       do 
         testMultipleConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;let ten = 10;}{let five = 5;let ten = 10;};"
+        "if ( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;};"
     it "testing multiple if" $ 
       do 
         testMultipleIf
         `shouldBe`
-        "if (5 == 5){if(5 == 5){let five = 5;}else{return 5;}};"
+        "if (5 == 5){if (5 == 5){let five = 5;}else{return 5;};};"
     it "testing param if" $ 
       do 
         testIfParam
@@ -249,12 +250,12 @@ main = hspec $ do
         testLetAssignIdent 
         `shouldBe`
         "let five = three;"
-    it "test let infix ident" $
+    it "testing let infix ident" $
       do 
         testLetInfixIdent 
         `shouldBe`
         "let five = (-five);"
-    it "test let bool ident" $
+    it "testing let bool ident" $
       do 
         testLetBoolIdent 
         `shouldBe`
@@ -305,6 +306,16 @@ main = hspec $ do
         testBoolBodyFunc 
           `shouldBe`
           "fn five(){let five = 5 == 5;};"
+    it "testing if func" $ 
+      do 
+        testIfFunc 
+        `shouldBe`
+        "fn five(){if (5 == 5){let five = 5;}else{return 10;};};"
+    it "testing func call in func" $ 
+      do 
+        testFuncCallInFunc 
+        `shouldBe`
+        "fn five(){return five();};"
     it "testing func call" $ 
       do 
         testFuncCall 
@@ -332,38 +343,45 @@ main = hspec $ do
         `shouldBe`
         "let five = five();"
 
-    it "test return with func call" $
+    it "testing return with func call" $
       do 
         testReturnWithFuncCall 
         `shouldBe`
         "return five();"
-    it "test operator with func call" $
+    it "testing operator with func call" $
       do 
         testOperatorWithFuncCall 
         `shouldBe`
         "let five = (2 + addThree());"
-    it "test infix with func call" $
+    it "testing infix with func call" $
       do 
         testInfixWithFuncCall 
         `shouldBe`
         "let five = (-five());"
-    it "test bool with func call" $
+    it "testing bool with func call" $
       do 
         testBoolWithFuncCall 
         `shouldBe`
         "let five = five() == five();"
-    it "test grouped with func call" $
+    it "testing grouped with func call" $
       do 
         testGroupedWithFuncCall 
         `shouldBe`
         "let five = ((2 + addThree()));"
-    it "test func call with param" $
+    it "testing func call with param" $
       do 
         testFuncCallWithParam 
         `shouldBe`
         "let five = addThree(a);"
-    it "test func call with multiple param" $
+    it "testing func call with multiple param" $
       do 
         testFuncCallWithMulParams  
         `shouldBe`
         "let five = addThree(a,b);"
+  
+  -- describe "Testing TFT" $ do
+  --   it "testing let true" $
+  --     do
+  --       testLetTrue
+  --       `shouldBe`
+  --       "let five = true;"

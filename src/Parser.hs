@@ -69,27 +69,22 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
                            }
                 ))
             ))
-      | typ (head t) == RBRACE && b == CON = parseElse(ALT, (removeFirstToken t, closeLastOpen(b,s)))
-      | typ (head t) == RBRACE && b == ALT = parseStatements(EXP, (removeFirstToken t, closeLastOpen(b,s)))
+      | typ (head t) == RBRACE && b == CON = parseStatements(parseElse(ALT, (removeFirstToken t, closeLastOpen(b,s))))
+      | typ (head t) == RBRACE && b == ALT = parseStatements(findLastBlockType(EXP, last s), (removeFirstToken t, closeLastOpen(b,s)))
       | typ (head t) == RBRACE && b == BOD = parseStatements(EXP, (removeFirstToken t, s))
-      | typ (head t) == IF && b /= EXP = parseStatements(
+      | typ (head t) == RBRACE && b == EXP && statementType(last s) == FUNCSTA = parseStatements(EXP, (removeFirstToken t, s))
+      | typ (head t) == IF = 
         parseExpression(
-          b, (removeFirstToken t, addIfToLastBlock(b, s))
-        )
-      ) 
-      | typ (head t) == IF = parseStatements(
-        parseIf (parseExpression(
         b, (removeFirstToken t, 
         noPopAddToStatement(b, s, Statement {
           statementType = IFSTA,
           statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = False},
-          expression = Expression {expressionType = EMPTYEXP}})))))
+          expression = Expression {expressionType = EMPTYEXP}})))
       | b == PAR = error "par"
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
       | typ (head t) == SEMICOLON = (b, (removeFirstToken t, s))
-      | typ (head t) == ELSE = parseElse(b, (t, s))
-      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " ")
-
+      | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
+      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " ")  -- ++ test(s))
 
 parseIdent :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseIdent (b, (t, s)) = (bok, (tok, sta))
@@ -98,7 +93,7 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
       | null t == True = (b, (t, s))
       | typ (head t) == LPAREN && b == EXP && statementType (last s) == NOSTA = parseIdent(
           PAR, 
-          (removeFirstToken t,changeSta(b,head t, s))
+          (removeFirstToken t,changeSta(head t, s))
         ) 
       | typ (head t) == LPAREN && b == EXP = parseIdent(
           PAR, 
@@ -111,7 +106,7 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
           addToStatement(b, s, Statement{
               statementType = ASSIGNSTA, 
               statementUni = AssignStatement{},
-              expression = AssignExpression {expressionType = ASSIGNEXP, assignIdent = expression (last s), assignExpression = Expression{expressionType = EMPTYEXP}}
+              expression = AssignExpression {expressionType = ASSIGNEXP, assignIdent = getLastNestedExpression(b, s), assignExpression = Expression{expressionType = EMPTYEXP}}
             })
         )
       ) 
@@ -126,7 +121,6 @@ parseIf (b, (t, s)) = (bok, (tok, sta))
   where
     (bok, (tok, sta))
       | null t == True = (b, (t, s))
-      | typ (head t) == LBRACE && b == ALT = parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == LBRACE = parseStatements(CON, (removeFirstToken t, s))
       | typ (head t) == IF || typ (head t) == RETURN || typ (head t) == LET = parseStatements(b, (t, s))
       | typ (head t) == EOF || typ (head t) == RBRACE = (b, (removeFirstToken t, s))
@@ -166,8 +160,8 @@ parseFunc(b, (t, s)) = (block, (tokens, statements))
         )
 
       | typ (head t) == RPAREN && b == PAR = parseFunc(EXP, (removeFirstToken t, s)) 
-      | typ (head t) == EOF = (b, (t,changeFuncToCall(b, s)))
-      | otherwise = (EXP, (t, changeFuncToCall(b, s))) 
+      | typ (head t) == EOF = (b, (t,changeFuncToCall s))
+      | otherwise = (EXP, (t, changeFuncToCall s)) 
 
 parseExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseExpression (b, (t, s)) = (block, (tokens, statements))
@@ -247,11 +241,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
           removeFirstToken t, pop s ++ [addToLastStatement(b, head t, GROUPEDEXP, s)]))
       | typ (head t) == SEMICOLON = (b, (removeFirstToken t, s))
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
-      | typ (head t) == RBRACE && b == CON = (CON, (removeFirstToken t, closeLastOpen(b, s)))
-      | typ (head t) == RBRACE && b == ALT = (EXP, (removeFirstToken t, closeLastOpen(b,s)))
-      -- After parsing the condition call parseIf
-      | typ (head t) == LBRACE && statementType (last s) == IFSTA && b == EXP = parseIf(b, (t, s))
-      | typ (head t) == LBRACE  && b == CON = parseIf(b, (t,s))
+      | typ (head t) == LBRACE = parseIf(b, (t,s))
       | otherwise = error ("error parsing expression" ++ (literal (head t))) 
 
 parseGroupedExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))

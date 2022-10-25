@@ -1,29 +1,17 @@
 TODO:   
-  test normal ident statements
-  test nested if 
-  TFT tests 
-  
-
- Non prio: 
-  list statement for func calls
-  func call in func? 
-  remove AddToStatement -> pop s ++ addToLastStatement
-    figure out if no pop is used well or just s ++ addToLastStatement?
-  add funcs to validate next tokens #True?
-
-
-
-  error handling
   do general bugtesting for non valid code
     fix the problems relating 
+  error handling
+    Line number to errors etc
+  add funcs to validate next tokens #True?
 
+Non prio: 
+  list statement for func calls
+  TFT as exp #let five = true;
+    TFT tests 
 
-Longer term:
-  Line number to errors etc
-  Server to fetch and install compiler
 
 Longest of terms:
   Lsp 
-  Server to fetch and install compiler
 
 
