@@ -109,7 +109,7 @@ expressionToString e = s
       | expressionType e == IDENTEXP = ident e 
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
-      | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e)
+      | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String

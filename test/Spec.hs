@@ -1,6 +1,7 @@
 module Main where
 
 import Test.Hspec 
+import TestDifficult
 import TestLexer
 import TestParser
 import TestPrecedence
@@ -385,3 +386,15 @@ main = hspec $ do
   --       testLetTrue
   --       `shouldBe`
   --       "let five = true;"
+  describe "Test difficult" $ do
+   it "Test diff func" $
+      do
+        testDiffFunc
+        `shouldBe`
+        "fn five(){if (5 == 5){let five = 5;five = (five - 2);return (five + 3);};};"
+  describe "Test difficult" $ do
+   it "Test diff if" $
+      do
+        testDiffIf
+        `shouldBe`
+        "if ( empty ){if ( empty ){}else{if ( empty ){};};}else{if ( empty ){if ( empty ){if ( empty ){}else{return 5;};};};};"

@@ -75,16 +75,16 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
       | typ (head t) == RBRACE && b == EXP && statementType(last s) == FUNCSTA = parseStatements(EXP, (removeFirstToken t, s))
       | typ (head t) == IF = 
         parseExpression(
-        b, (removeFirstToken t, 
+        CON, (removeFirstToken t, 
         noPopAddToStatement(b, s, Statement {
           statementType = IFSTA,
           statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = False},
           expression = Expression {expressionType = EMPTYEXP}})))
       | b == PAR = error "par"
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
-      | typ (head t) == SEMICOLON = (b, (removeFirstToken t, s))
+      | typ (head t) == SEMICOLON = parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
-      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " ")  -- ++ test(s))
+      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " ")
 
 parseIdent :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseIdent (b, (t, s)) = (bok, (tok, sta))
@@ -131,12 +131,11 @@ parseElse (b,(t,s)) = (blo, (tok,sta))
   where 
     (blo, (tok, sta))
       | null t == True = (b, (t, s))
-      | typ (head t) == EOF || typ (head t) == SEMICOLON= (b, (removeFirstToken t, s))
+      | typ (head t) == EOF || typ (head t) == SEMICOLON= parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == ELSE || typ (head t) == LBRACE = parseElse(ALT, (removeFirstToken t, s))
       | typ (head t) == IF || typ (head t) == RETURN || typ (head t) == LET= parseStatements(b, (t, s))
       | typ (head t) == RBRACE = (b, (removeFirstToken t, closeLastOpen(b, s))) 
       | otherwise = error "parse else" 
-
 
 parseFunc:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseFunc(b, (t, s)) = (block, (tokens, statements))
@@ -184,6 +183,8 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
       | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) --
       | typ (head t) == RBRACE && b == BOD= parseExpression(EXP, (removeFirstToken t, s)) --Only reason for parseExp is to remove SEMICOLON 
+      | typ (head t) == RBRACE && b == CON = parseIf(CON, (t, s))
+      | typ (head t) == RBRACE && b == ALT = parseElse(ALT, (t, s))
       | typ (head t) == COMMA && b == PAR = parseExpression(
         b, 
         (
@@ -239,7 +240,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
       | typ (head t) == RPAREN = 
         parseExpression(b, (
           removeFirstToken t, pop s ++ [addToLastStatement(b, head t, GROUPEDEXP, s)]))
-      | typ (head t) == SEMICOLON = (b, (removeFirstToken t, s))
+      | typ (head t) == SEMICOLON = parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
       | typ (head t) == LBRACE = parseIf(b, (t,s))
       | otherwise = error ("error parsing expression" ++ (literal (head t))) 
