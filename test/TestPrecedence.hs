@@ -20,7 +20,7 @@ testBasicGrouped=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = (2 + 3) * 5", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = (2 + 3) * 5", [])),
                   []
                 ))
             )
@@ -33,7 +33,7 @@ testAdvGrouped =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = (2 + -3) * -4 + (10 /5)", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = (2 + -3) * -4 + (10 /5)", [])),
                   []
                 ))
             )
@@ -46,7 +46,7 @@ testBoolGrouped =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = (-3 + 5) + 2 == 8 / 5", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = (-3 + 5) + 2 == 8 / 5", [])),
                   []
                 ))
             )
@@ -59,7 +59,7 @@ testBoolGrouped2 =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = (5 + 2) * 5 > -4 / 1", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = (5 + 2) * 5 > -4 / 1", [])),
                   []
                 ))
             )
@@ -72,7 +72,7 @@ testGrouped2 =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = (2 + 2) * (5 * 2) / (-4 - -4)", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = (2 + 2) * (5 * 2) / (-4 - -4)", [])),
                   []
                 ))
             )
@@ -85,7 +85,7 @@ test1 =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("return ((1 + 2) + 3) * (4 * (5 + 6)) / ((-7 - 8))", [])),
+                (EXP,( getTokens(parseTokens (0, "return ((1 + 2) + 3) * (4 * (5 + 6)) / ((-7 - 8))", [])),
                   []
                 ))
             )
@@ -97,7 +97,7 @@ test2 =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP, (snd (parseTokens ("return ((1 + 2))", [])),
+                (EXP, (getTokens(parseTokens (0, "return ((1 + 2))", [])),
                   []
                 ))
             )
@@ -109,7 +109,7 @@ test3 =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP, (snd (parseTokens ("let five = ((3 * 4 + 1) == (-13))", [])),
+                (EXP, (getTokens(parseTokens (0, "let five = ((3 * 4 + 1) == (-13))", [])),
                   []
                 ))
             )

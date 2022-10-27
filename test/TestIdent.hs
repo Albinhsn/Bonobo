@@ -11,7 +11,7 @@ testIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("five = 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "five = 5;", [])),
             []
           )))
         )
@@ -23,7 +23,7 @@ testOpIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("five = 5 * 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "five = 5 * 5;", [])),
             []
           )))
         )
@@ -35,19 +35,19 @@ testBoolIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("five = 5 == 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "five = 5 == 5;", [])),
             []
           )))
         )
       )
     )
-testInfixIdent:: String 
-testInfixIdent= 
+testPrefixIdent:: String 
+testPrefixIdent= 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("five = -5;", [])),
+          (EXP,( getTokens(parseTokens(0, "five = -5;", [])),
             []
           )))
         )
@@ -59,7 +59,7 @@ testGroupedIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("five = (5 + 5);", [])),
+          (EXP,( getTokens(parseTokens(0, "five = (5 + 5);", [])),
             []
           )))
         )
@@ -71,7 +71,7 @@ testLetOpIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 2 + three;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 2 + three;", [])),
             []
           )))
         )
@@ -83,7 +83,7 @@ testLetAssignIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = three;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = three;", [])),
             []
           )))
         )
@@ -95,19 +95,19 @@ testLetGroupedIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = (three + two);", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = (three + two);", [])),
             []
           )))
         )
       )
     )
-testLetInfixIdent:: String 
-testLetInfixIdent= 
+testLetPrefixIdent:: String 
+testLetPrefixIdent= 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = -five", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = -five", [])),
             []
           )))
         )
@@ -119,7 +119,7 @@ testLetBoolIdent=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = three == 3", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = three == 3", [])),
             []
           )))
         )

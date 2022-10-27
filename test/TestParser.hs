@@ -7,13 +7,13 @@ import Token
 import Utils
 
 
-testInfix :: String 
-testInfix = 
+testPrefix:: String 
+testPrefix= 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = -5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = -5;", [])),
             []
           ))
         ))
@@ -26,7 +26,7 @@ testPlusAsteriskOperators =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 + 5 * 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 + 5 * 5;", [])),
             []
           ))
         ))
@@ -38,7 +38,7 @@ testAsteriskPlusOperators =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 * 5 + 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 * 5 + 5;", [])),
             []
           ))
         )
@@ -53,7 +53,7 @@ testAssignment =
       ( head
           (snd( snd
               ( parseStatements
-                  (EXP,( snd (parseTokens ("let five = 5;", [])),
+                  (EXP,( getTokens(parseTokens (0, "let five = 5;", [])),
                     []
                   ))
               )
@@ -67,7 +67,7 @@ testMultipleOperators =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = 5 + 5 + 5 ;", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = 5 + 5 + 5 ;", [])),
                   []
                 ))
            ) )
@@ -80,7 +80,7 @@ testSlashOperator =
       ( head
           (snd( snd
               ( parseStatements
-                  (EXP,( snd (parseTokens ("let five = 5 / 5;", [])),
+                  (EXP,( getTokens(parseTokens (0, "let five = 5 / 5;", [])),
                     []
                   ))
               )
@@ -94,7 +94,7 @@ testAsteriskOperator =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = 5 * 5;", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = 5 * 5;", [])),
                   []
            )     ))
             )
@@ -106,7 +106,7 @@ testMinusOperator =
       ( head
           (snd( snd
               ( parseStatements
-                  (EXP,( snd (parseTokens ("let five = 5 - 5;", [])),
+                  (EXP,( getTokens(parseTokens (0, "let five = 5 - 5;", [])),
                     []
                   ))
               )
@@ -119,7 +119,7 @@ testPlusOperator =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("let five = 5 + 5;", [])),
+                (EXP,( getTokens(parseTokens (0, "let five = 5 + 5;", [])),
                   []
                 ))
             )
@@ -131,7 +131,7 @@ testReturnStatement =
   statementToString
       ( head
           (snd( snd
-              (parseStatements (EXP,(snd (parseTokens ("return 5;", [])), [])))
+              (parseStatements (EXP,(getTokens(parseTokens (0, "return 5;", [])), [])))
           ))
       )
 
@@ -141,9 +141,9 @@ testArithmeticReturnStatement =
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("return 5 + 5;", [])),
+                (EXP,( getTokens(parseTokens (0, "return 5 + 5;", [])),
                   []
                 ))
            ))
         )
-    )
+      )

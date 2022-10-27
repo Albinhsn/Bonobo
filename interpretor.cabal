@@ -13,7 +13,7 @@ library
       Token, Utils, Lexer, Parser, Ast, ParserUtils 
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wredundant-constraints
   build-depends:
       base >=4.7 && <5, containers 
   default-language: Haskell2010
@@ -28,6 +28,8 @@ test-suite interpretor-test
     , Token 
     , Parser 
     , Ast 
+    , Eval
+    , Object
     , TestLexer
     , TestPrecedence
     , TestParser
@@ -37,6 +39,8 @@ test-suite interpretor-test
     , TestFunc
     , TestTFT
     , TestDifficult
+    , TestMultiple
+    , TestUtils
   hs-source-dirs:
       test 
     , src

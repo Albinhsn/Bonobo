@@ -1,8 +1,6 @@
 TODO:   
-  do general bugtesting for non valid code
-    fix the problems relating 
-    semicolon verification
-  params for funcs only idents
+  check so if grouped contains bool always
+
   error handling
     Line number to errors etc
   add funcs to validate next tokens #True?

@@ -2,17 +2,18 @@ module Lexer where
 
 import Token
 
-parseTokens :: (String, [Token]) -> (String, [Token])
-parseTokens (s, t) = (str, tok)
+parseTokens :: (Int, String, [Token]) -> (Int, String, [Token])
+parseTokens (i, s, t) = (inte, str, tok)
   where
-    (str, tok)
-      | null s = (s, t ++ [Token {typ = EOF, literal = "EOF"}])
-      | isValidSpecialChar (head s) = parseTokens (removeFirstChar s, t ++ [parseChar (head s)])
-      | isDoubleChar (head s) = parseTokens (parseDoubleChar (head s, removeFirstChar s, t))
-      | isNumber (head s) = parseTokens (readNumber (s, t ++ [Token {typ = INT, literal = ""}]))
-      | isLetter (head s) = parseTokens (readIdentifier (s, t ++ [Token {typ = IDENT, literal = ""}]))
-      | isEmptyChar (head s) = parseTokens (removeFirstChar s, t)
-      | otherwise = parseTokens (removeFirstChar s, t ++ [Token {typ = ILLEGAL, literal = "ILLEGAL"}])
+    (inte, str, tok)
+      | null s = (i, s, t ++ [Token {line = i, typ = EOF, literal = "EOF"}])
+      | isValidSpecialChar (head s) = parseTokens (i, removeFirstChar s, t ++ [parseChar (i, head s)])
+      | isNewLine (head s) = parseTokens(i+1, removeFirstChar s, t)
+      | isDoubleChar (head s) = parseTokens (parseDoubleChar (i, head s, removeFirstChar s, t))
+      | isNumber (head s) = parseTokens (readNumber (i, s, t ++ [Token {line = i, typ = INT, literal = ""}]))
+      | isLetter (head s) = parseTokens (readIdentifier (i, s, t ++ [Token {line = i, typ = IDENT, literal = ""}]))
+      | isEmptyChar (head s) = parseTokens (i, removeFirstChar s, t)
+      | otherwise = parseTokens (i, removeFirstChar s, t ++ [Token {line = i, typ = ILLEGAL, literal = "ILLEGAL"}])
 
 isValidSpecialChar :: Char -> Bool
 isValidSpecialChar ch = ch == '-' || ch == '>' || ch == '<' || ch == '*' || ch == '/' || ch == '+' || ch == ',' || ch == ';' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
@@ -20,19 +21,22 @@ isValidSpecialChar ch = ch == '-' || ch == '>' || ch == '<' || ch == '*' || ch =
 isDoubleChar :: Char -> Bool
 isDoubleChar ch = ch == '=' || ch == '!'
 
-parseDoubleChar :: (Char, String, [Token]) -> (String, [Token])
-parseDoubleChar (ch, s, t) = (string, token)
+parseDoubleChar :: (Int, Char, String, [Token]) -> (Int, String, [Token])
+parseDoubleChar (i, ch, s, t) = (inte, string, token)
   where
-    (string, token)
-      | null s && ch == '!' = (s, t ++ [Token {typ = BANG, literal = "!"}])
-      | null s && ch == '=' = (s, t ++ [Token {typ = ASSIGN, literal = "="}])
-      | ch == '=' && ch == head s = (removeFirstChar s, t ++ [Token {typ = EQUALS, literal = "=="}])
-      | ch == '!' && '=' == head s = (removeFirstChar s, t ++ [Token {typ = NOT_EQUALS, literal = "!="}])
-      | ch == '!' = (s, t ++ [Token {typ = BANG, literal = "!"}])
-      | ch == '=' = (s, t ++ [Token {typ = ASSIGN, literal = "="}])
+    (inte, string, token)
+      | null s && ch == '!' = (i, s, t ++ [Token {line = i, typ = BANG, literal = "!"}])
+      | null s && ch == '=' = (i, s, t ++ [Token {line = i, typ = ASSIGN, literal = "="}])
+      | ch == '=' && ch == head s = (i, removeFirstChar s, t ++ [Token {line = i, typ = EQUALS, literal = "=="}])
+      | ch == '!' && '=' == head s = (i, removeFirstChar s, t ++ [Token {line = i, typ = NOT_EQUALS, literal = "!="}])
+      | ch == '!' = (i, s, t ++ [Token {line = i, typ = BANG, literal = "!"}])
+      | ch == '=' = (i, s, t ++ [Token {line = i, typ = ASSIGN, literal = "="}])
 
 isEmptyChar :: Char -> Bool
-isEmptyChar ch = ch == ' ' || ch == '\n' || ch == '\t'
+isEmptyChar ch = ch == ' ' || ch == '\t'
+
+isNewLine :: Char -> Bool
+isNewLine ch = ch == '\n'
 
 isLetter :: Char -> Bool
 isLetter c = b
@@ -46,19 +50,19 @@ removeFirstChar xs = case xs of
   [] -> []
   x : xs -> xs
 
-readIdentifier :: (String, [Token]) -> (String, [Token])
-readIdentifier (s, t) = (str, tok)
+readIdentifier :: (Int, String, [Token]) -> (Int, String, [Token])
+readIdentifier (i, s, t) = (inte, str, tok)
   where
-    (str, tok)
-      | s == "" = (s, pop t ++ [validateIdentifier (last t)])
-      | isLetter (head s) = readIdentifier (removeFirstChar s, addIdentifierTolastToken (head s, t))
-      | otherwise = (s, pop t ++ [validateIdentifier (last t)])
+    (inte, str, tok)
+      | s == "" = (i, s, pop t ++ [validateIdentifier (last t)])
+      | isLetter (head s) = readIdentifier (i, removeFirstChar s, addIdentifierTolastToken (i, head s, t))
+      | otherwise = (i, s, pop t ++ [validateIdentifier (last t)])
 
-addIdentifierTolastToken :: (Char, [Token]) -> [Token]
-addIdentifierTolastToken (ch, t) = pop t ++ [Token {typ = IDENT, literal = getLastLiteral t ++ [ch]}]
+addIdentifierTolastToken :: (Int, Char, [Token]) -> [Token]
+addIdentifierTolastToken (i, ch, t) = pop t ++ [Token {line = i, typ = IDENT, literal = getLastLiteral t ++ [ch]}]
 
-addNumberToLastToken :: (Char, [Token]) -> [Token]
-addNumberToLastToken (c, t) = pop t ++ [Token {typ = INT, literal = getLastLiteral t ++ [c]}]
+addNumberToLastToken :: (Int, Char, [Token]) -> [Token]
+addNumberToLastToken (i, c, t) = pop t ++ [Token {line = i, typ = INT, literal = getLastLiteral t ++ [c]}]
 
 getLastLiteral :: [Token] -> String
 getLastLiteral t = s
@@ -74,23 +78,23 @@ pop a = init a
 validateIdentifier :: Token -> Token
 validateIdentifier t =
   case literal t of
-    "int" -> Token {typ = INT, literal = literal t}
-    "fn" -> Token {typ = FUNCTION, literal = literal t}
-    "let" -> Token {typ = LET, literal = literal t}
-    "if" -> Token {typ = IF, literal = literal t}
-    "else" -> Token {typ = ELSE, literal = literal t}
-    "return" -> Token {typ = RETURN, literal = literal t}
-    "true" -> Token {typ = TRUE, literal = literal t}
-    "false" -> Token {typ = FALSE, literal = literal t}
-    _ -> Token {typ = IDENT, literal = literal t}
+    "int" -> Token {line = line t, typ = INT, literal = literal t}
+    "fn" -> Token {line = line t,typ = FUNCTION, literal = literal t}
+    "let" -> Token {line = line t,typ = LET, literal = literal t}
+    "if" -> Token {line = line t,typ = IF, literal = literal t}
+    "else" -> Token {line = line t,typ = ELSE, literal = literal t}
+    "return" -> Token {line = line t,typ = RETURN, literal = literal t}
+    "true" -> Token {line = line t,typ = TRUE, literal = literal t}
+    "false" -> Token {line = line t,typ = FALSE, literal = literal t}
+    _ -> Token {line = line t,typ = IDENT, literal = literal t}
 
-readNumber :: (String, [Token]) -> (String, [Token])
-readNumber (s, t) = (str, tok)
+readNumber :: (Int, String, [Token]) -> (Int, String, [Token])
+readNumber (i, s, t) = (inte, str, tok)
   where
-    (str, tok)
-      | s == "" = (s, t)
-      | isNumber (head s) = readNumber (removeFirstChar s, addNumberToLastToken (head s, t))
-      | otherwise = (s, t)
+    (inte, str, tok)
+      | s == "" = (i, s, t)
+      | isNumber (head s) = readNumber (i, removeFirstChar s, addNumberToLastToken (i, head s, t))
+      | otherwise = (i, s, t)
 
 isNumber :: Char -> Bool
 isNumber ch =
@@ -107,21 +111,21 @@ isNumber ch =
     '0' -> True
     _ -> False
 
-parseChar :: Char -> Token
-parseChar ch =
+parseChar :: (Int, Char) -> Token
+parseChar (i, ch) =
   case ch of
-    '=' -> Token {typ = ASSIGN, literal = "="}
-    '+' -> Token {typ = PLUS, literal = "+"}
-    '-' -> Token {typ = MINUS, literal = "-"}
-    ',' -> Token {typ = COMMA, literal = ","}
-    ';' -> Token {typ = SEMICOLON, literal = ";"}
-    '(' -> Token {typ = LPAREN, literal = "("}
-    ')' -> Token {typ = RPAREN, literal = ")"}
-    '{' -> Token {typ = LBRACE, literal = "{"}
-    '}' -> Token {typ = RBRACE, literal = "}"}
-    '*' -> Token {typ = ASTERISK, literal = "*"}
-    '/' -> Token {typ = SLASH, literal = "/"}
-    '<' -> Token {typ = LESS_T, literal = "<"}
-    '>' -> Token {typ = GREATER_T, literal = ">"}
-    '!' -> Token {typ = BANG, literal = "!"}
-    _ -> Token {typ = ILLEGAL, literal = "ILLEGAL"}
+    '=' -> Token {line = i,typ = ASSIGN, literal = "="}
+    '+' -> Token {line = i,typ = PLUS, literal = "+"}
+    '-' -> Token {line = i,typ = MINUS, literal = "-"}
+    ',' -> Token {line = i,typ = COMMA, literal = ","}
+    ';' -> Token {line = i,typ = SEMICOLON, literal = ";"}
+    '(' -> Token {line = i,typ = LPAREN, literal = "("}
+    ')' -> Token {line = i,typ = RPAREN, literal = ")"}
+    '{' -> Token {line = i,typ = LBRACE, literal = "{"}
+    '}' -> Token {line = i,typ = RBRACE, literal = "}"}
+    '*' -> Token {line = i,typ = ASTERISK, literal = "*"}
+    '/' -> Token {line = i,typ = SLASH, literal = "/"}
+    '<' -> Token {line = i,typ = LESS_T, literal = "<"}
+    '>' -> Token {line = i,typ = GREATER_T, literal = ">"}
+    '!' -> Token {line = i,typ = BANG, literal = "!"}
+    _ -> Token {line = i,typ = ILLEGAL, literal = "ILLEGAL"}

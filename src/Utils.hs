@@ -1,7 +1,6 @@
 module Utils where
 
 import Ast
-import Data.Typeable
 import Lexer
 import Token
 
@@ -16,8 +15,8 @@ removeFirstToken xs = case xs of
   [] -> []
   x : xs -> xs
 
-isValidInfix :: Token -> Bool
-isValidInfix t = typ t == MINUS || typ t == BANG
+isValidPrefix:: Token -> Bool
+isValidPrefix t = typ t == MINUS || typ t == BANG
 
 isValidMinus:: Expression -> Bool
 isValidMinus e = b
@@ -34,12 +33,16 @@ isValidMinus e = b
 isOperator :: Token -> Bool 
 isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS 
 
+statementsToString :: [Statement] -> String 
+statementsToString s = deleteLast(concat [statementToString x ++ " " | x <- s])
+
+
 statementToString :: Statement -> String
 statementToString s = str
   where
     str
       | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == IFSTA = "if " ++ expressionToString (expression s) ++ ifToString(closedCon (statementUni s), s) ++ elseToString (closedAlt (statementUni s), s) ++ ";" 
+      | statementType s == IFSTA = "if" ++ expressionToString (expression s) ++ ifToString(closedCon (statementUni s), s) ++ elseToString (closedAlt (statementUni s), s) ++ ";" 
       | statementType s == LETSTA=
           "let "
             ++ identifier (statementUni s)
@@ -99,14 +102,14 @@ expressionToString e = s
   where
     s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
-      | expressionType e == INFIXEXP = "(" ++ literal (infixOperator e) ++ "" ++ expressionToString (infixExpression e) ++ ")"
-      | expressionType e == INTEXP = integerLiteral e
+      | expressionType e == PREFIXEXP = "(" ++ literal (prefixOperator e) ++ "" ++ expressionToString (prefixExpression e) ++ ")"
+      | expressionType e == INTEXP = literal (integerLiteral e)
       | expressionType e == GROUPEDEXP && closed e == False= "XX" ++ expressionToString (groupedExpression e) 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "true"
       | expressionType e == TFEXP && bool e == FALSE = "false"
-      | expressionType e == IDENTEXP = ident e 
+      | expressionType e == IDENTEXP = literal (ident e)
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";"
@@ -143,8 +146,8 @@ getLastLeftOperator s = leftOperator (expression (last s))
 getLastRightOperator :: [Statement] -> Expression 
 getLastRightOperator s = rightOperator (expression (last s))
 
-getLastInfixOperator :: [Statement] -> Token 
-getLastInfixOperator s = infixOperator (expression (last s))
+getLastPrefixOperator :: [Statement] -> Token 
+getLastPrefixOperator s = prefixOperator (expression (last s))
 
 getLastLeftBool :: [Statement] -> Expression
 getLastLeftBool s = leftBool (expression (last s))
@@ -155,3 +158,5 @@ getLastRightBool s = rightBool (expression (last s))
 getLastBoolOperator :: [Statement] -> Token 
 getLastBoolOperator s = boolOperator (expression (last s))
 
+getTokens :: (Int, String, [Token]) -> [Token]
+getTokens (i,s,t) = t

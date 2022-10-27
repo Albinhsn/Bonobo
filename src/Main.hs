@@ -8,8 +8,10 @@ import Token
 import Utils
 import ParserUtils
 main = do
-  let tokens = (parseTokens ("if(){}else{if(){if()", []))
-  let s = parseStatements (EXP, (snd tokens, []))
+  let tokens = (parseTokens (1, "5", []))
+  print tokens
+  let s = parseStatements (EXP, (getTokens(tokens), []))
   print s 
   let a = statementToString( head (snd(snd(s))))
   print a
+

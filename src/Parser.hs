@@ -7,8 +7,6 @@ import Utils
 import ParserUtils
 
 
-parseProgram :: String -> [Token]
-parseProgram s = snd (parseTokens (s, []))
 
 parseStatements :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseStatements (b, (t, s)) = (bok, (tokens, statements))
@@ -38,7 +36,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
                 statementUni = NoStatement{},
                 expression = IdentExpression {
                   expressionType = IDENTEXP, 
-                  ident= literal (head t)
+                  ident= head t
                   }}
                 )
               )
@@ -80,11 +78,11 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
           statementType = IFSTA,
           statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = False},
           expression = Expression {expressionType = EMPTYEXP}})))
-      | b == PAR = error "par"
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
-      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " ")
+      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " on line: "++ (show (line (head t))))
+
 
 parseIdent :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseIdent (b, (t, s)) = (bok, (tok, sta))
@@ -116,15 +114,26 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
       | otherwise = parseExpression(b, (t,s )) 
 
 
+isValidReturn :: Statement -> Bool 
+isValidReturn s = 
+  case statementType s of 
+    FUNCSTA -> True 
+    _ -> False
+
+
 parseIf :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseIf (b, (t, s)) = (bok, (tok, sta))
   where
     (bok, (tok, sta))
       | null t == True = (b, (t, s))
-      | typ (head t) == LBRACE = parseStatements(CON, (removeFirstToken t, s))
-      | typ (head t) == IF || typ (head t) == RETURN || typ (head t) == LET = parseStatements(b, (t, s))
+      | typ (head t) == LBRACE && hasValidCondition(b, s) = parseStatements(CON, (removeFirstToken t, s))
+      -- | typ (head t) == LBRACE = parseStatements(CON, (removeFirstToken t, s))
+      | typ (head t) == LBRACE = error ("doesn't have grouped + bool in if on line: " ++ (show (line (head t))))
+      | typ (head t) == IF || typ (head t) == LET || typ (head t) == IDENT = parseStatements(b, (t, s))
+      | typ (head t) == RETURN && isValidReturn(last s)= parseStatements(b,(t,s))
+      | typ (head t) == RETURN = error ("not valid returntoken on line: " ++ (show(line(head t))))
       | typ (head t) == EOF || typ (head t) == RBRACE = (b, (removeFirstToken t, s))
-      | otherwise = error ("parsing if: " ++ (literal (head t)) ++ " " ++ statementToString(last s)) 
+      | otherwise = error ("parsing if: " ++ (literal (head t)) ++ " on line: " ++ statementToString(last s)) 
 
 parseElse :: (BlockType, ([Token], [Statement])) ->(BlockType, ([Token], [Statement]))
 parseElse (b,(t,s)) = (blo, (tok,sta))
@@ -133,16 +142,19 @@ parseElse (b,(t,s)) = (blo, (tok,sta))
       | null t == True = (b, (t, s))
       | typ (head t) == EOF || typ (head t) == SEMICOLON= parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == ELSE || typ (head t) == LBRACE = parseElse(ALT, (removeFirstToken t, s))
-      | typ (head t) == IF || typ (head t) == RETURN || typ (head t) == LET= parseStatements(b, (t, s))
+      | typ (head t) == IF || typ (head t) == LET || typ (head t) == IDENT = parseStatements(b, (t, s))
+      | typ (head t) == RETURN && isValidReturn(last s)= parseStatements(b,(t,s))
+      | typ (head t) == RETURN = error ("not valid returntoken in " ++ (show(line(head t))))
       | typ (head t) == RBRACE = (b, (removeFirstToken t, closeLastOpen(b, s))) 
-      | otherwise = error "parse else" 
+      | otherwise = error ("parse else on line: " ++ (show (line (head t))))
 
 parseFunc:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseFunc(b, (t, s)) = (block, (tokens, statements))
   where
     (block, (tokens, statements))
       | null t == True = (b, (t, s))
-      | typ (head t) == LBRACE = parseStatements(BOD, (removeFirstToken t, s))
+      | typ (head t) == LBRACE  && hasValidParams(s) = parseStatements(BOD, (removeFirstToken t, s))
+      | typ (head t) == LBRACE = error ("non valid params for func on line: "++ (show(line(head t))))
       | typ (head t) == RPAREN && b == PAR && paramHasOpen(b, s) = parseFunc(
         b, 
         (
@@ -215,15 +227,15 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         && 
           typ (head t) == MINUS = 
             parseExpression (
-              parseInfixExpression (b, (t, s))
+              parsePrefixExpression (b, (t, s))
             )
       | isOperator (head t) = 
         parseExpression (
           parseOperatorExpression (b, (t, s))
           )
-      | isValidInfix (head t)=
+      | isValidPrefix(head t)=
         parseExpression (
-          parseInfixExpression (b, (t,s ))
+          parsePrefixExpression (b, (t,s ))
           )
       | isBoolPrefix (head t) = 
         parseExpression (
@@ -243,7 +255,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirstToken t, s))
       | typ (head t) == EOF = (b, (removeFirstToken t, s))
       | typ (head t) == LBRACE = parseIf(b, (t,s))
-      | otherwise = error ("error parsing expression" ++ (literal (head t))) 
+      | otherwise = error ("error parsing expression" ++ (literal (head t)) ++ " on "++ (show (line (head t))))
 
 parseGroupedExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseGroupedExpression (b, (t, s)) = (b,(removeFirstToken t, addToStatement(b, s, addToLastStatement(b, head t, GROUPEDEXP, s))))
@@ -254,8 +266,8 @@ parseIntegerExpression (b, (t, s)) = (b, (removeFirstToken t, addToStatement (b,
 parseOperatorExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseOperatorExpression (b, (t, s)) = (b, (removeFirstToken t, addToStatement (b, s, addToLastStatement(b,head t, OPERATOREXP, s))))
 
-parseInfixExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
-parseInfixExpression (b, (t, s)) = (b, (removeFirstToken t, addToStatement(b,s, addToLastStatement(b, head t, INFIXEXP, s))))
+parsePrefixExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
+parsePrefixExpression (b, (t, s)) = (b, (removeFirstToken t, addToStatement(b,s, addToLastStatement(b, head t, PREFIXEXP, s))))
 
 parseBoolExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseBoolExpression (b, (t, s)) = (b, (removeFirstToken t, addToStatement(b,s,addToLastStatement(b, head t, BOOLEXP, s))))

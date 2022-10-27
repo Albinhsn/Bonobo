@@ -13,7 +13,7 @@ testEmptyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){}", [])),
             []
           )))
         )
@@ -25,7 +25,7 @@ testParamFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(a, b){}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(a, b){}", [])),
             []
           )))
         )
@@ -37,7 +37,7 @@ testReturnFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){return 5;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){return 5;}", [])),
             []
           )))
         )
@@ -49,7 +49,7 @@ testParamReturnFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(a, b){return 5;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(a, b){return 5;}", [])),
             []
           )))
         )
@@ -61,7 +61,7 @@ testMultipleBodyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){let five = 5; return five;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){let five = 5; return five;}", [])),
             []
           )))
         )
@@ -73,7 +73,7 @@ testOperatorBodyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){let five = 2 + 3;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){let five = 2 + 3;}", [])),
             []
           )))
         )
@@ -85,19 +85,19 @@ testGroupedOperatorBodyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){let five = (2 + 3);}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){let five = (2 + 3);}", [])),
             []
           )))
         )
       )
     )
-testInfixBodyFunc :: String 
-testInfixBodyFunc = 
+testPrefixBodyFunc :: String 
+testPrefixBodyFunc = 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){let five = -5;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){let five = -5;}", [])),
             []
           )))
         )
@@ -109,7 +109,7 @@ testBoolBodyFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){let five = 5 == 5;}", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){let five = 5 == 5;}", [])),
             []
           )))
         )
@@ -121,7 +121,7 @@ testIfFunc =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){if(5 == 5){let five = 5;}else{return 10;};};", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){if(5 == 5){let five = 5;}else{return 10;};};", [])),
             []
           )))
         )
@@ -133,7 +133,7 @@ testFuncCallInFunc=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("fn five(){return five();};", [])),
+          (EXP,( getTokens(parseTokens(0, "fn five(){return five();};", [])),
             []
           )))
         )
@@ -145,7 +145,7 @@ testFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("add(5);", [])),
+          (EXP,( getTokens(parseTokens(0, "add(5);", [])),
             []
           )))
         )
@@ -157,19 +157,19 @@ testOpFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("add(5 + 5);", [])),
+          (EXP,( getTokens(parseTokens(0, "add(5 + 5);", [])),
             []
           )))
         )
       )
     )
-testInfixFuncCall :: String 
-testInfixFuncCall = 
+testPrefixFuncCall :: String 
+testPrefixFuncCall = 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("add(-5);", [])),
+          (EXP,( getTokens(parseTokens(0, "add(-5);", [])),
             []
           )))
         )
@@ -181,7 +181,7 @@ testGroupedOpFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("add((5 + 3) * 2);", [])),
+          (EXP,( getTokens(parseTokens(0, "add((5 + 3) * 2);", [])),
             []
           )))
         )
@@ -193,7 +193,7 @@ testLetWithFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = five();", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = five();", [])),
             []
           )))
         )
@@ -205,7 +205,7 @@ testReturnWithFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("return five();", [])),
+          (EXP,( getTokens(parseTokens(0, "return five();", [])),
             []
           )))
         )
@@ -217,19 +217,19 @@ testOperatorWithFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 2 + addThree();", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 2 + addThree();", [])),
             []
           )))
         )
       )
     )
-testInfixWithFuncCall :: String 
-testInfixWithFuncCall = 
+testPrefixWithFuncCall :: String 
+testPrefixWithFuncCall = 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = -five();", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = -five();", [])),
             []
           )))
         )
@@ -241,7 +241,7 @@ testBoolWithFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = five() == five();", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = five() == five();", [])),
             []
           )))
         )
@@ -253,7 +253,7 @@ testGroupedWithFuncCall =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = (2 + addThree());", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = (2 + addThree());", [])),
             []
           )))
         )
@@ -265,7 +265,7 @@ testFuncCallWithParam  =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = addThree(a);", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = addThree(a);", [])),
             []
           )))
         )
@@ -277,7 +277,7 @@ testFuncCallWithMulParams =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = addThree(a,b);", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = addThree(a,b);", [])),
             []
           )))
         )

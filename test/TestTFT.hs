@@ -12,7 +12,7 @@ testLetTrue =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = true;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = true;", [])),
             []
           ))
         )

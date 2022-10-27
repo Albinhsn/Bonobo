@@ -12,7 +12,7 @@ testFiveEqualsFive =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 == 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5;", [])),
             []
           ))
         )
@@ -25,7 +25,7 @@ testFiveEqualsFivePlusFive =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 == 5 + 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5 + 5;", [])),
             []
          )))
         )
@@ -37,7 +37,7 @@ testFiveEqualsFivePlusFiveTimesFive =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 == 5 + 5 * 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5 + 5 * 5;", [])),
             []
           ))
         ))
@@ -49,7 +49,7 @@ testFiveEqualsFivePlusMinusFive =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 == 5 + -5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5 + -5;", [])),
             []
          )))
         )
@@ -61,7 +61,7 @@ testFiveEqualsFivePlusMinusFiveTimesMinusFive =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 == 5 + -5 * -5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5 + -5 * -5;", [])),
             []
           ))
         )
@@ -74,7 +74,7 @@ testMultipleBools =
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( snd (parseTokens("let five = 5 > 5 * 2 == 2 + -3 * 5 > 1;", [])),
+          (EXP,( getTokens(parseTokens(0, "let five = 5 > 5 * 2 == 2 + -3 * 5 > 1;", [])),
             []
           )))
         )

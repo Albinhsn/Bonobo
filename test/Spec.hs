@@ -9,6 +9,8 @@ import TestBool
 import TestIf 
 import TestIdent
 import TestFunc
+import TestMultiple
+import TestObject
 -- import TestTFT
 
 main :: IO ()
@@ -74,9 +76,9 @@ main = hspec $ do
         `shouldBe`
         "return (5 + 5);"
 
-    it "testing infix" $ 
+    it "testing prefix" $ 
       do 
-        testInfix 
+        testPrefix
         `shouldBe`
         "let five = (-5);"
 
@@ -169,52 +171,52 @@ main = hspec $ do
       do 
         testEmptyIf 
         `shouldBe`
-        "if ( empty ){};"
+        "if( empty ){};"
     it "testing empty if else" $ 
       do 
         testEmptyIfElse 
         `shouldBe`
-        "if ( empty ){};"
+        "if( empty ){};"
     it "testing con" $ 
       do 
         testCon 
         `shouldBe`
-        "if ( empty ){let five = 5;};"
+        "if( empty ){let five = 5;};"
     it "testing alt" $ 
       do 
         testAlt
         `shouldBe`
-        "if ( empty ){}else{let five = 5;};"
+        "if( empty ){}else{let five = 5;};"
     it "testingMultipleCon" $ 
       do 
         testMultipleCon
         `shouldBe`
-        "if ( empty ){let five = 5;let ten = (5 + 5);};"
+        "if( empty ){let five = 5;let ten = (5 + 5);};"
     it "testingMultipleAlt" $ 
       do 
         testMultipleAlt
         `shouldBe`
-        "if ( empty ){}else{let five = 5;let ten = (5 + 5);};"
+        "if( empty ){}else{let five = 5;let ten = (5 + 5);};"
     it "testingConAlt" $ 
       do 
         testConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;}else{let five = 5;};"
+        "if( empty ){let five = 5;}else{let five = 5;};"
     it "testingMultipleConAlt" $ 
       do 
         testMultipleConAlt
         `shouldBe`
-        "if ( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;};"
+        "if( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;};"
     it "testing multiple if" $ 
       do 
         testMultipleIf
         `shouldBe`
-        "if (5 == 5){if (5 == 5){let five = 5;}else{return 5;};};"
+        "if(5 == 5){if(5 == 5){let five = 5;}else{five = 5;};};"
     it "testing param if" $ 
       do 
         testIfParam
         `shouldBe`
-        "if (5 == 5){return 5;};"
+        "if(5 == 5){return 5;};"
   describe "Testing Ident" $ do
     it "testing ident" $ 
       do 
@@ -231,9 +233,9 @@ main = hspec $ do
         testBoolIdent 
         `shouldBe`
         "five = 5 == 5;"
-    it "Testing Infix Ident" $
+    it "Testing Prefix Ident" $
       do 
-        testInfixIdent 
+        testPrefixIdent 
         `shouldBe`
         "five = (-5);"
     it "Testing Grouped Ident" $
@@ -251,9 +253,9 @@ main = hspec $ do
         testLetAssignIdent 
         `shouldBe`
         "let five = three;"
-    it "testing let infix ident" $
+    it "testing let prefix ident" $
       do 
-        testLetInfixIdent 
+        testLetPrefixIdent 
         `shouldBe`
         "let five = (-five);"
     it "testing let bool ident" $
@@ -299,7 +301,7 @@ main = hspec $ do
           "fn five(){let five = ((2 + 3));};"
     it "testing grouped operator body func" $ 
       do 
-        testInfixBodyFunc 
+        testPrefixBodyFunc 
           `shouldBe`
           "fn five(){let five = (-5);};"
     it "testing bool body func" $ 
@@ -311,7 +313,7 @@ main = hspec $ do
       do 
         testIfFunc 
         `shouldBe`
-        "fn five(){if (5 == 5){let five = 5;}else{return 10;};};"
+        "fn five(){if(5 == 5){let five = 5;}else{return 10;};};"
     it "testing func call in func" $ 
       do 
         testFuncCallInFunc 
@@ -327,9 +329,9 @@ main = hspec $ do
         testOpFuncCall 
           `shouldBe`
           "add((5 + 5));"
-    it "testing infix func call" $ 
+    it "testing prefix func call" $ 
       do 
-        testInfixFuncCall 
+        testPrefixFuncCall 
           `shouldBe`
           "add((-5));"
     it "testing grouped op func call" $ 
@@ -354,9 +356,9 @@ main = hspec $ do
         testOperatorWithFuncCall 
         `shouldBe`
         "let five = (2 + addThree());"
-    it "testing infix with func call" $
+    it "testing prefix with func call" $
       do 
-        testInfixWithFuncCall 
+        testPrefixWithFuncCall 
         `shouldBe`
         "let five = (-five());"
     it "testing bool with func call" $
@@ -391,10 +393,51 @@ main = hspec $ do
       do
         testDiffFunc
         `shouldBe`
-        "fn five(){if (5 == 5){let five = 5;five = (five - 2);return (five + 3);};};"
-  describe "Test difficult" $ do
+        "fn five(){if(5 == 5){let five = 5;five = (five - 2);return (five + 3);};};"
    it "Test diff if" $
       do
         testDiffIf
         `shouldBe`
-        "if ( empty ){if ( empty ){}else{if ( empty ){};};}else{if ( empty ){if ( empty ){if ( empty ){}else{return 5;};};};};"
+        "if( empty ){if( empty ){}else{if( empty ){};};}else{if( empty ){if( empty ){if( empty ){}else{five = 5;};};};};"
+   it "Test diff if" $
+      do
+        testInsaneIf
+        `shouldBe`
+        "if( empty ){if( empty ){if( empty ){five = 5;};}else{if( empty ){five = 5;}else{five = 5;};};}else{if( empty ){if( empty ){if( empty ){}else{five = 5;};}else{if( empty ){}else{if( empty ){}else{five = 5;};};};};};"
+  describe "Test Multiple" $ do
+   it "Test Multiple let" $
+      do
+        testMultipleLet
+        `shouldBe`
+        "let five = 5; let ten = 10;"
+   it "Test Multiple Ident" $
+      do
+        testMultipleIdent
+        `shouldBe`
+        "let five = 5; let two = 2; five = (((two * five)) / two);"
+   it "Test Multiple Func" $
+      do
+        testMultipleFunc
+        `shouldBe`
+        "fn double(numb){if(numb < 0){return ((-2) * numb);}else{return (numb * 2);};}; fn divBy(div,numb){return (numb / div);};"
+   it "Test Fn Dec Call" $
+      do
+        testFnDecCall
+        `shouldBe`
+        "fn isGTF(numb){return numb > 5;}; let ten = 10; let gtf = isGTF(ten);"
+  describe "test object" $ do
+    it "test true obj" $ 
+      do 
+        testObjTrue 
+        `shouldBe`
+        "True"
+    it "test false obj" $ 
+      do 
+        testObjFalse
+        `shouldBe`
+        "False"
+    it "test int obj" $ 
+      do 
+        testObjInt
+        `shouldBe`
+        "5"

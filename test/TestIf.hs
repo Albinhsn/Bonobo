@@ -12,7 +12,7 @@ testEmptyIf=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){}", [])),
                   []
                 ))
             )
@@ -24,7 +24,7 @@ testEmptyIfElse=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){} else {}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){} else {}", [])),
                   []
                 ))
             )
@@ -36,7 +36,7 @@ testCon=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){let five = 5;} else {}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){let five = 5;} else {}", [])),
                   []
                 ))
             )
@@ -48,7 +48,7 @@ testAlt=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){} else {let five = 5;}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){} else {let five = 5;}", [])),
                   []
                 ))
             )
@@ -60,7 +60,7 @@ testMultipleCon=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){let five = 5; let ten = 5 + 5;} else {}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){let five = 5; let ten = 5 + 5;} else {}", [])),
                   []
                 ))
             )
@@ -72,7 +72,7 @@ testMultipleAlt=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){} else {let five = 5; let ten = 5 + 5;}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){} else {let five = 5; let ten = 5 + 5;}", [])),
                   []
                 ))
             )
@@ -84,7 +84,7 @@ testConAlt=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){let five = 5;} else {let five = 5;}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){let five = 5;} else {let five = 5;}", [])),
                   []
                 ))
             )
@@ -96,7 +96,7 @@ testMultipleConAlt=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(){let five = 5; let ten = 10;} else {let five = 5; let ten = 10;}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(){let five = 5; let ten = 10;} else {let five = 5; let ten = 10;}", [])),
                   []
                 ))
             )
@@ -108,7 +108,7 @@ testMultipleIf=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(5 == 5){if(5 == 5){let five = 5;}else{return 5;}};", [])),
+                (EXP,( getTokens(parseTokens (0, "if(5 == 5){if(5 == 5){let five = 5;}else{five = 5;}};", [])),
                   []
                 ))
             )
@@ -120,7 +120,7 @@ testIfParam=
     ( head
         (snd( snd
             ( parseStatements
-                (EXP,( snd (parseTokens ("if(5 == 5){return 5;}", [])),
+                (EXP,( getTokens(parseTokens (0, "if(5 == 5){return 5;}", [])),
                   []
                 ))
             )
