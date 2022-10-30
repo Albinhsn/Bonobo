@@ -9,14 +9,24 @@ parseTokens (i, s, t) = (inte, str, tok)
       | null s = (i, s, t ++ [Token {line = i, typ = EOF, literal = "EOF"}])
       | isValidSpecialChar (head s) = parseTokens (i, removeFirstChar s, t ++ [parseChar (i, head s)])
       | isNewLine (head s) = parseTokens(i+1, removeFirstChar s, t)
+      | head s == '"' =  parseTokens(parseString(i, removeFirstChar s, t ++ [Token {line = i, typ = STRING, literal = ""}]))
       | isDoubleChar (head s) = parseTokens (parseDoubleChar (i, head s, removeFirstChar s, t))
       | isNumber (head s) = parseTokens (readNumber (i, s, t ++ [Token {line = i, typ = INT, literal = ""}]))
       | isLetter (head s) = parseTokens (readIdentifier (i, s, t ++ [Token {line = i, typ = IDENT, literal = ""}]))
       | isEmptyChar (head s) = parseTokens (i, removeFirstChar s, t)
       | otherwise = parseTokens (i, removeFirstChar s, t ++ [Token {line = i, typ = ILLEGAL, literal = "ILLEGAL"}])
 
+
+parseString :: (Int, String, [Token]) -> (Int, String, [Token])
+parseString (i, s, t) = (inte, string, token)
+  where 
+    (inte, string, token)
+      | null s = error "Couldn't finish parsing string"
+      | head s == '"' = (i,removeFirstChar s,t)
+      | otherwise = parseString(i, removeFirstChar s, pop t ++ [Token{line = i, typ = STRING, literal = literal (last t) ++ [head s]}])
+
 isValidSpecialChar :: Char -> Bool
-isValidSpecialChar ch = ch == '-' || ch == '>' || ch == '<' || ch == '*' || ch == '/' || ch == '+' || ch == ',' || ch == ';' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+isValidSpecialChar ch = ch == ':' || ch == '[' || ch == ']' || ch == '-' || ch == '>' || ch == '<' || ch == '*' || ch == '/' || ch == '+' || ch == ',' || ch == ';' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
 
 isDoubleChar :: Char -> Bool
 isDoubleChar ch = ch == '=' || ch == '!'
@@ -84,8 +94,8 @@ validateIdentifier t =
     "if" -> Token {line = line t,typ = IF, literal = literal t}
     "else" -> Token {line = line t,typ = ELSE, literal = literal t}
     "return" -> Token {line = line t,typ = RETURN, literal = literal t}
-    "true" -> Token {line = line t,typ = TRUE, literal = literal t}
-    "false" -> Token {line = line t,typ = FALSE, literal = literal t}
+    "True" -> Token {line = line t,typ = TRUE, literal = literal t}
+    "False" -> Token {line = line t,typ = FALSE, literal = literal t}
     _ -> Token {line = line t,typ = IDENT, literal = literal t}
 
 readNumber :: (Int, String, [Token]) -> (Int, String, [Token])
@@ -128,4 +138,7 @@ parseChar (i, ch) =
     '<' -> Token {line = i,typ = LESS_T, literal = "<"}
     '>' -> Token {line = i,typ = GREATER_T, literal = ">"}
     '!' -> Token {line = i,typ = BANG, literal = "!"}
+    '[' -> Token {line = i,typ = LBRACKET, literal = "["}
+    ']' -> Token {line = i,typ = RBRACKET, literal = "]"}
+    ':' -> Token{line = i, typ = COLON, literal = ":"}
     _ -> Token {line = i,typ = ILLEGAL, literal = "ILLEGAL"}

@@ -1,17 +1,27 @@
 TODO:   
-  check so if grouped contains bool always
-
-  error handling
-    Line number to errors etc
-  add funcs to validate next tokens #True?
+  String 
+  Array
+  Hashes
 
 Non prio: 
   list statement for func calls
-  TFT as exp #let five = true;
-    TFT tests 
+  Map for Variable and Function
+  add funcs to validate next tokens #True?
+  Add print statement
+  remove ++ [] -> X : etc 
+  Test strings in lexer + parser
 
+  Prebuilt funcs:
+    len 
+    append 
+    for 
+    print 
+    concat
 
 Longest of terms:
   Lsp 
+
+
+
 
 

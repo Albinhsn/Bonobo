@@ -1,52 +1,65 @@
 module Object where 
 
-import Parser
 import Ast 
-import Lexer 
-import Token 
-import Utils 
 
+data ObjectType = ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show) 
 
-data ObjectType = NULL_OBJ | INT_OBJ | BOOL_OBJ 
+data Function = Function{funcIdent :: !String, funcParams :: ![Expression], funcBody :: ![Statement]} deriving (Eq, Show)
 
+data Variable = Variable{varIdent :: !String, varValue :: Object} deriving (Eq, Show)
 
 data Object 
   = NullObject {objectType :: !ObjectType}
   | IntObject {objectType :: !ObjectType, intValue :: !Int}
+  | StringObject {objectType :: !ObjectType, stringValue :: !String}
   | BoolObject {objectType :: !ObjectType, boolValue :: !Bool}
+  | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
+  deriving(Eq, Show)
 
 
-inspectObject :: Object -> String 
-inspectObject o = 
-  case objectType o of 
-    NULL_OBJ -> "null"
-    INT_OBJ -> show (intValue o)
-    BOOL_OBJ -> show(boolValue o) 
 
-parseIntFromToken :: Token -> Int 
-parseIntFromToken t = read (literal t)
+getFuncParams :: (String, [Function]) -> [Expression]
+getFuncParams (s, f) = head [funcParams x | x <- f, funcIdent x == s]
 
-parseBoolFromTokenType :: TokenType -> Bool 
-parseBoolFromTokenType t = 
-  case t of 
-    TRUE -> True 
-    FALSE -> False 
-    _ -> error "parseBoolFromTokenType"
+-- TODO error handle this
+getVarValue :: (String, [Variable]) -> Object 
+getVarValue (s, v) = head [varValue x | x <- v, varIdent x == s] 
 
-parsePrefixValue :: Expression -> Bool
-parsePrefixValue e =  
-  case typ (prefixOperator e) of 
-    BANG ->  parseBangValue(prefixExpression e) 
-    MINUS -> parseMinusValue(prefixExpression e)
 
-parseBangValue :: Expression -> Bool 
-parseBangValue e = b 
+--TODO error handle this 
+getFuncBody :: (String, [Function]) -> [Statement]
+getFuncBody (s, f) = head [funcBody x | x <- f, funcIdent x == s] 
+
+identIsFunc :: (String, [Function]) -> Bool 
+identIsFunc (s, f) = (null [x | x <- f, funcIdent x == s]) == False
+
+isVar :: (String, [Variable]) -> Bool 
+isVar (s, v) = (null [x | x <- v, varIdent x== s]) == False
+
+getFunc :: (String, [Function])-> Function 
+getFunc (s, f) = head [x | x <- f, funcIdent x == s]
+
+replaceVar :: (Variable, [Variable]) -> [Variable]
+replaceVar (v, va) = removeVar(varIdent v, va) ++ [v]
+
+addVar :: (Variable, [Variable]) -> [Variable]
+addVar (v, va) = var 
   where 
-    b 
-      | otherwise = error "not implemented"
+    var 
+      | isVar(varIdent v, va) == True = replaceVar(v, va)
+      | otherwise = va ++ [v]
+removeVar :: (String, [Variable]) -> [Variable]
+removeVar (s, v) =  va 
+  where   
+    va 
+      | null (checkVar(s, v)) = error "variable doesn't exist"
+      | otherwise = [x | x <- v, varIdent x /= s]
 
-parseMinusValue :: Expression -> Bool 
-parseMinusValue e = b 
+checkVar :: (String, [Variable]) -> [Variable] 
+checkVar (s, v) = b 
   where 
-    b 
-      | otherwise = error "not implemented"
+    b   
+      | null v = [] 
+      | otherwise = [x | x <- v, varIdent x == s]
+
+

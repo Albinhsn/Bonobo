@@ -8,6 +8,8 @@ import Utils
 checkPrecedence :: (Token, Expression) -> Bool
 checkPrecedence (t, e)= getPrecedence (typ t) > getPrecedence (typ (operator e)) 
 
+--
+
 checkBoolPrecedence :: (Token, Expression) -> Bool
 checkBoolPrecedence (t, e)= getPrecedence (typ t) >= getPrecedence (typ (boolOperator e)) 
 
@@ -15,70 +17,79 @@ addIntToLastExp:: (BlockType, Token, Expression) -> Expression
 addIntToLastExp(b, t, e) = ex 
   where
     ex 
-      | expressionType e == EMPTYEXP = IntegerLiteralExpression{expressionType = INTEXP, integerLiteral = t}
-      | expressionType e == PREFIXEXP = PrefixExpression {expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = t}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIntToLastExp(b, t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIntToLastExp(b, t, rightBool e)}
-      | expressionType e == GROUPEDEXP && expressionType (groupedExpression e) == EMPTYEXP= GroupedExpression {expressionType = GROUPEDEXP, closed= False, groupedExpression = IntegerLiteralExpression {expressionType = INTEXP, integerLiteral = t}}
-      | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed= False, groupedExpression = addIntToLastExp (b, t, groupedExpression e)}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIntToLastExp(b, t, assignExpression e)}
-      | expressionType e == CALLEXP = CallExpression {expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIntToLastExp(b, t, last(callParams e))]}
+      | expressionType e == EMPTYEXP = IntegerLiteralExpression{expLine = expLine e, expressionType = INTEXP, integerLiteral = t}
+      | expressionType e == ARRAYEXP && null (array e) =  ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array =[IntegerLiteralExpression{expressionType = INTEXP, expLine = expLine e, integerLiteral = t}]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addIntToLastExp(b, t, last (array e))]} 
+      | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = IntegerLiteralExpression {expLine = expLine e,expressionType = INTEXP, integerLiteral = t}}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIntToLastExp(b, t, rightOperator e))}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIntToLastExp(b, t, rightBool e)}
+      | expressionType e == GROUPEDEXP && expressionType (groupedExpression e) == EMPTYEXP= GroupedExpression {expLine = expLine e,expressionType = GROUPEDEXP, closed= False, groupedExpression = IntegerLiteralExpression {expLine= expLine e, expressionType = INTEXP, integerLiteral = t}}
+      | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed= False, groupedExpression = addIntToLastExp (b, t, groupedExpression e)}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIntToLastExp(b, t, assignExpression e)}
+      | expressionType e == CALLEXP = CallExpression {expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIntToLastExp(b, t, last(callParams e))]}
+      | expressionType e == INDEXEXP = IndexExpression {expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = read (literal t)}
       | expressionType e == IDENTEXP && b == PAR= CallExpression {
+            expLine = expLine e,
             expressionType = CALLEXP,
-            callParams = [IntegerLiteralExpression{expressionType = INTEXP, integerLiteral = t}],  
+            callParams = [IntegerLiteralExpression{expLine = expLine e,expressionType = INTEXP, integerLiteral = t}],  
             callIdent= e,
             closedCall = False 
           }
-      | otherwise = error ("addIntToLastExp" ++ expressionToString(e))
+      | otherwise = error ("addIntToLastExp on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e))
 
 addBoolToLastExp :: (Token, Expression) -> Expression
 addBoolToLastExp (t, e) = ex
   where
     ex 
-      | expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
-      | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addBoolToLastExp (t, groupedExpression e)} 
-      | expressionType e == GROUPEDEXP = BoolExpression {expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expressionType = EMPTYEXP}} 
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addBoolToLastExp(t, assignExpression e)}
-      | otherwise = error "addBoolToLastExp"
+      | expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
+      | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addBoolToLastExp (t, groupedExpression e)} 
+      | expressionType e == GROUPEDEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addBoolToLastExp(t, assignExpression e)}
+      | otherwise = error ("addBoolToLastExp on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e))
 
 
 addOperatorToLastExp:: (Token, Expression) -> Expression 
 addOperatorToLastExp(t, e) = ex
   where
     ex
-      | expressionType e == IDENTEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addOperatorToLastExp(t, rightBool e)}
-      | expressionType e == GROUPEDEXP && closed e == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e,operator = t, rightOperator = Expression {expressionType = EMPTYEXP}} 
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP && closed (rightOperator e) == True && checkPrecedence(t, e) == False = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) /= INTEXP && expressionType (rightOperator e) /= PREFIXEXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addOperatorToLastExp(t, rightOperator e))}
-      | expressionType e == OPERATOREXP && checkPrecedence (t, e) == True = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = OperatorExpression {expressionType = OPERATOREXP, leftOperator = rightOperator e, operator = t, rightOperator = Expression {expressionType = EMPTYEXP}}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = e,operator = t,rightOperator = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addOperatorToLastExp(t, assignExpression e)}
-      | expressionType e == EMPTYEXP = PrefixExpression {expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expressionType = EMPTYEXP}}
-      | otherwise = error "addOperatorToLastExpression" 
+      | expressionType e == IDENTEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addOperatorToLastExp(t, rightBool e)}
+      | expressionType e == GROUPEDEXP && closed e == True = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e,operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP && closed (rightOperator e) == True && checkPrecedence(t, e) == False = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == OPERATOREXP && expressionType (rightOperator e) /= INTEXP && expressionType (rightOperator e) /= PREFIXEXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addOperatorToLastExp(t, rightOperator e))}
+      | expressionType e == OPERATOREXP && checkPrecedence (t, e) == True = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = OperatorExpression {expLine = expLine e,expressionType = OPERATOREXP, leftOperator = rightOperator e, operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e,operator = t,rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addOperatorToLastExp(t, assignExpression e)}
+      | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = [PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expLine = expLine e, expressionType = EMPTYEXP}}]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addOperatorToLastExp(t, last (array e))]} 
+      | expressionType e == EMPTYEXP = PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | otherwise = error ("addOperatorToLastExpression on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
 addPrefixToLastExp:: (Token, Expression) ->  Expression 
 addPrefixToLastExp(t, e) = ex 
   where
     ex 
-      | expressionType e == EMPTYEXP = PrefixExpression {expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expressionType = EMPTYEXP}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addPrefixToLastExp(t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addPrefixToLastExp(t, rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addPrefixToLastExp(t, groupedExpression e)}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addPrefixToLastExp(t, assignExpression e)}
-      | otherwise = error "addPrefixToLastRightOperator"
+      | expressionType e == EMPTYEXP = PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addPrefixToLastExp(t, rightOperator e))}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addPrefixToLastExp(t, rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addPrefixToLastExp(t, groupedExpression e)}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addPrefixToLastExp(t, assignExpression e)}
+      | otherwise = error ("addPrefixToLastRightOperator on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
-addTFToLastBool :: (Token, Expression) -> Expression 
-addTFToLastBool (t, e) = ex
+addTFToLastExp:: (Token, Expression) -> Expression 
+addTFToLastExp(t, e) = ex
   where
     ex
-      | expressionType e == BOOLEXP && expressionType (rightBool e) == EMPTYEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = TFExpression {expressionType = TFEXP, bool = typ t}} 
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addTFToLastBool(t, rightBool e)}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addTFToLastBool(t, assignExpression e)}
-      | expressionType e == EMPTYEXP = TFExpression{expressionType = TFEXP, bool = typ t} 
-      | otherwise = error "addTFToLastBool"
+      | expressionType e == BOOLEXP && expressionType (rightBool e) == EMPTYEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = TFExpression {expLine = expLine e, expressionType = TFEXP, bool = typ t}} 
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addTFToLastExp(t, rightBool e)}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addTFToLastExp(t, assignExpression e)}
+      | expressionType e == EMPTYEXP = TFExpression{expLine = expLine e, expressionType = TFEXP, bool = typ t} 
+      | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = [TFExpression{expLine = expLine e, expressionType = TFEXP, bool = typ t} ]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addTFToLastExp(t, last (array e))]} 
+      | expressionType e == PREFIXEXP = PrefixExpression{expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = TFExpression{expLine = expLine e, expressionType = TFEXP, bool = typ t}}
+      | otherwise = error ("addTFToLastExp on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
 isTF :: Token -> Bool
 isTF t = typ t == FALSE || typ t == TRUE
@@ -87,13 +98,15 @@ addGroupToLastExp :: Expression -> Expression
 addGroupToLastExp e = ex
   where 
     ex 
-      | expressionType e == EMPTYEXP = GroupedExpression {expressionType = GROUPEDEXP, closed=False, groupedExpression = Expression{expressionType = EMPTYEXP}}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = addGroupToLastExp (rightOperator e)}
-      | expressionType e == BOOLEXP =  BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addGroupToLastExp( rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addGroupToLastExp (groupedExpression e)}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addGroupToLastExp(assignExpression e)}
-      | expressionType e == IDENTEXP = CallExpression {expressionType = CALLEXP, callIdent = e, callParams = [], closedCall = False}  
-      | otherwise = error "error AddingGroupToLastExp"
+      | expressionType e == EMPTYEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed=False, groupedExpression = Expression{expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = addGroupToLastExp (rightOperator e)}
+      | expressionType e == BOOLEXP =  BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addGroupToLastExp( rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addGroupToLastExp (groupedExpression e)}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addGroupToLastExp(assignExpression e)}
+      | expressionType e == IDENTEXP = CallExpression {expLine = expLine e, expressionType = CALLEXP, callIdent = e, callParams = [], closedCall = False}  
+      | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = [GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed=False, groupedExpression = Expression{expLine = expLine e, expressionType = EMPTYEXP}}]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addGroupToLastExp(last (array e))]} 
+      | otherwise = error ("addGroupToLastExp on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
 
 closeLastGrouped :: Expression -> Expression
@@ -101,20 +114,21 @@ closeLastGrouped e = ex
   where 
     ex 
       -- Found last grouped  
-      | expressionType e == GROUPEDEXP && findGrouped (groupedExpression e) == False = GroupedExpression {expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression e}  
+      | expressionType e == GROUPEDEXP && findGrouped (groupedExpression e) == False = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = True, groupedExpression = groupedExpression e}  
       -- Found grouped nested 
-      | expressionType e == GROUPEDEXP = GroupedExpression {closed = closed e, expressionType = GROUPEDEXP, groupedExpression = closeLastGrouped (groupedExpression e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, closed = closed e, expressionType = GROUPEDEXP, groupedExpression = closeLastGrouped (groupedExpression e)}
 
       --Exists deeper inside left
-      | expressionType e == OPERATOREXP && findGrouped (leftOperator e) == True = OperatorExpression {expressionType = OPERATOREXP, operator = operator e, leftOperator = closeLastGrouped (leftOperator e), rightOperator = rightOperator e}   
-      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expressionType = BOOLEXP, leftBool = closeLastGrouped (leftBool e), boolOperator = boolOperator e, rightBool = rightBool e} 
+      | expressionType e == OPERATOREXP && findGrouped (leftOperator e) == True = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, operator = operator e, leftOperator = closeLastGrouped (leftOperator e), rightOperator = rightOperator e}   
+      | expressionType e == BOOLEXP && findGrouped (leftBool e) == True = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = closeLastGrouped (leftBool e), boolOperator = boolOperator e, rightBool = rightBool e} 
       -- Found grouped in right 
-      | expressionType e == OPERATOREXP && findGrouped (rightOperator e) == True= OperatorExpression {expressionType = OPERATOREXP, operator = operator e, rightOperator= closeLastGrouped (rightOperator e), leftOperator = leftOperator e} 
-      | expressionType e == BOOLEXP && findGrouped (rightBool e) ==True = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = closeLastGrouped (rightBool e)}
+      | expressionType e == OPERATOREXP && findGrouped (rightOperator e) == True= OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, operator = operator e, rightOperator= closeLastGrouped (rightOperator e), leftOperator = leftOperator e} 
+      | expressionType e == BOOLEXP && findGrouped (rightBool e) ==True = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = closeLastGrouped (rightBool e)}
       -- didn't find 
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = closeLastGrouped(assignExpression e)}
-      | expressionType e == CALLEXP = CallExpression {expressionType = CALLEXP, callParams = callParams e, callIdent = callIdent e, closedCall= True}
-      | otherwise = error "couldn't close last grouped" 
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = closeLastGrouped(assignExpression e)}
+      | expressionType e == CALLEXP = CallExpression {expLine = expLine e, expressionType = CALLEXP, callParams = callParams e, callIdent = callIdent e, closedCall= True}
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [closeLastGrouped(last (array e))]} 
+      | otherwise = error ("couldn't close last grouped on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
 
 findGrouped :: Expression -> Bool 
@@ -153,6 +167,7 @@ noPopAddToStatement(b, s, sta) =
     ALT -> pop s ++ addToLastAlt(s, sta)
     BOD ->  pop s ++ [
       Statement {
+        staLine = staLine (last s),
         statementType = statementType (last s), 
         statementUni = FuncStatement{
           params = getParams(s),
@@ -170,6 +185,7 @@ addToLastCon (s, sta) = statement
       | null s = [sta]
       | statementType (last s) == IFSTA && null (getAlt(s)) == True= pop s ++ [
         Statement{
+            staLine = staLine (last s),
             statementType = IFSTA, 
             statementUni = IfStatement{
               closedCon = False,
@@ -181,6 +197,7 @@ addToLastCon (s, sta) = statement
           }]
       | statementType (last s) == IFSTA && getClosedCon(s) == True = pop s ++ [
         Statement{
+            staLine = staLine (last s),
             statementType = IFSTA, 
             statementUni = IfStatement{
               closedCon = True,
@@ -192,6 +209,7 @@ addToLastCon (s, sta) = statement
           }
       ]
       | statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = FuncStatement{
               params = getParams(s),
@@ -209,6 +227,7 @@ addToLastAlt (s, sta) = statement
       | null s = [sta]
       | statementType (last s) == IFSTA &&  getClosedCon(s)== True= pop s ++ [ 
           Statement{
+              staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                 closedCon = True,
@@ -220,6 +239,7 @@ addToLastAlt (s, sta) = statement
             }]
       | statementType (last s) == IFSTA = pop s ++ [
           Statement{
+              staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                 closedCon = False,
@@ -230,6 +250,7 @@ addToLastAlt (s, sta) = statement
               expression = expression (last s)
             }]
       | statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = FuncStatement{
               params = getParams(s),
@@ -247,6 +268,7 @@ addToStatement (b, s, sta) =
     PAR -> pop s ++ [sta]
     BOD -> pop s ++ [
       Statement {
+          staLine = staLine (last s),
           statementType = statementType(last s),
           statementUni = FuncStatement{
               params = getParams(s),
@@ -262,6 +284,7 @@ addToLastStatement (b, t, e, s) = sta
   where 
     sta 
       | b == PAR  && statementType (last s) == FUNCSTA = Statement{
+        staLine = staLine (last s),
         statementType = FUNCSTA,
         statementUni = FuncStatement{
           params = pop (getParams(s)) ++ [addXToExp(b, t, e, getLastParam(getParams(s)))],
@@ -269,11 +292,12 @@ addToLastStatement (b, t, e, s) = sta
           },
         expression = expression (last s)
         } 
-      | (b == CON || b == ALT ) && statementType (last s) == FUNCSTA = Statement{statementType =FUNCSTA, expression = expression (last s), statementUni = FuncStatement{
+      | (b == CON || b == ALT ) && statementType (last s) == FUNCSTA = Statement{staLine = staLine (last s),statementType =FUNCSTA, expression = expression (last s), statementUni = FuncStatement{
           params = getParams(s),
           body = pop (getBody(s)) ++ [addToLastStatement(b, t, e, getBody(s))]
         }}
       | b == BOD = Statement {
+          staLine = staLine (last s),
           statementType = statementType (last s), 
           statementUni = FuncStatement{
             params = getParams(s),
@@ -282,6 +306,7 @@ addToLastStatement (b, t, e, s) = sta
           }
       --Adding in con 
       |  (b == CON || b == ALT ) && statementType (last s) == IFSTA && null (getCon(s)) == False && getClosedCon(s) == False = Statement{
+          staLine = staLine (last s),
           statementType = IFSTA,
           statementUni = IfStatement{
             closedCon = False,
@@ -293,6 +318,7 @@ addToLastStatement (b, t, e, s) = sta
         }
       -- Adding in Alt 
       | (b == CON || b == ALT ) && statementType (last s) == IFSTA &&  getClosedCon(s) == True = Statement {
+          staLine = staLine (last s),
           statementType = IFSTA,
           statementUni = IfStatement{
               closedCon = True,
@@ -304,6 +330,7 @@ addToLastStatement (b, t, e, s) = sta
         }
       --Found last statement
       | otherwise = Statement{
+          staLine = staLine (last s),
           statementType = statementType(last s),
           statementUni = statementUni(last s),
           expression = addXToExp(b, t, e, expression (last s))
@@ -313,7 +340,7 @@ addToLastStatement (b, t, e, s) = sta
 getLastParam :: [Expression] -> Expression 
 getLastParam e = 
   case e of 
-    [] -> Expression{expressionType = EMPTYEXP}
+    [] -> Expression{expLine = 0,  expressionType = EMPTYEXP}
     _ -> last e
 
 
@@ -326,8 +353,8 @@ addXToExp (b, t,et, e) = ex
       | typ t == MINUS && et == PREFIXEXP =  addPrefixToLastExp(t, e)
       | typ t == MINUS = addOperatorToLastExp(t,e)
       | typ t == BANG = addPrefixToLastExp(t, e)
-      | typ t == TRUE =  addTFToLastBool(t, e)
-      | typ t == FALSE = addTFToLastBool(t, e)
+      | typ t == TRUE =  addTFToLastExp(t, e)
+      | typ t == FALSE = addTFToLastExp(t, e)
       | typ t == LPAREN = addGroupToLastExp(e)
       | typ t == RPAREN = closeLastGrouped(e)
       | typ t == PLUS = addOperatorToLastExp(t, e)
@@ -339,37 +366,71 @@ addXToExp (b, t,et, e) = ex
       | typ t == NOT_EQUALS= addBoolToLastExp(t,e)
       | typ t == IDENT = addIdentifierToLastExp(b, t, e)
       | typ t == ASSIGN = addAssignToLastExp(e)
+      | typ t == STRING= addStringToLastExp(b,t,e)
+      | typ t == LBRACKET = addArrayToLastExp(b,t,e)
+      | typ t == COMMA = addArrayToLastExp(b,t,e)
       | otherwise = error (literal t)
 
 addAssignToLastExp:: Expression -> Expression 
 addAssignToLastExp e = ex 
   where
     ex
-      | expressionType e == IDENTEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = e, assignExpression = Expression {expressionType = EMPTYEXP}} 
-      | expressionType e == EMPTYEXP = Expression {expressionType = EMPTYEXP}
-      | otherwise = error "parseAssignToLastExp"
+      | expressionType e == IDENTEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = e, assignExpression = Expression {expLine = expLine e,expressionType = EMPTYEXP}} 
+      | expressionType e == EMPTYEXP = Expression {expLine = expLine e,expressionType = EMPTYEXP}
+      | otherwise = error ("addAssignToLastExp on line: " ++ (show(expLine e)))
 
 parseIdentifierToLet :: [Token] -> Statement
 parseIdentifierToLet t = s
   where
     s  
-      | typ (head t) == IDENT = Statement {statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expressionType = EMPTYEXP}}
+      | typ (head t) == IDENT = Statement {staLine = line (head t), statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expLine = line (head t), expressionType = EMPTYEXP}}
       | otherwise = error ("Error parsing identifier to let statement on line: " ++ (show(line(head t))))
 
 addIdentifierToLastExp:: (BlockType, Token, Expression) ->  Expression 
 addIdentifierToLastExp(b, t, e) = ex 
   where
     ex 
-      | expressionType e == EMPTYEXP = IdentExpression{expressionType = IDENTEXP,  ident = t}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIdentifierToLastExp(b, t, rightOperator e))}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIdentifierToLastExp(b, t, rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addIdentifierToLastExp(b, t, groupedExpression e)}
-      | expressionType e == PREFIXEXP = PrefixExpression {expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addIdentifierToLastExp(b, t, prefixExpression e)}
-      | expressionType e == CALLEXP = CallExpression{expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIdentifierToLastExp(b, t, getLastParam(callParams e))]}
-      | expressionType e == IDENTEXP && b == PAR = CallExpression{expressionType = CALLEXP, closedCall = False, callIdent = e, callParams = [IdentExpression{expressionType = IDENTEXP,  ident = t}]}
-      | expressionType e == ASSIGNEXP = AssignExpression {expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIdentifierToLastExp(b,t,assignExpression e)}
+      | expressionType e == EMPTYEXP = IdentExpression{expLine = line t, expressionType = IDENTEXP,  ident = t}
+      | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = [IdentExpression{expLine = line t, expressionType = IDENTEXP,  ident = t}]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addIdentifierToLastExp(b, t, last (array e))]} 
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addIdentifierToLastExp(b, t, rightOperator e))}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e,expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIdentifierToLastExp(b, t, rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addIdentifierToLastExp(b, t, groupedExpression e)}
+      | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e,expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addIdentifierToLastExp(b, t, prefixExpression e)}
+      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIdentifierToLastExp(b, t, getLastParam(callParams e))]}
+      | expressionType e == IDENTEXP && b == PAR = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = e, callParams = [IdentExpression{expLine = expLine e, expressionType = IDENTEXP,  ident = t}]}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIdentifierToLastExp(b,t,assignExpression e)}
       | otherwise = error ("Error adding identifier to last exp on line: " ++ (show (line(t)))) 
 
+addArrayToLastExp:: (BlockType, Token, Expression) ->  Expression 
+addArrayToLastExp(b, t, e) = ex 
+  where
+    ex 
+      | expressionType e == EMPTYEXP = ArrayExpression{expLine = line t, expressionType = ARRAYEXP,  array = []}
+      | expressionType e == ARRAYEXP && null(array e) == False && expressionType (last (array e)) == IDENTEXP =  ArrayExpression{expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [IndexExpression{expLine = expLine e, expressionType = INDEXEXP, arrayIdent = ident (last (array e)), arrayIndex = length (array e)}]}
+      | expressionType e == ARRAYEXP= ArrayExpression{expLine = line t, expressionType = ARRAYEXP,  array = array e ++ [Expression{expLine = 0, expressionType = EMPTYEXP}]}
+      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addArrayToLastExp(b, t, getLastParam(callParams e))]}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addArrayToLastExp(b,t,assignExpression e)}
+      | expressionType e == IDENTEXP = IndexExpression{expLine = expLine e, expressionType = INDEXEXP, arrayIdent = ident e, arrayIndex = -1}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addArrayToLastExp(b, t, rightOperator e))}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addArrayToLastExp(b, t, groupedExpression e)}
+      | otherwise = error ("Error adding array to last exp on line: " ++ (show (line(t)))) 
+
+addStringToLastExp:: (BlockType, Token, Expression) ->  Expression 
+addStringToLastExp(b, t, e) = ex 
+  where
+    ex 
+      | expressionType e == EMPTYEXP = StringExpression{expLine = line t, expressionType = STRINGEXP,  stringLiteral = t}
+      | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = [StringExpression{expLine = line t, expressionType = STRINGEXP,  stringLiteral = t}]} 
+      | expressionType e == ARRAYEXP = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addStringToLastExp(b, t, last (array e))]} 
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addStringToLastExp(b, t, rightOperator e))}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e,expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addStringToLastExp(b, t,rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addStringToLastExp(b, t, groupedExpression e)}
+      | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e,expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addStringToLastExp(b, t, prefixExpression e)}
+      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addStringToLastExp(b, t, getLastParam(callParams e))]}
+      | expressionType e == IDENTEXP && b == PAR = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = e, callParams = [StringExpression{expLine = expLine e, expressionType = STRINGEXP,  stringLiteral = t}]}
+      | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addStringToLastExp(b,t,assignExpression e)}
+      | otherwise = error ("Error adding identifier to last exp on line: " ++ (show (line(t)))) 
 
 
 changeSta :: (Token, [Statement]) -> [Statement]
@@ -377,11 +438,13 @@ changeSta (t,s) = sta
   where   
     sta 
       | statementType (last s) == NOSTA && typ t == ASSIGN = pop s ++ [Statement{
+          staLine = staLine (last s),
           statementType = ASSIGNSTA,
           statementUni = AssignStatement{}, 
           expression = expression (last s)
         }]
       | statementType (last s) == NOSTA && typ t == LPAREN = pop s ++ [Statement{
+          staLine = staLine (last s),
           statementType = FUNCSTA,
           statementUni = FuncStatement{params = [], body = []},
           expression = expression (last s) 
@@ -404,16 +467,18 @@ hasValidCondition (b, s) = boo
     boo 
       |getLastIfConditionType(b,s)  == GROUPEDEXP = True
       --TODO Implement check for boolexp inside if
-      | otherwise = error (expressionToString(getLastNestedExpression(b, s)))
+      | otherwise = error ("hasValidCondition on line: " ++ (show (staLine (last s)))) 
 
 changeFuncToCall :: [Statement] -> [Statement] 
 changeFuncToCall s = sta
   where
   sta   
       | statementType (last s) == FUNCSTA && null (getBody(s))  = pop s ++ [Statement{
+          staLine = staLine (last s),
           statementUni=CallStatement{},
           statementType=CALLSTA, 
           expression = CallExpression {
+            expLine = staLine (last s),
             expressionType = CALLEXP,
             callParams = getParams(s),
             callIdent= expression  (last s), 
@@ -426,38 +491,43 @@ changeLastFuncToCall s = sta
   where   
     sta 
       | statementType s == FUNCSTA && null (body (statementUni s)) = Statement{
+          staLine = staLine s,
           statementUni=CallStatement{},
           statementType=CALLSTA, 
           expression = CallExpression {
+            expLine = staLine s, 
             expressionType = CALLEXP,
             callParams = params (statementUni s),
             callIdent= expression  s,
             closedCall = False 
           }}
-      | statementType s == RETSTA || statementType s == LETSTA = Statement {statementType = statementType s, statementUni = statementUni s, expression = changeLastFuncExp(expression s)} 
-      | otherwise = error "changeLastFuncToCall" 
+      | statementType s == RETSTA || statementType s == LETSTA = Statement {staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = changeLastFuncExp(expression s)} 
+      | otherwise = error ("changeLastFuncToCall on line: " ++ (show (staLine s))) 
 
 changeLastFuncExp :: Expression -> Expression 
 changeLastFuncExp e = ex
   where   
     ex
       | expressionType e == IDENTEXP = CallExpression {
+            expLine = expLine e,
             expressionType = CALLEXP,
             callParams = [],  
             callIdent= e,
             closedCall = False 
           }
-      | expressionType e == PREFIXEXP = PrefixExpression {expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = changeLastFuncExp(prefixExpression e)}
-      | expressionType e == OPERATOREXP = OperatorExpression {expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = changeLastFuncExp(rightOperator e)}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = changeLastFuncExp(rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression {expressionType = GROUPEDEXP, groupedExpression = changeLastFuncExp(groupedExpression e), closed = closed e}
+      | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = changeLastFuncExp(prefixExpression e)}
+      | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e,expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = changeLastFuncExp(rightOperator e)}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e,expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = changeLastFuncExp(rightBool e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = changeLastFuncExp(groupedExpression e), closed = closed e}
       | expressionType e == CALLEXP = CallExpression{
+          expLine = expLine e,
           expressionType = CALLEXP, 
           callParams = callParams e,
           callIdent = callIdent e,
           closedCall = True
         }
-      | otherwise = error "changeLastFuncExp" 
+      | expressionType e == ARRAYEXP = ArrayExpression {expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [changeLastFuncExp (last (array e))]}
+      | otherwise = error ("changeLastFuncExp on line: " ++ (show (expLine e))) 
 
 paramHasOpen :: (BlockType, [Statement]) -> Bool
 paramHasOpen (b,s) = bo
@@ -487,14 +557,11 @@ getLastNestedExpression(b, s) = e
     e 
       | statementType (last s) == FUNCSTA = last(getParams(s))
       | b == EXP || statementType (last s) /= IFSTA = expression (last s)
-      | b == PAR = error "getLastNested not implemented for PAR"
       | b == CON && null (getAlt(s)) == True = getLastNestedExpression(b, getCon(s))
       | b == CON = getLastNestedExpression(b, getAlt(s))
       | b == ALT && getClosedCon(s) == True = getLastNestedExpression(b, getAlt(s))
       | b == ALT = getLastNestedExpression(b, getCon(s))
-      | b == CON = error "con"
-      | b == ALT = error "alt"
-      | otherwise = error "get last nested expression"
+      | otherwise = error ("getLastNestedExpression on line: " ++ (show (staLine (last s)))) 
 
 getLastIfConditionType :: (BlockType, [Statement]) -> ExpressionType 
 getLastIfConditionType (b, s) = e
@@ -506,9 +573,7 @@ getLastIfConditionType (b, s) = e
       | b == CON = getLastIfConditionType(b, getAlt(s))
       | b == ALT && getClosedCon(s) == True = getLastIfConditionType(b, getAlt(s))
       | b == ALT = getLastIfConditionType(b, getCon(s))
-      | b == CON = error "con"
-      | b == ALT = error "alt"
-      | otherwise = error "getLastIfConditionType"
+      | otherwise = error ("getLastIfConditionType on line: " ++ (show (staLine (last s)))) 
 
 
 
@@ -517,25 +582,28 @@ addEmptyToLastParam s = sta
   where 
     sta 
       | statementType s == FUNCSTA = Statement{
+        staLine = staLine s,
         statementType = FUNCSTA,
         statementUni = FuncStatement{
             body = [],
-            params = params (statementUni s)++ [Expression{expressionType = EMPTYEXP}]
+            params = params (statementUni s)++ [Expression{expLine = staLine s, expressionType = EMPTYEXP}]
           },
         expression = expression s
       }
-      | statementType s /= IFSTA = Statement{statementType = statementType s, statementUni = statementUni s, expression = addEmptyToLastParamExp(expression s)} 
-      | otherwise = error "addEmptyToLastParam" 
+      | statementType s /= IFSTA = Statement{staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = addEmptyToLastParamExp(expression s)} 
+      | otherwise = error ("addEmptyToLastParam on line: " ++ (show (staLine s))) 
+
 addEmptyToLastParamExp :: Expression -> Expression 
 addEmptyToLastParamExp e = ex 
   where 
     ex
-      | expressionType e == CALLEXP = CallExpression{expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = callParams e ++ [Expression{expressionType = EMPTYEXP}]} 
-      | expressionType e == OPERATOREXP = OperatorExpression{expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = addEmptyToLastParamExp(rightOperator e)}
-      | expressionType e == BOOLEXP = BoolExpression {expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addEmptyToLastParamExp(rightBool e)}
-      | expressionType e == PREFIXEXP = PrefixExpression{expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addEmptyToLastParamExp(prefixExpression e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression{expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addEmptyToLastParamExp(e)} 
-      | otherwise =error "addEmptyToLastParamExp"
+      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = callParams e ++ [Expression{expLine = expLine e, expressionType = EMPTYEXP}]} 
+      | expressionType e == OPERATOREXP = OperatorExpression{expLine = expLine e,expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = addEmptyToLastParamExp(rightOperator e)}
+      | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addEmptyToLastParamExp(rightBool e)}
+      | expressionType e == PREFIXEXP = PrefixExpression{expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addEmptyToLastParamExp(prefixExpression e)}
+      | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addEmptyToLastParamExp(e)} 
+      | expressionType e == ARRAYEXP = ArrayExpression {expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addEmptyToLastParamExp (last (array e))]}
+      | otherwise = error ("addEmptyToLastParamExp on line: " ++ (show (expLine e))) 
 
 addIfToLastBlock:: (BlockType, [Statement]) -> [Statement]
 addIfToLastBlock(b,s) = sta 
@@ -544,13 +612,15 @@ addIfToLastBlock(b,s) = sta
       -- Add CON  
       | b == CON && statementType (last s) == IFSTA && getClosedCon(s) == False &&  (null(getCon(s)) == True || statementType (last (getCon(s))) /= IFSTA)= pop s ++ [
         Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = False,
               closedAlt = False,
               con = getCon(s) ++ [Statement{
+                staLine = staLine (last s),
                 statementType = IFSTA,
-                expression = Expression{expressionType = EMPTYEXP},
+                expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
                 statementUni = IfStatement{
                   closedCon = False, 
                   con = [], 
@@ -567,13 +637,15 @@ addIfToLastBlock(b,s) = sta
       --Search in con 
       | b == CON && statementType (last s) == IFSTA && getClosedCon(s) == False = pop s ++ [
         Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = False,
               closedAlt = False,
               con = getCon(s) ++ [Statement{
+                staLine = staLine (last s),
                 statementType = IFSTA,
-                expression = Expression{expressionType = EMPTYEXP},
+                expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
                 statementUni = IfStatement{
                   closedCon = False, 
                   con = addIfToLastBlock(CON, con(statementUni(last s))), 
@@ -590,14 +662,16 @@ addIfToLastBlock(b,s) = sta
       --Search in alt 
       | b == CON = pop s ++ [
         Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = False,
               closedAlt = False,
               con = getCon(s),
               alt =  getAlt(s) ++ [Statement{
+                staLine = staLine(last s),
                 statementType = IFSTA,
-                expression = Expression{expressionType = EMPTYEXP},
+                expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
                 statementUni = IfStatement{
                   closedCon = False, 
                   con = getCon(getCon(s)), 
@@ -613,14 +687,16 @@ addIfToLastBlock(b,s) = sta
       -- Add Alt
       | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == True && (null (getAlt(s)) == True || statementType (last (getAlt(s))) /= IFSTA) = pop s ++ [
           Statement{
+              staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                   closedCon = False,
                   con = [],
                   closedAlt = False,
                   alt = pop (getAlt(s)) ++ [Statement{
+                staLine = staLine (last s),
                 statementType = IFSTA,
-                expression = Expression{expressionType = EMPTYEXP},
+                expression = Expression{expLine = staLine (last s),expressionType = EMPTYEXP},
                 statementUni = IfStatement{
                   closedCon = False, 
                   con = [], 
@@ -636,6 +712,7 @@ addIfToLastBlock(b,s) = sta
       --Search in alt 
       | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == True = pop s ++ [
           Statement{
+              staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                   closedCon = True,
@@ -649,6 +726,7 @@ addIfToLastBlock(b,s) = sta
       -- Search in CON
       | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == False = pop s ++ [
           Statement{
+              staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                   closedCon = False,
@@ -662,12 +740,14 @@ addIfToLastBlock(b,s) = sta
       --Is FUNCSTA
       | b == BOD && statementType (last s) == FUNCSTA = pop s ++ [
           Statement{
+              staLine = staLine (last s),
               statementType = FUNCSTA, 
               statementUni = FuncStatement{
                   params = getParams(s),
                   body = getBody(s) ++ [Statement{
+                    staLine = staLine (last s),
                     statementType = IFSTA,
-                    expression = Expression{expressionType = EMPTYEXP},
+                    expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
                     statementUni = IfStatement{
                       closedCon = False, 
                       con = [], 
@@ -680,7 +760,7 @@ addIfToLastBlock(b,s) = sta
               expression = expression (last s)
             }
         ]
-      | otherwise = error "addIfToLastBlock"
+      | otherwise = error ("addIfToLastBlock on line: " ++ (show (staLine (last s)))) 
 
 findLastOpen:: ([Statement]) -> Bool
 findLastOpen(s) = b
@@ -699,6 +779,7 @@ closeLastOpen(b, s) = sta
       | statementType (last s) == IFSTA && getClosedCon(s) == False && findLastOpen(getCon(s)) == False = 
         pop s ++ [
         Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
             closedCon = True,
@@ -709,17 +790,19 @@ closeLastOpen(b, s) = sta
           ] 
       -- Search in con
       | statementType (last s) == IFSTA && getClosedCon(s) == False && null(getAlt(s)) == True = pop s ++ [Statement{
-        statementType = statementType (last s),
-        expression = expression (last s),
-        statementUni = IfStatement {
-          closedCon = False,
-          closedAlt = False,
-          con = closeLastOpen(b, getCon(s)),
-          alt = getAlt(s)}}]
+          staLine = staLine (last s),
+          statementType = statementType (last s),
+          expression = expression (last s),
+          statementUni = IfStatement {
+            closedCon = False,
+            closedAlt = False,
+            con = closeLastOpen(b, getCon(s)),
+            alt = getAlt(s)}}]
       -- Close Alt
       | statementType (last s) == IFSTA && closedAlt(statementUni (last s)) == False && findLastOpen(getAlt(s)) == False = 
         pop s ++ [
         Statement{
+          staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
             closedCon = True,
@@ -730,15 +813,17 @@ closeLastOpen(b, s) = sta
           ] 
       --Search in alt
       | statementType (last s) == IFSTA = pop s ++ [Statement{
-        statementType = statementType (last s),
-        expression = expression (last s),
-        statementUni = IfStatement {
-          closedCon = True,
-          closedAlt = False,
-          con = getCon(s),
-          alt = closeLastOpen(b, getAlt(s))}}]
+          staLine = staLine (last s),
+          statementType = statementType (last s),
+          expression = expression (last s),
+          statementUni = IfStatement {
+            closedCon = True,
+            closedAlt = False,
+            con = getCon(s),
+            alt = closeLastOpen(b, getAlt(s))}}]
       -- s is funcsta
       | statementType (last s) == FUNCSTA && b /= BOD = pop s ++ [Statement {
+          staLine = staLine (last s),
           statementType = FUNCSTA,
           statementUni = FuncStatement{
               params = getParams(s),
@@ -746,7 +831,7 @@ closeLastOpen(b, s) = sta
             },
           expression = expression (last s)
         }] 
-      | otherwise = error "closeLastOpen"
+      | otherwise = error ("closeLastOpen on line: " ++ (show (staLine (last s))))
 
 findLastBlockType :: (BlockType, Statement) -> BlockType 
 findLastBlockType (b, s) = block
@@ -775,3 +860,4 @@ getParams s = params (statementUni(last s))
 
 getBody :: [Statement] -> [Statement]
 getBody s = body(statementUni(last s))
+

@@ -10,8 +10,8 @@ import Token
 isBoolPrefix :: Token -> Bool
 isBoolPrefix t = typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
 
-removeFirstToken :: [Token] -> [Token]
-removeFirstToken xs = case xs of
+removeFirst:: [a] -> [a]
+removeFirst xs = case xs of
   [] -> []
   x : xs -> xs
 
@@ -51,7 +51,7 @@ statementToString s = str
             ++ ";"
       | statementType s == ASSIGNSTA = expressionToString(assignIdent (expression s)) ++ " = " ++ expressionToString(assignExpression (expression s))  ++ ";"
       | statementType s == NOSTA = expressionToString(expression (s))
-      | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(s) ++ bodyToString(s) ++ ";"
+      | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(params (statementUni s)) ++ bodyToString(s) ++ ";"
       | statementType s == CALLSTA = expressionToString(expression s) ++ ";"
       | otherwise = error "error parsing statement to string "
 
@@ -63,12 +63,12 @@ elseToString (b,s)= str
       | b == False = "else{" ++(concat [statementToString x | x <- alt(statementUni s)]) 
       | otherwise = "else{" ++(concat [statementToString x | x <- alt (statementUni s)]) ++  "}" 
 
-paramToString :: Statement -> String 
-paramToString s = str 
+paramToString :: [Expression ]-> String 
+paramToString e = s 
   where   
-    str 
-      | null (params (statementUni s)) = "()"
-      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- params (statementUni s)]) ++ ")"
+    s 
+      | null e = "()"
+      | otherwise = "(" ++ deleteLast (concat [expressionToString x ++ "," | x <- e]) ++ ")"
 
 callParamsToString :: Expression -> String 
 callParamsToString e = s 
@@ -107,12 +107,15 @@ expressionToString e = s
       | expressionType e == GROUPEDEXP && closed e == False= "XX" ++ expressionToString (groupedExpression e) 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
-      | expressionType e == TFEXP && bool e == TRUE = "true"
-      | expressionType e == TFEXP && bool e == FALSE = "false"
+      | expressionType e == TFEXP && bool e == TRUE = "True"
+      | expressionType e == TFEXP && bool e == FALSE = "False"
       | expressionType e == IDENTEXP = literal (ident e)
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";"
+      | expressionType e == STRINGEXP = literal (stringLiteral e) 
+      | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
+      | expressionType e == INDEXEXP = (literal (arrayIdent e)) ++ "[" ++ (show (arrayIndex e)) ++ "]"
       | otherwise = error "couldn't parse type"
 
 tokenToString :: Token -> String

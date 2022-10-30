@@ -10,12 +10,12 @@ extra-source-files:
 
 library
   exposed-modules:
-      Token, Utils, Lexer, Parser, Ast, ParserUtils 
+      Token, Utils, Lexer, Parser, Ast, ParserUtils, Object, Eval 
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5, containers 
+      base >=4.7 && <5, containers
   default-language: Haskell2010
 
 test-suite interpretor-test
@@ -41,6 +41,8 @@ test-suite interpretor-test
     , TestDifficult
     , TestMultiple
     , TestUtils
+    , TestEval
+    , TestArray
   hs-source-dirs:
       test 
     , src

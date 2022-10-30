@@ -45,3 +45,13 @@ testFnDecCall=
           ))
         )
       ))
+testFnCall:: String
+testFnCall=
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "fn add (a,b){return a + b}; let five = add(2,3);", [])),
+            []
+          ))
+        )
+      ))

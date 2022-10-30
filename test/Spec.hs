@@ -11,6 +11,8 @@ import TestIdent
 import TestFunc
 import TestMultiple
 import TestObject
+import TestEval
+import TestArray
 -- import TestTFT
 
 main :: IO ()
@@ -425,19 +427,176 @@ main = hspec $ do
         testFnDecCall
         `shouldBe`
         "fn isGTF(numb){return numb > 5;}; let ten = 10; let gtf = isGTF(ten);"
+   it "Test Fn Call" $
+      do
+        testFnCall
+        `shouldBe`
+        "fn add(a,b){return (a + b);}; let five = add(2,3);"
   describe "test object" $ do
+    it "test string " $ 
+      do 
+        testObjString
+        `shouldBe`
+        "five = five"
     it "test true obj" $ 
       do 
         testObjTrue 
         `shouldBe`
-        "True"
+        "five = True"
     it "test false obj" $ 
       do 
         testObjFalse
         `shouldBe`
-        "False"
+        "five = False"
     it "test int obj" $ 
       do 
         testObjInt
         `shouldBe`
-        "5"
+        "five = 5"
+    it "test neg int obj" $ 
+      do 
+        testObjMinus
+        `shouldBe`
+        "five = -5"
+    it "test bang obj" $ 
+      do 
+        testObjBang
+        `shouldBe`
+        "five = False"
+    it "test op plus" $ 
+      do 
+        testObjOpPlus
+        `shouldBe`
+        "five = 10"
+    it "test op minus" $ 
+      do 
+        testObjOpMinus
+        `shouldBe`
+        "five = 0"
+    it "test op mul" $ 
+      do 
+        testObjOpMul
+        `shouldBe`
+        "five = 25"
+    it "test op div" $ 
+      do 
+        testObjOpDiv
+        `shouldBe`
+        "five = 1"
+    it "test op greater than" $ 
+      do 
+        testObjOpGT
+        `shouldBe`
+        "five = False"
+    it "test op less than" $ 
+      do 
+        testObjOpLT
+        `shouldBe`
+        "five = True"
+    it "test op eq" $ 
+      do 
+        testObjOpEQ
+        `shouldBe`
+        "five = True"
+    it "test op neq" $ 
+      do 
+        testObjOpNEQ
+        `shouldBe`
+        "five = False"
+    it "test obj grouped" $ 
+      do 
+        testObjGrouped
+        `shouldBe`
+        "five = 30"
+    it "test obj if false" $ 
+      do 
+        testObjIfFalse
+        `shouldBe`
+        "five = 5"
+    it "test obj if true" $ 
+      do 
+        testObjIfTrue
+        `shouldBe`
+        "ten = 10"
+    it "test obj func" $ 
+      do 
+        testObjFunc
+        `shouldBe`
+        "fn add(a,b){return (a + b);};"
+  describe "test eval" $ do
+    it "test func + call" $ 
+      do 
+        testEvalFuncCall
+        `shouldBe`
+        "fn add(a,b){return (a + b);}; - five = 5"
+    it "test mul func" $ 
+      do 
+        testEvalMulFunc
+        `shouldBe`
+        "fn add(a,b){return (a + b);}; fn divide(a,b){return (a / b);}; -"
+    it "test mul var" $ 
+      do 
+        testEvalMulVar
+        `shouldBe`
+        "- five = 5 ten = 10"
+    it "test eval context" $ 
+      do 
+        testEvalContext
+        `shouldBe`
+        "fn add(){let five = 5; return 3;}; - three = 3"
+    it "test eval overwrite var" $ 
+      do 
+        testEvalOverwriteVar
+        `shouldBe`
+        "- five = 5"
+    it "test eval nested if" $ 
+      do 
+        testEvalNestedIf
+        `shouldBe`
+        "- five = 5"
+    it "test eval nested if" $ 
+      do 
+        testEvalNestedElse
+        `shouldBe`
+        "- five = 5"
+    it "test eval string add" $ 
+      do 
+        testEvalStringAdd
+        `shouldBe`
+        "- hello = Hello world =  World! add = Hello World!"
+    it "test eval array" $ 
+      do 
+        testEvalArray
+        `shouldBe`
+        "fn add(a,b){return (a + b);}; - arr = [1, Hi, 5, 5, True, ]"
+    it "test eval array array" $ 
+      do 
+        testEvalArrayArray
+        `shouldBe`
+        "- a = [1, 2, 3, ] arr = [3, 1, ]"
+  describe "test array" $ do
+    it "test array" $ 
+      do
+        testArray
+        `shouldBe`
+        "let arr = [1, Hi, ((2 + 3)), add(2,3), True, ];"
+    it "test array with other statement" $ 
+      do
+        testArrayLet
+        `shouldBe`
+        "let arr = [1, Hi, ((2 + 3)), add(2,3), True, ]; let five = 5;"
+    it "test array with indexing" $ 
+      do
+        testArrayIdxInArr
+        `shouldBe`
+        "let arr = [a[2], 1, ];"
+    it "test array operator exp" $ 
+      do
+        testArrayIdx
+        `shouldBe`
+        "let arr = (2 + a[2]);"
+    it "test array grouped operator" $ 
+      do
+        testArrayIdxGrouped
+        `shouldBe`
+        "let arr = ((2 + a[2]));"

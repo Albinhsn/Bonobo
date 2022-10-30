@@ -1,7 +1,5 @@
 module Ast where
 
-import Data.Map (Map ())
-import qualified Data.Map.Strict as Map
 import Token
 
 data PrecedenceType = EQUAL | LESSGREATER | SUM | PRODUCT | PREFIX | CALL | LOWEST deriving (Eq, Show)
@@ -47,23 +45,32 @@ data ExpressionType
   | FUNCEXP 
   | ASSIGNEXP
   | CALLEXP
+  | STRINGEXP
+  | ARRAYEXP 
+  | INDEXEXP
   deriving (Eq, Show)
 
 data Expression
-  = OperatorExpression {expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
-  | IntegerLiteralExpression {expressionType :: !ExpressionType, integerLiteral :: !Token}
-  | GroupedExpression {expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
-  | PrefixExpression {expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}
-  | BoolExpression {expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
-  | TFExpression {expressionType :: !ExpressionType, bool :: !TokenType}
-  | Expression {expressionType :: !ExpressionType}
-  | IdentExpression {expressionType :: !ExpressionType, ident :: !Token}
-  | AssignExpression {expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
-  | CallExpression {expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression, closedCall :: !Bool}
+  = OperatorExpression {expLine :: !Int, expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
+  | IntegerLiteralExpression {expLine :: !Int, expressionType :: !ExpressionType, integerLiteral :: !Token}
+  | ArrayExpression {expLine :: !Int, expressionType :: !ExpressionType, array :: ![Expression]}
+  | IndexExpression {expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Token, arrayIndex :: !Int}
+  | StringExpression {expLine :: !Int, expressionType :: !ExpressionType, stringLiteral :: !Token}
+  | GroupedExpression {expLine :: !Int, expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
+  | PrefixExpression {expLine :: !Int, expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}
+  | BoolExpression {expLine :: !Int, expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
+  | TFExpression {expLine :: !Int, expressionType :: !ExpressionType, bool :: !TokenType}
+  | Expression {expLine :: !Int, expressionType :: !ExpressionType}
+  | IdentExpression {expLine :: !Int, expressionType :: !ExpressionType, ident :: !Token}
+  | AssignExpression {expLine :: !Int, expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
+  | CallExpression {expLine :: !Int, expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression, closedCall :: !Bool}
   deriving (Eq, Show)
 
+
+
 data Statement = Statement
-  { statementType :: !StatementType,
+  { staLine :: !Int, 
+    statementType :: !StatementType,
     statementUni :: !StatementUni,
     expression :: !Expression
   }
