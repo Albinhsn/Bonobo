@@ -68,7 +68,7 @@ evaluateStatement (s,(v, f))= (va, fu)
     (va, fu) 
       | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v), f)
       | statementType s == FUNCSTA = (v, f ++ [Function{funcIdent = literal (ident (expression s)), funcParams = params (statementUni s), funcBody = body(statementUni s)}])
-      | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,v, f)},v), f)
+      | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,[], f)},v), f)
       | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f)), f)
       | statementType s == IFSTA = (evaluateIf(s, (v, f)), f)
       | otherwise = error  "evaluateStatement"
@@ -105,7 +105,7 @@ evaluateExpression (e, v, f)= o
       | expressionType e == GROUPEDEXP = evaluateExpression(groupedExpression e, v, f)
       | expressionType e == IDENTEXP = getVarValue(literal (ident (e)), v) 
       | expressionType e == ASSIGNEXP = evaluateExpression(assignExpression e, v, f)
-      | expressionType e == CALLEXP = evaluateFunc(e, v, f) 
+      | expressionType e == CALLEXP = evaluateFunc(e, [], f) 
       | expressionType e == ARRAYEXP = ArrayObject{objectType = ARRAY_OBJ, arrValue = [evaluateExpression (x, v,f) | x <- array e]}
       | expressionType e == INDEXEXP = evaluateIndex(literal (arrayIdent (e)),evaluateExpression(arrayIndex e,v,f), v)
       | expressionType e == MAPEXP = MapObject{objectType = MAP_OBJ, mapValue = ([evaluateExpression(x, v, f) | x <- fst(mapMap e)],[evaluateExpression(x,v,f) | x <- snd(mapMap e)])}

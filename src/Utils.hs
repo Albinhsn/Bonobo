@@ -129,7 +129,11 @@ concatMapMap (key, val) = s
       | otherwise = concat [expressionToString i ++ ":" ++ expressionToString x ++ ", " | (i, x) <- zip key val] 
 
 tokenToString :: Token -> String
-tokenToString t = literal t
+tokenToString t = s 
+  where
+    s
+      | typ t == STRING = "'" ++ literal t ++ "'"
+      | otherwise = literal t
 
 getLastExpressionType:: (BlockType, [Statement]) -> ExpressionType  
 getLastExpressionType (b, s) = e 

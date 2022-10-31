@@ -52,7 +52,7 @@ addBoolToLastExp :: (Token, Expression) -> Expression
 addBoolToLastExp (t, e) = ex
   where
     ex 
-      | expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
+      | expressionType e == INDEXEXP || expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
       | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
       | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addBoolToLastExp (t, groupedExpression e)} 
       | expressionType e == GROUPEDEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
@@ -467,6 +467,7 @@ addArrayToLastExp(b, t, e) = ex
       | expressionType e == INDEXEXP= IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addArrayToLastExp(b, t, arrayIndex e)}
       | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addArrayToLastExp(b, t, rightOperator e))}
       | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addArrayToLastExp(b, t, groupedExpression e)}
+      | expressionType e == BOOLEXP = BoolExpression{expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addArrayToLastExp(b, t, rightBool e)}
       | otherwise = error ("Error adding array to last exp on line: " ++ (show (line(t)))) 
 
 addStringToLastExp:: (BlockType, Token, Expression) ->  Expression 
@@ -1028,9 +1029,9 @@ closeLastIndexAssign e = ex
 
 
 closeLastIndexArray :: Expression -> Expression 
-closeLastIndexArray e = exp 
+closeLastIndexArray e = ex 
   where 
-    exp 
+    ex 
       | expressionType (last (array e)) /= INDEXEXP = e 
       | otherwise = ArrayExpression{
         expLine = expLine e,
