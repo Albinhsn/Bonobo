@@ -116,6 +116,7 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
       ) 
       | typ (head t) == IDENT = parseIdent(b, (removeFirst t, addToStatement(b, s, addToLastStatement(b, head t, IDENTEXP, s))))
       | typ (head t) == COMMA && b == PAR = parseIdent(b, (removeFirst t, pop s ++ [addEmptyToLastParam(last s)]))
+      | typ (head t) == LBRACKET = parseIdent(parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, ARRAYEXP, s)])))
       | typ (head t) == EOF = (b, (t, s))
       | otherwise = parseExpression(b, (t,s )) 
 
@@ -133,7 +134,6 @@ parseIf (b, (t, s)) = (bok, (tok, sta))
     (bok, (tok, sta))
       | null t == True = (b, (t, s))
       | typ (head t) == LBRACE && hasValidCondition(b, s) = parseStatements(CON, (removeFirst t, s))
-      -- | typ (head t) == LBRACE = parseStatements(CON, (removeFirst t, s))
       | typ (head t) == LBRACE = error ("doesn't have grouped + bool in if on line: " ++ (show (line (head t))))
       | typ (head t) == IF || typ (head t) == LET || typ (head t) == IDENT = parseStatements(b, (t, s))
       | typ (head t) == RETURN && isValidReturn(last s)= parseStatements(b,(t,s))
@@ -202,9 +202,10 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
         )
       | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) --
-      | typ (head t) == RBRACE && b == BOD= parseExpression(EXP, (removeFirst t, s)) --Only reason for parseExp is to remove SEMICOLON 
-      | typ (head t) == RBRACE && b == CON = parseIf(CON, (t, s))
-      | typ (head t) == RBRACE && b == ALT = parseElse(ALT, (t, s))
+      | typ (head t) == RBRACE && isMapExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, s)) --Only reason for parseExp is to remove SEMICOLON 
+      | typ (head t) == RBRACE && isMapExpression(b, last s) == False&& b == CON = parseIf(CON, (t, s))
+      | typ (head t) == RBRACE && isMapExpression(b, last s) == False&& b == ALT = parseElse(ALT, (t, s))
+      | typ (head t) == RBRACE && isMapExpression(b, last s) && isValidMap(s) = parseExpression(b, (removeFirst t, s))
       | typ (head t) == COMMA && b == PAR = parseExpression(
         b, 
         (
@@ -255,15 +256,19 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
           parseGroupedExpression(b, (t, s))
           )
       | typ (head t) == LBRACKET = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, ARRAYEXP, s)])) 
-      | typ (head t) == RBRACKET = (b, (removeFirst t, s))
+      | typ (head t) == RBRACKET = (b, (removeFirst t, pop s ++ [closeLastIndex(b, last s)]))
       | typ (head t) == COMMA && b /= PAR = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, ARRAYEXP, s)]))
+      | typ (head t) == COLON  = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == RPAREN = 
         parseExpression(b, (
           removeFirst t, pop s ++ [addToLastStatement(b, head t, GROUPEDEXP, s)]))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirst t, s))
       | typ (head t) == EOF = (b, (removeFirst t, s))
+      | typ (head t) == LBRACE && isMapExpression(b, last s) = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == LBRACE = parseIf(b, (t,s))
       | otherwise = error ("error parsing expression" ++ (literal (head t)) ++ " on "++ (show (line (head t))))
+
+
 
 parseGroupedExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseGroupedExpression (b, (t, s)) = (b,(removeFirst t, addToStatement(b, s, addToLastStatement(b, head t, GROUPEDEXP, s))))

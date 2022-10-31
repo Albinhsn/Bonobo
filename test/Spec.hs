@@ -13,6 +13,7 @@ import TestMultiple
 import TestObject
 import TestEval
 import TestArray
+import TestMap
 -- import TestTFT
 
 main :: IO ()
@@ -574,17 +575,42 @@ main = hspec $ do
         testEvalArrayArray
         `shouldBe`
         "- a = [1, 2, 3, ] arr = [3, 1, ]"
+    it "test eval array idx op" $ 
+      do 
+        testEvalArrayIdxOp
+        `shouldBe`
+        "- a = [1, 2, 3, 4, 5, ] arr = 3"
+    it "test eval idx grouped op" $ 
+      do 
+        testEvalArrayIdxGroupedOp
+        `shouldBe`
+        "- a = [1, 2, 3, ] arr = 2"
+    it "test eval idx ident" $ 
+      do 
+        testEvalArrayIdxIdent
+        `shouldBe`
+        "- a = [1, 2, 3, ] b = 0 arr = 1"
+    it "test eval func if" $ 
+      do 
+        testEvalFuncIf
+        `shouldBe`
+        "fn add(a,b){if(a > b){return (a + b);}else{return (a - b);};}; - sum = -1"
+    it "test eval idx wierd" $ 
+      do 
+        testEvalArrayIdxWierd
+        `shouldBe`
+        "- c = [1, 2, 4, 1, ] b = 0 a = [False, True, False, ] arr = True"
   describe "test array" $ do
     it "test array" $ 
       do
         testArray
         `shouldBe`
-        "let arr = [1, Hi, ((2 + 3)), add(2,3), True, ];"
+        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, ];"
     it "test array with other statement" $ 
       do
         testArrayLet
         `shouldBe`
-        "let arr = [1, Hi, ((2 + 3)), add(2,3), True, ]; let five = 5;"
+        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, ]; let five = 5;"
     it "test array with indexing" $ 
       do
         testArrayIdxInArr
@@ -595,8 +621,59 @@ main = hspec $ do
         testArrayIdx
         `shouldBe`
         "let arr = (2 + a[2]);"
-    it "test array grouped operator" $ 
+    it "test array operation with index" $ 
       do
         testArrayIdxGrouped
         `shouldBe`
         "let arr = ((2 + a[2]));"
+    it "test array grouped operator" $ 
+      do
+        testArrayIdxGroupedOp
+        `shouldBe`
+        "let arr = a[((2 + 3))];"
+    it "test array idx operation" $ 
+      do
+        testArrayIdxOp
+        `shouldBe`
+        "let arr = a[(2 + 3)];"
+    it "test array idx ident" $ 
+      do
+        testArrayIdxIdent
+        `shouldBe`
+        "let arr = a[b];"
+    it "test array idx wierd" $ 
+      do
+        testArrayIdxWierd
+        `shouldBe`
+        "let arr = a[((((2 * b)) + c[3]))];"
+  describe  "test map" $ do
+    it "test map" $
+      do 
+        testMap 
+        `shouldBe`
+        "let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, };"
+    it "test map func" $
+      do 
+        testMapFunc 
+        `shouldBe`
+        "fn add(){let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, };};"
+    it "test eval map" $
+      do 
+        testEvalMap
+        `shouldBe`
+        "- x = 0 a = 1 m = {0:0, 1:1, a:a, 3:3, 2:2, 1:True, }"
+    it "test eval map func" $
+      do 
+        testEvalMapFunc
+        `shouldBe`
+        "fn add(a,b){let c = {1:3, 2:4, }; return (c[a] + c[b]);}; - a = 7"
+    it "test eval map func if " $
+      do 
+        testEvalMapFuncIf
+        `shouldBe`
+        "fn a(b){if(b > 1){let c = {3:4, };return c[b];}else{let c = {0:5, };return c[b];};}; - d = 4"
+    it "test eval map func else" $
+      do 
+        testEvalMapFuncElse
+        `shouldBe`
+        "fn a(b){if(b > 1){let c = {3:4, };return c[b];}else{let c = {0:5, };return c[b];};}; - d = 5"

@@ -58,3 +58,43 @@ testArrayIdxGrouped =
           ))
         )
       ))
+testArrayIdxOp:: String
+testArrayIdxOp=
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let arr = a[2 + 3];", [])),
+            []
+          ))
+        )
+      ))
+testArrayIdxGroupedOp:: String
+testArrayIdxGroupedOp=
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let arr = a[(2 + 3)];", [])),
+            []
+          ))
+        )
+      ))
+testArrayIdxIdent:: String
+testArrayIdxIdent=
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let arr = a[b];", [])),
+            []
+          ))
+        )
+      ))
+testArrayIdxWierd:: String
+testArrayIdxWierd=
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let arr = a[((2 * b) + c[3])];", [])),
+            []
+          ))
+        )
+      ))

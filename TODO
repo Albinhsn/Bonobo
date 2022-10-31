@@ -1,15 +1,20 @@
 TODO:   
-  String 
-  Array
-  Hashes
+  assign array/hash 
 
 Non prio: 
-  list statement for func calls
   Map for Variable and Function
-  add funcs to validate next tokens #True?
-  Add print statement
-  remove ++ [] -> X : etc 
   Test strings in lexer + parser
+  remove global vars in funcs
+  check func in isValidMap
+  check at eof that last exp is valid
+  check that you don't overwrite func with var etc
+  fucking test invalid code
+  redo array/map checks
+  bool with index
+  test eval array in hash 
+  
+
+  Add print statement
 
   Prebuilt funcs:
     len 
@@ -22,6 +27,13 @@ Longest of terms:
   Lsp 
 
 
+VALIDATION/ERROR HANDLING
+  last semicolon 
+  "closed" on every statement? 
+  closing array/map 
+  
+  Object: 
+    getFuncBody
+    getVarValue 
 
-
-
+OPERATORS AND BOOLS CHECK CLOSED INDEX 

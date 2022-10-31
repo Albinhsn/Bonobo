@@ -33,6 +33,8 @@ getPrecedence t = head [snd n | n <- precedenceMap, fst n == getPrecedenceTypeFr
 hasPrecedence :: (TokenType, TokenType) -> Bool
 hasPrecedence (t1, t2) = getPrecedence t1 > getPrecedence t2
 
+
+
 data ExpressionType
   = OPERATOREXP
   | BOOLEXP
@@ -48,13 +50,15 @@ data ExpressionType
   | STRINGEXP
   | ARRAYEXP 
   | INDEXEXP
+  | MAPEXP
   deriving (Eq, Show)
 
 data Expression
   = OperatorExpression {expLine :: !Int, expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
   | IntegerLiteralExpression {expLine :: !Int, expressionType :: !ExpressionType, integerLiteral :: !Token}
   | ArrayExpression {expLine :: !Int, expressionType :: !ExpressionType, array :: ![Expression]}
-  | IndexExpression {expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Token, arrayIndex :: !Int}
+  | MapExpression {nextItem :: !MapType, expLine :: !Int, expressionType :: !ExpressionType, mapMap :: ([Expression], [Expression])}
+  | IndexExpression {closedIndex :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Token, arrayIndex :: !Expression}
   | StringExpression {expLine :: !Int, expressionType :: !ExpressionType, stringLiteral :: !Token}
   | GroupedExpression {expLine :: !Int, expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
   | PrefixExpression {expLine :: !Int, expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}
@@ -67,6 +71,7 @@ data Expression
   deriving (Eq, Show)
 
 
+data MapType = KEY | VAL deriving (Eq, Show)
 
 data Statement = Statement
   { staLine :: !Int, 

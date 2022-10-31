@@ -12,17 +12,17 @@ import Eval
 
 
 main = do
-  let tokens = (parseTokens (1, "let five = {a:3}", []))
+  let tokens = (parseTokens (1, "let a = {1:1,2:2,\"3\":3}; a[\"3\"] = 4;", []))
   print tokens
-  -- let s = parseStatements (EXP, (getTokens(tokens), []))
-  -- print s 
-  -- let a = statementsToString((snd(snd(s))))
-  -- print a
-  -- let b = evaluateProgram((snd(snd s)), ([], []))
-  -- print b
-  -- let c = concatContext(snd b)
-  -- print c
-  -- let v = "Vars: " ++ concat [inspectVariable x ++ ";" | x <- (fst(snd b))]
-  -- print v  
-  -- let f = "Funcs: " ++ concat [inspectFunction x ++ " " | x <- (snd(snd b))]
-  -- print f 
+  let s = parseStatements (EXP, (getTokens(tokens), []))
+  print s 
+  let a = statementsToString((snd(snd(s))))
+  print a
+  let b = evaluateProgram((snd(snd s)), ([], []))
+  print b
+  let c = concatContext(snd b)
+  print c
+  let v = "Vars: " ++ concat [inspectVariable x ++ ";" | x <- (fst(snd b))]
+  print v  
+  let f = "Funcs: " ++ concat [inspectFunction x ++ " " | x <- (snd(snd b))]
+  print f 
