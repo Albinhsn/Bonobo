@@ -10,12 +10,15 @@ import ParserUtils
 import Object 
 import Eval
 
+-- let a = [[1],[2],[3]]; let b = a[0];
+-- let a = [[1],[2],[3]]; let b = a[2][0];
+-- let a = {1:{1:1}}; let b = a[1][1]
 
 main = do
-  let tokens = (parseTokens (1, "let a = [1, 2, 3, 4,];", []))
-  print tokens
+  let tokens = (parseTokens (1, "let a = [[0,1],1];a[0][1]= 0;", []))
+  -- print tokens
   let s = parseStatements (EXP, (getTokens(tokens), []))
-  print s 
+  -- print s 
   let a = statementsToString((snd(snd(s))))
   print a
   let b = evaluateProgram((snd(snd s)), ([], []))

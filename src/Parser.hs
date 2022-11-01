@@ -218,7 +218,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
       | typ (head t) == ASSIGN = 
         parseExpression (
-          (b, (removeFirst t, addToStatement(b, s, addToLastStatement(b, head t, ASSIGNEXP, s)))
+          (b, (removeFirst t, changeSta(head t, addToStatement(b, s, addToLastStatement(b, head t, ASSIGNEXP, s))))
         ))
       | typ (head t) == INT =
         parseExpression (
@@ -256,7 +256,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
           parseGroupedExpression(b, (t, s))
           )
       | typ (head t) == LBRACKET = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, ARRAYEXP, s)])) 
-      | typ (head t) == RBRACKET = (b, (removeFirst t, pop s ++ [closeLastIndex(b, last s)]))
+      | typ (head t) == RBRACKET = parseExpression(b, (removeFirst t, pop s ++ [closeLastIndex(b, last s)]))
       | typ (head t) == COMMA && b /= PAR = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, ARRAYEXP, s)]))
       | typ (head t) == COLON  = parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == RPAREN = 

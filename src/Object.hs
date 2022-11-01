@@ -83,17 +83,13 @@ checkVar (s, v) = b
       | null v = [] 
       | otherwise = [x | x <- v, varIdent x == s]
 
-replaceArrayIndex :: (Expression, [Object], Object) -> [Object] 
-replaceArrayIndex (e, o,o2) = o3
-  where 
-    o3  
-      | expressionType e /= INTEXP = error "can't assign for non int index in array" 
-      | length o-1 >= readIntFromString e && readIntFromString e >= 0 = replaceNth (readIntFromString e) o2 o  
-      | length o-1 < readIntFromString e = error "trying to access out of bounds in array"
-      | otherwise = error "trying to access with negative index"
 
 readIntFromString :: Expression -> Int 
-readIntFromString e = read (literal (integerLiteral e))
+readIntFromString e = i 
+  where 
+    i
+      | expressionType e/= INTEXP = error (expressionToString e)
+      | otherwise = read (literal (integerLiteral e))
 
 checkKeyExists :: (Object, Object) -> Bool 
 checkKeyExists (key, o) = b
@@ -131,6 +127,12 @@ replaceMapKey(e,(k,v),o2) = va
       | expressionType e == STRINGEXP = (k ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}], v ++ [o2])
       | otherwise = error "replaceMapKey"
 
+replaceNthArr:: Int -> [a] -> [[a]] -> [[a]]
+replaceNthArr _ _ [] = []
+replaceNthArr n newVal (x:xs)
+ | n == 0 = newVal:xs
+ | otherwise = x:replaceNth (n-1) newVal xs
+
 replaceNth :: Int -> a -> [a] -> [a]
 replaceNth _ _ [] = []
 replaceNth n newVal (x:xs)
@@ -138,4 +140,8 @@ replaceNth n newVal (x:xs)
  | otherwise = x:replaceNth (n-1) newVal xs
 
 getLiteralFromAssignIndex :: Expression -> String 
-getLiteralFromAssignIndex e = literal (arrayIdent e) 
+getLiteralFromAssignIndex e = s
+  where
+    s
+      | expressionType e == IDENTEXP = literal (ident e) 
+      | expressionType e == INDEXEXP = getLiteralFromAssignIndex(arrayIdent e)

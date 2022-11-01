@@ -115,7 +115,7 @@ expressionToString e = s
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";"
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
-      | expressionType e == INDEXEXP = (literal (arrayIdent e)) ++ "[" ++ (expressionToString(arrayIndex e)) ++ "]"
+      | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ "[" ++ (expressionToString(arrayIndex e)) ++ "]"
       | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e) ++ "}"
       | otherwise = error "couldn't parse type"
 
