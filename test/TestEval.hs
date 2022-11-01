@@ -51,3 +51,6 @@ testEvalArrayIdxWierd= concatContext(snd(evaluateProgram(parseStringToStatements
 
 testEvalFuncIf:: String
 testEvalFuncIf= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){if(a > b){return a + b;}else{return a - b;};}; let sum = add(2,3);", ([], []))))
+
+testEvalArrayAssign:: String
+testEvalArrayAssign= concatContext(snd(evaluateProgram(parseStringToStatements "let a = [1, 2, 3, 4]; a[3] = False;", ([], []))))

@@ -1,36 +1,56 @@
 /home/arla/dev/interpretor/src/Parser.hs:
-  hash: 2337a230ecb64007cca2d069ba0858eb3bf16351327bb8c8edc9e6f1967a920c
+  hash: 7c640d0cff0bf02a923114c7228312e496f09d0d3c80fac7105b8f0ccd7a2432
 /home/arla/dev/interpretor/test/TestBool.hs:
-  hash: 43448f6d11c547c71833d0863ee777177d8f8d643ad442c1295e34f05c8a4350
+  hash: 370e25a8a27418962ccdde7b6b7ab81ec24c703fd64f527b76ea3c8e8c9eec75
+/home/arla/dev/interpretor/test/TestTFT.hs:
+  hash: af20e998d626f83e2a53905003c41b8c28c407257a0c02b4f5aea7483194ebe4
 /home/arla/dev/interpretor/test/TestLexer.hs:
-  hash: a3ad5892106feb652e72c93aa4fdbbbda3857b0817b6f654955da6d1a799608a
+  hash: 23a9ae2b8dba427166cb55c8abedbfe677ad769cdec059424d3de26695a832c9
 /home/arla/dev/interpretor/interpretor.cabal:
-  hash: e8e0113ee964187b69cd2a711634588add4a38ef1c05adaac809bc752b3c5aec
+  hash: 45a56fa91280e80763f4b23912a856a741e3e9bed4c76746a54d740f50479ace
 /home/arla/dev/interpretor/src/Lexer.hs:
-  hash: 03f9e90bf1e4e84caafc100d8938786f831cf9ba58490ea404ba70962223e42e
+  hash: e4c1962acf159144c78b39941d18a03f9920e3518c292226d7ad10be548a85c0
+/home/arla/dev/interpretor/test/TestDifficult.hs:
+  hash: a3ad119c2b0552dfd3a3ca4868daa0746ac506174e9495b9831c55533aea6758
 /home/arla/dev/interpretor/src/ParserUtils.hs:
-  hash: 706cf5a9d7af30eed911ae8e7f23e0425cc9addc32b57a8369b6584bf52b4eb7
+  hash: 10a5e1802b7fd72322dfef2e09f43776f5122787ea7e50b1771a9702d5559925
+/home/arla/dev/interpretor/test/TestUtils.hs:
+  hash: 7402d7d028be7f40bf73ed22e3c388da71b134cf45afe11177a0dfb28b881481
 /home/arla/dev/interpretor/test/TestIf.hs:
-  hash: 2fc69ab00475dbecf6f45a1ee82d8b985da884875bb9c2bf36b20f9ac01ec939
+  hash: f92cce5f218e3a57f9a8b9b4829f71181f815fd19aa35dd6aebc72537711930e
 /home/arla/dev/interpretor/README.md:
   hash: 595588a11ce38025b994598e3dd3fdddb17c3e05d8344481c98394a2c2ffb9c7
 /home/arla/dev/interpretor/CHANGELOG.md:
   hash: 469c0ac8b0a7b8278c3ea80f7d657b6750354aafdf4236d39f7a355e03222721
+/home/arla/dev/interpretor/test/TestMultiple.hs:
+  hash: 5224a0a2c775a291f156965625700538dc550d16b0e90b7e5d0809e4e15914ab
 /home/arla/dev/interpretor/src/Utils.hs:
-  hash: e545a12149fc626b3625ca23ae82c8b87460583ac2746bec8166914aaacde261
+  hash: b7aa51cf11911af7529c30d26226882f779a10467841dc863445d6aa14a1e31d
+/home/arla/dev/interpretor/test/TestEval.hs:
+  hash: d3eafb1bb1a08a99d732dff78876b3887dbbeb5184ff7112c1acd8a046d0de87
 /home/arla/dev/interpretor/test/TestFunc.hs:
-  hash: 529cbca0aba5b2cb7af87573e5fc76f14d3967fb3ce9fdae29a508bb9e9c1204
+  hash: 7e66b65f5aa3d0b7e4b206fd7992c4e1f76f0c5f44cbedaa96ebf6318734a9e5
+/home/arla/dev/interpretor/src/PreBuiltFuncs.hs:
+  hash: 8b1ad6695995cfe0597dd2817fe54e4eb0c4b903148b834a9eb087733a9a3a16
 /home/arla/dev/interpretor/test/Spec.hs:
-  hash: 10bee7c0031961e2cc12b85a4e490bcefeda0baf7c9145844957648f5b6b35d7
+  hash: 8b92c546aed5d4419e02c35ff202abd747c0279111616183eb9635e6d11265ca
 /home/arla/dev/interpretor/src/Ast.hs:
-  hash: e117cc0792ba871aafeed372c851d19d2b590b9d2552b4fc651429b55f44d007
+  hash: d5404bae35b833ad1da15452cba00c665c27ed7f71b4cc3ea814a2f791f8bfc5
+/home/arla/dev/interpretor/test/TestMap.hs:
+  hash: f39f1380e493a9cadd90396ca4a8bd9d43257cfad2d3ad418d3d79ea756a887f
+/home/arla/dev/interpretor/src/Eval.hs:
+  hash: d28069941dfea27a5effdc099bbe601b07088abfc480c818ba2d2d86751cfb73
+/home/arla/dev/interpretor/test/TestArray.hs:
+  hash: 79e262f1f7e0f017483491c9aab8c96a862977f63760463b0b7e5dc071030f20
 /home/arla/dev/interpretor/src/Token.hs:
-  hash: 7420b5e457358176bdef181b46654722be8506a0af9505c879fc7d5fee0e60b4
+  hash: 45f68e5fd5428b850a8227b2c53a0f17ee862d47657aaea5bc5ab9c9b0d1854e
 /home/arla/dev/interpretor/test/TestIdent.hs:
-  hash: 04009b46b85db9957bf155cf0f72b31ef85eb5e638abab795e6809d7c5d51559
+  hash: b3c67730ae9d6ab57b8abbfb79401e3542d64b95b78c54ada93c1f5e29deb52e
+/home/arla/dev/interpretor/src/Object.hs:
+  hash: da7a06a48782642bc3732be51668b0412014bd58f5a8cf5870538effdd80f85c
 /home/arla/dev/interpretor/test/TestParser.hs:
-  hash: cc04aa7981b2e7fcf1bb4975b94e17c7f53826b20c03c7a6134a461da1ff3dca
+  hash: e60e16f8140c1847cb30ae0c8a803bbe1a4711a9e3bb077c1d1cdd054d7a4a0d
 /home/arla/dev/interpretor/package.yaml:
   hash: 4bb06751e93ab835143176a395ef35e656bbd4bf5a3dc797804a527f160c68ef
 /home/arla/dev/interpretor/test/TestPrecedence.hs:
-  hash: b4c8c930903f54ce3ea8719c2530278e41ba0065c9070887192d5b3dcf61dea7
+  hash: 9cab902d89f96a0fb995dd158603f270b3574cf18b3f350ab6c733033d9e55c8

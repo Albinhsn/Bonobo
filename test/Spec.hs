@@ -28,7 +28,7 @@ main = hspec $ do
       do 
         testActual 
         `shouldBe`
-        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "EOF"]
+        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "'Hello World!'","EOF"]
         
   describe "Testing Parser" $ do
     it "testing assignment" $ 
@@ -36,7 +36,11 @@ main = hspec $ do
         testAssignment 
         `shouldBe`
         "let five = 5;"
-  
+    it "testing string" $ 
+      do 
+        testLetString
+        `shouldBe`
+        "let five = 'five';"
     it "testing multiple operators" $ 
       do 
         testMultipleOperators
@@ -169,6 +173,11 @@ main = hspec $ do
         testMultipleBools
         `shouldBe`
         "let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1;"
+    it "testing bool array assign" $ 
+      do 
+        testBoolArrayAssign
+        `shouldBe`
+        "let five = b[0] == b[0];"
   describe "Testing if" $ do
     it "testing empty if" $ 
       do 
@@ -438,7 +447,7 @@ main = hspec $ do
       do 
         testObjString
         `shouldBe`
-        "five = five"
+        "five = 'five'"
     it "test true obj" $ 
       do 
         testObjTrue 
@@ -564,12 +573,12 @@ main = hspec $ do
       do 
         testEvalStringAdd
         `shouldBe`
-        "- hello = Hello world =  World! add = Hello World!"
+        "- hello = 'Hello' world = ' World!' add = 'Hello World!'"
     it "test eval array" $ 
       do 
         testEvalArray
         `shouldBe`
-        "fn add(a,b){return (a + b);}; - arr = [1, Hi, 5, 5, True, ]"
+        "fn add(a,b){return (a + b);}; - arr = [1, 'Hi', 5, 5, True, ]"
     it "test eval array array" $ 
       do 
         testEvalArrayArray
@@ -646,6 +655,11 @@ main = hspec $ do
         testArrayIdxWierd
         `shouldBe`
         "let arr = a[((((2 * b)) + c[3]))];"
+    it "test array eval assign" $ 
+      do
+        testArrayIdxWierd
+        `shouldBe`
+        "let arr = a[((((2 * b)) + c[3]))];"
   describe  "test map" $ do
     it "test map" $
       do 
@@ -661,7 +675,7 @@ main = hspec $ do
       do 
         testEvalMap
         `shouldBe`
-        "- x = 0 a = 1 m = {0:0, 1:1, a:a, 3:3, 2:2, 1:True, }"
+        "- x = 0 a = 1 m = {0:0, 1:1, 'a':'a', 3:3, 2:2, 1:True, }"
     it "test eval map func" $
       do 
         testEvalMapFunc
@@ -677,3 +691,13 @@ main = hspec $ do
         testEvalMapFuncElse
         `shouldBe`
         "fn a(b){if(b > 1){let c = {3:4, };return c[b];}else{let c = {0:5, };return c[b];};}; - d = 5"
+    it "test eval map assign" $
+      do 
+        testEvalMapAssign
+        `shouldBe`
+        "- a = {1:10, 2:2, '3':'4', 'k':True, }"
+    it "test array eval assign" $ 
+      do
+        testEvalArrayAssign
+        `shouldBe`
+        "- a = [1, 2, 3, False, ]"

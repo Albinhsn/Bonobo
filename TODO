@@ -1,31 +1,26 @@
 TODO:   
-  assign array/hash 
-
-Non prio: 
-  Map for Variable and Function
-  Test strings in lexer + parser
-  remove global vars in funcs
-  check func in isValidMap
-  check at eof that last exp is valid
-  check that you don't overwrite func with var etc
-  fucking test invalid code
-  redo array/map checks
-  bool with index
-  test eval array in hash 
-  
-
-  Add print statement
-
+  nested arrays
+  nested maps
   Prebuilt funcs:
     len 
     append 
     for 
     print 
-    concat
 
+PRECOMPILER: 
+  Non prio: 
+    Map for Variable and Function
+    check at eof that last exp is valid
+    check that you don't overwrite func with var etc
+    fucking test invalid code
+    redo array/map checks
+    arithmetic 
+    
+    Add print statement
+
+  
 Longest of terms:
   Lsp 
-
 
 VALIDATION/ERROR HANDLING
   last semicolon 
@@ -35,5 +30,3 @@ VALIDATION/ERROR HANDLING
   Object: 
     getFuncBody
     getVarValue 
-
-OPERATORS AND BOOLS CHECK CLOSED INDEX 

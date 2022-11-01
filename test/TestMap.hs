@@ -45,3 +45,6 @@ testEvalMapFuncIf= concatContext(snd(evaluateProgram(parseStringToStatements "fn
 
 testEvalMapFuncElse:: String
 testEvalMapFuncElse= concatContext(snd(evaluateProgram(parseStringToStatements "fn a(b){if(b > 1){let c = {3:4}; return c[b];}else{let c = {0:5}; return c[b];};}; let d = a(0);", ([], []))))
+
+testEvalMapAssign:: String
+testEvalMapAssign= concatContext(snd(evaluateProgram(parseStringToStatements "let a = {1:1, 2:2, \"3\":3}; a[\"3\"] = \"4\"; a[\"k\"] = True; a[1] = (2 + 3) * 2", ([], []))))

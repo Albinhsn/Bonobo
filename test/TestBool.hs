@@ -80,3 +80,15 @@ testMultipleBools =
         )
       )
     )
+testBoolArrayAssign:: String 
+testBoolArrayAssign= 
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let five = b[0] == b[0]", [])),
+            []
+          )))
+        )
+      )
+    )

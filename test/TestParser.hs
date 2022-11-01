@@ -147,3 +147,15 @@ testArithmeticReturnStatement =
            ))
         )
       )
+testLetString:: String 
+testLetString=
+  statementToString
+    ( head
+        (snd( snd
+            ( parseStatements
+                (EXP,( getTokens(parseTokens (0, "let five = \"five\";", [])),
+                  []
+                ))
+           ))
+        )
+      )
