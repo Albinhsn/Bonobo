@@ -1,10 +1,11 @@
 TODO:   
+  Walkthrough tests and unify them 
+  Test Statements -> Same with evals
   VALIDATION/ERROR HANDLING
     last semicolon 
     "closed" on every statement? 
     closed expressions
       map 
-    
     check at eof that last exp is valid
     check that you don't overwrite func with var etc
 
@@ -18,9 +19,11 @@ PRECOMPILER:
     fucking test invalid code
     Add print statement
   Fix REPL/interpretor
+  Read textfile -> statements etc
+  Test line numbers etc
 
-  
-Longest of terms:
-  Lsp 
+After compiler:
+  Fix README.md 
+  Do aoc examples
 
 git ls-files | grep '\.hs' | xargs wc -l
