@@ -14,6 +14,7 @@ import TestObject
 import TestEval
 import TestArray
 import TestMap
+import TestPrebuilt
 -- import TestTFT
 
 main :: IO ()
@@ -655,17 +656,12 @@ main = hspec $ do
         testArrayIdxWierd
         `shouldBe`
         "let arr = a[((((2 * b)) + c[3]))];"
-    it "test array eval assign" $ 
-      do
-        testArrayIdxWierd
-        `shouldBe`
-        "let arr = a[((((2 * b)) + c[3]))];"
   describe  "test map" $ do
     it "test map" $
       do 
         testMap 
         `shouldBe`
-        "let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, };"
+        "let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, b:{x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, }, };"
     it "test map func" $
       do 
         testMapFunc 
@@ -695,9 +691,30 @@ main = hspec $ do
       do 
         testEvalMapAssign
         `shouldBe`
-        "- a = {1:10, 2:2, '3':'4', 'k':True, }"
+        "- a = {1:10, 2:2, '3':'4', 'k':True, 4:{4:True, }, }"
     it "test array eval assign" $ 
       do
         testEvalArrayAssign
         `shouldBe`
-        "- a = [1, 2, 3, False, ]"
+        "- a = [1, 2, 3, False, [4,True], ]"
+  describe "test prebuilt funcs" $ do
+    it "test append" $
+      do
+        testEvalAppend 
+        `shouldBe`
+        "- a = [1, ]"
+    it "test len str" $
+      do
+        testEvalLenStr
+        `shouldBe`
+        "- s = 'hello world' l = 11"
+    it "test len array" $
+      do
+        testEvalLenArray
+        `shouldBe`
+        "- a = [1, 2, 3, 4, ] l = 4"
+    it "test len map" $
+      do
+        testEvalLenMap
+        `shouldBe`
+        "- a = {1:1, 2:2, 3:3, 4:4, } l = 4"

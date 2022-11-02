@@ -58,7 +58,7 @@ data Expression
   | IntegerLiteralExpression {expLine :: !Int, expressionType :: !ExpressionType, integerLiteral :: !Token}
   | ArrayExpression {expLine :: !Int, expressionType :: !ExpressionType, array :: ![Expression], closedArr :: !Bool}
   | MapExpression {nextItem :: !MapType, closedMap :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, mapMap :: ([Expression], [Expression])}
-  | IndexExpression {closedIndex :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Expression, arrayIndex :: !Expression}
+  | IndexExpression {closedIndex :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Expression, arrayIndex :: ![Expression]}
   | StringExpression {expLine :: !Int, expressionType :: !ExpressionType, stringLiteral :: !Token}
   | GroupedExpression {expLine :: !Int, expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
   | PrefixExpression {expLine :: !Int, expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}

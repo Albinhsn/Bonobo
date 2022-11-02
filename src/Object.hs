@@ -26,7 +26,11 @@ getFuncParams (s, f) = head [funcParams x | x <- f, funcIdent x == s]
 
 -- TODO error handle this
 getVarValue :: (String, [Variable]) -> Object 
-getVarValue (s, v) = head [varValue x | x <- v, varIdent x == s] 
+getVarValue (s, v) = o 
+  where 
+    o
+      | null v = error "null vars"
+      | otherwise = head [varValue x | x <- v, varIdent x == s] 
 
 
 --TODO error handle this 
@@ -95,6 +99,7 @@ checkKeyExists :: (Object, Object) -> Bool
 checkKeyExists (key, o) = b
   where
     b 
+      | objectType key /= INT_OBJ && objectType key /= STRING_OBJ = error ("can't access map with key of type " ++ (show (objectType key)))
       | objectType key == INT_OBJ && null [x | x <- fst(mapValue o), objectType x == INT_OBJ && intValue key == intValue x] == False  = True
       | objectType key == STRING_OBJ && null [x | x <- fst(mapValue o), objectType x == STRING_OBJ && stringValue key == stringValue x] == False = True
       | otherwise = False 
@@ -113,19 +118,6 @@ getIndexOfStrKey (key,o) = head [i | (i, x) <- zip [0..] o, objectType x == STRI
 getIndexOfIntKey :: (Int, [Object]) -> Int 
 getIndexOfIntKey (key,o) = head [i | (i, x) <- zip [0..] o, objectType x == INT_OBJ && key == intValue x]
 
-replaceMapKey:: (Expression, ([Object], [Object]), Object) -> ([Object], [Object]) 
-replaceMapKey(e,(k,v),o2) = va 
-  where 
-    va 
-      | expressionType e /= INTEXP && expressionType e /= STRINGEXP = error "can't assign with keys that are non string/int"
-      --If key exists replace it 
-      | expressionType e == INTEXP && checkMapExists(e, (k,v))= (k, replaceNth (getIndexOfIntKey(readIntFromString e, k)) o2 v) 
-      --If key doesn't exist, add it
-      | expressionType e == INTEXP =  (k ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}], v ++ [o2])
-      --If key exists replace it 
-      | expressionType e == STRINGEXP && checkMapExists (e, (k,v))= (k, replaceNth (getIndexOfStrKey(literal (stringLiteral e), k)) o2 v)       --If key doesn't exist, add it
-      | expressionType e == STRINGEXP = (k ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}], v ++ [o2])
-      | otherwise = error "replaceMapKey"
 
 replaceNthArr:: Int -> [a] -> [[a]] -> [[a]]
 replaceNthArr _ _ [] = []

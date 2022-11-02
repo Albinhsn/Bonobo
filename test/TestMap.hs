@@ -15,7 +15,7 @@ testMap=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let m = {x:x, 1:1, \"a\":\"a\", 1+2:1+2, (1/2):(1/2), a:True}", [])),
+          (EXP,( getTokens(parseTokens(0, "let m = {x:x, 1:1, \"a\":\"a\", 1+2:1+2, (1/2):(1/2), a:True, b:{x:x, 1:1, \"a\":\"a\", 1+2:1+2, (1/2):(1/2), a:True}}", [])),
             []
           ))
         )
@@ -47,4 +47,5 @@ testEvalMapFuncElse:: String
 testEvalMapFuncElse= concatContext(snd(evaluateProgram(parseStringToStatements "fn a(b){if(b > 1){let c = {3:4}; return c[b];}else{let c = {0:5}; return c[b];};}; let d = a(0);", ([], []))))
 
 testEvalMapAssign:: String
-testEvalMapAssign= concatContext(snd(evaluateProgram(parseStringToStatements "let a = {1:1, 2:2, \"3\":3}; a[\"3\"] = \"4\"; a[\"k\"] = True; a[1] = (2 + 3) * 2", ([], []))))
+testEvalMapAssign= concatContext(snd(evaluateProgram(parseStringToStatements "let a = {1:1, 2:2, \"3\":3, 4:{4:4}}; a[\"3\"] = \"4\"; a[\"k\"] = True; a[1] = (2 + 3) * 2; a[4][4] = True;", ([], []))))
+

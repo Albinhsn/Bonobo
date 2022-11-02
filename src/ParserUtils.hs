@@ -32,7 +32,7 @@ addIntToLastExp(b, t, e) = ex
       | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed= False, groupedExpression = addIntToLastExp (b, t, groupedExpression e)}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIntToLastExp(b, t, assignExpression e)}
       | expressionType e == CALLEXP = CallExpression {expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIntToLastExp(b, t, last(callParams e))]}
-      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addIntToLastExp(b, t, arrayIndex e)}
+      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addIntToLastExp(b, t, last (arrayIndex e))]}
       -- | expressionType e == MAPEXP = MapExpression {expLine = expLine e, expressionType = MAPEXP, mapMap =}
       | expressionType e == IDENTEXP && b == PAR= CallExpression {
             expLine = expLine e,
@@ -82,7 +82,7 @@ addOperatorToLastExp(t, e) = ex
             arrayIndex = arrayIndex e},
           operator = t,
           rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
-      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addOperatorToLastExp(t, arrayIndex e)}
+      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addOperatorToLastExp(t, last (arrayIndex e))]}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addOperatorToLastExp(t, assignExpression e)}
       | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = [PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expLine = expLine e, expressionType = EMPTYEXP}}]} 
       | expressionType e == ARRAYEXP && expressionType (last (array e)) == ARRAYEXP = ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addOperatorToLastExp(t,last (array e))]}
@@ -135,7 +135,7 @@ addGroupToLastExp e = ex
       | expressionType e == GROUPEDEXP = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addGroupToLastExp (groupedExpression e)}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addGroupToLastExp(assignExpression e)}
       | expressionType e == IDENTEXP = CallExpression {expLine = expLine e, expressionType = CALLEXP, callIdent = e, callParams = [], closedCall = False}  
-      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addGroupToLastExp(arrayIndex e)}
+      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addGroupToLastExp(last (arrayIndex e))]}
       | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = [GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed=False, groupedExpression = Expression{expLine = expLine e, expressionType = EMPTYEXP}}]} 
       | expressionType e == ARRAYEXP = ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addGroupToLastExp(last (array e))]} 
       | otherwise = error ("addGroupToLastExp on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
@@ -163,7 +163,7 @@ closeLastGrouped e = ex
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = closeLastGrouped(assignExpression e)}
       | expressionType e == CALLEXP = CallExpression {expLine = expLine e, expressionType = CALLEXP, callParams = callParams e, callIdent = callIdent e, closedCall= True}
       | expressionType e == ARRAYEXP = ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [closeLastGrouped(last (array e))]} 
-      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = closeLastGrouped(arrayIndex e)}
+      | expressionType e == INDEXEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [closeLastGrouped(last (arrayIndex e))]}
       | otherwise = error ("couldn't close last grouped on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
 
 
@@ -455,7 +455,7 @@ addIdentifierToLastExp(b, t, e) = ex
       | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e,expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addIdentifierToLastExp(b, t, prefixExpression e)}
       | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addIdentifierToLastExp(b, t, getLastParam(callParams e))]}
       | expressionType e == IDENTEXP && b == PAR = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = e, callParams = [IdentExpression{expLine = expLine e, expressionType = IDENTEXP,  ident = t}]}
-      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addIdentifierToLastExp(b, t, arrayIndex e)}
+      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addIdentifierToLastExp(b, t, last (arrayIndex e))]}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIdentifierToLastExp(b,t,assignExpression e)}
       | otherwise = error ("Error adding identifier to last exp on line: " ++ (show (line(t))) ++ literal t) 
 
@@ -464,7 +464,7 @@ addArrayToLastExp(b, t, e) = ex
   where
     ex 
       | expressionType e == EMPTYEXP = ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = []}
-      | expressionType e == ARRAYEXP && null(array e) == False && expressionType (last (array e)) == IDENTEXP =  ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = (last (array e)), arrayIndex = Expression{expLine = -1, expressionType = EMPTYEXP}}]}
+      | expressionType e == ARRAYEXP && null(array e) == False && expressionType (last (array e)) == IDENTEXP =  ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = (last (array e)), arrayIndex = [Expression{expLine = -1, expressionType = EMPTYEXP}]}]}
       | expressionType e == ARRAYEXP && null(array e) == True && typ t == LBRACKET= ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = [addArrayToLastExp(b, t, Expression{expLine = 0, expressionType = EMPTYEXP})]}
       | expressionType e == ARRAYEXP && typ t == LBRACKET = ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [addArrayToLastExp(b, t, last (array e))]}
       | expressionType e == ARRAYEXP && typ t == COMMA && expressionType (last (array e)) == ARRAYEXP && closedArr (last (array e)) == False = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, closedArr = False, array = pop (array e) ++ [addArrayToLastExp(b,t, (last (array e)))]}
@@ -473,9 +473,9 @@ addArrayToLastExp(b, t, e) = ex
       | expressionType e == MAPEXP && null (getVal e) == False && expressionType (last (getVal e)) == MAPEXP && closedMap (last (getVal e)) == False = MapExpression{nextItem = KEY, closedMap = False, expressionType = MAPEXP, expLine = expLine e, mapMap = (getKey e, pop (getVal e) ++ [addArrayToLastExp(b, t, last (getVal e))])} 
       | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addArrayToLastExp(b, t, getLastParam(callParams e))]}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addArrayToLastExp(b,t,assignExpression e)}
-      | expressionType e == IDENTEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = e, arrayIndex = Expression{expLine = -1, expressionType = EMPTYEXP}}
-      | expressionType e == INDEXEXP && closedIndex e == False = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = addArrayToLastExp(b, t, arrayIndex e)}
-      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = e, arrayIndex = Expression{expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == IDENTEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = e, arrayIndex = [Expression{expLine = -1, expressionType = EMPTYEXP}]}
+      | expressionType e == INDEXEXP && closedIndex e == False = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addArrayToLastExp(b, t, last (arrayIndex e))]}
+      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = arrayIndex e ++ [Expression{expLine = expLine e, expressionType = EMPTYEXP}]}
       | expressionType e == OPERATOREXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e,operator = operator e,rightOperator = (addArrayToLastExp(b, t, rightOperator e))}
       | expressionType e == GROUPEDEXP = GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, closed=closed e, groupedExpression = addArrayToLastExp(b, t, groupedExpression e)}
       | expressionType e == BOOLEXP = BoolExpression{expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addArrayToLastExp(b, t, rightBool e)}
@@ -499,7 +499,7 @@ addStringToLastExp(b, t, e) = ex
       | expressionType e == PREFIXEXP = PrefixExpression {expLine = expLine e,expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addStringToLastExp(b, t, prefixExpression e)}
       | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addStringToLastExp(b, t, getLastParam(callParams e))]}
       | expressionType e == IDENTEXP && b == PAR = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = e, callParams = [StringExpression{expLine = expLine e, expressionType = STRINGEXP,  stringLiteral = t}]}
-      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = StringExpression{expLine = line t, expressionType = STRINGEXP,  stringLiteral = t}}
+      | expressionType e == INDEXEXP = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addStringToLastExp(b,t, last(arrayIndex e))]}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addStringToLastExp(b,t,assignExpression e)}
       | otherwise = error ("Error adding string to last exp on line: " ++ (show (line(t))) ++ (show e) ++ " " ++ (show t)) 
 

@@ -8,7 +8,7 @@ import Utils
 import ParserUtils
 
 evaluateFunc :: (Expression, [Variable], [Function])-> Object
-evaluateFunc (e, v, f) = o 
+evaluateFunc (e,v, f) = o 
   where 
     o
       | expressionType e /= CALLEXP = error "not call expression"
@@ -18,7 +18,7 @@ evaluateFunc (e, v, f) = o
           getFuncParams(getCallLiteral e, f)
         )
         = evaluateBody(getFuncBody(getCallLiteral e, f), (
-          v ++ paramsToVars(
+          paramsToVars(
             v, 
             callParams e,
             getFuncParams(getCallLiteral e, f),
@@ -67,7 +67,7 @@ evaluateStatement (s,(v, f))= (va, fu)
     (va, fu) 
       | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v), f)
       | statementType s == FUNCSTA = (v, f ++ [Function{funcIdent = literal (ident (expression s)), funcParams = params (statementUni s), funcBody = body(statementUni s)}])
-      | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,[], f)},v), f)
+      | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,v, f)},v), f)
       | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f)), f)
       | statementType s == IFSTA = (evaluateIf(s, (v, f)), f)
       | otherwise = error  ("evaluateStatement " ++ (show (statementType s)) ++ ": "++ statementToString s)
@@ -78,10 +78,34 @@ evaluateAssign (e,v,o) = va
   where 
     va
       | expressionType e /= INDEXEXP = replaceVar(Variable{varIdent = getLiteralFromAssign(e), varValue = o}, v)
-      | checkListExists(getLiteralFromAssignIndex e,v)== False = error "can't assign to non existing array/map"
-      | checkListType(getLiteralFromAssignIndex e, v) == ARRAY_OBJ =pop v ++ [Variable{varIdent = getLiteralFromAssignIndex e, varValue = ArrayObject{objectType = ARRAY_OBJ, arrValue = replaceArrayIndex(e, arrValue (varValue (head [x | x <- v, varIdent x == getLiteralFromAssignIndex e])), o)}}]
-      | checkListType(getLiteralFromAssignIndex e, v) == MAP_OBJ = pop v ++ [Variable{varIdent = getLiteralFromAssignIndex e, varValue = MapObject{objectType = MAP_OBJ, mapValue = replaceMapKey(arrayIndex e, mapValue (varValue (head [x | x <- v, varIdent x == getLiteralFromAssignIndex e])), o)}}]
-      | otherwise = error "got"
+      | checkListExists(getLAI e,v) == False = error "can't assign to non existing map/array" 
+      -- | checkListType(getLAI e, v) == ARRAY_OBJ =pop v ++ [Variable{varIdent = getLAI e, varValue = ArrayObject{objectType = ARRAY_OBJ, arrValue = replaceArrayIndex(e, arrValue (varValue (head [x | x <- v, varIdent x == getLAI e])), o)}}]
+      -- | checkListType(getLAI e, v) == MAP_OBJ = pop v ++ [Variable{varIdent = getLAI e, varValue = MapObject{objectType = MAP_OBJ, mapValue = replaceMapKey(arrayIndex e, mapValue (varValue (head [x | x <- v, varIdent x == getLAI e])), o)}}]
+      | otherwise = error ("evaluateAssign " ++ (expressionToString e) ++ " " ++ (inspectObject o))
+
+replaceArrayIndex :: ([Expression], [Object], Object) -> [Object]
+replaceArrayIndex (e, arr, newVal) = o 
+  where 
+    o
+      | otherwise = error "replaceArrayIndex"
+
+replaceMapKey:: ([Expression], ([Object], [Object]), Object) -> ([Object], [Object]) 
+replaceMapKey(e,(k,v),o2) = va 
+  where 
+    va 
+      -- | expressionType e /= INTEXP && expressionType e /= STRINGEXP = error "can't assign with keys that are non string/int"
+      -- --If key exists replace it 
+      -- | expressionType e == INTEXP && checkMapExists(e, (k,v))= (k, replaceNth (getIndexOfIntKey(readIntFromString e, k)) o2 v) 
+      -- --If key doesn't exist, add it
+      -- | expressionType e == INTEXP =  (k ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}], v ++ [o2])
+      -- --If key exists replace it 
+      -- | expressionType e == STRINGEXP && checkMapExists (e, (k,v))= (k, replaceNth (getIndexOfStrKey(literal (stringLiteral (last e)), k)) o2 v)       --If key doesn't exist, add it
+      -- | expressionType e == STRINGEXP = (k ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral (last e))}], v ++ [o2])
+      | otherwise = error "replaceMapKey"
+
+
+getLAI :: Expression -> String 
+getLAI e = literal (ident (arrayIdent e))
 
 
 evaluateIf :: (Statement, ([Variable], [Function]))-> [Variable] 
@@ -106,31 +130,46 @@ evaluateExpression (e, v, f)= o
       | expressionType e == IDENTEXP = getVarValue(literal (ident (e)), v) 
       | expressionType e == ASSIGNEXP = evaluateExpression(assignExpression e, v, f)
       | expressionType e == CALLEXP && isPrebuilt(getCallLiteral e) = evaluatePrebuilt(getCallLiteral e, [evaluateExpression(x,v,f) |  x <- callParams e]) 
-      | expressionType e == CALLEXP = evaluateFunc(e, [], f) 
+      | expressionType e == CALLEXP = evaluateFunc(e,v, f) 
+      | expressionType e == INDEXEXP = evaluateIndexExp(e,v,f)
       | expressionType e == ARRAYEXP = ArrayObject{objectType = ARRAY_OBJ, arrValue = [evaluateExpression (x, v,f) | x <- array e]}
-      | expressionType e == INDEXEXP = evaluateIndexExp(arrayIdent e,evaluateExpression(arrayIndex e,v,f), v, f)
       | expressionType e == MAPEXP = MapObject{objectType = MAP_OBJ, mapValue = ([evaluateExpression(x, v, f) | x <- fst(mapMap e)],[evaluateExpression(x,v,f) | x <- snd(mapMap e)])}
       | otherwise = error ("error evaluating expression" ++ expressionToString(e))
 
+evaluateIndexExp :: (Expression, [Variable], [Function]) -> Object 
+evaluateIndexExp (e,v,f )= o 
+  where
+    o 
+      | expressionType (arrayIdent e) == IDENTEXP && checkListExists(literal(ident (arrayIdent e)), v) = evaluateIndex(arrayIndex e, getVarValue(literal(ident (arrayIdent e)), v),v,f) 
+      | otherwise = error ("evaluateIndexExp " ++ (show (arrayIdent e))) 
 
-evaluateIndexExp :: (Expression, Object, [Variable], [Function]) -> Object 
-evaluateIndexExp (e, o, v, f) = ob 
+
+evaluateIndex :: ([Expression], Object, [Variable], [Function]) -> Object 
+evaluateIndex (e, o, v, f) = ob 
   where 
     ob
-      | expressionType e == IDENTEXP = evaluateIndex(StringObject{objectType = STRING_OBJ, stringValue = literal (ident e)}, o, v)  
-      | expressionType e == INDEXEXP = evaluateIndex(evaluateIndexExp(arrayIdent e, evaluateExpression(arrayIndex e, v, f), v, f), o, v)
-      | otherwise = error ("evaluateIndexExp: " ++ (expressionToString e) ++ " " ++ (show (expressionType e)))
+      | null e = o 
+      | objectType o == MAP_OBJ = evaluateIndex(removeFirst e, evaluateMapIndex(evaluateExpression(head e, v, f),o), v, f)
+      | objectType o == ARRAY_OBJ = evaluateIndex(removeFirst e, evaluateArrayIndex(evaluateExpression(head e, v, f),o),v,f)
+      | otherwise = error "valuateIndex" 
 
-
-evaluateIndex :: (Object, Object, [Variable]) -> Object 
-evaluateIndex (s, o, v) = ob 
+evaluateArrayIndex :: (Object, Object ) -> Object 
+evaluateArrayIndex (idx, arr) = o
   where 
-    ob 
-      | objectType s == ARRAY_OBJ = getArrayIndex(o,s) 
-      | objectType s == STRING_OBJ && checkListExists(stringValue s,v)== False = error "array/map doesn't exist"
-      | objectType s == STRING_OBJ && checkListType(stringValue s,v) == ARRAY_OBJ  = getArrayIndex(o,head [varValue x | x <- v, stringValue s == varIdent x])
-      | objectType s == STRING_OBJ && checkListType(stringValue s,v) == MAP_OBJ = getMapIndex(o, head [varValue x | x <- v, stringValue s == varIdent x]) 
-      | otherwise = error "array/map doesn't exist"  
+    o
+      | objectType idx /= INT_OBJ = error ("can't get array index with type: " ++ (show (objectType o)))
+      | length (arrValue arr) < intValue idx = error "can't access out of bounds in array"
+      | intValue idx < 0 = error "can't access with negative array"
+      | otherwise = arrValue arr!!intValue idx
+
+
+evaluateMapIndex :: (Object, Object ) -> Object 
+evaluateMapIndex (key, val) = o
+  where 
+    o
+      | checkKeyExists(key,val) == False = error "key doesn't exist"
+      | objectType key == INT_OBJ = (snd (mapValue val))!!getIndexOfIntKey(intValue key, fst(mapValue val))
+      | objectType key == STRING_OBJ =(snd (mapValue val))!!getIndexOfStrKey(stringValue key, fst(mapValue val))
 
 checkListType :: (String, [Variable]) -> ObjectType
 checkListType (s, v) = objectType (head [varValue x | x <- v, varIdent x == s]) 
@@ -286,14 +325,3 @@ evaluatePrebuilt (s, o) = ob
 getCallLiteral :: Expression -> String 
 getCallLiteral e = literal (ident (callIdent e))
 
-
-
-replaceArrayIndex :: (Expression, [Object], Object) -> [Object] 
-replaceArrayIndex (e, o,o2) = o3
-  where 
-    o3  
-      | expressionType e == INTEXP = replaceNth (read (literal (integerLiteral e))) o2 o  
-      | expressionType (arrayIndex e) /= INTEXP = error "can't assign for non int index in array" 
-      | length o-1 < readIntFromString (arrayIndex e) = error "trying to access out of bounds in array"
-      | 0 > readIntFromString (arrayIndex e) = error "trying to access with negative index"
-      | otherwise = replaceNth (readIntFromString e) o2 o  
