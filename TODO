@@ -1,44 +1,26 @@
 TODO:   
-  add bool to last exp # Array
-  add prefix to last exp #Array
-  {a[0]: a[1]}
-  closedMap 
+  VALIDATION/ERROR HANDLING
+    last semicolon 
+    "closed" on every statement? 
+    closed expressions
+      map 
+    
+    check at eof that last exp is valid
+    check that you don't overwrite func with var etc
 
+
+PRECOMPILER: 
   Prebuilt funcs:
     for 
     print 
-
-PRECOMPILER: 
   Non prio: 
     Map for Variable and Function
-    check at eof that last exp is valid
-    check that you don't overwrite func with var etc
     fucking test invalid code
-    redo array/map checks
-    arithmetic 
-    
     Add print statement
+  Fix REPL/interpretor
 
   
 Longest of terms:
   Lsp 
 
-VALIDATION/ERROR HANDLING
-  last semicolon 
-  "closed" on every statement? 
-  closing array/map 
-  
-  Object: 
-    getFuncBody
-    getVarValue 
-
-
-a[[0,1]]; a[0][1] = True; 
-replaceNth 0 [0,True] [[0,1]]
-
-a[0][1][2]
-[2], [[[],[[],[],[2]]]] True 
-[2,1] [[],[[],[],[2]]] True 
-[2,1,0] [],[],[2]
-calling 
-
+git ls-files | grep '\.hs' | xargs wc -l

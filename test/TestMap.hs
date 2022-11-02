@@ -34,6 +34,20 @@ testMapFunc=
       ))
     )
 
+testMapIndexKeyVal :: String 
+testMapIndexKeyVal=
+  statementToString 
+    ( head
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let a = {b[0]:b[0], b[\"k\"]:b[\"k\"], b[a[0]]:b[a[0]], b[call()]:b[call()]}", [])),
+            []
+          ))
+        )
+      ))
+    )
+
+
 testEvalMapFunc:: String
 testEvalMapFunc= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){let c = {1:3, 2:4}; return c[a] + c[b]}; let a = add(1,2);", ([], []))))
 

@@ -23,7 +23,7 @@ testArrayLet=
   statementsToString 
       (snd( snd 
         ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let arr = [1,\"Hi\", (2+3), add(2,3), True]; let five = 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "let arr = [1,\"Hi\", (2+3), add(2,3), True, -1, 1 == 1];", [])),
             []
           ))
         )

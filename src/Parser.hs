@@ -201,8 +201,8 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
           }] 
         )
         )
-      | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) --
-      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, s)) --Only reason for parseExp is to remove SEMICOLON 
+      | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) 
+      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, s)) 
       | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == CON = parseIf(CON, (t, s))
       | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == ALT = parseElse(ALT, (t, s))
       | typ (head t) == RBRACE && isListExpression(b, last s) && isValidMap(s) = parseExpression(b, (removeFirst t, s))

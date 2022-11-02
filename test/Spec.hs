@@ -618,7 +618,7 @@ main = hspec $ do
       do
         testArrayLet
         `shouldBe`
-        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, ]; let five = 5;"
+        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, (-1), 1 == 1, ];"
     it "test array with indexing" $ 
       do
         testArrayIdxInArr
@@ -655,6 +655,11 @@ main = hspec $ do
         `shouldBe`
         "let arr = a[((((2 * b)) + c[3]))];"
   describe  "test map" $ do
+    it "test map key val" $
+      do 
+        testMapIndexKeyVal 
+        `shouldBe`
+        "let a = {b[0]:b[0], b['k']:b['k'], b[a[0]]:b[a[0]], b[call()]:b[call()], };"
     it "test map" $
       do 
         testMap 
