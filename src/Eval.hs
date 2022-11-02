@@ -68,39 +68,102 @@ evaluateStatement (s,(v, f))= (va, fu)
       | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v), f)
       | statementType s == FUNCSTA = (v, f ++ [Function{funcIdent = literal (ident (expression s)), funcParams = params (statementUni s), funcBody = body(statementUni s)}])
       | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,v, f)},v), f)
-      | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f)), f)
+      | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f),f), f)
       | statementType s == IFSTA = (evaluateIf(s, (v, f)), f)
       | otherwise = error  ("evaluateStatement " ++ (show (statementType s)) ++ ": "++ statementToString s)
 
 
-evaluateAssign :: (Expression, [Variable], Object) -> [Variable]
-evaluateAssign (e,v,o) = va
+evaluateAssign :: (Expression, [Variable], Object, [Function]) -> [Variable]
+evaluateAssign (e,v,o,f) = va
   where 
     va
       | expressionType e /= INDEXEXP = replaceVar(Variable{varIdent = getLiteralFromAssign(e), varValue = o}, v)
       | checkListExists(getLAI e,v) == False = error "can't assign to non existing map/array" 
-      -- | checkListType(getLAI e, v) == ARRAY_OBJ =pop v ++ [Variable{varIdent = getLAI e, varValue = ArrayObject{objectType = ARRAY_OBJ, arrValue = replaceArrayIndex(e, arrValue (varValue (head [x | x <- v, varIdent x == getLAI e])), o)}}]
-      -- | checkListType(getLAI e, v) == MAP_OBJ = pop v ++ [Variable{varIdent = getLAI e, varValue = MapObject{objectType = MAP_OBJ, mapValue = replaceMapKey(arrayIndex e, mapValue (varValue (head [x | x <- v, varIdent x == getLAI e])), o)}}]
+      | checkListType(getLAI e, v) == MAP_OBJ || checkListType (getLAI e, v) == ARRAY_OBJ = replaceVariable(
+        getLAI e,
+        v, 
+        Variable{
+          varIdent = getLAI e,
+          varValue = newFunc(
+            [evaluateExpression(x,v,f) | x <- arrayIndex e], 
+            head [varValue x | x <- v, getLAI e == varIdent x],
+            o
+          )
+        }
+      )
       | otherwise = error ("evaluateAssign " ++ (expressionToString e) ++ " " ++ (inspectObject o))
 
-replaceArrayIndex :: ([Expression], [Object], Object) -> [Object]
-replaceArrayIndex (e, arr, newVal) = o 
+
+replaceVariable :: (String, [Variable], Variable) -> [Variable]
+replaceVariable (s, vars, newVar) = newVars
+  where
+    newVars 
+      | otherwise = newVar:[x | x <- vars, varIdent x /= s] 
+
+
+newFunc :: ([Object], Object, Object) -> Object 
+newFunc (idxs, list, newVal) = o 
   where 
     o
-      | otherwise = error "replaceArrayIndex"
+      | length idxs == 1 && objectType list == ARRAY_OBJ = ArrayObject{
+        objectType = ARRAY_OBJ,
+        arrValue = replaceArrayIndex(
+          head idxs, 
+          arrValue list, 
+          newVal
+        )
+      } 
+      | objectType list == ARRAY_OBJ = ArrayObject{
+          objectType = ARRAY_OBJ,
+          arrValue = replaceArrayIndex(head idxs, arrValue list, newFunc(
+            removeFirst idxs, 
+            arrValue list!!(intValue (head idxs)),
+            newVal
+          ))
+        } 
+      | length idxs == 1 && objectType list == MAP_OBJ = MapObject{
+        objectType = MAP_OBJ,
+        mapValue = replaceMapKey(
+          head idxs,
+          mapValue list, 
+          newVal
+        ) 
+      }
+      | length idxs > 1 && objectType list == MAP_OBJ && checkKeyExists(head idxs, list) == False = error ("key doesn't exist and trying to access deeper, key: " ++ inspectObject(head idxs)) 
+      | length idxs > 1 && objectType list == MAP_OBJ && checkKeyExists(head idxs, list )== True = MapObject{
+          objectType = MAP_OBJ,
+          mapValue = replaceMapKey(
+            head idxs,
+            mapValue list,
+            newFunc(
+              removeFirst idxs, 
+              getMap(head idxs, mapValue list),
+              newVal
+            ) 
+          )
+        }
+      | otherwise = error ("can't access index type: " ++ (show (objectType list)))
 
-replaceMapKey:: ([Expression], ([Object], [Object]), Object) -> ([Object], [Object]) 
-replaceMapKey(e,(k,v),o2) = va 
+
+replaceArrayIndex :: (Object, [Object], Object) -> [Object]
+replaceArrayIndex (idx, arr, newVal) = o 
+  where 
+    o
+      | objectType idx /= INT_OBJ = error "can't use index that are isn't an int"
+      | otherwise = replaceNth (intValue idx) newVal arr
+
+replaceMapKey:: (Object, ([Object], [Object]), Object) -> ([Object], [Object]) 
+replaceMapKey(key,(k,v),o2) = va 
   where 
     va 
-      -- | expressionType e /= INTEXP && expressionType e /= STRINGEXP = error "can't assign with keys that are non string/int"
-      -- --If key exists replace it 
-      -- | expressionType e == INTEXP && checkMapExists(e, (k,v))= (k, replaceNth (getIndexOfIntKey(readIntFromString e, k)) o2 v) 
-      -- --If key doesn't exist, add it
-      -- | expressionType e == INTEXP =  (k ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}], v ++ [o2])
-      -- --If key exists replace it 
-      -- | expressionType e == STRINGEXP && checkMapExists (e, (k,v))= (k, replaceNth (getIndexOfStrKey(literal (stringLiteral (last e)), k)) o2 v)       --If key doesn't exist, add it
-      -- | expressionType e == STRINGEXP = (k ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral (last e))}], v ++ [o2])
+      | objectType key /= INT_OBJ && objectType key /= STRING_OBJ = error "can't assign with keys that are non string/int"
+      --If key exists replace it 
+      | objectType key == INT_OBJ && checkMapExists(key, (k,v))= (k, replaceNth (getIndexOfIntKey(intValue key, k)) o2 v) 
+      --If key doesn't exist, add it
+      | objectType key == INT_OBJ =  (k ++ [IntObject{objectType = INT_OBJ, intValue = intValue key}], o2:v)
+      --If key exists replace it 
+      | objectType key == STRING_OBJ && checkMapExists (key, (k,v))= (k, replaceNth (getIndexOfStrKey(stringValue key, k)) o2 v)       
+      | objectType key == STRING_OBJ = (k ++ [StringObject{objectType = STRING_OBJ, stringValue = stringValue key}], v ++ [o2])
       | otherwise = error "replaceMapKey"
 
 

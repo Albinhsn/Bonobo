@@ -95,6 +95,7 @@ readIntFromString e = i
       | expressionType e/= INTEXP = error (expressionToString e)
       | otherwise = read (literal (integerLiteral e))
 
+
 checkKeyExists :: (Object, Object) -> Bool 
 checkKeyExists (key, o) = b
   where
@@ -104,26 +105,24 @@ checkKeyExists (key, o) = b
       | objectType key == STRING_OBJ && null [x | x <- fst(mapValue o), objectType x == STRING_OBJ && stringValue key == stringValue x] == False = True
       | otherwise = False 
 
-checkMapExists :: (Expression, ([Object], [Object])) -> Bool 
-checkMapExists (e, (keys, vals)) = b
+checkMapExists :: (Object, ([Object], [Object])) -> Bool 
+checkMapExists (key, (keys, vals)) = b
   where 
     b
-      | expressionType e == INTEXP && null [x | x <- keys, objectType x == INT_OBJ && readIntFromString e  == intValue x] == False = True 
-      | expressionType e == STRINGEXP && null [x | x <- keys, objectType x == STRING_OBJ && literal (stringLiteral e)  == stringValue x] == False = True  
+      | objectType key == INT_OBJ && null [x | x <- keys, objectType x == INT_OBJ &&  key == x] == False = True 
+      | objectType key == STRING_OBJ && null [x | x <- keys, objectType x == STRING_OBJ && key == x] == False = True  
       | otherwise = False
+
+
+getMap :: (Object, ([Object],[Object])) -> Object 
+getMap (key, (k,v)) = head [x | (i,x) <- zip k v, i == key]
+
 
 getIndexOfStrKey :: (String, [Object]) -> Int 
 getIndexOfStrKey (key,o) = head [i | (i, x) <- zip [0..] o, objectType x == STRING_OBJ && key == stringValue x]
 
 getIndexOfIntKey :: (Int, [Object]) -> Int 
 getIndexOfIntKey (key,o) = head [i | (i, x) <- zip [0..] o, objectType x == INT_OBJ && key == intValue x]
-
-
-replaceNthArr:: Int -> [a] -> [[a]] -> [[a]]
-replaceNthArr _ _ [] = []
-replaceNthArr n newVal (x:xs)
- | n == 0 = newVal:xs
- | otherwise = x:replaceNth (n-1) newVal xs
 
 replaceNth :: Int -> a -> [a] -> [a]
 replaceNth _ _ [] = []

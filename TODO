@@ -1,11 +1,9 @@
 TODO:   
-  nested arrays
-  nested maps
   add bool to last exp # Array
   add prefix to last exp #Array
-  clean up  add array 
-    what fucks now is [...[3,2]...]
-      since ',' doesn't add empty exp to last
+  {a[0]: a[1]}
+  closedMap 
+
   Prebuilt funcs:
     for 
     print 

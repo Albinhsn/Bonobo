@@ -12,7 +12,7 @@ import Eval
 
 
 main = do
-  let tokens = (parseTokens (1, "let a = {1:1, 2:2, \"3\":3, 4:{4:4}}; a[\"3\"] = \"4\"; a[\"k\"] = True; a[1] = (2 + 3) * 2; a[4][4] = True;", []))
+  let tokens = (parseTokens (1, "let a = [{0:[{0:[1]}]},1]; a[0][0][0][0][0] = True;", []))
   -- print tokens
   let s = parseStatements (EXP, (getTokens(tokens), []))
   -- print s 

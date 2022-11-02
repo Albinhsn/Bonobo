@@ -5,6 +5,8 @@ import Ast
 import Lexer 
 import Token 
 import Utils 
+import Eval
+import TestUtils
 
 testDiffFunc:: String
 testDiffFunc=
@@ -42,3 +44,7 @@ testInsaneIf=
         )
       ))
     )
+
+testEvalMapArrayComb :: String
+testEvalMapArrayComb = concatContext(snd(evaluateProgram(parseStringToStatements "let a = [{0:[{0:[1]}]},1]; a[0][0][0][0][0] = True;", ([], []))))
+

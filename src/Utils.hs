@@ -114,9 +114,11 @@ expressionToString e = s
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";"
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
-      | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
+      | expressionType e == ARRAYEXP && closedArr e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
+      | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 
       | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ indexToString(arrayIndex e) 
-      | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e) ++ "}"
+      -- | expressionType e == MAPEXP && closedMap e == False = "{" ++ concatMapMap(mapMap e) 
+      | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e)++ "}"
       | otherwise = error "couldn't parse type"
 
 indexToString :: [Expression] -> String 

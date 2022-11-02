@@ -394,13 +394,6 @@ main = hspec $ do
         testFuncCallWithMulParams  
         `shouldBe`
         "let five = addThree(a,b);"
-  
-  -- describe "Testing TFT" $ do
-  --   it "testing let true" $
-  --     do
-  --       testLetTrue
-  --       `shouldBe`
-  --       "let five = true;"
   describe "Test difficult" $ do
    it "Test diff func" $
       do
@@ -417,6 +410,11 @@ main = hspec $ do
         testInsaneIf
         `shouldBe`
         "if( empty ){if( empty ){if( empty ){five = 5;};}else{if( empty ){five = 5;}else{five = 5;};};}else{if( empty ){if( empty ){if( empty ){}else{five = 5;};}else{if( empty ){}else{if( empty ){}else{five = 5;};};};};};"
+   it "test nested array/map" $ 
+      do
+        testEvalMapArrayComb 
+        `shouldBe`
+        "- a = [{0:[{0:[True, ], }, ], }, 1, ]"
   describe "Test Multiple" $ do
    it "Test Multiple let" $
       do
@@ -691,12 +689,12 @@ main = hspec $ do
       do 
         testEvalMapAssign
         `shouldBe`
-        "- a = {1:10, 2:2, '3':'4', 'k':True, 4:{4:True, }, }"
+        "- a = {1:10, 2:2, '3':'4', 4:{4:True, }, 'k':True, }"
     it "test array eval assign" $ 
       do
         testEvalArrayAssign
         `shouldBe`
-        "- a = [1, 2, 3, False, [4,True], ]"
+        "- a = [1, False, 3, [4, True, ], ]"
   describe "test prebuilt funcs" $ do
     it "test append" $
       do
