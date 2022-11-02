@@ -32,64 +32,17 @@ main = hspec $ do
         ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "'Hello World!'","EOF"]
         
   describe "Testing Parser" $ do
-    it "testing assignment" $ 
+    it "testing basic let" $ 
       do 
-        testAssignment 
+        testBasicLet
         `shouldBe`
-        "let five = 5;"
-    it "testing string" $ 
+        "let five = 5; let five = 'five'; let five = ((5 + 5) + 5); let five = (5 / 5); let five = (5 * 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 - 5); let five = (-5);"
+    it "testing return" $ 
       do 
-        testLetString
+        testReturnStatement
         `shouldBe`
-        "let five = 'five';"
-    it "testing multiple operators" $ 
-      do 
-        testMultipleOperators
-        `shouldBe`
-        "let five = ((5 + 5) + 5);"
-  
-    it "testing slash operators" $ 
-      do 
-        testSlashOperator
-        `shouldBe`
-        "let five = (5 / 5);"
-
-    it "testing asterisk operator" $ 
-      do 
-        testAsteriskOperator
-        `shouldBe`
-        "let five = (5 * 5);"
-
-    it "testing plus asterisk" $
-      do 
-        testPlusAsteriskOperators
-        `shouldBe`
-        "let five = (5 + (5 * 5));"
-
-    it "testing asterisk plus " $
-      do 
-        testAsteriskPlusOperators
-        `shouldBe`
-        "let five = ((5 * 5) + 5);"
-
-    it "testing minus operator" $ 
-      do 
-        testMinusOperator
-        `shouldBe`
-        "let five = (5 - 5);"
-
-    it "testing arithmetic return statement" $ 
-      do 
-        testArithmeticReturnStatement 
-        `shouldBe`
-        "return (5 + 5);"
-
-    it "testing prefix" $ 
-      do 
-        testPrefix
-        `shouldBe`
-        "let five = (-5);"
-
+        "return 5; return (5 + 5);"
+      
   describe "Testing precedence" $ do
     it "testing plus minus" $ 
       do 
@@ -104,132 +57,22 @@ main = hspec $ do
         True
     it "testing basic grouped" $
       do 
-        testBasicGrouped
+        testGroupedPrecedence
         `shouldBe`
-        "let five = (((2 + 3)) * 5);"
-    it "testing adv grouped" $
-      do 
-        testAdvGrouped
-        `shouldBe`
-        "let five = ((((2 + (-3))) * (-4)) + ((10 / 5)));"
-    it "testing bool grouped" $ 
-      do 
-        testBoolGrouped 
-        `shouldBe` 
-        "let five = ((((-3) + 5)) + 2) == (8 / 5);"
-    it "testing bool grouped2" $ 
-      do 
-        testBoolGrouped2 
-        `shouldBe` 
-        "let five = (((5 + 2)) * 5) > ((-4) / 1);"
-    it "testing grouped" $ 
-      do 
-        testGrouped2
-        `shouldBe` 
-        "let five = ((((2 + 2)) * ((5 * 2))) / (((-4) - (-4))));"
-    it "testing 1" $ 
-      do 
-        test1 
-        `shouldBe`
-        "return ((((((1 + 2)) + 3)) * ((4 * ((5 + 6))))) / ((((-7) - 8))));"
-    it "testing 2" $ 
-      do 
-        test2 
-        `shouldBe`
-        "return (((1 + 2)));"
-    it "testing 3" $ 
-      do 
-        test3 
-        `shouldBe`
-        "let five = ((((3 * 4) + 1)) == ((-13)));"
+        "let five = (((2 + 3)) * 5); let five = ((((2 + (-3))) * (-4)) + ((10 / 5))); let five = ((((-3) + 5)) + 2) == (8 / 5); let five = (((5 + 2)) * 5) > ((-4) / 1); let five = ((((2 + 2)) * ((5 * 2))) / (((-4) - (-4)))); return ((((((1 + 2)) + 3)) * ((4 * ((5 + 6))))) / ((((-7) - 8)))); return (((1 + 2))); let five = ((((3 * 4) + 1)) == ((-13)));"
 
   describe "Testing bools" $ do
-    it "testing five equals five" $ 
+    it "testing bools" $ 
       do 
-        testFiveEqualsFive
+        testBools
         `shouldBe`
-        "let five = 5 == 5;"
-    it "testing five equals five + 5" $
-      do
-        testFiveEqualsFivePlusFive 
-        `shouldBe`
-        "let five = 5 == (5 + 5);"
-    it "testing five equals 5 plus 5 times 5" $ 
-      do 
-        testFiveEqualsFivePlusFiveTimesFive 
-        `shouldBe`
-        "let five = 5 == (5 + (5 * 5));"
-    it "testing five equals five plus five minus five" $
-      do 
-        testFiveEqualsFivePlusMinusFive 
-        `shouldBe`
-        "let five = 5 == (5 + (-5));"
-    it "testing five equals five plus minus five times minues five" $ 
-      do 
-        testFiveEqualsFivePlusMinusFiveTimesMinusFive 
-        `shouldBe`
-        "let five = 5 == (5 + ((-5) * (-5)));"
-    it "testing random shit" $ 
-      do 
-        testMultipleBools
-        `shouldBe`
-        "let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1;"
-    it "testing bool array assign" $ 
-      do 
-        testBoolArrayAssign
-        `shouldBe`
-        "let five = b[0] == b[0];"
+        "let five = 5 == 5; let five = 5 == (5 + 5); let five = 5 == (5 + (5 * 5)); let five = 5 == (5 + (-5)); let five = 5 == (5 + ((-5) * (-5))); let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1; let five = b[0] == b[0];"
   describe "Testing if" $ do
     it "testing empty if" $ 
       do 
-        testEmptyIf 
+        testIf 
         `shouldBe`
-        "if( empty ){};"
-    it "testing empty if else" $ 
-      do 
-        testEmptyIfElse 
-        `shouldBe`
-        "if( empty ){};"
-    it "testing con" $ 
-      do 
-        testCon 
-        `shouldBe`
-        "if( empty ){let five = 5;};"
-    it "testing alt" $ 
-      do 
-        testAlt
-        `shouldBe`
-        "if( empty ){}else{let five = 5;};"
-    it "testingMultipleCon" $ 
-      do 
-        testMultipleCon
-        `shouldBe`
-        "if( empty ){let five = 5;let ten = (5 + 5);};"
-    it "testingMultipleAlt" $ 
-      do 
-        testMultipleAlt
-        `shouldBe`
-        "if( empty ){}else{let five = 5;let ten = (5 + 5);};"
-    it "testingConAlt" $ 
-      do 
-        testConAlt
-        `shouldBe`
-        "if( empty ){let five = 5;}else{let five = 5;};"
-    it "testingMultipleConAlt" $ 
-      do 
-        testMultipleConAlt
-        `shouldBe`
-        "if( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;};"
-    it "testing multiple if" $ 
-      do 
-        testMultipleIf
-        `shouldBe`
-        "if(5 == 5){if(5 == 5){let five = 5;}else{five = 5;};};"
-    it "testing param if" $ 
-      do 
-        testIfParam
-        `shouldBe`
-        "if(5 == 5){return 5;};"
+        "if( empty ){}; if( empty ){}; if( empty ){let five = 5;}; if( empty ){}else{let five = 5;}; if( empty ){let five = 5;let ten = (5 + 5);}; if( empty ){}else{let five = 5;let ten = (5 + 5);}; if( empty ){let five = 5;}else{let five = 5;}; if( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;}; if(5 == 5){if(5 == 5){let five = 5;}else{five = 5;};}; if(5 == 5){return 5;};"
   describe "Testing Ident" $ do
     it "testing ident" $ 
       do 

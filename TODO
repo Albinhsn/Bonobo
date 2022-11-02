@@ -1,4 +1,6 @@
 TODO:   
+  FIXES:
+    check if if is closed, exp fucked?
   Walkthrough tests and unify them 
   Test Statements -> Same with evals
   VALIDATION/ERROR HANDLING
