@@ -8,10 +8,10 @@ import Ast
 import Object
 
 testEvalFuncCall:: String
-testEvalFuncCall= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;} let five = add(2,3);", ([], []))))
+testEvalFuncCall= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;}; let five = add(2,3);", ([], []))))
 
 testEvalMulFunc :: String
-testEvalMulFunc= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;} fn divide(a,b){return a / b;}", ([], []))))
+testEvalMulFunc= concatContext(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;}; fn divide(a,b){return a / b;};", ([], []))))
 
 testEvalMulVar:: String
 testEvalMulVar= concatContext(snd(evaluateProgram(parseStringToStatements "let five = 5; let ten = 10;", ([], []))))
@@ -26,7 +26,7 @@ testEvalOverwriteVar:: String
 testEvalOverwriteVar= concatContext(snd(evaluateProgram(parseStringToStatements "let five = 3; five = 5;", ([], []))))
 
 testEvalNestedIf:: String
-testEvalNestedIf= concatContext(snd(evaluateProgram(parseStringToStatements "if(5 > 3){if(5 < 3){let three = 3;}else{let five = 5;}}", ([], []))))
+testEvalNestedIf= concatContext(snd(evaluateProgram(parseStringToStatements "if(5 > 3){if(5 < 3){let three = 3;}else{let five = 5;};};", ([], []))))
 
 testEvalNestedElse:: String
 testEvalNestedElse= concatContext(snd(evaluateProgram(parseStringToStatements "if(5 < 3){let three = 3;}else{if(5 < 3){let four = 4;}else{if(5 > 3){let five = 5;};};};", ([], []))))

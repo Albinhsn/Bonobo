@@ -19,6 +19,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
             EXP, (
               removeFirst t,
               noPopAddToStatement(b,s, Statement{
+                closedSta = False, 
                 staLine = line (head t), 
                 statementType = FUNCSTA, 
                 statementUni = FuncStatement{params = [], body = []},
@@ -33,6 +34,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
             b, 
               (removeFirst t, 
               noPopAddToStatement(b, s, Statement{
+                closedSta = False, 
                 staLine = line (head t), 
                 statementType = NOSTA,
                 statementUni = NoStatement{},
@@ -49,7 +51,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
           parseStatements(
             parseExpression(
                 b, ( 
-                  removeFirst(removeFirst t), --This is bad but first one is removed from parseIdentifierToLet 
+                  removeFirst(removeFirst t), 
                   noPopAddToStatement(
                     b, 
                     s, 
@@ -58,12 +60,23 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
                 )
               )
             )
+      | typ (head t) == FOR = 
+        parseStatements(
+          parseExpression(
+            b, (
+              removeFirst t, 
+              noPopAddToStatement(
+              )
+            )
+          )
+        )
       | typ (head t) == RETURN =
           parseStatements 
             (parseExpression
                 (b,( removeFirst t,
                     noPopAddToStatement(b, s, Statement
                            { 
+                            closedSta = False, 
                             staLine = line (head t), 
                              statementUni = ReturnStatement {},
                              statementType = RETSTA,  
@@ -72,21 +85,31 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
                 ))
             ))
       | typ (head t) == RBRACE && b == CON = parseStatements(parseElse(ALT, (removeFirst t, closeLastOpen(b,s))))
-      | typ (head t) == RBRACE && b == ALT = parseStatements(findLastBlockType(EXP, last s), (removeFirst t, closeLastOpen(b,s)))
-      | typ (head t) == RBRACE && b == BOD = parseStatements(EXP, (removeFirst t, s))
-      | typ (head t) == RBRACE && b == EXP && statementType(last s) == FUNCSTA = parseStatements(EXP, (removeFirst t, s))
+      | typ (head t) == RBRACE && b == ALT = parseStatements(parseSemicolon(findLastBlockType(EXP, last s), (removeFirst t, closeLastOpen(b,s))))
+      | typ (head t) == RBRACE && b == BOD = parseStatements(parseSemicolon(EXP, (removeFirst t, s)))
+      | typ (head t) == RBRACE && b == EXP && statementType(last s) == FUNCSTA = parseExpression(EXP, (removeFirst t, s))
       | typ (head t) == IF = 
         parseExpression(
         CON, (removeFirst t, 
         noPopAddToStatement(b, s, Statement {
+          closedSta = False, 
           staLine = line (head t), 
           statementType = IFSTA,
-          statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = False},
+          statementUni = IfStatement{closedCon = False, con = [], alt = [], closedAlt = True},
           expression = Expression {expLine = line (head t), expressionType = EMPTYEXP}})))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirst t, s))
       | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
       | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " on line: "++ (show (line (head t))))
+
+parseSemicolon:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
+parseSemicolon (b, (t, s)) = (bok, (tok, sta))
+  where
+    (bok, (tok, sta))
+      | null t || typ (head t) == EOF = error (show b) 
+      | (b == ALT || b == CON) && typ (head t) == ELSE = (b, (t, s))
+      | typ (head t) /= SEMICOLON = error "expected semicolon" 
+      | otherwise = (b, (removeFirst t, s))
 
 
 parseIdent :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
@@ -107,6 +130,7 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
         (
           removeFirst t,
           addToStatement(b, s, Statement{
+              closedSta = False, 
               staLine = line (head t),
               statementType = ASSIGNSTA, 
               statementUni = AssignStatement{},
@@ -147,7 +171,8 @@ parseElse (b,(t,s)) = (blo, (tok,sta))
     (blo, (tok, sta))
       | null t == True = (b, (t, s))
       | typ (head t) == EOF || typ (head t) == SEMICOLON= parseStatements(b, (removeFirst t, s))
-      | typ (head t) == ELSE || typ (head t) == LBRACE = parseElse(ALT, (removeFirst t, s))
+      | typ (head t) == ELSE  = parseElse(ALT, (removeFirst t, openLastAlt(s)))
+      | typ (head t) == LBRACE = parseElse(b, (removeFirst t, s))
       | typ (head t) == IF || typ (head t) == LET || typ (head t) == IDENT = parseStatements(b, (t, s))
       | typ (head t) == RETURN && isValidReturn(last s)= parseStatements(b,(t,s))
       | typ (head t) == RETURN = error ("not valid returntoken in " ++ (show(line(head t))))
@@ -166,6 +191,7 @@ parseFunc(b, (t, s)) = (block, (tokens, statements))
         (
           removeFirst t, 
           pop s ++ [Statement{
+            closedSta = False, 
             staLine = line (head t),
             statementType = statementType (last s),
             statementUni = FuncStatement{
@@ -191,6 +217,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         (
           removeFirst t, 
           pop s ++ [Statement{
+            closedSta = False, 
             staLine = line (head t),
             statementType = statementType (last s),
             statementUni = FuncStatement{
@@ -203,8 +230,8 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
       | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) 
       | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, s)) 
-      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == CON = parseIf(CON, (t, s))
-      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == ALT = parseElse(ALT, (t, s))
+      | typ (head t) == RBRACE && isListExpression(b, last s) == False && b == CON = parseIf(CON, (t, s))
+      | typ (head t) == RBRACE && isListExpression(b, last s) == False && b == ALT = parseElse(ALT, (t, s))
       | typ (head t) == RBRACE && isListExpression(b, last s) && isValidMap(s) = parseExpression(b, (removeFirst t, s))
       | typ (head t) == COMMA && b == PAR = parseExpression(
         b, 

@@ -9,13 +9,11 @@ import Utils
 import ParserUtils
 import Object 
 import Eval
-
-
 main = do
-  let tokens = (parseTokens (1, "let a = {b[call()]:b[call()]}", []))
+  let tokens = (parseTokens (1, "fn a(){;", []))
   -- print tokens
   let s = parseStatements (EXP, (getTokens(tokens), []))
-  -- print s 
+  print s 
   let a = statementsToString((snd(snd(s))))
   print a
   let b = evaluateProgram((snd(snd s)), ([], []))

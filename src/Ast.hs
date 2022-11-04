@@ -75,6 +75,7 @@ data MapType = KEY | VAL deriving (Eq, Show)
 
 data Statement = Statement
   { staLine :: !Int, 
+    closedSta :: !Bool, 
     statementType :: !StatementType,
     statementUni :: !StatementUni,
     expression :: !Expression
@@ -100,6 +101,7 @@ data StatementUni
   | ReturnStatement {}
   | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
   | FuncStatement {params :: ![Expression], body :: ![Statement]} 
+  | ForStatement{cond :: ![Statement], forBody :: ![Statement]}
   | CallStatement {} 
   | AssignStatement{}
   | NoStatement {}

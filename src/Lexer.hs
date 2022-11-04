@@ -96,6 +96,7 @@ validateIdentifier t =
     "return" -> Token {line = line t,typ = RETURN, literal = literal t}
     "True" -> Token {line = line t,typ = TRUE, literal = literal t}
     "False" -> Token {line = line t,typ = FALSE, literal = literal t}
+    "for" -> Token {line = line t, typ = FOR, literal = literal t}
     _ -> Token {line = line t,typ = IDENT, literal = literal t}
 
 readNumber :: (Int, String, [Token]) -> (Int, String, [Token])

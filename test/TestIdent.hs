@@ -7,95 +7,21 @@ import Utils
 
 testIdent:: String 
 testIdent= 
-  statementToString 
-    ( head
+  statementsToString 
       (snd( snd 
         ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "five = 5;", [])),
+          (EXP,( getTokens(parseTokens(0, "five = 5; five = 5 * 5; five = 5 == 5; five = -5; five = (5 + 5); let five = 2 + three; let five = three; let five = -five; let five = (three + two); let five = three == 3; ", [])),
             []
           )))
         )
       )
-    )
-testOpIdent:: String 
-testOpIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "five = 5 * 5;", [])),
-            []
-          )))
-        )
-      )
-    )
-testBoolIdent:: String 
-testBoolIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "five = 5 == 5;", [])),
-            []
-          )))
-        )
-      )
-    )
-testPrefixIdent:: String 
-testPrefixIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "five = -5;", [])),
-            []
-          )))
-        )
-      )
-    )
-testGroupedIdent:: String 
-testGroupedIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "five = (5 + 5);", [])),
-            []
-          )))
-        )
-      )
-    )
-testLetOpIdent:: String 
-testLetOpIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let five = 2 + three;", [])),
-            []
-          )))
-        )
-      )
-    )
-testLetAssignIdent:: String 
-testLetAssignIdent= 
-  statementToString 
-    ( head
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let five = three;", [])),
-            []
-          )))
-        )
-      )
-    )
 testLetGroupedIdent:: String 
 testLetGroupedIdent= 
   statementToString 
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let five = (three + two);", [])),
+          (EXP,( getTokens(parseTokens(0, "", [])),
             []
           )))
         )

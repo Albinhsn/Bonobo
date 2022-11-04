@@ -7,7 +7,7 @@ import Token
 import Utils 
 import ParserUtils
 
-evaluateFunc :: (Expression, [Variable], [Function])-> Object
+evaluateFunc :: (Expression, [Variable], [Function])-> (ReturnType,Object)
 evaluateFunc (e,v, f) = o 
   where 
     o
@@ -28,12 +28,12 @@ evaluateFunc (e,v, f) = o
         )
       | otherwise = error (literal (ident(callIdent e)) ++ " is not a function")
 
-evaluateBody :: ([Statement], ([Variable], [Function])) -> Object
+evaluateBody :: ([Statement], ([Variable], [Function])) -> (ReturnType, Object)
 evaluateBody (s, (v, f)) = o 
   where 
     o 
-      | null s = NullObject{objectType = NULL_OBJ}
-      | statementType (head s) == RETSTA = evaluateExpression(expression (head s), v, f)
+      | null s = (NONE, NullObject{objectType = NULL_OBJ})
+      | statementType (head s) == RETSTA = (SMTH, evaluateExpression(expression (head s), v, f))
       | statementType (head s) == IFSTA && boolValue (evaluateExpression(expression (head s), v, f)) == True = evaluateBody((removeFirst s) ++ getCon(s), (v,f)) 
       | statementType (head s) == IFSTA  = evaluateBody((removeFirst s) ++ getAlt(s), (v,f)) 
       | otherwise = evaluateBody(removeFirst s, evaluateStatement (head s, (v, f)))
@@ -65,12 +65,28 @@ evaluateStatement :: (Statement, ([Variable], [Function]))-> ([Variable],[Functi
 evaluateStatement (s,(v, f))= (va, fu) 
   where 
     (va, fu) 
-      | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v), f)
-      | statementType s == FUNCSTA = (v, f ++ [Function{funcIdent = literal (ident (expression s)), funcParams = params (statementUni s), funcBody = body(statementUni s)}])
-      | statementType s == CALLSTA = (addVar(Variable{varIdent = "EMPTY", varValue = evaluateFunc(expression s,v, f)},v), f)
+      | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v,f), f)
+      | statementType s == FUNCSTA = addFunc(s, (v,f)) 
+      | statementType s == CALLSTA = evaluateReturn(evaluateFunc(expression s,v, f),v,f)
       | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f),f), f)
       | statementType s == IFSTA = (evaluateIf(s, (v, f)), f)
       | otherwise = error  ("evaluateStatement " ++ (show (statementType s)) ++ ": "++ statementToString s)
+
+evaluateReturn :: ((ReturnType, Object), [Variable], [Function]) -> ([Variable], [Function])
+evaluateReturn ((r,o), v,f) = (va, fu)
+  where
+    (va, fu)
+      | r == NONE = (v,f)
+      | otherwise = (v,f)
+
+
+addFunc :: (Statement, ([Variable], [Function])) -> ([Variable], [Function])
+addFunc (s, (v, f)) = (va, fu)
+  where
+    (va, fu)
+      | null [x | x <- f, literal (ident (expression s)) == funcIdent x] == False = error ("redeclaration of func: " ++ (literal(ident (expression s)))) 
+      | null [x | x <- v, literal (ident (expression s)) == varIdent x] == False = error ("redeclaration of variable: " ++ (literal(ident (expression s)))) 
+      | otherwise = (v, f ++ [Function{funcIdent = literal (ident (expression s)), funcParams = params (statementUni s), funcBody = body(statementUni s)}])
 
 
 evaluateAssign :: (Expression, [Variable], Object, [Function]) -> [Variable]
@@ -193,7 +209,7 @@ evaluateExpression (e, v, f)= o
       | expressionType e == IDENTEXP = getVarValue(literal (ident (e)), v) 
       | expressionType e == ASSIGNEXP = evaluateExpression(assignExpression e, v, f)
       | expressionType e == CALLEXP && isPrebuilt(getCallLiteral e) = evaluatePrebuilt(getCallLiteral e, [evaluateExpression(x,v,f) |  x <- callParams e]) 
-      | expressionType e == CALLEXP = evaluateFunc(e,v, f) 
+      | expressionType e == CALLEXP = snd (evaluateFunc(e,v, f))
       | expressionType e == INDEXEXP = evaluateIndexExp(e,v,f)
       | expressionType e == ARRAYEXP = ArrayObject{objectType = ARRAY_OBJ, arrValue = [evaluateExpression (x, v,f) | x <- array e]}
       | expressionType e == MAPEXP = MapObject{objectType = MAP_OBJ, mapValue = ([evaluateExpression(x, v, f) | x <- fst(mapMap e)],[evaluateExpression(x,v,f) | x <- snd(mapMap e)])}

@@ -38,7 +38,7 @@ testInsaneIf=
     ( head
       (snd( snd 
         ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "if(){if(){if(){five = 5;}}else{if(){five = 5;}else{five = 5;};};}else{if(){if(){if(){}else{five = 5;};}else{if(){}else{if(){}else{five = 5;}}};};};", [])),
+          (EXP,( getTokens(parseTokens(0, "if(){if(){if(){five = 5;};}else{if(){five = 5;}else{five = 5;};};}else{if(){if(){if(){}else{five = 5;};}else{if(){}else{if(){}else{five = 5;};};};};};", [])),
             []
           ))
         )

@@ -15,5 +15,5 @@ testActualNumbers =
 
 testActual :: [String]
 testActual =
-  [tokenToString t | t <- getTokens(parseTokens (0, "let five = ;\nlet ten = ;\nlet add = fn(x, y) {x + y;};\nlet result = add(five, ten); \"Hello World!\"", []))]
+  [tokenToString t | t <- getTokens(parseTokens (0, "let five = ;\nlet ten = ;\nlet add = fn(x, y) {x + y;};\nlet result = add(five, ten); \"Hello World!\" for ", []))]
 

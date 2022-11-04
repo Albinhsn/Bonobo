@@ -39,7 +39,6 @@ test-suite interpretor-test
     , TestFunc
     , TestTFT
     , TestDifficult
-    , TestMultiple
     , TestUtils
     , TestEval
     , TestArray

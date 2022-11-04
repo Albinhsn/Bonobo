@@ -6,6 +6,8 @@ import Utils
 
 data ObjectType = MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show) 
 
+data ReturnType = NONE | SMTH deriving (Eq, Show) 
+
 data Function = Function{funcIdent :: !String, funcParams :: ![Expression], funcBody :: ![Statement]} deriving (Eq, Show)
 
 data Variable = Variable{varIdent :: !String, varValue :: Object} deriving (Eq, Show)
@@ -49,10 +51,11 @@ getFunc (s, f) = head [x | x <- f, funcIdent x == s]
 replaceVar :: (Variable, [Variable]) -> [Variable]
 replaceVar (v, va) = removeVar(varIdent v, va) ++ [v]
 
-addVar :: (Variable, [Variable]) -> [Variable]
-addVar (v, va) = var 
+addVar :: (Variable, [Variable], [Function]) -> [Variable]
+addVar (v, va, f) = var 
   where 
     var 
+      | null [x | x <- f, varIdent v == funcIdent x] == False = error ("redeclaration of func: " ++ (varIdent v)) 
       | isVar(varIdent v, va) == True = replaceVar(v, va)
       | otherwise = va ++ [v]
 

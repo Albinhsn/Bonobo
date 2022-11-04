@@ -6,59 +6,19 @@ import TestUtils
 import Ast
 import Object
 
-testObjTrue:: String
-testObjTrue= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = True;", ([], []))))))
-
-testObjString:: String
-testObjString = inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = \"five\";", ([], []))))))
-
-testObjFalse:: String
-testObjFalse= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = False;", ([],[]))))))
-
-testObjInt:: String
-testObjInt= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5;", ([],[]))))))
-
-
-testObjBang:: String
-testObjBang= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = !True;", ([],[]))))))
+testObj:: String
+testObj = concatContext(snd(evaluateProgram(parseStringToStatements "let one = \"five\"; let two = True; let three = False; let four = 5; let five = !True; let six = -5;", ([], []))))
 
 testObjMinus:: String
-testObjMinus= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = -5;", ([],[]))))))
+testObjMinus= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "", ([],[]))))))
 
 
-testObjOpMinus:: String
-testObjOpMinus= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 - 5;", ([],[]))))))
-
-testObjOpPlus:: String
-testObjOpPlus= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 + 5;", ([],[]))))))
-
-testObjOpMul:: String
-testObjOpMul= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 * 5;", ([], []))))))
-
-testObjOpDiv :: String
-testObjOpDiv= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 / 5;", ([],[]))))))
+testObjOp:: String
+testObjOp = concatContext(snd(evaluateProgram(parseStringToStatements "let zero = 5 - 5; let one = 5 + 5; let two = 5 * 5; let three = 5 / 5;", ([], []))))
 
 
-testObjOpGT :: String
-testObjOpGT= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 > 5;", ([],[]))))))
-
-testObjOpLT :: String
-testObjOpLT= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 3 < 5;", ([],[]))))))
-
-testObjOpEQ :: String
-testObjOpEQ= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 == 5;", ([],[]))))))
-
-testObjOpNEQ :: String
-testObjOpNEQ= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 5 != 5;", ([],[]))))))
-
-testObjGrouped :: String
-testObjGrouped= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "let five = 2 * (5 + 10);", ([],[]))))))
-
-testObjIfFalse:: String
-testObjIfFalse= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "if(5 < 3){let ten = 10;}else{let five = 5;}", ([],[]))))))
-
-testObjIfTrue:: String
-testObjIfTrue= inspectVariable(head(fst(snd(evaluateProgram(parseStringToStatements "if(5 > 3){let ten = 10;}else{let five = 5;}", ([],[]))))))
+testObjBoolOp:: String
+testObjBoolOp = concatContext(snd(evaluateProgram(parseStringToStatements "let one = 5 > 5; let two = 3 < 5; let three = 5 == 5; let four = 5 != 5;", ([], []))))
 
 testObjFunc:: String
-testObjFunc= inspectFunction(head(snd(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;}", ([],[]))))))
+testObjFunc= inspectFunction(head(snd(snd(evaluateProgram(parseStringToStatements "fn add(a,b){return a + b;};", ([],[]))))))

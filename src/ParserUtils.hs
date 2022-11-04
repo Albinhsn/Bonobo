@@ -198,10 +198,11 @@ opHasNoGroup e = expressionType (rightOperator e) /= GROUPEDEXP
 noPopAddToStatement:: (BlockType, [Statement], Statement) -> [Statement]
 noPopAddToStatement(b, s, sta) = 
   case b of 
-    CON -> pop s ++ addToLastCon(s, sta)
-    ALT -> pop s ++ addToLastAlt(s, sta)
+    CON -> addToLastCon(s, sta)
+    ALT -> addToLastAlt(s, sta)
     BOD ->  pop s ++ [
       Statement {
+        closedSta = False, 
         staLine = staLine (last s),
         statementType = statementType (last s), 
         statementUni = FuncStatement{
@@ -218,20 +219,22 @@ addToLastCon (s, sta) = statement
   where 
     statement 
       | null s = [sta]
-      | statementType (last s) == IFSTA && null (getAlt(s)) == True= pop s ++ [
+      | statementType (last s) == IFSTA && getClosedCon s == False = pop s ++ [
         Statement{
+            closedSta = False, 
             staLine = staLine (last s),
             statementType = IFSTA, 
             statementUni = IfStatement{
               closedCon = False,
-              closedAlt = False,
-              alt = getAlt(s), 
+              closedAlt = True,
+              alt = [], 
               con = addToLastCon(getCon(s), sta) 
             },
             expression = expression (last s)
           }]
-      | statementType (last s) == IFSTA && getClosedCon(s) == True = pop s ++ [
+      | statementType (last s) == IFSTA && null (getAlt s) == False = pop s ++ [
         Statement{
+            closedSta = False, 
             staLine = staLine (last s),
             statementType = IFSTA, 
             statementUni = IfStatement{
@@ -244,6 +247,7 @@ addToLastCon (s, sta) = statement
           }
       ]
       | statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = FuncStatement{
@@ -260,8 +264,22 @@ addToLastAlt (s, sta) = statement
   where 
     statement 
       | null s = [sta]
-      | statementType (last s) == IFSTA &&  getClosedCon(s)== True= pop s ++ [ 
+      | statementType (last s) == IFSTA && getClosedCon s == False = pop s ++ [
           Statement{
+              closedSta = False, 
+              staLine = staLine (last s),
+              statementType = IFSTA, 
+              statementUni = IfStatement{
+                closedCon = False,
+                closedAlt = True,
+                alt = [],
+                con = addToLastAlt(getCon(s), sta) 
+              },
+              expression = expression (last s)
+            }]
+      | statementType (last s) == IFSTA && getClosedAlt s == False = pop s ++ [ 
+          Statement{
+              closedSta = False, 
               staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
@@ -272,19 +290,8 @@ addToLastAlt (s, sta) = statement
               },
               expression = expression (last s)
             }]
-      | statementType (last s) == IFSTA = pop s ++ [
-          Statement{
-              staLine = staLine (last s),
-              statementType = IFSTA, 
-              statementUni = IfStatement{
-                closedCon = False,
-                closedAlt = False,
-                alt = getAlt(s),
-                con = addToLastAlt(getCon(s), sta) 
-              },
-              expression = expression (last s)
-            }]
       | statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = FuncStatement{
@@ -303,6 +310,7 @@ addToStatement (b, s, sta) =
     PAR -> pop s ++ [sta]
     BOD -> pop s ++ [
       Statement {
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType(last s),
           statementUni = FuncStatement{
@@ -319,6 +327,7 @@ addToLastStatement (b, t, e, s) = sta
   where 
     sta 
       | b == PAR  && statementType (last s) == FUNCSTA = Statement{
+        closedSta = False, 
         staLine = staLine (last s),
         statementType = FUNCSTA,
         statementUni = FuncStatement{
@@ -327,11 +336,12 @@ addToLastStatement (b, t, e, s) = sta
           },
         expression = expression (last s)
         } 
-      | (b == CON || b == ALT ) && statementType (last s) == FUNCSTA = Statement{staLine = staLine (last s),statementType =FUNCSTA, expression = expression (last s), statementUni = FuncStatement{
+      | (b == CON || b == ALT ) && statementType (last s) == FUNCSTA = Statement{closedSta = False, staLine = staLine (last s),statementType =FUNCSTA, expression = expression (last s), statementUni = FuncStatement{
           params = getParams(s),
           body = pop (getBody(s)) ++ [addToLastStatement(b, t, e, getBody(s))]
         }}
       | b == BOD = Statement {
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s), 
           statementUni = FuncStatement{
@@ -341,11 +351,12 @@ addToLastStatement (b, t, e, s) = sta
           }
       --Adding in con 
       |  (b == CON || b == ALT ) && statementType (last s) == IFSTA && null (getCon(s)) == False && getClosedCon(s) == False = Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = IFSTA,
           statementUni = IfStatement{
             closedCon = False,
-            closedAlt = False,
+            closedAlt = True,
             con = pop (getCon(s)) ++ [addToLastStatement(b,t,e, getCon(s))],
             alt = []
             },
@@ -353,6 +364,7 @@ addToLastStatement (b, t, e, s) = sta
         }
       -- Adding in Alt 
       | (b == CON || b == ALT ) && statementType (last s) == IFSTA &&  getClosedCon(s) == True = Statement {
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = IFSTA,
           statementUni = IfStatement{
@@ -365,6 +377,7 @@ addToLastStatement (b, t, e, s) = sta
         }
       --Found last statement
       | otherwise = Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType(last s),
           statementUni = statementUni(last s),
@@ -419,7 +432,7 @@ parseIdentifierToLet :: [Token] -> Statement
 parseIdentifierToLet t = s
   where
     s  
-      | typ (head t) == IDENT = Statement {staLine = line (head t), statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expLine = line (head t), expressionType = EMPTYEXP}}
+      | typ (head t) == IDENT = Statement {closedSta = False, staLine = line (head t), statementType = LETSTA, statementUni= LetStatement {identifier = literal (head t)}, expression = Expression {expLine = line (head t), expressionType = EMPTYEXP}}
       | otherwise = error ("Error parsing identifier to let statement on line: " ++ (show(line(head t))))
 
 
@@ -513,12 +526,14 @@ changeSta (t,s) = sta
   where   
     sta 
       | statementType (last s) == NOSTA && typ t == ASSIGN = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = ASSIGNSTA,
           statementUni = AssignStatement{}, 
           expression = expression (last s)
         }]
       | statementType (last s) == NOSTA && typ t == LPAREN = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = FUNCSTA,
           statementUni = FuncStatement{params = [], body = []},
@@ -549,6 +564,7 @@ changeFuncToCall s = sta
   where
   sta   
       | statementType (last s) == FUNCSTA && null (getBody(s))  = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementUni=CallStatement{},
           statementType=CALLSTA, 
@@ -566,6 +582,7 @@ changeLastFuncToCall s = sta
   where   
     sta 
       | statementType s == FUNCSTA && null (body (statementUni s)) = Statement{
+          closedSta = False, 
           staLine = staLine s,
           statementUni=CallStatement{},
           statementType=CALLSTA, 
@@ -576,7 +593,7 @@ changeLastFuncToCall s = sta
             callIdent= expression  s,
             closedCall = False 
           }}
-      | statementType s == ASSIGNSTA || statementType s == RETSTA || statementType s == LETSTA = Statement {staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = changeLastFuncExp(expression s)} 
+      | statementType s == ASSIGNSTA || statementType s == RETSTA || statementType s == LETSTA = Statement {closedSta = False, staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = changeLastFuncExp(expression s)} 
 
       | otherwise = error ("changeLastFuncToCall on line: " ++ (show (staLine s))) 
 
@@ -662,6 +679,7 @@ addEmptyToLastParam s = sta
   where 
     sta 
       | statementType s == FUNCSTA = Statement{
+        closedSta = False, 
         staLine = staLine s,
         statementType = FUNCSTA,
         statementUni = FuncStatement{
@@ -670,7 +688,7 @@ addEmptyToLastParam s = sta
           },
         expression = expression s
       }
-      | statementType s /= IFSTA = Statement{staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = addEmptyToLastParamExp(expression s)} 
+      | statementType s /= IFSTA = Statement{closedSta = False, staLine = staLine s, statementType = statementType s, statementUni = statementUni s, expression = addEmptyToLastParamExp(expression s)} 
       | otherwise = error ("addEmptyToLastParam on line: " ++ (show (staLine s))) 
 
 addEmptyToLastParamExp :: Expression -> Expression 
@@ -693,12 +711,14 @@ addIfToLastBlock(b,s) = sta
       -- Add CON  
       | b == CON && statementType (last s) == IFSTA && getClosedCon(s) == False &&  (null(getCon(s)) == True || statementType (last (getCon(s))) /= IFSTA)= pop s ++ [
         Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = False,
-              closedAlt = False,
+              closedAlt = True,
               con = getCon(s) ++ [Statement{
+                closedSta = False, 
                 staLine = staLine (last s),
                 statementType = IFSTA,
                 expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
@@ -706,7 +726,7 @@ addIfToLastBlock(b,s) = sta
                   closedCon = False, 
                   con = [], 
                   alt = [], 
-                  closedAlt = False
+                  closedAlt = True 
                   }
                 }
               ],
@@ -718,12 +738,14 @@ addIfToLastBlock(b,s) = sta
       --Search in con 
       | b == CON && statementType (last s) == IFSTA && getClosedCon(s) == False = pop s ++ [
         Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = False,
-              closedAlt = False,
+              closedAlt = True,
               con = getCon(s) ++ [Statement{
+                closedSta = False,
                 staLine = staLine (last s),
                 statementType = IFSTA,
                 expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
@@ -731,7 +753,7 @@ addIfToLastBlock(b,s) = sta
                   closedCon = False, 
                   con = addIfToLastBlock(CON, con(statementUni(last s))), 
                   alt = [], 
-                  closedAlt = False
+                  closedAlt = True 
                   }
                 }
               ],
@@ -743,18 +765,20 @@ addIfToLastBlock(b,s) = sta
       --Search in alt 
       | b == CON = pop s ++ [
         Statement{
+          closedSta = False,
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
-              closedCon = False,
+              closedCon = True,
               closedAlt = False,
               con = getCon(s),
               alt =  getAlt(s) ++ [Statement{
+                closedSta = False, 
                 staLine = staLine(last s),
                 statementType = IFSTA,
                 expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
                 statementUni = IfStatement{
-                  closedCon = False, 
+                  closedCon = True, 
                   con = getCon(getCon(s)), 
                   alt = addIfToLastBlock(CON, getAlt(s)),  
                   closedAlt = False
@@ -766,15 +790,17 @@ addIfToLastBlock(b,s) = sta
           }
       ] 
       -- Add Alt
-      | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == True && (null (getAlt(s)) == True || statementType (last (getAlt(s))) /= IFSTA) = pop s ++ [
+      | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == True && getClosedAlt s == False && (null (getAlt(s)) == True || statementType (last (getAlt(s))) /= IFSTA) = pop s ++ [
           Statement{
+              closedSta = False, 
               staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
-                  closedCon = False,
-                  con = [],
+                  closedCon = True,
+                  con = getCon s,
                   closedAlt = False,
                   alt = pop (getAlt(s)) ++ [Statement{
+                closedSta = False, 
                 staLine = staLine (last s),
                 statementType = IFSTA,
                 expression = Expression{expLine = staLine (last s),expressionType = EMPTYEXP},
@@ -782,7 +808,7 @@ addIfToLastBlock(b,s) = sta
                   closedCon = False, 
                   con = [], 
                   alt = [], 
-                  closedAlt = False
+                  closedAlt = True 
                   }
                 }
               ] 
@@ -793,6 +819,7 @@ addIfToLastBlock(b,s) = sta
       --Search in alt 
       | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == True = pop s ++ [
           Statement{
+              closedSta = False, 
               staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
@@ -807,12 +834,13 @@ addIfToLastBlock(b,s) = sta
       -- Search in CON
       | b == ALT && statementType (last s) == IFSTA && getClosedCon(s) == False = pop s ++ [
           Statement{
+              closedSta = False, 
               staLine = staLine (last s),
               statementType = IFSTA, 
               statementUni = IfStatement{
                   closedCon = False,
                   con = addIfToLastBlock(ALT, getCon(s)),
-                  closedAlt = False,
+                  closedAlt = True,
                   alt = [] 
               },
               expression = expression (last s)
@@ -821,11 +849,13 @@ addIfToLastBlock(b,s) = sta
       --Is FUNCSTA
       | b == BOD && statementType (last s) == FUNCSTA = pop s ++ [
           Statement{
+              closedSta = False, 
               staLine = staLine (last s),
               statementType = FUNCSTA, 
               statementUni = FuncStatement{
                   params = getParams(s),
                   body = getBody(s) ++ [Statement{
+                    closedSta = False, 
                     staLine = staLine (last s),
                     statementType = IFSTA,
                     expression = Expression{expLine = staLine (last s), expressionType = EMPTYEXP},
@@ -833,7 +863,7 @@ addIfToLastBlock(b,s) = sta
                       closedCon = False, 
                       con = [], 
                       alt = [], 
-                      closedAlt = False
+                      closedAlt = True 
                       }
                     }
                 ]
@@ -860,29 +890,32 @@ closeLastOpen(b, s) = sta
       | statementType (last s) == IFSTA && getClosedCon(s) == False && findLastOpen(getCon(s)) == False = 
         pop s ++ [
         Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
             closedCon = True,
-            closedAlt = False,
+            closedAlt = True,
             con = getCon(s),
-            alt = getAlt(s)},
+            alt = []},
             expression = expression (last s)}
           ] 
       -- Search in con
       | statementType (last s) == IFSTA && getClosedCon(s) == False && null(getAlt(s)) == True = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           expression = expression (last s),
           statementUni = IfStatement {
             closedCon = False,
-            closedAlt = False,
+            closedAlt = True,
             con = closeLastOpen(b, getCon(s)),
-            alt = getAlt(s)}}]
+            alt = []}}]
       -- Close Alt
       | statementType (last s) == IFSTA && closedAlt(statementUni (last s)) == False && findLastOpen(getAlt(s)) == False = 
         pop s ++ [
         Statement{
+          closedSta = False,
           staLine = staLine (last s),
           statementType = statementType (last s),
           statementUni = IfStatement{
@@ -894,6 +927,7 @@ closeLastOpen(b, s) = sta
           ] 
       --Search in alt
       | statementType (last s) == IFSTA = pop s ++ [Statement{
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s),
           expression = expression (last s),
@@ -903,7 +937,9 @@ closeLastOpen(b, s) = sta
             con = getCon(s),
             alt = closeLastOpen(b, getAlt(s))}}]
       -- s is funcsta
+      | statementType (last s) == FUNCSTA && b == ALT && statementType (last (getBody s)) == IFSTA && getClosedCon(getBody s)&& getClosedAlt(getBody s) = s 
       | statementType (last s) == FUNCSTA && b /= BOD = pop s ++ [Statement {
+          closedSta = False, 
           staLine = staLine (last s),
           statementType = FUNCSTA,
           statementUni = FuncStatement{
@@ -912,7 +948,7 @@ closeLastOpen(b, s) = sta
             },
           expression = expression (last s)
         }] 
-      | otherwise = error ("closeLastOpen on line: " ++ (show (staLine (last s))))
+      | otherwise = error ("closeLastOpen on line: " ++ (statementsToString s))
 
 findLastBlockType :: (BlockType, Statement) -> BlockType 
 findLastBlockType (b, s) = block
@@ -984,17 +1020,19 @@ closeLastIndex (b, s) = sta
   where 
     sta 
       | statementType s == IFSTA && getClosedCon([s]) == False = Statement{
+          closedSta = False, 
           staLine = staLine s,
           statementType = IFSTA,
           statementUni = IfStatement{
               closedCon = False,
               con = pop (getCon [s]) ++ [closeLastIndex(b, last (getCon( [s])))],
               alt = [],
-              closedAlt = False
+              closedAlt = True 
             },
           expression = expression s
         } 
       | statementType s == IFSTA = Statement{
+          closedSta = False,
           staLine = staLine s,
           statementType = IFSTA,
           statementUni = IfStatement{
@@ -1006,12 +1044,14 @@ closeLastIndex (b, s) = sta
           expression = expression s
         }
       | statementType s /= FUNCSTA = Statement{
+          closedSta = False,
           staLine = staLine s,
           statementType = statementType s,
           statementUni = statementUni s,
           expression = closeLastIndexExp (expression s)
         }
       | statementType s == FUNCSTA && b == PAR = Statement{
+          closedSta = False, 
           staLine = staLine s,
           statementType = statementType s,
           statementUni = FuncStatement{
@@ -1021,6 +1061,7 @@ closeLastIndex (b, s) = sta
           expression = expression s
         }
       | statementType s == FUNCSTA = Statement{
+          closedSta = False, 
           staLine = staLine s,
           statementType = statementType s,
           statementUni = FuncStatement{
@@ -1125,3 +1166,65 @@ getVal e = snd (mapMap e)
 
 getKey:: Expression -> [Expression]
 getKey e = fst (mapMap e)
+
+openLastAlt :: [Statement] -> [Statement]
+openLastAlt s = sta 
+  where 
+    sta 
+      | null s = error "open last alt null"
+      | statementType (last s) == IFSTA && getClosedCon s == False = pop s ++ [Statement{
+          closedSta = False, 
+          statementType = IFSTA,
+          staLine = staLine (last s),
+          statementUni = IfStatement{
+              closedCon = False,
+              con = openLastAlt(getCon s), 
+              alt = [],
+              closedAlt = True 
+            },
+          expression = expression (last s)
+        }]
+      | statementType (last s) == IFSTA && getClosedAlt s == True = pop s ++ [Statement{
+          closedSta = False, 
+          statementType = IFSTA,
+          staLine = staLine (last s),
+          statementUni = IfStatement{
+              closedCon = True,
+              con = getCon s, 
+              alt = [],
+              closedAlt = False
+            },
+          expression = expression (last s)
+        }]
+      | statementType (last s) == IFSTA = pop s ++ [Statement{
+          closedSta = False, 
+          statementType = IFSTA,
+          staLine = staLine (last s),
+          statementUni = IfStatement{
+              closedCon = True,
+              con = getCon s, 
+              alt = openLastAlt (getAlt s),
+              closedAlt = False
+            },
+          expression = expression (last s)
+        }]
+      | statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          closedSta = False, 
+          statementType = FUNCSTA, 
+          staLine = staLine (last s),
+          statementUni = FuncStatement{
+              params = getParams s,
+              body = openLastAlt(getBody s)  
+            },
+          expression = expression (last s)
+        }]
+      | otherwise = error (statementsToString s) 
+checkValidSemicolon :: (BlockType, Statement)-> Bool 
+checkValidSemicolon (b, s) = bo 
+  where 
+    bo
+      | statementType s /= IFSTA = checkValidSemicolonExp (expression s)
+      | statementType s == FUNCSTA && b == PAR = error ("error while parsing semicolon, not a valid statement on line: " ++ (show (staLine s))) 
+      | otherwise = error "not valid statement"
+checkValidSemicolonExp :: Expression -> Bool
+checkValidSemicolonExp e = True

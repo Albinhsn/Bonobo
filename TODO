@@ -1,31 +1,25 @@
 TODO:   
-  FIXES:
-    check if if is closed, exp fucked?
-  Walkthrough tests and unify them 
-  Test Statements -> Same with evals
+  for 
   VALIDATION/ERROR HANDLING
-    last semicolon 
-    "closed" on every statement? 
-    closed expressions
-      map 
+    check on semicolon valid statement
     check at eof that last exp is valid
-    check that you don't overwrite func with var etc
-
+  fucking test invalid code
 
 PRECOMPILER: 
-  Prebuilt funcs:
-    for 
-    print 
-  Non prio: 
-    Map for Variable and Function
-    fucking test invalid code
-    Add print statement
   Fix REPL/interpretor
-  Read textfile -> statements etc
-  Test line numbers etc
+
+During Compiler: 
+  Prebuilt funcs:
+    print 
 
 After compiler:
+  Test line numbers etc
   Fix README.md 
   Do aoc examples
 
 git ls-files | grep '\.hs' | xargs wc -l
+
+launchMissiles `shouldReturn` Left "permission error"
+
+
+
