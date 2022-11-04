@@ -17,3 +17,7 @@ testEvalLenArray= concatContext(snd(evaluateProgram(parseStringToStatements "let
 
 testEvalLenMap:: String
 testEvalLenMap= concatContext(snd(evaluateProgram(parseStringToStatements "let a = {1:1,2:2,3:3,4:4}; let l = len(a);", ([], []))))
+
+
+testPrint :: String
+testPrint = concatContext(snd(evaluateProgram(parseStringToStatements "print(\"Hello, \", \"World!\")", ([], []))))

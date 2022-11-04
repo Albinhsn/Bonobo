@@ -47,7 +47,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
               )
           )
         )
-      | typ (head t) == LET =
+      | typ (head t) == LET = 
           parseStatements(
             parseExpression(
                 b, ( 
@@ -62,14 +62,28 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
             )
       | typ (head t) == FOR = 
         parseStatements(
-          parseExpression(
-            b, (
+          parseLPAREN(
+            EXP, (
               removeFirst t, 
               noPopAddToStatement(
-              )
+                b, s, Statement{
+                    closedSta = False, 
+                    staLine = line (head t),
+                    statementType = FORSTA,
+                    expression = Expression{
+                      expLine = 0, 
+                      expressionType = EMPTYEXP
+                      },
+                    statementUni = ForStatement{
+                      start = Expression{expLine = line (head t), expressionType = EMPTYEXP},
+                      stop = Expression{expLine = line (head t), expressionType = EMPTYEXP},
+                      inc = Expression{expLine = line (head t), expressionType = EMPTYEXP},
+                      forBody = []
+                      }
+                  } 
             )
           )
-        )
+        ))
       | typ (head t) == RETURN =
           parseStatements 
             (parseExpression
@@ -111,6 +125,24 @@ parseSemicolon (b, (t, s)) = (bok, (tok, sta))
       | typ (head t) /= SEMICOLON = error "expected semicolon" 
       | otherwise = (b, (removeFirst t, s))
 
+parseLPAREN:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
+parseLPAREN(b, (t, s)) = (bok, (tok, sta))
+  where
+    (bok, (tok, sta))
+      | typ (head t) == LPAREN = parseExpression(START, (removeFirst t, s))
+      | otherwise = error ("expected '(' after for at line: " ++ (show (staLine (last s))))
+
+advForBlock :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
+advForBlock (b, (t, s)) = (bok, (tok, sta))
+  where
+    (bok, (tok, sta))
+      | b == START =parseExpression(STOP,(t,s)) 
+      | b == STOP = parseExpression(INC,(t,s)) 
+      | b == BOD && typ (head t) == RPAREN = advForBlock(INC, (removeFirst t,s))
+      | b == BOD && typ (head t) == LBRACE = parseStatements(BOD, (removeFirst t,s)) 
+      | b == INC = advForBlock(BOD, (t, s))
+      | otherwise = (b,(t,s)) 
+
 
 parseIdent :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseIdent (b, (t, s)) = (bok, (tok, sta))
@@ -119,7 +151,7 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
       | null t == True = (b, (t, s))
       | typ (head t) == LPAREN && b == EXP && statementType (last s) == NOSTA = parseIdent(
           PAR, 
-          (removeFirst t,changeSta(head t, s))
+          (removeFirst t,changeSta(b,head t, s))
         ) 
       | typ (head t) == LPAREN && b == EXP = parseIdent(
           PAR, 
@@ -245,7 +277,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
       | typ (head t) == ASSIGN = 
         parseExpression (
-          (b, (removeFirst t, changeSta(head t, addToStatement(b, s, addToLastStatement(b, head t, ASSIGNEXP, s))))
+          (b, (removeFirst t, changeSta(b, head t, addToStatement(b, s, addToLastStatement(b, head t, ASSIGNEXP, s))))
         ))
       | typ (head t) == INT =
         parseExpression (
@@ -289,7 +321,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
       | typ (head t) == RPAREN = 
         parseExpression(b, (
           removeFirst t, pop s ++ [addToLastStatement(b, head t, GROUPEDEXP, s)]))
-      | typ (head t) == SEMICOLON = parseStatements(b, (removeFirst t, s))
+      | typ (head t) == SEMICOLON = parseStatements(advForBlock(b, (removeFirst t, s)))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == LBRACE && isListExpression(b, last s)= parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == LBRACE = parseIf(b, (t,s))

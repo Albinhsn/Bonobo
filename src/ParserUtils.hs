@@ -196,11 +196,13 @@ opHasNoGroup e = expressionType (rightOperator e) /= GROUPEDEXP
 
 
 noPopAddToStatement:: (BlockType, [Statement], Statement) -> [Statement]
-noPopAddToStatement(b, s, sta) = 
-  case b of 
-    CON -> addToLastCon(s, sta)
-    ALT -> addToLastAlt(s, sta)
-    BOD ->  pop s ++ [
+noPopAddToStatement(b, s, sta) = st 
+  where 
+    st 
+      | b == CON = addToLastCon(s, sta)
+      | b == ALT = addToLastAlt(s, sta)
+      | b == EXP = s ++ [sta]
+      | b == BOD && statementType (last s) == FUNCSTA = pop s ++ [
       Statement {
         closedSta = False, 
         staLine = staLine (last s),
@@ -211,8 +213,20 @@ noPopAddToStatement(b, s, sta) =
         },
         expression = expression (last s) 
         }] 
-    EXP -> s ++ [sta] 
-    _ -> error "noPopAddToStatement"
+      | b == BOD && statementType (last s) == FORSTA = pop s ++ [
+        Statement{
+          closedSta = False, 
+          staLine = staLine (last s),
+          statementType = statementType (last s), 
+          statementUni = ForStatement{
+            inc = inc (statementUni (last s)),
+            start = start (statementUni (last s)),
+            stop = stop (statementUni (last s)),
+            forBody = forBody (statementUni (last s)) ++ [sta] 
+          },
+          expression = expression (last s) 
+        }
+      ]
 
 addToLastCon :: ([Statement], Statement) -> [Statement]
 addToLastCon (s, sta) = statement 
@@ -303,12 +317,17 @@ addToLastAlt (s, sta) = statement
       | otherwise = s ++ [sta]
 
 addToStatement :: (BlockType, [Statement], Statement) -> [Statement]
-addToStatement (b, s, sta) = 
-  case b of 
-    CON -> pop s ++ [sta] 
-    ALT -> pop s ++ [sta] 
-    PAR -> pop s ++ [sta]
-    BOD -> pop s ++ [
+addToStatement (b, s, sta) = st 
+  where 
+    st 
+      | b == CON = pop s ++ [sta]
+      | b == ALT = pop s ++ [sta]
+      | b == PAR = pop s ++ [sta]
+      | b == EXP = pop s ++ [sta]
+      | b == START = pop s ++ [sta]
+      | b == STOP = pop s ++ [sta]
+      | b == INC = pop s ++ [sta]
+      | b == BOD && statementType (last s) == FUNCSTA = pop s ++ [
       Statement {
           closedSta = False, 
           staLine = staLine (last s),
@@ -320,12 +339,62 @@ addToStatement (b, s, sta) =
           expression = expression (last s)
         }
       ]
-    EXP -> pop s ++ [sta] 
+      | b == BOD && statementType (last s) == FORSTA = pop s ++ [
+        Statement{
+          closedSta = False, 
+          staLine = staLine (last s),
+          statementType = statementType (last s), 
+          statementUni = ForStatement{
+            inc = inc (statementUni (last s)),
+            start = start (statementUni (last s)),
+            stop = stop (statementUni (last s)),
+            forBody = pop (forBody (statementUni (last s)))  ++ [last (forBody (statementUni sta))] 
+          },
+          expression = expression (last s) 
+        }
+      ]
+
 
 addToLastStatement :: (BlockType, Token, ExpressionType, [Statement]) ->Statement 
 addToLastStatement (b, t, e, s) = sta 
   where 
     sta 
+      | b == START && statementType (last s) == FORSTA = Statement{
+          closedSta = False,
+        staLine = staLine (last s),
+        statementType = FORSTA,
+        statementUni = ForStatement{
+          start = addXToExp(b,t,e,start (statementUni (last s))),
+          stop = stop (statementUni (last s)),
+          inc = inc (statementUni (last s)),
+          forBody = []
+          },
+        expression = expression (last s)
+        } 
+      | b == STOP && statementType (last s) == FORSTA = Statement{
+          closedSta = False,
+        staLine = staLine (last s),
+        statementType = FORSTA,
+        statementUni = ForStatement{
+          start = start (statementUni (last s)),
+          stop = addXToExp(b,t,e,stop(statementUni (last s))),
+          inc = inc (statementUni (last s)),
+          forBody = []
+          },
+        expression = expression (last s)
+        } 
+      | b == INC && statementType (last s) == FORSTA = Statement{
+          closedSta = False,
+        staLine = staLine (last s),
+        statementType = FORSTA,
+        statementUni = ForStatement{
+          start = start (statementUni (last s)),
+          stop = stop (statementUni (last s)),
+          inc = addXToExp(b,t,e,inc(statementUni (last s))),
+          forBody = []
+          },
+        expression = expression (last s)
+        } 
       | b == PAR  && statementType (last s) == FUNCSTA = Statement{
         closedSta = False, 
         staLine = staLine (last s),
@@ -340,13 +409,24 @@ addToLastStatement (b, t, e, s) = sta
           params = getParams(s),
           body = pop (getBody(s)) ++ [addToLastStatement(b, t, e, getBody(s))]
         }}
-      | b == BOD = Statement {
+      | b == BOD && statementType (last s) == FUNCSTA = Statement {
           closedSta = False, 
           staLine = staLine (last s),
           statementType = statementType (last s), 
           statementUni = FuncStatement{
             params = getParams(s),
             body = pop (getBody(s)) ++ [addToLastStatement(EXP, t, e, getBody(s))]}, 
+          expression = expression (last s)
+          }
+      | b == BOD && statementType (last s) == FORSTA = Statement {
+          closedSta = False, 
+          staLine = staLine (last s),
+          statementType = statementType (last s), 
+          statementUni = ForStatement{
+            start = start (statementUni (last s)),
+            stop = stop (statementUni (last s)),
+            inc = inc (statementUni (last s)),
+            forBody = pop (forBody (statementUni (last s))) ++ [addToLastStatement(EXP, t, e, forBody (statementUni (last s)))]}, 
           expression = expression (last s)
           }
       --Adding in con 
@@ -521,8 +601,8 @@ addStringToLastExp(b, t, e) = ex
       | otherwise = error ("Error adding string to last exp on line: " ++ (show (line(t))) ++ (show e) ++ " " ++ (show t)) 
 
 
-changeSta :: (Token, [Statement]) -> [Statement]
-changeSta (t,s) = sta 
+changeSta :: (BlockType, Token, [Statement]) -> [Statement]
+changeSta (b, t,s) = sta 
   where   
     sta 
       | statementType (last s) == NOSTA && typ t == ASSIGN = pop s ++ [Statement{
@@ -539,6 +619,26 @@ changeSta (t,s) = sta
           statementUni = FuncStatement{params = [], body = []},
           expression = expression (last s) 
         }]
+      | statementType (last s)== FUNCSTA && b == BOD = pop s ++ [Statement{
+          closedSta = False,
+          staLine = staLine (last s),
+          statementType = FUNCSTA,
+          statementUni = FuncStatement{params = getParams s, body = changeSta(b, t, getBody s)},
+          expression = expression (last s) 
+        }
+      ]
+      | statementType (last s)== FORSTA && b == BOD = pop s ++ [Statement{
+          closedSta = False,
+          staLine = staLine (last s),
+          statementType = FORSTA,
+          statementUni = ForStatement{
+            start = start (statementUni (last s)), 
+            stop = stop (statementUni (last s)), 
+            inc = inc (statementUni (last s)), 
+            forBody = changeSta(b, t, forBody (statementUni (last s)))},
+          expression = expression (last s) 
+        }
+      ]
       | otherwise = s 
 
 

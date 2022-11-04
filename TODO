@@ -1,12 +1,7 @@
 TODO:   
-  for 
-  VALIDATION/ERROR HANDLING
-    check on semicolon valid statement
-    check at eof that last exp is valid
-  fucking test invalid code
+  PRECOMPILER: 
+    Fix REPL/interpretor
 
-PRECOMPILER: 
-  Fix REPL/interpretor
 
 During Compiler: 
   Prebuilt funcs:
@@ -14,8 +9,12 @@ During Compiler:
 
 After compiler:
   Test line numbers etc
+  fucking test invalid code
   Fix README.md 
   Do aoc examples
+  VALIDATION/ERROR HANDLING
+    check on semicolon valid statement
+    check at eof that last exp is valid
 
 git ls-files | grep '\.hs' | xargs wc -l
 

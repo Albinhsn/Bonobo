@@ -1,6 +1,9 @@
 module REPL where
 
 main = do
-  print "Enter String to tokenize"
-  s <- getLine
-  print s
+  line <- getLine 
+  if null line 
+    then return ()
+    else do
+      putStrLn "got" 
+      main 

@@ -14,6 +14,7 @@ import TestEval
 import TestArray
 import TestMap
 import TestPrebuilt
+import TestFor
 -- import TestTFT
 
 main :: IO ()
@@ -322,3 +323,19 @@ main = hspec $ do
         testEvalLenMap
         `shouldBe`
         "- a = {1:1, 2:2, 3:3, 4:4, } l = 4"
+  describe "test test for" $ do
+    it "test for" $ 
+      do 
+        testFor 
+        `shouldBe`
+        "for(i = 0; i < 5; (i + 1);){k = (k + i);};" 
+    it "test for eval" $ 
+      do 
+        testForEval 
+        `shouldBe`
+        "- k = 15" 
+    it "test" $ 
+      do 
+        testPrint
+        `shouldBe`
+        "-" 

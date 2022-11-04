@@ -1,5 +1,6 @@
 module Eval where 
 
+import Debug.Trace
 import Object
 import Ast 
 import Lexer 
@@ -67,10 +68,59 @@ evaluateStatement (s,(v, f))= (va, fu)
     (va, fu) 
       | statementType s == LETSTA = (addVar(Variable{varIdent = identifier (statementUni s), varValue = evaluateExpression(expression s,v,f)}, v,f), f)
       | statementType s == FUNCSTA = addFunc(s, (v,f)) 
+      | statementType s == CALLSTA && getCallLiteral(expression s) == "print" = printObj([evaluateExpression(x,v,f) | x <- callParams (expression s)], (v, f)) 
       | statementType s == CALLSTA = evaluateReturn(evaluateFunc(expression s,v, f),v,f)
-      | statementType s == ASSIGNSTA = (evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f),f), f)
+      | statementType s == ASSIGNSTA =(evaluateAssign(assignIdent (expression s), v, evaluateExpression(assignExpression (expression s),v, f),f), f)
       | statementType s == IFSTA = (evaluateIf(s, (v, f)), f)
+      | statementType s == FORSTA && validFor(s, (v, f))= evaluateFor(
+        Variable{
+          varIdent = literal (ident (assignIdent (start (statementUni s)))),
+          varValue = evaluateExpression(start (statementUni s), v,f)},
+        stop (statementUni s),
+        inc (statementUni s),
+        forBody (statementUni s),
+        (v, f)
+        )
       | otherwise = error  ("evaluateStatement " ++ (show (statementType s)) ++ ": "++ statementToString s)
+
+validFor :: (Statement, ([Variable], [Function])) -> Bool
+validFor (s, (v, f)) = b
+  where   
+    b 
+        -- start is int object 
+      | objectType (evaluateExpression(start (statementUni s), v, f)) /= INT_OBJ = error "for loop start must be int"
+        -- stop is bool 
+      | expressionType (stop (statementUni s)) /= BOOLEXP = error "for loop condition must be bool"
+        -- inc is operation 
+      | expressionType (inc  (statementUni s)) /= OPERATOREXP = error "for loop increment must be operator"
+      | expressionType (start (statementUni s)) /= ASSIGNEXP = error "for loop start must be assignExp" 
+        --check if variable already exists 
+      | null [x | x <- v, literal (ident (assignIdent (start (statementUni s)))) == varIdent x] == False = error ("for loop varialbe already exists: " ++ literal (ident (assignIdent (start (statementUni s)))))
+      | otherwise = True
+
+evaluateFor :: (Variable, Expression, Expression, [Statement], ([Variable], [Function])) -> ([Variable], [Function])
+evaluateFor (var, c, i, s, (v, f)) = (va, fu)
+  where
+    (va, fu)
+      | endFor(var:v, f, c) = (v, f) 
+      | otherwise = evaluateFor(evaluateIncrement(var,i,v,f), c, i, s, removeForVar(varIdent var, snd (evaluateProgram(s,(var:v,f)))))
+
+
+removeForVar :: (String, ([Variable], [Function])) -> ([Variable], [Function])
+removeForVar (s, (v, f)) = ([x | x <- v, varIdent x /= s], f)
+
+endFor :: ([Variable], [Function], Expression) -> Bool 
+endFor (v, f,e) = boolValue (evaluateExpression(e,v,f)) == False 
+
+
+evaluateIncrement :: (Variable, Expression, [Variable], [Function]) -> Variable 
+evaluateIncrement (var, i, v, f) = va 
+  where 
+    va 
+      | otherwise = Variable{
+          varIdent = varIdent var,
+          varValue = evaluateExpression(i, var:v, f)
+        } 
 
 evaluateReturn :: ((ReturnType, Object), [Variable], [Function]) -> ([Variable], [Function])
 evaluateReturn ((r,o), v,f) = (va, fu)
@@ -388,7 +438,7 @@ appendArr (o1, o2) = ob
 
 
 isPrebuilt :: String -> Bool 
-isPrebuilt s = s == "len" || s == "append"
+isPrebuilt s = s == "len" || s == "append" || s == "print"
 
 
 evaluatePrebuilt :: (String,[Object]) -> Object 
@@ -400,6 +450,9 @@ evaluatePrebuilt (s, o) = ob
       | s == "append" && length o /= 2 = error ("append takes 2 params not: " ++ (show(length o)))
       | s == "append" = appendArr(o!!0, o!!1)
       | otherwise = error "evaluatePrebuilt"
+
+printObj :: ([Object], ([Variable], [Function]))-> ([Variable], [Function]) 
+printObj (o, (v, f))= trace (concat [inspectObject x ++ " " | x <- o]) $ (v,f) 
 
 getCallLiteral :: Expression -> String 
 getCallLiteral e = literal (ident (callIdent e))
