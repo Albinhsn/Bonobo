@@ -10,9 +10,7 @@ import ParserUtils
 import Object 
 import Eval
 -- main = do
-  -- let tokens = (parseTokens (1, "print(\"Hello\", \"World!\");", []))
   -- -- print tokens
-  -- let s = parseStatements (EXP, (getTokens(tokens), []))
   -- print s 
   -- let a = statementsToString((snd(snd(s))))
   -- print a
@@ -24,10 +22,14 @@ import Eval
   -- print v  
   -- let f = "Funcs: " ++ concat [inspectFunction x ++ " " | x <- (snd(snd b))]
   -- print f 
+evalMyShit :: String -> String 
+evalMyShit s =  concatContext(snd (evaluateProgram((snd(snd (parseStatements(EXP, (getTokens(parseTokens (1, s, [])),[]))))), ([], []))))
+
+
 main = do
   line <- getLine 
   if null line 
     then return ()
     else do
-      putStrLn "got" 
+      putStrLn (evalMyShit line)
       main 
