@@ -1,7 +1,6 @@
 module Main where
 
 import Ast
-import Data.Typeable
 import Lexer
 import Parser
 import Token
@@ -9,6 +8,20 @@ import Utils
 import ParserUtils
 import Object 
 import Eval
+
+
+
+
+import Data.Typeable
+import Data.ByteString.Lazy as BL
+import Data.ByteString as BS
+import Data.Text as TS 
+import Data.Text.Lazy as Tl 
+import Data.ByteString.Lazy.UTF8 as BLU 
+import Data.ByteString.UTF8 as BSU 
+import Data.Text.Encoding as TSE 
+import Data.Text.Lazy.Encoding as TLE 
+
 -- main = do
   -- let tokens = (parseTokens (1, "print(\"Hello\", \"World!\");", []))
   -- -- print tokens
@@ -25,9 +38,9 @@ import Eval
   -- let f = "Funcs: " ++ concat [inspectFunction x ++ " " | x <- (snd(snd b))]
   -- print f 
 main = do
-  line <- getLine 
-  if null line 
+  line <- Prelude.getLine 
+  if Prelude.null line 
     then return ()
     else do
-      putStrLn "got" 
+      putStrLn (show (BSU.fromString line))
       main 
