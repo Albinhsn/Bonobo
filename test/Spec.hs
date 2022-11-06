@@ -15,6 +15,8 @@ import TestArray
 import TestMap
 import TestPrebuilt
 import TestFor
+import TestCode
+import TestVM
 -- import TestTFT
 
 main :: IO ()
@@ -339,3 +341,15 @@ main = hspec $ do
         testPrint
         `shouldBe`
         "-" 
+  describe "test code" $ do
+    it "test make" $
+      do 
+        testMake 
+        `shouldBe`
+        "000112 - 1 2 "
+  describe "test vm" $ do
+    it "test vm" $
+      do 
+        testVMOp
+        `shouldBe`
+        ""

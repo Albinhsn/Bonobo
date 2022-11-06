@@ -359,6 +359,14 @@ addToLastStatement :: (BlockType, Token, ExpressionType, [Statement]) ->Statemen
 addToLastStatement (b, t, e, s) = sta 
   where 
     sta 
+      -- REMOVE THIS AFTER TESTING COMPILER
+      | null s = Statement{
+          closedSta = False,
+          staLine = 0,
+          statementType = NOSTA,
+          statementUni = NoStatement{},
+          expression = addXToExp(b,t, e, Expression{expLine = 0, expressionType = EMPTYEXP})
+        }
       | b == START && statementType (last s) == FORSTA = Statement{
           closedSta = False,
         staLine = staLine (last s),

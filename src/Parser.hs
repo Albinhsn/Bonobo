@@ -114,7 +114,8 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirst t, s))
       | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
-      | otherwise = error ("error parsing statement: " ++ (literal (head t)) ++ " on line: "++ (show (line (head t))))
+      -- REMOVE THIS AFTER TESTING COMPILER
+      | otherwise = parseExpression(b,(t,s))--error ("error parsing statement: " ++ (literal (head t)) ++ " on line: "++ (show (line (head t))))
 
 parseSemicolon:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement])) 
 parseSemicolon (b, (t, s)) = (bok, (tok, sta))

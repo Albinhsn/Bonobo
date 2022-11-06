@@ -189,3 +189,4 @@ getLastBoolOperator s = boolOperator (expression (last s))
 
 getTokens :: (Int, String, [Token]) -> [Token]
 getTokens (i,s,t) = t
+

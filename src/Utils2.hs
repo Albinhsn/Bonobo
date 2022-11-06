@@ -1,21 +1,17 @@
-module TestUtils where 
+module Utils2 where
 
-import Parser
-import Ast 
+
+import Object 
+import Data.ByteString as BS
+import Ast
+import Compiler
+import Code 
+import Token
 import Lexer 
-import Token 
-import Utils 
-import Compiler 
-import Code
-import Object
-
-
-import Data.Word (Word8)
-import Data.ByteString.UTF8 as BSU 
-import Data.ByteString as BS 
-import Data.Map as DM
-import Numeric (showHex)
-
+import Utils
+import Parser
+import Compiler
+import VM
 
 reverseList [] = []
 reverseList xs = Prelude.last xs : reverseList (Prelude.init xs)

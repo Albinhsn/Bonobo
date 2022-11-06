@@ -1,4 +1,7 @@
 TODO:   
+  translation of bytestring -> OPCODE x OPERAND y..
+  test operator properly
+  better testing for vm
 
 
 
@@ -10,8 +13,8 @@ After compiler:
   VALIDATION/ERROR HANDLING
     check on semicolon valid statement
     check at eof that last exp is valid
-  PRECOMPILER: 
-    Fix REPL/interpretor
+  Fix REPL/interpretor
+  https://interpreterbook.com/lost/
 
 git ls-files | grep '\.hs' | xargs wc -l
 
@@ -19,7 +22,31 @@ launchMissiles `shouldReturn` Left "permission error"
 
 NOTES:
   Vars and funcs can be same list/map
+  Only return Tokens -> Statements etc 
   
 TODO haskell:
   diff types 
   "append"
+
+CheatSheet:
+  Conversions 
+    https://stackoverflow.com/questions/3232074/what-is-the-best-way-to-convert-string-to-bytestring
+  Subarray
+    https://stackoverflow.com/questions/5522074/taking-sub-arrays-in-haskell
+-- putStrLn (prettyPrint c)
+-- line <- Prelude.getLine 
+-- if Prelude.null line 
+--   then return ()
+--   else do
+--     putStrLn (prettyPrint (BSU.fromString line))
+--     main 
+
+    (CONST ,fromIntegral 0 )
+  , (ADD, fromIntegral 1)
+  , (POP, fromIntegral 2)
+  , (SUB, fromIntegral 3)
+  , (MUL, fromIntegral 4)
+  , (DIV, fromIntegral 5)
+
+shouldBe 
+020340110403

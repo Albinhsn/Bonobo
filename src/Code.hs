@@ -1,28 +1,60 @@
 module Code where 
 
-import Data.ByteString.Lazy.Internal
-import Data.Map
+import Data.ByteString as BS
+import Data.ByteString.UTF8 as BSU 
+import Data.Word (Word8)
+import Data.Map as DM
+import Data.Binary 
+import Data.Bits
+import Numeric (showHex)
 
-newtype Instructions = Instructions [ByteString]
+-- OpCode CheatSheet: 
+-- OpConstant : 0
 
-newtype OpCode = OpCode ByteString
+data OpCode = SUB | MUL | DIV | POP | CONST | ADD deriving (Eq, Show, Ord) 
 
-data TranslatedOpCode = TranslatedOpCode{strName :: !String, opCode :: !OpCode}
-
-data OpCodes = OPCONST
-
-data Definition = Definition {defName :: !String, operandWidths :: ![Int]}
-
-definitions = [
-  ("OpConstant", 1)
+opCodes = DM.fromList [
+    (CONST ,fromIntegral 0 )
+  , (ADD, fromIntegral 1)
+  , (POP, fromIntegral 2)
+  , (SUB, fromIntegral 3)
+  , (MUL, fromIntegral 4)
+  , (DIV, fromIntegral 5)
   ]
 
-getDefinition :: ByteString -> Definition 
-getDefinition b = d 
-  where 
-    d 
-      | otherwise = 
+
     
+isValidOpCode :: OpCode -> Bool
+isValidOpCode o = DM.member o opCodes
+
+lookupOpCode :: OpCode -> ByteString 
+lookupOpCode o = BS.singleton (opCodes ! o)
 
 
+prettyPrint :: BS.ByteString -> String
+prettyPrint = BS.foldr showHex ""
+
+
+reverseUnroll :: Int -> ByteString
+reverseUnroll i = BS.reverse (unroll i)
+
+
+chooseToUnroll :: Int -> ByteString 
+chooseToUnroll i = 
+  case i of 
+    0 -> BS.singleton 0  
+    _ -> unroll i 
+
+unroll :: Int -> ByteString 
+unroll = unfoldr step
+  where 
+    step 0 = Nothing 
+    step i = Just (fromIntegral i, i `shiftR` 8)
+
+make :: (OpCode, Int) -> ByteString 
+make (o, i) = b 
+  where 
+    b 
+      | isValidOpCode o == False = error "opcode doesn't exist"
+      | otherwise = (lookupOpCode o) <> (chooseToUnroll i) 
 
