@@ -347,9 +347,29 @@ main = hspec $ do
         testMake 
         `shouldBe`
         "000112 - 1 2 "
-  describe "test vm" $ do
-    it "test vm" $
+    it "test make" $
       do 
-        testVMOp
+        testMake2 
         `shouldBe`
-        ""
+        "00014020341"
+  describe "test vm" $ do
+    it "test vm op 1 " $
+      do 
+        testVMOp1
+        `shouldBe`
+        "2"
+    it "test vm op 2" $
+      do 
+        testVMOp2
+        `shouldBe`
+        "5"
+    it "test vm op 3" $
+      do 
+        testVMOp3
+        `shouldBe`
+        "10"
+    it "test vm op 4" $
+      do 
+        testVMOp4
+        `shouldBe`
+        "11"

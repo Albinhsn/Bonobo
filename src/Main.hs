@@ -26,9 +26,11 @@ main = do
   -- -- print s 
   -- let a = compile(snd(snd s), (BS.empty :: ByteString, []))
   -- let k = (prettyPrint (fst a) ++ " " ++ Prelude.concat [inspectObject x ++ " " | x  <- snd(a)])
-  let s = parseStringToStatements("2 - 1 * 4 / 2")
+  let s = parseStringToStatements("2 * 2 + 3 * 2")
   print (statementsToString s)
-  let k = parseStack(run(parseStatementToCompiled s, []))
+  let a = parseStatementToCompiled s
+  print (prettyPrint (fst a), snd a)
+  let k = parseStack(run(a, []))
   print k  
 
 

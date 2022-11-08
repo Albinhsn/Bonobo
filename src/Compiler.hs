@@ -22,7 +22,7 @@ compile (s, (b, o)) = (by, ob)
   where 
     (by, ob) 
       | Prelude.null s = (b, o)
-      | statementType (Prelude.head s) == NOSTA = addPopInstruction(compile(removeFirst s, compileExpression(expression (Prelude.head s),(b,o))))
+      | statementType (Prelude.head s) == NOSTA = (compile(removeFirst s, compileExpression(expression (Prelude.head s),(b,o))))
       | otherwise = error "compile" 
 
 
@@ -31,12 +31,7 @@ compileExpression :: (Expression, (ByteString, [Object])) -> (ByteString, [Objec
 compileExpression (e,(b, o)) = (by, ob) 
   where 
     (by, ob)
-      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == OPERATOREXP= 
-        trace (expressionToString (leftOperator e)) $ 
-        addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, (b, o))))
-      | expressionType e == OPERATOREXP && expressionType (leftOperator e) == INTEXP= 
-        trace (expressionToString (leftOperator e)) $ 
-        addOperatorInstruction(operator e, compileExpression(leftOperator e, compileExpression(rightOperator e, (b, o))))
+      | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, (b, o))))
       | expressionType e == INTEXP = (b <> make(CONST, Prelude.length o), o ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}]) 
       | otherwise = error (show e ++ " " ++ show b ++ " " ++ show o)
 

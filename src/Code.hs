@@ -15,8 +15,8 @@ data OpCode = SUB | MUL | DIV | POP | CONST | ADD deriving (Eq, Show, Ord)
 
 opCodes = DM.fromList [
     (CONST ,fromIntegral 0 )
-  , (ADD, fromIntegral 1)
-  , (POP, fromIntegral 2)
+  , (POP, fromIntegral 1)
+  , (ADD, fromIntegral 2)
   , (SUB, fromIntegral 3)
   , (MUL, fromIntegral 4)
   , (DIV, fromIntegral 5)

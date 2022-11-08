@@ -1,7 +1,10 @@
 TODO:   
-  translation of bytestring -> OPCODE x OPERAND y..
   test operator properly
-  better testing for vm
+  check operandswidth in bytestring and if it's valid or not  
+  better func to remove x items from array
+  check if variable already exists in constants and point to that variable in that case
+  
+
 
 
 
@@ -41,12 +44,5 @@ CheatSheet:
 --     putStrLn (prettyPrint (BSU.fromString line))
 --     main 
 
-    (CONST ,fromIntegral 0 )
-  , (ADD, fromIntegral 1)
-  , (POP, fromIntegral 2)
-  , (SUB, fromIntegral 3)
-  , (MUL, fromIntegral 4)
-  , (DIV, fromIntegral 5)
-
-shouldBe 
-020340110403
+2 * 2 + 3 * 2
+               
