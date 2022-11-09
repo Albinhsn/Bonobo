@@ -42,3 +42,6 @@ testVMOpBook8 = parseStack(run(parseStatementToCompiled(parseStringToStatements(
 
 testVMOpBook9 :: String 
 testVMOpBook9 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 * (2 + 10)")), []))
+
+testVMOpBig :: String 
+testVMOpBig = parseStack(run(parseStatementToCompiled(parseStringToStatements("70000 * 2")), []))

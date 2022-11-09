@@ -27,9 +27,23 @@ run ((instructions,constants), stack) = ob
       | BS.head instructions == 5 = trace ("eval div op: " ++ Prelude.concat[inspectObject x ++ ", "| x <- stack]) $ run((removeFirstInstruction instructions, constants), divOp stack) 
       --True
       | BS.head instructions == 6 = run((removeFirstInstruction instructions, constants),BoolObject{objectType = BOOL_OBJ, boolValue = True}:stack)
+      --False 
       | BS.head instructions == 7 = run((removeFirstInstruction instructions, constants),BoolObject{objectType = BOOL_OBJ, boolValue = False}:stack)
+      --GT 
+      | BS.head instructions == 8 = error "got" 
+      --LT 
+      | BS.head instructions == 9 = error "got" 
+      --NEQ 
+      | BS.head instructions == 10 = error "got" 
+      --EQ
+      | BS.head instructions == 11 = error "got" 
+
       | otherwise = error "run" 
 
+  -- , (OPGT, fromIntegral 8)
+  -- , (OPLT, fromIntegral 9)
+  -- , (OPNEQ, fromIntegral 10)
+  -- , (OPEQ, fromIntegral 11)
 
 
 addOp :: [Object] -> [Object]

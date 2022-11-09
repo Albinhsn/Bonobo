@@ -428,3 +428,8 @@ main = hspec $ do
         testVMOpBook9
         `shouldBe`
         "60"
+    it "test vm op big" $
+      do 
+        testVMOpBig
+        `shouldBe`
+        "140000"
