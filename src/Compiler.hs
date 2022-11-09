@@ -33,8 +33,15 @@ compileExpression (e,(b, o)) = (by, ob)
     (by, ob)
       | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, (b, o))))
       | expressionType e == INTEXP = (b <> make(CONST, Prelude.length o), o ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}]) 
+      | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,(b,o)) 
+      | expressionType e == TFEXP = (b <> lookupOpCode(compileTF e), o)
       | otherwise = error (show e ++ " " ++ show b ++ " " ++ show o)
 
+compileTF :: Expression -> OpCode  
+compileTF e =
+  case bool e of 
+    TRUE-> OPTRUE 
+    FALSE -> OPFALSE
 
 addPopInstruction :: (ByteString, [Object]) -> (ByteString, [Object])
 addPopInstruction (b, o) = (b <> lookupOpCode(POP), o)

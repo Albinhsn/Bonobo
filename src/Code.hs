@@ -11,7 +11,7 @@ import Numeric (showHex)
 -- OpCode CheatSheet: 
 -- OpConstant : 0
 
-data OpCode = SUB | MUL | DIV | POP | CONST | ADD deriving (Eq, Show, Ord) 
+data OpCode = OPTRUE | OPFALSE | SUB | MUL | DIV | POP | CONST | ADD deriving (Eq, Show, Ord) 
 
 opCodes = DM.fromList [
     (CONST ,fromIntegral 0 )
@@ -20,6 +20,8 @@ opCodes = DM.fromList [
   , (SUB, fromIntegral 3)
   , (MUL, fromIntegral 4)
   , (DIV, fromIntegral 5)
+  , (OPTRUE, fromIntegral 6)
+  , (OPFALSE, fromIntegral 7)
   ]
 
 

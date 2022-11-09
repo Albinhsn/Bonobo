@@ -351,7 +351,17 @@ main = hspec $ do
       do 
         testMake2 
         `shouldBe`
-        "00014020341"
+        "00014020342"
+    it "test make true" $
+      do 
+        testMakeTFTrue 
+        `shouldBe`
+        "6"
+    it "test make false" $
+      do 
+        testMakeTFFalse
+        `shouldBe`
+        "7"
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
@@ -373,3 +383,48 @@ main = hspec $ do
         testVMOp4
         `shouldBe`
         "11"
+    it "test vm book 1" $
+      do 
+        testVMOpBook1
+        `shouldBe`
+        "-1"
+    it "test vm book 2" $
+      do 
+        testVMOpBook2
+        `shouldBe`
+        "2"
+    it "test vm book 3" $
+      do 
+        testVMOpBook3
+        `shouldBe`
+        "2"
+    it "test vm book 4" $
+      do 
+        testVMOpBook4
+        `shouldBe`
+        "55"
+    it "test vm book 5" $
+      do 
+        testVMOpBook5
+        `shouldBe`
+        "10"
+    it "test vm book 6" $
+      do 
+        testVMOpBook6
+        `shouldBe`
+        "32"
+    it "test vm book 7" $
+      do 
+        testVMOpBook7
+        `shouldBe`
+        "20"
+    it "test vm book 8" $
+      do 
+        testVMOpBook8
+        `shouldBe`
+        "25"
+    it "test vm book 9" $
+      do 
+        testVMOpBook9
+        `shouldBe`
+        "60"
