@@ -69,6 +69,41 @@ main = hspec $ do
         testBools
         `shouldBe`
         "let five = 5 == 5; let five = 5 == (5 + 5); let five = 5 == (5 + (5 * 5)); let five = 5 == (5 + (-5)); let five = 5 == (5 + ((-5) * (-5))); let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1; let five = b[0] == b[0];"
+    it "test vm bool 1" $ 
+      do
+        testVMBool1
+        `shouldBe`
+        "True"
+    it "test vm bool 2" $ 
+      do
+        testVMBool2
+        `shouldBe`
+        "False"
+    it "test vm bool 3" $ 
+      do
+        testVMBool3
+        `shouldBe`
+        "True"
+    it "test vm bool 4" $ 
+      do
+        testVMBool4
+        `shouldBe`
+        "False"
+    it "test vm bool 5" $ 
+      do
+        testVMBool5
+        `shouldBe`
+        "True"
+    it "test vm bool 6" $ 
+      do
+        testVMBool6
+        `shouldBe`
+        "False"
+    it "test vm bool 7" $ 
+      do
+        testVMBool7
+        `shouldBe`
+        "False"
   describe "Testing if" $ do
     it "testing empty if" $ 
       do 
