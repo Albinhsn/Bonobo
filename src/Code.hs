@@ -8,18 +8,25 @@ import Data.Binary
 import Data.Bits
 import Numeric (showHex)
 
--- OpCode CheatSheet: 
--- OpConstant : 0
 
-data OpCode = SUB | MUL | DIV | POP | CONST | ADD deriving (Eq, Show, Ord) 
+data OpCode = JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
 
 opCodes = DM.fromList [
-    (CONST ,fromIntegral 0 )
-  , (POP, fromIntegral 1)
-  , (ADD, fromIntegral 2)
-  , (SUB, fromIntegral 3)
-  , (MUL, fromIntegral 4)
-  , (DIV, fromIntegral 5)
+    (OPCONST ,fromIntegral 0 )
+  , (OPPOP, fromIntegral 1)
+  , (OPADD, fromIntegral 2)
+  , (OPSUB, fromIntegral 3)
+  , (OPMUL, fromIntegral 4)
+  , (OPDIV, fromIntegral 5)
+  , (OPTRUE, fromIntegral 6)
+  , (OPFALSE, fromIntegral 7)
+  , (OPGT, fromIntegral 8)
+  , (OPNEQ, fromIntegral 10)
+  , (OPEQ, fromIntegral 11)
+  , (OPMINUS, fromIntegral 12)
+  , (OPBANG, fromIntegral 13)
+  , (JUMP, fromIntegral 14)
+  , (JUMPNT, fromIntegral 15)
   ]
 
 
@@ -37,6 +44,7 @@ prettyPrint = BS.foldr showHex ""
 
 reverseUnroll :: Int -> ByteString
 reverseUnroll i = BS.reverse (unroll i)
+
 
 
 chooseToUnroll :: Int -> ByteString 

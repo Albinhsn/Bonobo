@@ -38,4 +38,16 @@ testVMBool6 :: String
 testVMBool6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 != 5")), []))
 
 testVMBool7 :: String 
-testVMBool7 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 > True")), []))
+testVMBool7 = parseStack(run(parseStatementToCompiled(parseStringToStatements("!True == False")), []))
+
+testVMBool8 :: String 
+testVMBool8 = parseStack(run(parseStatementToCompiled(parseStringToStatements("-5 == 5")), []))
+
+testVMBoolBook1 :: String 
+testVMBoolBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("(1 < 2) == True")), []))
+
+testVMBoolBook2 :: String 
+testVMBoolBook2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("(1 > 2) == True")), []))
+
+testVMBoolBook3 :: String 
+testVMBoolBook3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("(10 + 50 + -5 - 5 * 2 / 2) < (100 - 35)")), []))

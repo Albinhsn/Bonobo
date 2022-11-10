@@ -45,7 +45,7 @@ addBoolToLastExp :: (Token, Expression) -> Expression
 addBoolToLastExp (t, e) = ex
   where
     ex 
-      | expressionType e == INDEXEXP || expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
+      | expressionType e == TFEXP || expressionType e == EMPTYEXP || expressionType e == INDEXEXP || expressionType e == IDENTEXP || expressionType e == CALLEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP ||expressionType e == OPERATOREXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
       | expressionType e == BOOLEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addBoolToLastExp (t, rightBool e)} 
       | expressionType e == GROUPEDEXP && closed e == False = GroupedExpression {expLine = expLine e, expressionType = GROUPEDEXP, closed = closed e, groupedExpression = addBoolToLastExp (t, groupedExpression e)} 
       | expressionType e == GROUPEDEXP = BoolExpression {expLine = expLine e, expressionType = BOOLEXP, leftBool = e, boolOperator = t, rightBool = Expression {expLine = expLine e, expressionType = EMPTYEXP}} 
@@ -463,6 +463,18 @@ addToLastStatement (b, t, e, s) = sta
             },
           expression = expression (last s)
         }
+      | b == CON && statementType (last s) == IFSTA && (null (getCon s)) == True && (expressionType (expression (last s)) == GROUPEDEXP && closed (expression (last s)) == True)  = Statement{
+          closedSta = False, 
+          staLine = staLine (last s),
+          statementType = IFSTA,
+          statementUni = IfStatement{
+              closedCon = False,
+              closedAlt = True,
+              con = [Statement{statementType = NOSTA, staLine = -1, closedSta = False, statementUni = NoStatement{}, expression = addXToExp(b,t,e, Expression{expressionType = EMPTYEXP, expLine = -1})}], 
+              alt = [] 
+            },
+          expression = expression (last s)
+        } 
       --Found last statement
       | otherwise = Statement{
           closedSta = False, 

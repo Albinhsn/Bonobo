@@ -1,9 +1,12 @@
 TODO:   
-  test operator properly
   check operandswidth in bytestring and if it's valid or not  
+    - test if vars is over 256?
   better func to remove x items from array
   check if variable already exists in constants and point to that variable in that case
-  
+  Rework addOp -> evalAddOp to be one func
+  remove LTOp, SubOp 
+  implement !! or --
+  change from 256 to 66566 or w/e 
 
 
 

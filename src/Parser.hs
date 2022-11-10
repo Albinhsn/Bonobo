@@ -285,9 +285,11 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
           parseIntegerExpression (b, (t, s))
           )
       | 
-          isValidMinus (getLastExpression s)  
+          typ (head t) == MINUS
         && 
-          typ (head t) == MINUS = 
+          null s == False
+        &&
+          isValidMinus (getLastExpression s) =
             parseExpression (
               parsePrefixExpression (b, (t, s))
             )

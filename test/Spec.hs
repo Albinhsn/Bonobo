@@ -103,7 +103,27 @@ main = hspec $ do
       do
         testVMBool7
         `shouldBe`
+        "True"
+    it "test vm bool 8" $ 
+      do
+        testVMBool8
+        `shouldBe`
         "False"
+    it "test vm bool book 1" $ 
+      do
+        testVMBoolBook1
+        `shouldBe`
+        "True"
+    it "test vm bool book 2" $ 
+      do
+        testVMBoolBook2
+        `shouldBe`
+        "False"
+    it "test vm bool book 3" $ 
+      do
+        testVMBoolBook3
+        `shouldBe`
+        "True"
   describe "Testing if" $ do
     it "testing empty if" $ 
       do 
@@ -377,16 +397,31 @@ main = hspec $ do
         `shouldBe`
         "-" 
   describe "test code" $ do
-    it "test make" $
+    it "test make " $
       do 
         testMake 
         `shouldBe`
         "000112 - 1 2 "
-    it "test make" $
+    it "test make 2" $
       do 
         testMake2 
         `shouldBe`
-        "00014020341"
+        " CONST 2 CONST 2 MUL CONST 3 CONST 2 MUL ADD"
+    it "test code if" $
+      do 
+        testCodeIf
+        `shouldBe`
+        " TRUE JUMPNT CONST 5 JUMP"
+    it "test make true" $
+      do 
+        testMakeTFTrue 
+        `shouldBe`
+        "6"
+    it "test make false" $
+      do 
+        testMakeTFFalse
+        `shouldBe`
+        "7"
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
@@ -408,3 +443,53 @@ main = hspec $ do
         testVMOp4
         `shouldBe`
         "11"
+    it "test vm book 1" $
+      do 
+        testVMOpBook1
+        `shouldBe`
+        "-1"
+    it "test vm book 2" $
+      do 
+        testVMOpBook2
+        `shouldBe`
+        "2"
+    it "test vm book 3" $
+      do 
+        testVMOpBook3
+        `shouldBe`
+        "2"
+    it "test vm book 4" $
+      do 
+        testVMOpBook4
+        `shouldBe`
+        "55"
+    it "test vm book 5" $
+      do 
+        testVMOpBook5
+        `shouldBe`
+        "10"
+    it "test vm book 6" $
+      do 
+        testVMOpBook6
+        `shouldBe`
+        "32"
+    it "test vm book 7" $
+      do 
+        testVMOpBook7
+        `shouldBe`
+        "20"
+    it "test vm book 8" $
+      do 
+        testVMOpBook8
+        `shouldBe`
+        "25"
+    it "test vm book 9" $
+      do 
+        testVMOpBook9
+        `shouldBe`
+        "60"
+    it "test vm op big" $
+      do 
+        testVMOpBig
+        `shouldBe`
+        "140000"
