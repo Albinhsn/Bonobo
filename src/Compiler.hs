@@ -23,13 +23,13 @@ compile (s, (b, o)) = (by, ob)
     (by, ob) 
       | Prelude.null s = (b, o)
       | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s),(b,o)))
-      | statementType (Prelude.head s) == IFSTA = 
+      | statementType (Prelude.head s) == IFSTA= 
           --Go to next statement in block
           compile(
             removeFirst s, 
             compile( --Parse alt
-              alt(statementUni (Prelude.last s)),
-              addJump(compile(con (statementUni(Prelude.last s)),addJumpNT(compileExpression(expression (Prelude.head s), (b, o))))))) --Parse con 
+              alt(statementUni (Prelude.head s)),
+              addJump(compile(con (statementUni(Prelude.head s)),addJumpNT(compileExpression(expression (Prelude.head s), (b, o))))))) --Parse con 
       | otherwise = error "compile" 
 
 addJump :: (ByteString, [Object]) -> (ByteString, [Object])

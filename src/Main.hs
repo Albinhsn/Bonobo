@@ -20,17 +20,17 @@ import Data.Map as DM
 import Numeric (showHex)
 
 main = do
-  -- let tokens = (parseTokens (1, "1 + 2 + 6 + 3", []))
+  -- let tokens = (parseTokens (1, "if(True){5}; 10;", []))
   -- -- print tokens
   -- let s = parseStatements (EXP, (getTokens(tokens), []))
-  -- -- print s 
+  -- print s 
   -- let a = compile(snd(snd s), (BS.empty :: ByteString, []))
   -- let k = (prettyPrint (fst a) ++ " " ++ Prelude.concat [inspectObject x ++ " " | x  <- snd(a)])
-  let s = parseStringToStatements("if(True){5;}")
+  let s = parseStringToStatements("if(True){5}else{3}; 10;")
   print s
   print (statementsToString s)
   let a = parseStatementToCompiled s
-  print (prettyPrint (fst a) ++ " ")
+  print (disassemble ("", a))
   let k = parseStack(run(a, []))
   print k  
 
