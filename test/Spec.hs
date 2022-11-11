@@ -17,6 +17,7 @@ import TestPrebuilt
 import TestFor
 import TestCode
 import TestVM
+import TestNoSta
 -- import TestTFT
 
 main :: IO ()
@@ -222,7 +223,7 @@ main = hspec $ do
         testEvalNestedIf
         `shouldBe`
         "- five = 5"
-    it "test eval nested if" $ 
+    it "test eval nested else" $ 
       do 
         testEvalNestedElse
         `shouldBe`
@@ -493,3 +494,24 @@ main = hspec $ do
         testVMOpBig
         `shouldBe`
         "140000"
+  describe "test no sta" $ do
+    it "test empty" $
+      do 
+        testEmpty
+        `shouldBe`
+        "5;"
+    it "test empty if " $
+      do 
+        testIfEmpty
+        `shouldBe`
+        "if(True){5;}else{3;}; 2;"
+    it "test empty func" $
+      do 
+        testFuncEmpty
+        `shouldBe`
+        "fn add(a,b){5; return (a + b);}; 10;"
+    it "test empty for" $
+      do 
+        testForEmpty
+        `shouldBe`
+        "for(i = 0; i < 5; (i + 1);){5;}; 10;"

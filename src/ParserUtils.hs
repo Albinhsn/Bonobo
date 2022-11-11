@@ -87,7 +87,7 @@ addOperatorToLastExp(t, e) = ex
       | expressionType e == ARRAYEXP && expressionType (last (array e)) == ARRAYEXP = ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addOperatorToLastExp(t,last (array e))]}
       | expressionType e == ARRAYEXP = ArrayExpression{closedArr = False, expLine = expLine e, expressionType = ARRAYEXP, array = pop (array e) ++ [addOperatorToLastExp(t, last (array e))]} 
       | expressionType e == EMPTYEXP = PrefixExpression {expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = t, prefixExpression = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
-      | otherwise = error ("addOperatorToLastExpression on line: " ++ (show (expLine e)) ++ " " ++ expressionToString(e)) 
+      | otherwise = error ("addOperatorToLastExpression on line: " ++ (show (expressionType e)) ++ " " ++ expressionToString(e)) 
 
 addPrefixToLastExp:: (Token, Expression) ->  Expression 
 addPrefixToLastExp(t, e) = ex 
@@ -659,6 +659,40 @@ changeSta (b, t,s) = sta
           expression = expression (last s) 
         }
       ]
+      | (b == CON || b == ALT) && statementType (last s) == IFSTA && getClosedCon s == False = pop s ++ [Statement{
+          closedSta = False,
+          staLine = staLine (last s),
+          statementType = IFSTA,
+          statementUni = IfStatement{
+              closedCon = False,
+              closedAlt = False,
+              con = changeSta(b,t,getCon s), 
+              alt = []
+            },
+          expression = expression (last s)
+        }] 
+      | (b == CON || b == ALT) && statementType (last s) == IFSTA = pop s ++ [Statement{
+          closedSta = False,
+          staLine = staLine (last s),
+          statementType = IFSTA,
+          statementUni = IfStatement{
+              closedCon = True,
+              closedAlt = False,
+              con = getCon s, 
+              alt = changeSta(b,t,getAlt s) 
+            },
+          expression = expression (last s)
+        }] 
+      | (b == CON || b == ALT) && statementType (last s) == FUNCSTA = pop s ++ [Statement{
+          closedSta = False,
+          staLine = staLine (last s),
+          statementType = FUNCSTA,
+          statementUni = FuncStatement{
+              params = getParams s,
+              body = changeSta (b,t,getBody s)
+            },
+          expression = expression (last s)
+        }]
       | otherwise = s 
 
 
@@ -1076,7 +1110,7 @@ findLastBlockType (b, s) = block
     block 
       | statementType s == FUNCSTA = findLastBlockType(b, last (body(statementUni s)))
       | statementType s == IFSTA && closedCon (statementUni s) == False = findLastBlockType(CON, (last (con(statementUni s)))) 
-      | statementType s == IFSTA && null (alt(statementUni s)) == False && statementType (last (alt (statementUni s))) == IFSTA = findLastBlockType(ALT, (last (alt(statementUni s))))
+      | statementType s == IFSTA && closedAlt (statementUni s) == False = findLastBlockType(ALT, (last (alt(statementUni s))))
       | otherwise = b
 
 
@@ -1348,3 +1382,4 @@ checkValidSemicolon (b, s) = bo
       | otherwise = error "not valid statement"
 checkValidSemicolonExp :: Expression -> Bool
 checkValidSemicolonExp e = True
+

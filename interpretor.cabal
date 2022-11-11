@@ -50,6 +50,7 @@ test-suite interpretor-test
     , TestFor
     , TestCode
     , TestVM 
+    , TestNoSta
   hs-source-dirs:
       test 
     , src

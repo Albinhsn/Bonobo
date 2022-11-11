@@ -51,7 +51,7 @@ statementToString s = str
             ++ expressionToString (expression s)
             ++ ";"
       | statementType s == ASSIGNSTA = expressionToString (expression s)
-      | statementType s == NOSTA = expressionToString(expression (s))
+      | statementType s == NOSTA = expressionToString(expression (s)) ++ ";"
       | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(params (statementUni s)) ++ bodyToString(s) ++ ";"
       | statementType s == CALLSTA = expressionToString(expression s) ++ ";"
       | otherwise = error "error parsing statement to string "
