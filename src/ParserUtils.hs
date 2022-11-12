@@ -58,7 +58,7 @@ addOperatorToLastExp:: (Token, Expression) -> Expression
 addOperatorToLastExp(t, e) = ex
   where
     ex
-      | expressionType e == IDENTEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
+      | expressionType e == IDENTEXP || expressionType e == STRINGEXP || expressionType e == INTEXP || expressionType e == PREFIXEXP = OperatorExpression {expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression {expLine = expLine e, expressionType = EMPTYEXP}}
       | expressionType e == MAPEXP && null (fst (mapMap e)) = MapExpression{closedMap = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (fst (mapMap e) ++ [addOperatorToLastExp(t, Expression{expLine = expLine e, expressionType=EMPTYEXP})], snd (mapMap e))}
       | expressionType e == MAPEXP && null (getVal e) == False && expressionType (last (getVal e)) == MAPEXP && closedMap (last (getVal e)) == False = MapExpression{nextItem = KEY, closedMap = False, expressionType = MAPEXP, expLine = expLine e, mapMap = (getKey e, pop (getVal e) ++ [addOperatorToLastExp(t, last (getVal e))])} 
       | expressionType e == MAPEXP && nextItem e == KEY && checkValidKey(e) = MapExpression{closedMap = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (pop (fst (mapMap e)) ++ [addOperatorToLastExp(t, last (fst (mapMap e)))], snd (mapMap e))}

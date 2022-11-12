@@ -6,7 +6,7 @@ import Object
 import Ast
 import Utils
 import Token
-
+import Lexer
 import Data.Word (Word8)
 import Data.ByteString.UTF8 as BSU 
 import Data.ByteString as BS 
@@ -17,27 +17,41 @@ import Numeric (showHex)
 
 
 
-compile :: ([Statement],(ByteString,[Object])) ->(ByteString, [Object]) 
-compile (s, (b, o)) = (by, ob) 
+compile :: ([Statement], Compiler)-> Compiler 
+compile (s,c) = comp 
   where 
-    (by, ob) 
-      | Prelude.null s = (b, o)
-      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s),(b,o)))
-      | statementType (Prelude.head s) == IFSTA= compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), (b, o)))
-      -- | statementType (Prelude.head s) == IFSTA= compile(
-      --   removeFirst s, 
-      --   compile(alt (statementUni (Prelude.head s)), (BS.empty :: ByteString, ))
-      --     addJumpNT(
-      --       compile(con (statementUni (Prelude.head s)), (BS.empty :: ByteString, o))
-      --       )
-      --     ) 
-        
-      | otherwise = error "compile" 
+    comp
+      | Prelude.null s = c 
+      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(
+          expression (Prelude.head s),
+          c)) 
+      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c)) 
+      | statementType (Prelude.head s) == IFSTA= compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c))
+      | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
+      | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
-compileIf :: (BlockType, Statement, (ByteString, [Object])) -> (ByteString, [Object])
-compileIf (bl, s, (b, o)) = (by, ob)
+addLet :: Compiler -> Compiler 
+addLet c =Compiler{
+    symbols = symbols c,
+    bytes = bytes c <> lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c) - 1),
+    constants = constants c
+  } 
+
+compileLet :: (Statement, Compiler) -> Compiler 
+compileLet (s, c) = comp  
   where 
-    (by, ob)
+    comp
+      | member (identifier (statementUni s)) (fromList (symbols c)) == True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
+      | otherwise = addLet(compileExpression(expression s, Compiler{
+          bytes = bytes c,
+          constants = constants c,
+          symbols = (identifier (statementUni s), Prelude.length (symbols c)):(symbols c)
+        }))
+
+compileIf :: (BlockType, Statement, Compiler) -> Compiler 
+compileIf (bl, s, c) = comp 
+  where 
+    comp
       | bl == CON = compileIf(ALT, Statement{
           closedSta = False,
           staLine = staLine s,
@@ -50,38 +64,98 @@ compileIf (bl, s, (b, o)) = (by, ob)
             },
           expression = expression s
         }, 
-        addJumpNT(compile(con (statementUni s), (BS.empty :: ByteString, o)), b)
-      )
-      | bl == ALT = addJump(compile(alt (statementUni s), (BS.empty :: ByteString, o)), b)
+        addJumpNT(compile(con (statementUni s), Compiler{
+            bytes = BS.empty :: ByteString,
+            constants = constants c,
+            symbols = symbols c
+          }
+      ), bytes c))
+      | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
+          bytes = BS.empty :: ByteString,
+          constants = constants c,
+          symbols = symbols c
+        }), bytes c)
       | otherwise = error "compileIf"
 
 
--- exp JNT X con J Y alt 
-addJump :: ((ByteString, [Object]), ByteString) -> (ByteString, [Object])
-addJump ((alt, o), b) = ( b<> lookupOpCode JUMP <>chooseToUnroll (BS.length alt + 2) <> alt,o )
+addJump :: (Compiler, ByteString) -> Compiler 
+addJump (c, b) = Compiler{
+    symbols = symbols c,
+    constants = constants c, 
+    bytes = b <> lookupOpCode JUMP <> chooseToUnroll (BS.length (bytes c) + 2) <> bytes c
+  }
 
-addJumpNT :: ((ByteString, [Object]), ByteString) -> (ByteString, [Object])
-addJumpNT ((con, o), b) = ( b <> lookupOpCode JUMPNT <> chooseToUnroll (BS.length con + 4) <> con,o )
+addJumpNT :: (Compiler, ByteString) -> Compiler 
+addJumpNT (c, b) = Compiler{
+    symbols = symbols c, 
+    constants = constants c, 
+    bytes = b <> lookupOpCode JUMPNT <> chooseToUnroll (BS.length (bytes c) + 4) <> bytes c
+  } 
 
-compileExpression :: (Expression, (ByteString, [Object])) -> (ByteString, [Object]) 
-compileExpression (e,(b, o)) = (by, ob) 
+compileExpression :: (Expression, Compiler) -> Compiler 
+compileExpression (e,c) = comp 
   where 
-    (by, ob)
-      | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, (b, o))))
-      | expressionType e == INTEXP = (b <> make(OPCONST, Prelude.length o), o ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}]) 
-      | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,(b,o)) 
-      | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(boolOperator e, compileExpression(rightBool e, compileExpression(leftBool e, (b, o))))
-      | expressionType e == BOOLEXP = addBoolInstruction(Token{line = line (boolOperator e),typ = GREATER_T, literal = ">"}, compileExpression(leftBool e, compileExpression(rightBool e, (b, o))))
-      | expressionType e == TFEXP = (b <> lookupOpCode(compileTF e), o)
-      | expressionType e == PREFIXEXP = addPrefixInstruction(prefixOperator e, compileExpression(prefixExpression e, (b,o))) 
-      | otherwise = error (show e ++ " " ++ show b ++ " " ++ show o)
+    comp
+      | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, c)))
+      | expressionType e == ARRAYEXP = addArrayInstructions(array e, c)  
+      | expressionType e == INTEXP = Compiler{
+          bytes = bytes c <> make(OPCONST, Prelude.length (constants c)),
+          constants = constants c ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}],
+          symbols = symbols c
+        }
+      | expressionType e == STRINGEXP= Compiler{
+          bytes = bytes c <> make(OPCONST, Prelude.length (constants c)),
+          constants = constants c ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}],
+          symbols = symbols c
+        }
+      | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,c) 
+      | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(boolOperator e, compileExpression(rightBool e, compileExpression(leftBool e, c)))
+      | expressionType e == BOOLEXP = addBoolInstruction(Token{line = line (boolOperator e),typ = GREATER_T, literal = ">"}, compileExpression(leftBool e, compileExpression(rightBool e, c)))
+      | expressionType e == TFEXP = Compiler{
+          bytes = bytes c <> lookupOpCode(compileTF e),
+          constants = constants c,
+          symbols = symbols c
+        }
+      | expressionType e == PREFIXEXP = addPrefixInstruction(prefixOperator e, compileExpression(prefixExpression e, c)) 
+      | expressionType e == IDENTEXP= Compiler{
+          bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(literal (ident e), symbols c)),
+          constants = constants c,
+          symbols = symbols c
+        }
+      | otherwise = error (show e ++ " " ++ show (bytes c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+
+addArrayInstructions :: ([Expression], Compiler) -> Compiler
+addArrayInstructions (e, c) = comp 
+  where 
+    comp 
+      | Prelude.null e = Compiler{
+          bytes = bytes c <> lookupOpCode ARRAY, 
+          constants = constants c,
+          symbols = symbols c 
+        }
+      | otherwise = addArrayInstructions(pop e, compileExpression(Prelude.last e, c))
 
 
-addPrefixInstruction :: (Token, (ByteString, [Object])) -> (ByteString, [Object])
-addPrefixInstruction (t, (b, o)) = 
+getSymbolKey :: (String, [(String, Int)]) -> Int  
+getSymbolKey (s, sym)= i 
+  where 
+    i 
+      | member s (fromList sym) == False = error ("Trying to access variable that doesn't exist: " ++ s)
+      | otherwise = (fromList sym) ! s
+
+addPrefixInstruction :: (Token, Compiler) -> Compiler 
+addPrefixInstruction (t, c) = 
   case typ t of 
-    MINUS -> (b <> lookupOpCode (OPMINUS), o)
-    BANG -> (b <> lookupOpCode (OPBANG), o)
+    MINUS -> Compiler{
+        bytes = bytes c <> lookupOpCode OPMINUS,
+        constants = constants c,
+        symbols = symbols c
+      }
+    BANG -> Compiler{
+        bytes = bytes c <> lookupOpCode OPBANG,
+        constants = constants c,
+        symbols = symbols c
+      }
 
 compileTF :: Expression -> OpCode  
 compileTF e =
@@ -89,21 +163,53 @@ compileTF e =
     TRUE-> OPTRUE 
     FALSE -> OPFALSE
 
-addPopInstruction :: (ByteString, [Object]) -> (ByteString, [Object])
-addPopInstruction (b, o) = (b <> lookupOpCode(OPPOP), o)
+addPopInstruction :: Compiler -> Compiler  
+addPopInstruction c = Compiler{
+    bytes = bytes c <> lookupOpCode(OPPOP),
+    constants = constants c,
+    symbols = symbols c
+  }
 
-addOperatorInstruction :: (Token, (ByteString, [Object])) -> (ByteString, [Object]) 
-addOperatorInstruction (t, (b, o)) =
+addOperatorInstruction :: (Token, Compiler)-> Compiler 
+addOperatorInstruction (t, c)=
   case typ t of 
-    PLUS -> (b <> lookupOpCode (OPADD),o)
-    SLASH -> (b <> lookupOpCode (OPDIV), o)
-    ASTERISK -> (b <> lookupOpCode (OPMUL), o)
-    MINUS -> (b <> lookupOpCode(OPSUB), o)
+    PLUS -> Compiler{
+        bytes = bytes c <> lookupOpCode OPADD, 
+        constants = constants c,
+        symbols = symbols c
+      }
+    SLASH -> Compiler{
+        bytes = bytes c <> lookupOpCode OPDIV, 
+        constants = constants c,
+        symbols = symbols c
+      }
+    ASTERISK -> Compiler{
+        bytes = bytes c <> lookupOpCode OPMUL, 
+        constants = constants c,
+        symbols = symbols c
+      }
+    MINUS -> Compiler{
+        bytes = bytes c <> lookupOpCode OPSUB, 
+        constants = constants c,
+        symbols = symbols c
+      }
     _ -> error ("not an operator " ++ (literal t))
 
-addBoolInstruction :: (Token, (ByteString, [Object])) -> (ByteString, [Object])
-addBoolInstruction (t, (b, o)) = 
+addBoolInstruction :: (Token, Compiler) -> Compiler 
+addBoolInstruction (t, c) = 
   case typ t of 
-    GREATER_T -> (b <> lookupOpCode (OPGT), o) 
-    EQUALS -> (b <> lookupOpCode (OPEQ), o) 
-    NOT_EQUALS -> (b <> lookupOpCode (OPNEQ), o) 
+    GREATER_T-> Compiler{
+        bytes = bytes c <> lookupOpCode OPGT, 
+        constants = constants c,
+        symbols = symbols c
+      }
+    EQUALS -> Compiler{
+        bytes = bytes c <> lookupOpCode OPEQ, 
+        constants = constants c,
+        symbols = symbols c
+      }
+    NOT_EQUALS -> Compiler{
+        bytes = bytes c <> lookupOpCode OPNEQ, 
+        constants = constants c,
+        symbols = symbols c
+      }

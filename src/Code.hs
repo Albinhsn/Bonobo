@@ -7,9 +7,17 @@ import Data.Map as DM
 import Data.Binary 
 import Data.Bits
 import Numeric (showHex)
+import Object 
+import Ast
 
 
-data OpCode = JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+
+
+data Symbol = Symbol{
+    symName :: !String, 
+    symIndex :: !Int
+  }
 
 opCodes = DM.fromList [
     (OPCONST ,fromIntegral 0 )
@@ -27,7 +35,16 @@ opCodes = DM.fromList [
   , (OPBANG, fromIntegral 13)
   , (JUMP, fromIntegral 14)
   , (JUMPNT, fromIntegral 15)
+  , (SETGLOBAL, fromIntegral 16)
+  , (GETGLOBAL, fromIntegral 17)
+  , (ARRAY, fromIntegral 18)
   ]
+
+data Compiler = Compiler{
+    symbols :: [(String, Int)],
+    bytes :: ByteString,
+    constants :: [Object]
+  }
 
     
 isValidOpCode :: OpCode -> Bool

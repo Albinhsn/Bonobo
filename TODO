@@ -7,6 +7,11 @@ TODO:
   remove LTOp, SubOp 
   implement !! or --
   change from 256 to 66566 or w/e 
+  check every warning :)
+  change identExp 'ident' token -> String
+  addInstruction -> Token, Compiler -> Compiler
+  fix 'run'
+  better testing for vars in VM
 
 
 
@@ -21,10 +26,12 @@ After compiler:
     check at eof that last exp is valid
   Fix REPL/interpretor
   https://interpreterbook.com/lost/
+  Do efficency testing 
+  prebuilts:
+    split? 
+    read file?
 
 git ls-files | grep '\.hs' | xargs wc -l
-
-launchMissiles `shouldReturn` Left "permission error"
 
 NOTES:
   Vars and funcs can be same list/map
@@ -33,6 +40,7 @@ NOTES:
 TODO haskell:
   diff types 
   "append"
+  NOT A FUCKING DATA EVERYWHERE C:
 
 CheatSheet:
   Conversions 
@@ -46,7 +54,10 @@ CheatSheet:
 --   else do
 --     putStrLn (prettyPrint (BSU.fromString line))
 --     main 
-               
-ifstatement compilitation 
 
-
+data VM = VM{
+    instruct :: !ByteString,
+    const:: ![Object],
+    global :: ![(int, Object)],
+    stack :: ![Object] 
+  }

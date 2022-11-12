@@ -7,7 +7,7 @@ import Lexer
 import Token 
 import Utils 
 import Eval
-import TestUtils
+import Utils2
 
 testMap:: String
 testMap=

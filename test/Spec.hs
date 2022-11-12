@@ -74,57 +74,57 @@ main = hspec $ do
       do
         testVMBool1
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
     it "test vm bool 2" $ 
       do
         testVMBool2
         `shouldBe`
-        "False"
+        "Stack: False Globals: "
     it "test vm bool 3" $ 
       do
         testVMBool3
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
     it "test vm bool 4" $ 
       do
         testVMBool4
         `shouldBe`
-        "False"
+        "Stack: False Globals: "
     it "test vm bool 5" $ 
       do
         testVMBool5
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
     it "test vm bool 6" $ 
       do
         testVMBool6
         `shouldBe`
-        "False"
+        "Stack: False Globals: "
     it "test vm bool 7" $ 
       do
         testVMBool7
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
     it "test vm bool 8" $ 
       do
         testVMBool8
         `shouldBe`
-        "False"
+        "Stack: False Globals: "
     it "test vm bool book 1" $ 
       do
         testVMBoolBook1
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
     it "test vm bool book 2" $ 
       do
         testVMBoolBook2
         `shouldBe`
-        "False"
+        "Stack: False Globals: "
     it "test vm bool book 3" $ 
       do
         testVMBoolBook3
         `shouldBe`
-        "True"
+        "Stack: True Globals: "
   describe "Testing if" $ do
     it "testing empty if" $ 
       do 
@@ -418,6 +418,31 @@ main = hspec $ do
         testCodeIfElse
         `shouldBe`
         " TRUE JUMPNT 6 CONST 5 JUMP 4 CONST 10"
+    it "test code let" $
+      do 
+        testCodeLet
+        `shouldBe`
+        " CONST 5 SETGLOBAL five GETGLOBAL five"
+    it "test code array 1" $
+      do 
+        testCodeArray1
+        `shouldBe`
+        " ARRAY"
+    it "test code array 2" $
+      do 
+        testCodeArray2
+        `shouldBe`
+        " CONST 'hi' CONST 1 ARRAY"
+    it "test code array 3" $
+      do 
+        testCodeArray3
+        `shouldBe`
+        ""
+    it "test code array 3" $
+      do 
+        testCodeArray3
+        `shouldBe`
+        ""
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -433,92 +458,142 @@ main = hspec $ do
       do 
         testVMOp1
         `shouldBe`
-        "2"
+        "Stack: 2 Globals: "
     it "test vm op 2" $
       do 
         testVMOp2
         `shouldBe`
-        "5"
+        "Stack: 5 Globals: "
     it "test vm op 3" $
       do 
         testVMOp3
         `shouldBe`
-        "10"
+        "Stack: 10 Globals: "
     it "test vm op 4" $
       do 
         testVMOp4
         `shouldBe`
-        "11"
+        "Stack: 11 Globals: "
     it "test vm book 1" $
       do 
         testVMOpBook1
         `shouldBe`
-        "-1"
+        "Stack: -1 Globals: "
     it "test vm book 2" $
       do 
         testVMOpBook2
         `shouldBe`
-        "2"
+        "Stack: 2 Globals: "
     it "test vm book 3" $
       do 
         testVMOpBook3
         `shouldBe`
-        "2"
+        "Stack: 2 Globals: "
     it "test vm book 4" $
       do 
         testVMOpBook4
         `shouldBe`
-        "55"
+        "Stack: 55 Globals: "
     it "test vm book 5" $
       do 
         testVMOpBook5
         `shouldBe`
-        "10"
+        "Stack: 10 Globals: "
     it "test vm book 6" $
       do 
         testVMOpBook6
         `shouldBe`
-        "32"
+        "Stack: 32 Globals: "
     it "test vm book 7" $
       do 
         testVMOpBook7
         `shouldBe`
-        "20"
+        "Stack: 20 Globals: "
     it "test vm book 8" $
       do 
         testVMOpBook8
         `shouldBe`
-        "25"
+        "Stack: 25 Globals: "
     it "test vm book 9" $
       do 
         testVMOpBook9
         `shouldBe`
-        "60"
+        "Stack: 60 Globals: "
+    it "test vm str book" $
+      do 
+        testVMStrBook
+        `shouldBe`
+        "Stack: 'monkey' Globals: "
+    it "test vm str op book 1" $
+      do 
+        testVMOpStrBook1
+        `shouldBe`
+        "Stack: 'monkey' Globals: "
+    it "test vm str op book 2" $
+      do 
+        testVMOpStrBook2
+        `shouldBe`
+        "Stack: 'monkeybanana' Globals: "
     it "test vm op big" $
       do 
         testVMOpBig
         `shouldBe`
-        "140000"
+        "Stack: 140000 Globals: "
     it "test vm if" $
       do 
         testVMIf
         `shouldBe`
-        "5"
+        "Stack: 5 Globals: "
     it "test vm else" $
       do 
         testVMElse
         `shouldBe`
-        "10"
+        "Stack: 10 Globals: "
     it "test vm nested if" $
       do 
         testVMNestedIf
         `shouldBe`
-        "3"
+        "Stack: 3 Globals: "
     it "test vm nested else" $
       do 
         testVMNestedElse
         `shouldBe`
-        "5"
+        "Stack: 5 Globals: "
+    it "test vm let book 1" $
+      do 
+        testVMLetBook1
+        `shouldBe`
+        "Stack: 1 Globals: 0 = 1 "
+    it "test vm let book 2" $
+      do 
+        testVMLetBook2
+        `shouldBe`
+        "Stack: 3 Globals: 0 = 1 1 = 2 "
+    it "test vm let book 2" $
+      do 
+        testVMLetBook3
+        `shouldBe`
+        "Stack: 3 Globals: 0 = 1 1 = 2 "
+    it "test vm array 1" $
+      do 
+        testVMArray1
+        `shouldBe`
+        "Stack: [] Globals: "
+    it "test vm array 2" $
+      do 
+        testVMArray2
+        `shouldBe`
+        "Stack: [1, 'hi', ] Globals: "
+    it "test vm array 3" $
+      do 
+        testVMArray3
+        `shouldBe`
+        "Stack:  Globals: 0 = [[], [1, 2, ], ] "
+    it "test vm array 4" $
+      do 
+        testVMArray4
+        `shouldBe`
+        "Stack:  Globals: 0 = [[[1, 2, ], ], ] "
   describe "test no sta" $ do
     it "test empty" $
       do 

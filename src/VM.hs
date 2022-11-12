@@ -7,75 +7,204 @@ import Utils
 
 import Debug.Trace
 import Data.ByteString as BS
+import Data.Map
 
-run :: ((ByteString, [Object]), [Object]) -> [Object]
-run ((instructions,constants), stack) = ob 
+
+run :: Compiler -> VM 
+run c = runVM(
+    VM{
+        instruct = bytes c,
+        constVM = constants c,
+        global = [],
+        stack = []
+      }
+  )
+
+
+data VM = VM{
+    instruct :: !ByteString,
+    constVM:: ![Object],
+    global :: ![(Int, Object)],
+    stack :: ![Object] 
+  }
+
+runVM :: VM -> VM
+runVM v = vm  
   where 
-    ob 
-      | BS.null instructions = stack
+    vm 
+      | BS.null (instruct v)= v 
       --Constant
-      | BS.head instructions == 0 = run(pushToStack(removeFirstInstruction instructions, constants, stack))
+      | BS.head (instruct v)== 0 = runVM(pushToStack(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v, 
+          global = global v, 
+          stack = stack v
+        }))
       --Pop
-      | BS.head instructions == 1 =
-        -- trace ("removing " ++ (inspectObject (Prelude.head stack))) $ 
-        run((removeFirstInstruction instructions, constants),removeFirst stack)
+      | BS.head (instruct v)== 1 =
+        runVM(VM{
+            instruct = removeFirstInstruction (instruct v),
+            constVM = constVM v, 
+            global = global v, 
+            stack = removeFirst (stack v)
+          })
       --Add
-      | BS.head instructions == 2 = 
-        -- trace ("eval add op: " ++ Prelude.concat[inspectObject x ++ ", "| x <- stack]) $ 
-        run((removeFirstInstruction instructions, constants), addOp stack)
+      | BS.head (instruct v)== 2 = 
+        runVM(VM{
+            instruct = removeFirstInstruction (instruct v), 
+            constVM = constVM v, 
+            global = global v,
+            stack =addOp (stack v)
+          })
       --Sub
-      | BS.head instructions == 3 = 
-        -- trace ("eval sub op: " ++ Prelude.concat[inspectObject x ++ ", "| x <- stack]) $ 
-        run((removeFirstInstruction instructions, constants), subOp stack) 
+      | BS.head (instruct v)== 3 = 
+        runVM(VM{
+            instruct = removeFirstInstruction (instruct v), 
+            constVM = constVM v, 
+            global = global v,
+            stack =subOp (stack v)
+          })
       --Mul
-      | BS.head instructions == 4 = 
-        -- trace ("eval mul op: " ++ Prelude.concat[inspectObject x ++ ", "| x <- stack]) $ 
-        run((removeFirstInstruction instructions, constants), mulOp stack) 
+      | BS.head (instruct v)== 4 = 
+        runVM(VM{
+            instruct = removeFirstInstruction (instruct v), 
+            constVM  = constVM v, 
+            global = global v,
+            stack =mulOp (stack v)
+          })
       --Div
-      | BS.head instructions == 5 = 
-        -- trace ("eval div op: " ++ Prelude.concat[inspectObject x ++ ", "| x <- stack]) $ 
-        run((removeFirstInstruction instructions, constants), divOp stack) 
+      | BS.head (instruct v)== 5 = 
+        runVM(VM{
+            instruct = removeFirstInstruction (instruct v), 
+            constVM = constVM v, 
+            global = global v,
+            stack =divOp (stack v)
+          })
       --True
-      | BS.head instructions == 6 = run((removeFirstInstruction instructions, constants),BoolObject{objectType = BOOL_OBJ, boolValue = True}:stack)
+      | BS.head (instruct v)== 6 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v), 
+          constVM = constVM v, 
+          global = global v, 
+          stack = BoolObject{objectType = BOOL_OBJ, boolValue = True}:(stack v)
+        }
+      )
       --False 
-      | BS.head instructions == 7 = run((removeFirstInstruction instructions, constants),BoolObject{objectType = BOOL_OBJ, boolValue = False}:stack)
+      | BS.head (instruct v)== 7 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v), 
+          constVM = constVM v, 
+          global = global v, 
+          stack = BoolObject{objectType = BOOL_OBJ, boolValue = False}:(stack v)
+        })
       --GT 
-      | BS.head instructions == 8 = run((removeFirstInstruction instructions, constants), gtOp stack) 
+      | BS.head (instruct v)== 8 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v,
+          stack = gtOp (stack v)
+        }
+      ) 
       --NEQ 
-      | BS.head instructions == 10 = run((removeFirstInstruction instructions, constants), neqOp stack)   
+      | BS.head (instruct v)== 10 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v, 
+          stack = neqOp (stack v)
+        }) 
       --EQ
-      | BS.head instructions == 11 = run((removeFirstInstruction instructions, constants), eqOp stack)   
+      | BS.head (instruct v)== 11 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v, 
+          stack = eqOp (stack v)
+        }) 
       --MINUS
-      | BS.head instructions == 12 = run((removeFirstInstruction instructions, constants), minusOp stack)   
+      | BS.head (instruct v)== 12 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v, 
+          stack = minusOp (stack v)
+        }) 
       --BANG
-      | BS.head instructions == 13 = run((removeFirstInstruction instructions, constants), bangOp stack)   
+      | BS.head (instruct v)== 13 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v, 
+          stack = bangOp (stack v)
+        }) 
       -- JUMP
-      | BS.head instructions == 14 = run(evalJump((instructions, constants), stack)) 
+      | BS.head (instruct v)== 14 = runVM(evalJump(v))
       -- JUMPNT
-      | BS.head instructions == 15 = run(evalJumpNT((instructions, constants), stack))  
+      | BS.head (instruct v)== 15 = runVM(evalJumpNT(v))
+      -- SETGLOBAL
+      | BS.head (instruct v) == 16 = runVM(evalSetGlobal(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v,
+          stack = stack v
+        }))
+      -- GETGLOBAL
+      | BS.head (instruct v)== 17 = runVM(evalGetGlobal(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v,
+          stack = stack v
+        }))  
+      | BS.head (instruct v)== 18 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v, 
+          global = global v, 
+          stack = [ArrayObject{objectType = ARRAY_OBJ, arrValue = [o | o <- (stack v)]}]
+        })  
       | otherwise = error "run" 
 
 
+evalGetGlobal :: VM ->  VM 
+evalGetGlobal v = VM{
+    instruct = removeFirstInstruction (instruct v), 
+    constVM = constVM v,
+    global = global v, 
+    stack = fromList (global v) ! (fromIntegral (BS.head (instruct v))):(stack v) 
+  }
 
-evalJump :: ((ByteString, [Object]), [Object]) -> ((ByteString, [Object]), [Object])
-evalJump ((instructions,constants), stack) = ((b, o), s) 
-  where 
-    ((b, o), s)
-      -- always jumping 
-      | otherwise = ((removeNInstructions (fromIntegral (toInteger (index instructions 1)) :: Int, instructions), constants), stack) 
+evalSetGlobal :: VM ->  VM 
+evalSetGlobal v = VM{
+    instruct = removeFirstInstruction (instruct v), 
+    constVM = constVM v,
+    global = global v ++ [(fromIntegral (BS.head (instruct v)),(Prelude.head (stack v)))], 
+    stack = removeFirst (stack v)
+  } 
 
-evalJumpNT :: ((ByteString, [Object]), [Object]) -> ((ByteString, [Object]), [Object])
-evalJumpNT ((instructions,constants), stack) = ((b, o), s) 
+
+evalJump :: VM -> VM 
+evalJump v = VM{
+    instruct = removeNInstructions (fromIntegral (toInteger (index (instruct v) 1)) :: Int, (instruct v)),
+    constVM = constVM v,
+    global = global v,
+    stack = stack v
+  } 
+
+
+evalJumpNT :: VM -> VM 
+evalJumpNT v = vm 
   where 
-    ((b, o), s)
-      | objectType (Prelude.head stack) /= BOOL_OBJ = error ("jump not bool"++ Prelude.concat [inspectObject x ++ " "| x <- stack]) 
-      | boolValue (Prelude.head stack) == True = 
-        ((removeFirstInstruction (removeFirstInstruction instructions),
-          constants),
-          removeFirst stack
-        ) 
+    vm 
+      | objectType (Prelude.head (stack v)) /= BOOL_OBJ = error ("jump not bool"++ Prelude.concat [inspectObject x ++ " "| x <- stack v]) 
+      | boolValue (Prelude.head (stack v)) == True = 
+        VM{
+            instruct = removeNInstructions(2, instruct v),
+            constVM = constVM v,
+            global = global v,
+            stack = removeFirst (stack v)
+          }
       -- Should jump 
-      | otherwise = trace ("jumpNT") $ ((removeNInstructions (fromIntegral (toInteger (index instructions 1)) :: Int, instructions), constants), removeFirst stack) 
+      | otherwise = 
+        trace ("jumpNT") $ 
+        VM{
+            instruct = removeNInstructions (fromIntegral (index (instruct v) 1) :: Int, instruct v),
+            constVM = constVM v,
+            global = global v,
+            stack = removeFirst (stack v) 
+          }
 
 
 bangOp :: [Object] -> [Object]
@@ -117,8 +246,8 @@ evalAddOp(o1, o2) = o
   where 
     o
       | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 == INT_OBJ = trace ("Adding " ++ show(intValue o2 ) ++ " + " ++ (show (intValue o1))) $ IntObject{objectType = INT_OBJ, intValue = intValue o1 + intValue o2}
-      | objectType o1 == STRING_OBJ = StringObject{objectType = STRING_OBJ, stringValue = stringValue o1 ++ stringValue o2}
+      | objectType o1 == INT_OBJ = trace ("Adding " ++ show(intValue o1 ) ++ " + " ++ (show (intValue o2))) $ IntObject{objectType = INT_OBJ, intValue = intValue o2 + intValue o1}
+      | objectType o1 == STRING_OBJ = StringObject{objectType = STRING_OBJ, stringValue = stringValue o2 ++ stringValue o1}
       | otherwise = error ("can't do operation with types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
 
 subOp :: [Object] -> [Object]
@@ -154,13 +283,15 @@ evalMulOp (o1, o2) = o
       | objectType o1 /= INT_OBJ = error ("can't mul with non int type: " ++ (show (objectType o1))) 
       | objectType o1 == INT_OBJ = trace ("Multiplying " ++ show(intValue o2 ) ++ " * " ++ (show (intValue o1))) $ IntObject{objectType = INT_OBJ, intValue = intValue o1 * intValue o2}
 
-pushToStack :: (ByteString, [Object], [Object]) -> ((ByteString, [Object]), [Object]) 
-pushToStack (instructions,constants, stack) = ob 
-  where 
-    ob 
-      | otherwise = 
-        trace ("pushing to stack: " ++ show (inspectObject (constants !! (fromIntegral (BS.head instructions))))) $ 
-        ((removeFirstInstruction instructions, constants), constants !! (fromIntegral (BS.head instructions)):stack)
+pushToStack :: VM -> VM 
+pushToStack v =  
+        trace ("pushing to stack: " ++ show (inspectObject ((constVM v)!! (fromIntegral (BS.head (instruct v)))))) $ 
+        VM{
+            instruct = removeFirstInstruction (instruct v),
+            constVM = constVM v,
+            global = global v, 
+            stack = (constVM v)!!(fromIntegral (BS.head (instruct v))):(stack v)
+          }
 
 
 removeNInstructions :: (Int, ByteString) -> ByteString 
