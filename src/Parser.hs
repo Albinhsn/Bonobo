@@ -129,7 +129,7 @@ parseSemicolon:: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [S
 parseSemicolon (b, (t, s)) = (bok, (tok, sta))
   where
     (bok, (tok, sta))
-      | null t || typ (head t) == EOF = error (show b) 
+      | null t || typ (head t) == EOF = error "expected semicolon"  
       | (b == ALT || b == CON) && typ (head t) == ELSE =(b, (t, s))
       | typ (head t) /= SEMICOLON = error "expected semicolon" 
       | otherwise = (b, (removeFirst t, s))

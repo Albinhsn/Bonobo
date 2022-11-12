@@ -46,6 +46,7 @@ CheatSheet:
 --   else do
 --     putStrLn (prettyPrint (BSU.fromString line))
 --     main 
-
-2 * 2 + 3 * 2
                
+ifstatement compilitation 
+
+

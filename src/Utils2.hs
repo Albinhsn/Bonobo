@@ -53,6 +53,6 @@ disassemble (s,(b,o))= str
       | BS.head b == 11 = disassemble(s ++ " EQ", (removeFirstInstruction b, o))      
       | BS.head b == 12 = disassemble(s ++ " MINUS", (removeFirstInstruction b, o))      
       | BS.head b == 13 = disassemble(s ++ " BANG", (removeFirstInstruction b, o))
-      | BS.head b == 14 = disassemble(s ++ " JUMP", (removeFirstInstruction b, o))
-      | BS.head b == 15 = disassemble(s ++ " JUMPNT", (removeFirstInstruction b, o))
+      | BS.head b == 14 = disassemble(s ++ " JUMP " ++ (show (index b 1)), (removeFirstInstruction (removeFirstInstruction b), o))
+      | BS.head b == 15 = disassemble(s ++ " JUMPNT " ++ (show (index b 1)), (removeFirstInstruction (removeFirstInstruction b), o))
       | otherwise = error "disassemble"

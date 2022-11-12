@@ -23,20 +23,45 @@ compile (s, (b, o)) = (by, ob)
     (by, ob) 
       | Prelude.null s = (b, o)
       | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s),(b,o)))
-      | statementType (Prelude.head s) == IFSTA= 
-          --Go to next statement in block
-          compile(
-            removeFirst s, 
-            compile( --Parse alt
-              alt(statementUni (Prelude.head s)),
-              addJump(compile(con (statementUni(Prelude.head s)),addJumpNT(compileExpression(expression (Prelude.head s), (b, o))))))) --Parse con 
+      | statementType (Prelude.head s) == IFSTA= compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), (b, o)))
+      -- | statementType (Prelude.head s) == IFSTA= compile(
+      --   removeFirst s, 
+      --   compile(alt (statementUni (Prelude.head s)), (BS.empty :: ByteString, ))
+      --     addJumpNT(
+      --       compile(con (statementUni (Prelude.head s)), (BS.empty :: ByteString, o))
+      --       )
+      --     ) 
+        
       | otherwise = error "compile" 
 
-addJump :: (ByteString, [Object]) -> (ByteString, [Object])
-addJump (b, o) = ( b<> lookupOpCode JUMP,o )
+compileIf :: (BlockType, Statement, (ByteString, [Object])) -> (ByteString, [Object])
+compileIf (bl, s, (b, o)) = (by, ob)
+  where 
+    (by, ob)
+      | bl == CON = compileIf(ALT, Statement{
+          closedSta = False,
+          staLine = staLine s,
+          statementType = IFSTA, 
+          statementUni = IfStatement{
+              closedCon = True,
+              con = [],
+              alt = alt (statementUni s),
+              closedAlt = True
+            },
+          expression = expression s
+        }, 
+        addJumpNT(compile(con (statementUni s), (BS.empty :: ByteString, o)), b)
+      )
+      | bl == ALT = addJump(compile(alt (statementUni s), (BS.empty :: ByteString, o)), b)
+      | otherwise = error "compileIf"
 
-addJumpNT :: (ByteString, [Object]) -> (ByteString, [Object])
-addJumpNT (b, o) = ( b<> lookupOpCode JUMPNT,o )
+
+-- exp JNT X con J Y alt 
+addJump :: ((ByteString, [Object]), ByteString) -> (ByteString, [Object])
+addJump ((alt, o), b) = ( b<> lookupOpCode JUMP <>chooseToUnroll (BS.length alt + 2) <> alt,o )
+
+addJumpNT :: ((ByteString, [Object]), ByteString) -> (ByteString, [Object])
+addJumpNT ((con, o), b) = ( b <> lookupOpCode JUMPNT <> chooseToUnroll (BS.length con + 4) <> con,o )
 
 compileExpression :: (Expression, (ByteString, [Object])) -> (ByteString, [Object]) 
 compileExpression (e,(b, o)) = (by, ob) 

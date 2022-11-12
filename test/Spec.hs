@@ -412,7 +412,12 @@ main = hspec $ do
       do 
         testCodeIf
         `shouldBe`
-        " TRUE JUMPNT CONST 5 JUMP"
+        " TRUE JUMPNT 6 CONST 5 JUMP 2"
+    it "test code if else" $
+      do 
+        testCodeIfElse
+        `shouldBe`
+        " TRUE JUMPNT 6 CONST 5 JUMP 4 CONST 10"
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -494,6 +499,26 @@ main = hspec $ do
         testVMOpBig
         `shouldBe`
         "140000"
+    it "test vm if" $
+      do 
+        testVMIf
+        `shouldBe`
+        "5"
+    it "test vm else" $
+      do 
+        testVMElse
+        `shouldBe`
+        "10"
+    it "test vm nested if" $
+      do 
+        testVMNestedIf
+        `shouldBe`
+        "3"
+    it "test vm nested else" $
+      do 
+        testVMNestedElse
+        `shouldBe`
+        "5"
   describe "test no sta" $ do
     it "test empty" $
       do 

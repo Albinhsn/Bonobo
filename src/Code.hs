@@ -29,7 +29,6 @@ opCodes = DM.fromList [
   , (JUMPNT, fromIntegral 15)
   ]
 
-
     
 isValidOpCode :: OpCode -> Bool
 isValidOpCode o = DM.member o opCodes

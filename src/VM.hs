@@ -49,7 +49,33 @@ run ((instructions,constants), stack) = ob
       | BS.head instructions == 12 = run((removeFirstInstruction instructions, constants), minusOp stack)   
       --BANG
       | BS.head instructions == 13 = run((removeFirstInstruction instructions, constants), bangOp stack)   
+      -- JUMP
+      | BS.head instructions == 14 = run(evalJump((instructions, constants), stack)) 
+      -- JUMPNT
+      | BS.head instructions == 15 = run(evalJumpNT((instructions, constants), stack))  
       | otherwise = error "run" 
+
+
+
+evalJump :: ((ByteString, [Object]), [Object]) -> ((ByteString, [Object]), [Object])
+evalJump ((instructions,constants), stack) = ((b, o), s) 
+  where 
+    ((b, o), s)
+      -- always jumping 
+      | otherwise = ((removeNInstructions (fromIntegral (toInteger (index instructions 1)) :: Int, instructions), constants), stack) 
+
+evalJumpNT :: ((ByteString, [Object]), [Object]) -> ((ByteString, [Object]), [Object])
+evalJumpNT ((instructions,constants), stack) = ((b, o), s) 
+  where 
+    ((b, o), s)
+      | objectType (Prelude.head stack) /= BOOL_OBJ = error ("jump not bool"++ Prelude.concat [inspectObject x ++ " "| x <- stack]) 
+      | boolValue (Prelude.head stack) == True = 
+        ((removeFirstInstruction (removeFirstInstruction instructions),
+          constants),
+          removeFirst stack
+        ) 
+      -- Should jump 
+      | otherwise = trace ("jumpNT") $ ((removeNInstructions (fromIntegral (toInteger (index instructions 1)) :: Int, instructions), constants), removeFirst stack) 
 
 
 bangOp :: [Object] -> [Object]
@@ -136,6 +162,13 @@ pushToStack (instructions,constants, stack) = ob
         trace ("pushing to stack: " ++ show (inspectObject (constants !! (fromIntegral (BS.head instructions))))) $ 
         ((removeFirstInstruction instructions, constants), constants !! (fromIntegral (BS.head instructions)):stack)
 
+
+removeNInstructions :: (Int, ByteString) -> ByteString 
+removeNInstructions (i, b) = bs 
+  where 
+    bs 
+      | i == 0 = b 
+      | otherwise = removeNInstructions(i-1, removeFirstInstruction b)
 
 removeFirstInstruction :: ByteString -> ByteString 
 removeFirstInstruction b = 

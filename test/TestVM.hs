@@ -52,3 +52,14 @@ testVMPrefixMinus= parseStack(run(parseStatementToCompiled(parseStringToStatemen
 testVMPrefixBang :: String 
 testVMPrefixBang = parseStack(run(parseStatementToCompiled(parseStringToStatements("!True")), []))
 
+testVMIf:: String 
+testVMIf= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(True){5;}else{10;};")), []))
+
+testVMElse:: String 
+testVMElse= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){5;}else{10;};")), []))
+
+testVMNestedIf :: String 
+testVMNestedIf = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(True){if(True){3;}else{5;};};")), []))
+
+testVMNestedElse :: String 
+testVMNestedElse = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){2;}else{if(False){3;}else{5;};};")), []))
