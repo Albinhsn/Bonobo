@@ -92,4 +92,40 @@ testVMArray3 :: String
 testVMArray3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[], [1,2]];"))))
 
 testVMArray4 :: String 
-testVMArray4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[[1, 2, ], ], ];"))))
+testVMArray4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[[1, 2]]];"))))
+
+testVMArray5 :: String 
+testVMArray5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[1,2], []];"))))
+
+testVMMap1:: String 
+testVMMap1= parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {1:1, 2:2, 3:3, 4:4}"))))
+
+testVMMap2:: String 
+testVMMap2= parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {1:{1:1, 2:2}}"))))
+
+testVMAM1:: String 
+testVMAM1= parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [{1:2}]"))))
+
+testVMAM2:: String 
+testVMAM2= parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {1:[1,2]}"))))
+
+testVMIndex1 :: String 
+testVMIndex1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[0,1],2]; let b = a[0][1];"))))
+
+testVMIndex2 :: String 
+testVMIndex2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:{1:2}}; let b = a[0][1];"))))
+
+testVMIndex3 :: String 
+testVMIndex3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [{1:True}]; let b = a[0][1];"))))
+
+testVMIndex4 :: String 
+testVMIndex4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[1,True]}; let b = a[0][1];"))))
+
+testVMIndex5 :: String 
+testVMIndex5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [{\"a\":[0,{\"b\": True}]}]; let b = a[0][\"a\"][1][\"b\"];"))))
+
+testVMIndex6 :: String 
+testVMIndex6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [0,1,True]; let b = a[12/6]"))))
+
+testVMIndexAssign1 :: String 
+testVMIndexAssign1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[0,1],2]; a[0][1]= True;"))))

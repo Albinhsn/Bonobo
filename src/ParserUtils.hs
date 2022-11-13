@@ -582,9 +582,9 @@ addArrayToLastExp(b, t, e) = ex
       | expressionType e == ARRAYEXP && null(array e) == False && expressionType (last (array e)) == IDENTEXP =  ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = (last (array e)), arrayIndex = [Expression{expLine = -1, expressionType = EMPTYEXP}]}]}
       | expressionType e == ARRAYEXP && null(array e) == True && typ t == LBRACKET= ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = [addArrayToLastExp(b, t, Expression{expLine = 0, expressionType = EMPTYEXP})]}
       | expressionType e == ARRAYEXP && typ t == LBRACKET = ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = pop (array e) ++ [addArrayToLastExp(b, t, last (array e))]}
-      | expressionType e == ARRAYEXP && typ t == COMMA && expressionType (last (array e)) == ARRAYEXP && closedArr (last (array e)) == False = ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, closedArr = False, array = pop (array e) ++ [addArrayToLastExp(b,t, (last (array e)))]}
+      | expressionType e == ARRAYEXP && typ t == COMMA && (expressionType (last (array e)) == ARRAYEXP && closedArr (last (array e)) == False || expressionType (last (array e)) == MAPEXP && closedMap (last (array e)) == False)= ArrayExpression{expLine = expLine e, expressionType = ARRAYEXP, closedArr = False, array = pop (array e) ++ [addArrayToLastExp(b,t, (last (array e)))]}
       | expressionType e == ARRAYEXP= ArrayExpression{closedArr = False, expLine = line t, expressionType = ARRAYEXP,  array = array e ++ [Expression{expLine = 0, expressionType = EMPTYEXP}]}
-      | expressionType e == MAPEXP && nextItem e == VAL && typ t == COMMA && (length (fst (mapMap e))) == length (snd (mapMap e)) = MapExpression{closedMap = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (fst (mapMap e) ++ [Expression{expLine = 0, expressionType = EMPTYEXP}], snd (mapMap e))}
+      | expressionType e == MAPEXP && nextItem e == VAL && typ t == COMMA && (length (fst (mapMap e))) == length (snd (mapMap e)) && (expressionType (last (snd (mapMap e))) /= ARRAYEXP || closedArr (last (snd (mapMap e))) == True)= MapExpression{closedMap = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (fst (mapMap e) ++ [Expression{expLine = 0, expressionType = EMPTYEXP}], snd (mapMap e))}
       | expressionType e == MAPEXP && null (getVal e) == False && expressionType (last (getVal e)) == MAPEXP && closedMap (last (getVal e)) == False = MapExpression{nextItem = KEY, closedMap = False, expressionType = MAPEXP, expLine = expLine e, mapMap = (getKey e, pop (getVal e) ++ [addArrayToLastExp(b, t, last (getVal e))])} 
       | expressionType e == MAPEXP && nextItem e == VAL = MapExpression{expLine = expLine e, expressionType = MAPEXP, nextItem = VAL, closedMap = False, mapMap = (fst (mapMap e), pop (snd (mapMap e)) ++ [addArrayToLastExp(b,t,last (snd (mapMap e)))])} 
       | expressionType e == MAPEXP && nextItem e == KEY = MapExpression{expLine = expLine e, expressionType = MAPEXP, nextItem = KEY, closedMap = False, mapMap = (pop (fst (mapMap e)) ++ [addArrayToLastExp(b,t,(last (fst (mapMap e))))], snd (mapMap e) )} 
@@ -1236,7 +1236,7 @@ closeLastIndexExp e =
     GROUPEDEXP -> GroupedExpression{expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = closeLastIndexExp (groupedExpression e), closed = False}
     ASSIGNEXP -> closeLastIndexAssign e 
     MAPEXP ->closeLastIndexMap e 
-    _ -> error "closeLastIndexExp"
+    _ -> error ("closeLastIndexExp" ++ expressionToString e)
 
 closeLastIndexMap :: Expression -> Expression
 closeLastIndexMap e = 
@@ -1303,7 +1303,7 @@ closeLastIndexArray e = ex
           expressionType = ARRAYEXP, 
           array = pop (array e) ++ [closeLastIndexExp(last (array e))]
         } 
-      | expressionType (last (array e)) == MAPEXP = ArrayExpression{
+      | expressionType (last (array e)) == MAPEXP && closedMap (last (array e)) == False = ArrayExpression{
           closedArr = False,
           expLine = expLine e,
           expressionType = ARRAYEXP,
@@ -1383,3 +1383,83 @@ checkValidSemicolon (b, s) = bo
 checkValidSemicolonExp :: Expression -> Bool
 checkValidSemicolonExp e = True
 
+closeLastMap :: Statement -> Statement 
+closeLastMap s = sta 
+  where 
+    sta 
+      | statementType s == IFSTA && getClosedCon [s] == False = Statement{
+          closedSta = False, 
+          statementType = IFSTA,
+          staLine = staLine s,
+          statementUni = IfStatement{
+              closedCon = False,
+              con = pop (getCon [s])++ [closeLastMap(last (getCon [s]))], 
+              alt = [],
+              closedAlt = True 
+            },
+          expression = expression s
+        }
+      | statementType s == IFSTA = Statement{
+          closedSta = False, 
+          statementType = IFSTA,
+          staLine = staLine s,
+          statementUni = IfStatement{
+              closedCon = True,
+              con = getCon [s], 
+              alt = pop (getAlt [s]) ++ [closeLastMap(last (getAlt [s]))],
+              closedAlt = False
+            },
+          expression = expression s
+        }
+      | statementType s == FUNCSTA = Statement{
+          closedSta = False, 
+          statementType = FUNCSTA, 
+          staLine = staLine s,
+          statementUni = FuncStatement{
+              params = getParams [s],
+              body = pop (getBody [s]) ++ [closeLastMap(last (getBody [s]))]
+            },
+          expression = expression s
+        }
+      --FORSTA?
+      | otherwise = Statement{
+        closedSta = False,
+        statementType = statementType s,
+        staLine =staLine s,
+        statementUni = statementUni s,
+        expression = closeLastMapExp(expression s) 
+      }
+
+
+closeLastMapExp :: Expression -> Expression 
+closeLastMapExp e = ex 
+  where 
+    ex 
+      | expressionType e == MAPEXP && expressionType (last (snd (mapMap e))) == ARRAYEXP && closedArr (last (snd (mapMap e))) == False =MapExpression{
+          nextItem = VAL, 
+          closedMap = False, 
+          expLine = expLine e, 
+          expressionType = MAPEXP, 
+          mapMap = (fst (mapMap e), pop (snd (mapMap e)) ++ [closeLastMapExp (last (snd (mapMap e)))])
+        } 
+      | expressionType e == MAPEXP && expressionType (last (snd (mapMap e))) == MAPEXP && closedMap (last (snd (mapMap e))) == False = MapExpression{
+          nextItem = VAL, 
+          closedMap = False, 
+          expLine = expLine e, 
+          expressionType = MAPEXP, 
+          mapMap = (fst (mapMap e), pop (snd (mapMap e)) ++ [closeLastMapExp (last (snd (mapMap e)))])
+        }
+      | expressionType e == ARRAYEXP = ArrayExpression{
+          expLine = expLine e, 
+          expressionType = ARRAYEXP, 
+          array = pop (array e) ++ [closeLastMapExp(last (array e))], 
+          closedArr = False 
+        }
+      | expressionType e == MAPEXP = MapExpression{
+          nextItem = VAL, 
+          closedMap = True, 
+          expLine = expLine e, 
+          expressionType = MAPEXP, 
+          mapMap = mapMap e  
+        } 
+      | otherwise = error ("closeLastMapExp :"++expressionToString e)

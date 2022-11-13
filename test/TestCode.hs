@@ -42,4 +42,13 @@ testCodeArray3 :: String
 testCodeArray3 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[], [1,2]];")))
 
 testCodeArray4 :: String 
-testCodeArray4 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[[1, 2, ], ], ];")))
+testCodeArray4 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[[1, 2]]];")))
+
+testCodeArray5 :: String 
+testCodeArray5 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2], []];")))
+
+testCodeMap1:: String 
+testCodeMap1= disassemble("", parseStatementToCompiled(parseStringToStatements("let a = {1:1, 2:2, 3:3, 4:4}")))
+
+testCodeIndex1 :: String 
+testCodeIndex1 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2],0]; let b = a[0][1];")))

@@ -8,13 +8,15 @@ import Code
 import Data.ByteString as BS
 
 main = do
-  let s = parseStringToStatements("if(True){5;}else{10;};") 
+-- let a = [[0,1],2]; a[0][1]= True;
+  let s = parseStringToStatements("let a = 5; a = True;") 
+  print s
   let c = statementsToString(s)
   print c
   let a = parseStatementToCompiled s 
   print (disassemble ("", a))
-  -- let k = parseStack(run(a, []))
-  -- putStrLn k  
+  let k = parseStack(run a)
+  putStrLn k  
 
 
 

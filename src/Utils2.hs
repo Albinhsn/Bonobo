@@ -9,7 +9,6 @@ import Token
 import Lexer 
 import Utils
 import Parser
-import Compiler
 import VM
 
 
@@ -141,6 +140,26 @@ disassemble (s,c)= str
           symbols = symbols c 
         })
       | BS.head (bytes c) == 18 = disassemble(s ++ " ARRAY", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 19 = disassemble(s ++ " ARRAYEND", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 20 = disassemble(s ++ " HASH", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 21 = disassemble(s ++ " HASHEND", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 22 = disassemble(s ++ " INDEX", Compiler{ 
           bytes = removeFirstInstruction(bytes c),
           constants = constants c, 
           symbols = symbols c 

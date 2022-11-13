@@ -4,6 +4,7 @@ module VM where
 import Object
 import Code 
 import Utils
+import Lexer 
 
 import Debug.Trace
 import Data.ByteString as BS
@@ -149,14 +150,126 @@ runVM v = vm
           global = global v,
           stack = stack v
         }))  
-      | BS.head (instruct v)== 18 = runVM(VM{
+      | BS.head (instruct v)== 18 = 
+        trace ("Found array instructions: " ++ Prelude.concat [inspectObject o | o <- stack v])
+        runVM(addEleToArray (VM{
+            instruct = removeFirstInstruction (instruct v),
+            constVM = constVM v,
+            global = global v,
+            stack = stack v
+          }, ArrayObject{objectType = ARRAY_OBJ, arrValue = []}))  
+      | BS.head (instruct v)== 19 = runVM(VM{
           instruct = removeFirstInstruction (instruct v),
           constVM = constVM v, 
           global = global v, 
-          stack = [ArrayObject{objectType = ARRAY_OBJ, arrValue = [o | o <- (stack v)]}]
+          stack = NullObject{objectType = NULL_OBJ}:stack v
         })  
+      | BS.head (instruct v)== 20 = 
+        trace ("Found map instructions: " ++ Prelude.concat [inspectObject o | o <- stack v])
+        runVM(addEleToMap (VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = global v,
+          stack = stack v
+        }, MapObject{objectType = MAP_OBJ, mapValue = []})) 
+      | BS.head (instruct v)== 21 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v, 
+          global = global v, 
+          stack = NullObject{objectType = NULL_OBJ}:stack v
+        })  
+      | BS.head (instruct v)== 22 = runVM(addIndexToStack(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v, 
+          global = global v,
+          stack = stack v
+        }))
       | otherwise = error "run" 
 
+addIndexToStack :: VM -> VM 
+addIndexToStack v = vm 
+  where 
+    vm
+      | otherwise = VM{
+          instruct = instruct v,
+          constVM = constVM v, 
+          global = global v, 
+          stack = (evalIndex (stack v!!0, stack v!!1)):(removeFirst(removeFirst (stack v)))
+        } 
+
+evalIndex :: (Object, Object) -> Object 
+evalIndex (k,l) = val 
+  where 
+    val 
+      | objectType l == MAP_OBJ = evalMapIndex(k, l)
+      | objectType l == ARRAY_OBJ = evalArrayIndex(k, l)
+      | otherwise = error ("k: "++  inspectObject k ++ " l:" ++ inspectObject l) 
+
+isWithinBounds :: (Int, Int) -> Bool
+isWithinBounds (i, l) = b
+  where 
+    b
+      | i < 0 = error "can't access array with negative index"
+      | i >= l = error "trying to access array outside of bounds"
+      | otherwise = True
+
+evalMapIndex :: (Object, Object) -> Object 
+evalMapIndex (key, mp) = val
+  where 
+    val 
+      | checkKeyExists(key, mp) = getMap (key, mapValue mp) 
+      | otherwise = error "key doesn't exist"
+
+evalArrayIndex :: (Object, Object) -> Object 
+evalArrayIndex (idx, arr) = val
+  where 
+    val 
+      | objectType idx == INT_OBJ && isWithinBounds(intValue idx, Prelude.length (arrValue arr)) = arrValue arr!!intValue idx 
+      | otherwise = error "can't access array with non int key"
+
+addEleToMap :: (VM, Object) -> VM 
+addEleToMap (v, mp) = vm 
+  where 
+    vm 
+      | Prelude.null (stack v) = error (Prelude.concat [inspectObject (fst o) ++ ":" ++ inspectObject (snd o) | o <- mapValue mp])
+      | objectType (Prelude.head (stack v)) == NULL_OBJ = 
+        trace ("Finished map: " ++ Prelude.concat [inspectObject o | o <- stack v])
+        VM{
+          instruct = instruct v,
+          constVM = constVM v,
+          global = global v,
+          stack = mp:(removeFirst (stack v))
+        }
+      | otherwise = 
+        trace ("Found another element: " ++ Prelude.concat [inspectObject o | o <- stack v]) $
+        addEleToMap(VM{
+          instruct = instruct v,
+          constVM = constVM v,
+          global = global v, 
+          stack = removeFirst(removeFirst(stack v))
+        }, MapObject{objectType = MAP_OBJ, mapValue = mapValue mp ++ [(Prelude.head (stack v), stack v!!1)]})
+
+addEleToArray :: (VM, Object) -> VM 
+addEleToArray (v, arr) = vm 
+  where 
+    vm 
+      | Prelude.null (stack v) = error (Prelude.concat [inspectObject o | o <- arrValue arr])
+      | objectType (Prelude.head (stack v)) == NULL_OBJ = 
+        trace ("Finished array: " ++ Prelude.concat [inspectObject o | o <- stack v])
+        VM{
+          instruct = instruct v,
+          constVM = constVM v,
+          global = global v,
+          stack = arr:(removeFirst (stack v))
+        }
+      | otherwise = 
+        trace ("Found another element: " ++ Prelude.concat [inspectObject o | o <- stack v]) $
+        addEleToArray(VM{
+          instruct = instruct v,
+          constVM = constVM v,
+          global = global v, 
+          stack = removeFirst(stack v) 
+        }, ArrayObject{objectType = ARRAY_OBJ, arrValue = arrValue arr ++ [Prelude.head (stack v)]})
 
 evalGetGlobal :: VM ->  VM 
 evalGetGlobal v = VM{
@@ -167,12 +280,21 @@ evalGetGlobal v = VM{
   }
 
 evalSetGlobal :: VM ->  VM 
-evalSetGlobal v = VM{
-    instruct = removeFirstInstruction (instruct v), 
-    constVM = constVM v,
-    global = global v ++ [(fromIntegral (BS.head (instruct v)),(Prelude.head (stack v)))], 
-    stack = removeFirst (stack v)
-  } 
+evalSetGlobal v = vm
+  where 
+    vm 
+      | member (fromIntegral (BS.head (instruct v))) (fromList (global v)) == False = VM{
+          instruct = removeFirstInstruction (instruct v), 
+          constVM = constVM v,
+          global = global v ++ [(fromIntegral (BS.head (instruct v)),(Prelude.head (stack v)))], 
+          stack = removeFirst (stack v)
+        } 
+      | otherwise = VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v,
+          global = (fromIntegral (BS.head (instruct v)), Prelude.head (stack v)):[x | x <- global v, fst x /= fromIntegral (BS.head (instruct v))],
+          stack = removeFirst (stack v)
+        }
 
 
 evalJump :: VM -> VM 
@@ -307,3 +429,4 @@ removeFirstInstruction b =
     0 -> error "can't remove instruction of length 0?"
     1 -> BS.empty :: ByteString 
     _ -> pack(removeFirst(unpack b))
+

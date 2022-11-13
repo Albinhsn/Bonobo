@@ -4,20 +4,20 @@ TODO:
   better func to remove x items from array
   check if variable already exists in constants and point to that variable in that case
   Rework addOp -> evalAddOp to be one func
-  remove LTOp, SubOp 
-  implement !! or --
   change from 256 to 66566 or w/e 
   check every warning :)
   change identExp 'ident' token -> String
   addInstruction -> Token, Compiler -> Compiler
   fix 'run'
   better testing for vars in VM
-
-
+  NESTED ARRAY/MAP COMPILER STYLE
+  go through and remove unsued codes
+  redo testing files
 
 
 After compiler:
   Test line numbers etc
+  implement !! or --?
   fucking test invalid code
   Fix README.md 
   Do aoc examples
@@ -30,12 +30,15 @@ After compiler:
   prebuilts:
     split? 
     read file?
+  Remove instructions: 
+    remove LTOp, SubOp 
+
 
 git ls-files | grep '\.hs' | xargs wc -l
 
 NOTES:
-  Vars and funcs can be same list/map
-  Only return Tokens -> Statements etc 
+  Vars and funcs can be same list/map (Interpretor only?)
+  Only return Tokens -> Statements etc (Not Compiler?) 
   
 TODO haskell:
   diff types 

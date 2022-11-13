@@ -17,6 +17,28 @@ testBasicLet=
           ))
         ))
       )
+testMassiveAM :: String 
+testMassiveAM= 
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let a = [{1:[{1:[]}]}]; let b = {1:[{1:[]}]};", [])),
+            []
+          ))
+        ))
+      )
+testMassiveAM2:: String 
+testMassiveAM2 = 
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "let a = [{\"a\":[0,{\"b\": True}]}];", [])),
+            []
+          ))
+        ))
+      )
+
+
 
 testReturnStatement :: String 
 testReturnStatement =

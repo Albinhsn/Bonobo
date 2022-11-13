@@ -18,7 +18,7 @@ data Object
   | StringObject {objectType :: !ObjectType, stringValue :: !String}
   | BoolObject {objectType :: !ObjectType, boolValue :: !Bool}
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
-  | MapObject {objectType :: !ObjectType, mapValue :: !([Object], [Object])}
+  | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
   deriving(Eq, Show)
 
 
@@ -70,7 +70,7 @@ inspectObject o =
     BOOL_OBJ -> show(boolValue o) 
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
-    MAP_OBJ -> "{" ++ (concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- zip (fst(mapValue o)) (snd(mapValue o))]) ++ "}"
+    MAP_OBJ -> "{" ++ concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
 
 
 inspectFunction :: Function -> String
@@ -104,21 +104,21 @@ checkKeyExists (key, o) = b
   where
     b 
       | objectType key /= INT_OBJ && objectType key /= STRING_OBJ = error ("can't access map with key of type " ++ (show (objectType key)))
-      | objectType key == INT_OBJ && null [x | x <- fst(mapValue o), objectType x == INT_OBJ && intValue key == intValue x] == False  = True
-      | objectType key == STRING_OBJ && null [x | x <- fst(mapValue o), objectType x == STRING_OBJ && stringValue key == stringValue x] == False = True
+      | objectType key == INT_OBJ && null [x | x <- mapValue o, objectType (fst x) == INT_OBJ && intValue key == intValue (fst x)] == False  = True
+      | objectType key == STRING_OBJ && null [x | x <- mapValue o, objectType (fst x) == STRING_OBJ && stringValue key == stringValue (fst x)] == False = True
       | otherwise = False 
 
-checkMapExists :: (Object, ([Object], [Object])) -> Bool 
-checkMapExists (key, (keys, vals)) = b
+checkMapExists :: (Object, [(Object, Object)]) -> Bool 
+checkMapExists (key, mp) = b
   where 
     b
-      | objectType key == INT_OBJ && null [x | x <- keys, objectType x == INT_OBJ &&  key == x] == False = True 
-      | objectType key == STRING_OBJ && null [x | x <- keys, objectType x == STRING_OBJ && key == x] == False = True  
+      | objectType key == INT_OBJ && null [fst x | x <- mp, objectType (fst x) == INT_OBJ &&  key == fst x] == False = True 
+      | objectType key == STRING_OBJ && null [fst x | x <- mp, objectType (fst x) == STRING_OBJ && key == fst x] == False = True  
       | otherwise = False
 
 
-getMap :: (Object, ([Object],[Object])) -> Object 
-getMap (key, (k,v)) = head [x | (i,x) <- zip k v, i == key]
+getMap :: (Object, [(Object, Object)]) -> Object 
+getMap (key, mp) = head [x | (i,x) <- mp, i == key]
 
 
 getIndexOfStrKey :: (String, [Object]) -> Int 

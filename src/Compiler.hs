@@ -26,8 +26,9 @@ compile (s,c) = comp
           expression (Prelude.head s),
           c)) 
       | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c)) 
-      | statementType (Prelude.head s) == IFSTA= compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c))
+      | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
+      | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(Prelude.head s, c))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
 addLet :: Compiler -> Compiler 
@@ -36,6 +37,38 @@ addLet c =Compiler{
     bytes = bytes c <> lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c) - 1),
     constants = constants c
   } 
+
+getConstantBySymbol :: (String, Compiler) -> Object 
+getConstantBySymbol (s, c) = constants c!!(fromList (symbols c) ! s)
+
+compileAssign :: (Statement, Compiler) -> Compiler 
+compileAssign (s, c) = comp 
+  where 
+    comp 
+      | member (getAssignStrFromExp (expression s)) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
+      | isAM (getConstantBySymbol (getAssignStrFromExp (expression s), c)) = error "compileAssign map/arrays"
+      | otherwise = compileExpression(expression s, c)
+      
+isAM :: Object -> Bool
+isAM o = objectType o == ARRAY_OBJ || objectType o == MAP_OBJ 
+
+
+getAssignStrFromExp:: Expression -> String 
+getAssignStrFromExp e = st 
+  where 
+    st 
+      | expressionType e == ASSIGNEXP = getAssignStrFromExp(assignIdent e)
+      | expressionType e == INDEXEXP = getAssignStrFromExp(arrayIdent e) 
+      | expressionType e == IDENTEXP = literal (ident e) 
+      | otherwise = error ("getAssignStrFromExp: " ++ (show e))
+
+addSetOp :: Compiler -> Compiler
+addSetOp c = Compiler{
+    bytes = bytes c <> lookupOpCode SETGLOBAL,
+    constants = constants c,
+    symbols = symbols c
+  }
+
 
 compileLet :: (Statement, Compiler) -> Compiler 
 compileLet (s, c) = comp  
@@ -97,7 +130,17 @@ compileExpression (e,c) = comp
   where 
     comp
       | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, c)))
-      | expressionType e == ARRAYEXP = addArrayInstructions(array e, c)  
+      | expressionType e == MAPEXP = addMapInstructions(mergeLists (fst (mapMap e)) (snd (mapMap e)), Compiler{
+          bytes = bytes c <> lookupOpCode HASHEND, 
+          constants = constants c,
+          symbols = symbols c 
+        })
+      | expressionType e == ARRAYEXP = addArrayInstructions(array e, Compiler{
+          bytes = bytes c <> lookupOpCode ARRAYEND,
+          constants = constants c,
+          symbols = symbols c
+        })  
+      | expressionType e == INDEXEXP = addIndexInstructions(arrayIndex e, compileExpression(arrayIdent e, c)) 
       | expressionType e == INTEXP = Compiler{
           bytes = bytes c <> make(OPCONST, Prelude.length (constants c)),
           constants = constants c ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}],
@@ -122,7 +165,42 @@ compileExpression (e,c) = comp
           constants = constants c,
           symbols = symbols c
         }
+      | expressionType e == ASSIGNEXP = addAssignInstruction(getAssignStrFromExp (assignIdent e), compileExpression(assignExpression e, c)) 
       | otherwise = error (show e ++ " " ++ show (bytes c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+
+addAssignInstruction :: (String,Compiler) -> Compiler
+addAssignInstruction (s, c) = Compiler{
+    bytes = bytes c <> lookupOpCode SETGLOBAL <> chooseToUnroll ((fromList (symbols c)) ! s), 
+    constants = constants c,
+    symbols = symbols c 
+  }
+
+addIndexInstructions :: ([Expression], Compiler) -> Compiler 
+addIndexInstructions (e, c) = comp
+  where   
+    comp
+      | Prelude.null e = c 
+      | otherwise = addIndexInstructions(removeFirst e, addIndex(compileExpression(Prelude.head e,c 
+        )))
+
+addIndex :: Compiler -> Compiler 
+addIndex c = Compiler{
+    bytes = bytes c <> lookupOpCode INDEX, 
+    constants = constants c, 
+    symbols = symbols c
+  }
+
+addMapInstructions :: ([Expression], Compiler) -> Compiler
+addMapInstructions (e, c) = comp 
+  where 
+    comp 
+      | Prelude.null e = Compiler{
+          bytes = bytes c <> lookupOpCode HASH,
+          constants = constants c,
+          symbols = symbols c 
+        } 
+      | otherwise = addMapInstructions(pop e, compileExpression(Prelude.last e, c))
+
 
 addArrayInstructions :: ([Expression], Compiler) -> Compiler
 addArrayInstructions (e, c) = comp 
@@ -213,3 +291,6 @@ addBoolInstruction (t, c) =
         constants = constants c,
         symbols = symbols c
       }
+
+mergeLists [] ys = ys 
+mergeLists (x:xs) ys = x:mergeLists ys xs 
