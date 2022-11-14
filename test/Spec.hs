@@ -280,6 +280,16 @@ main = hspec $ do
         testCodeIndex1
         `shouldBe`
         " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL b GETGLOBAL b CONST 0 INDEX CONST 1 INDEX SETGLOBAL a"
+    it "test code index 2" $
+      do 
+        testCodeIndex2
+        `shouldBe`
+        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a GETGLOBAL a "
+    it "test code index 3" $
+      do 
+        testCodeIndex3
+        `shouldBe`
+        ""
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -490,7 +500,7 @@ main = hspec $ do
       do 
         testVMIndexAssign1
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 0 = [[0, True, ],2 ]"
   describe "test no sta" $ do
     it "test empty" $
       do 

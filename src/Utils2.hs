@@ -164,4 +164,14 @@ disassemble (s,c)= str
           constants = constants c, 
           symbols = symbols c 
         })
-      | otherwise = error ("disassemble" ++ (show (BS.head (bytes c))))
+      | BS.head (bytes c) == 23 = disassemble(s ++ " SETINDEX", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 24 = disassemble(s ++ " INDEXEND", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | otherwise = error ("disassemble " ++ (show (BS.head (bytes c))))

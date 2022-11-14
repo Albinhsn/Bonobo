@@ -28,8 +28,15 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c)) 
       | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
-      | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
+      | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(Prelude.head s, c))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
+--TODO implement this 
+-- objectToBytes :: Object -> ByteString 
+-- objectToBytes o = b 
+--   where   
+--     b 
+--       | 
 
 
 addLet :: Compiler -> Compiler 
@@ -39,32 +46,20 @@ addLet c =Compiler{
     constants = constants c
   } 
 
+getConstantBySymbol :: (String, Compiler) -> Object 
+getConstantBySymbol (s, c) = constants c!!(fromList (symbols c) ! s)
 
-
-compileArrayIndex :: ([Expression],Compiler) -> Compiler 
-compileArrayIndex (e, c) = comp
-  where 
-    comp
-      | Prelude.null e = Compiler{
-          symbols = symbols c,
-          bytes = bytes c <> lookupOpCode INDEXEND,  
-          constants = constants c
-        } 
-      | otherwise = compileArrayIndex(removeFirst e, compileExpression(Prelude.head e, c)) 
-
-compileAssign :: (Expression, Compiler) -> Compiler 
-compileAssign (e, c) = comp 
+compileAssign :: (Statement, Compiler) -> Compiler 
+compileAssign (s, c) = comp 
   where 
     comp 
-      | expressionType e /= ASSIGNEXP = error "assignsta without assignexp?"
-      | member (getAssignStrFromExp e) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
-      --Check if assign exp has indexexp?
-      | expressionType (assignIdent e) == INDEXEXP = compileExpression(e, compileArrayIndex(arrayIndex (assignIdent e), Compiler{
-          symbols = symbols c,
-          bytes = bytes c <>lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c))<> lookupOpCode SETINDEX,  
-          constants = constants c
-        }))  
-      | otherwise = compileExpression(e, c) 
+      | member (getAssignStrFromExp (expression s)) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
+      | isAM (getConstantBySymbol (getAssignStrFromExp (expression s), c)) = error "compileAssign map/arrays"
+      | otherwise = error (show (((getAssignStrFromExp (expression s), c)) ))--compileExpression(expression s, c)
+      
+isAM :: Object -> Bool
+isAM o = objectType o == ARRAY_OBJ || objectType o == MAP_OBJ 
+
 
 getAssignStrFromExp:: Expression -> String 
 getAssignStrFromExp e = st 

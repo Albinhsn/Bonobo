@@ -150,6 +150,7 @@ runVM v = vm
           global = global v,
           stack = stack v
         }))  
+      -- ARRAY
       | BS.head (instruct v)== 18 = 
         trace ("Found array instructions: " ++ Prelude.concat [inspectObject o | o <- stack v])
         runVM(addEleToArray (VM{
@@ -158,12 +159,14 @@ runVM v = vm
             global = global v,
             stack = stack v
           }, ArrayObject{objectType = ARRAY_OBJ, arrValue = []}))  
+      -- ARRAYEND
       | BS.head (instruct v)== 19 = runVM(VM{
           instruct = removeFirstInstruction (instruct v),
           constVM = constVM v, 
           global = global v, 
           stack = NullObject{objectType = NULL_OBJ}:stack v
         })  
+      -- HASH 
       | BS.head (instruct v)== 20 = 
         trace ("Found map instructions: " ++ Prelude.concat [inspectObject o | o <- stack v])
         runVM(addEleToMap (VM{
@@ -172,25 +175,52 @@ runVM v = vm
           global = global v,
           stack = stack v
         }, MapObject{objectType = MAP_OBJ, mapValue = []})) 
+      -- HASHEND
       | BS.head (instruct v)== 21 = runVM(VM{
           instruct = removeFirstInstruction (instruct v),
           constVM = constVM v, 
           global = global v, 
           stack = NullObject{objectType = NULL_OBJ}:stack v
         })  
+      -- INDEX
       | BS.head (instruct v)== 22 = runVM(addIndexToStack(VM{
           instruct = removeFirstInstruction (instruct v),
           constVM = constVM v, 
           global = global v,
           stack = stack v
         }))
+      -- SETINDEX
+      -- | BS.head (instruct v)== 23 = runVM(evalAssignIndex(VM{
+      --     instruct = removeFirstInstruction (instruct v),
+      --     constVM = constVM v, 
+      --     global = global v,
+      --     stack = stack v
+      --   }))
+      | BS.head (instruct v)== 23 = runVM(VM{
+          instruct = removeFirstInstruction (instruct v),
+          constVM = constVM v, 
+          global = global v,
+          stack = stack v
+        })
+      --INDEXEND 
+      | BS.head (instruct v)== 24 = error (Prelude.concat [inspectObject o | o <- stack v])  
       | otherwise = error "run" 
 
+-- evalAssignIndex :: VM -> VM 
+-- evalAssignIndex  v = vm 
+--   where 
+--     vm
+--       -- INDEXEND
+--       | BS.head (instruct v) == 24 = VM{
+--           instruct = removeFirstInstruction(instruct v),
+--           constVM = constVM v, 
+--           global = global v, 
+--           stack = stack v
+--         } 
+--       | otherwise = error (Prelude.concat [inspectObject o | o <- stack v]) 
+
 addIndexToStack :: VM -> VM 
-addIndexToStack v = vm 
-  where 
-    vm
-      | otherwise = VM{
+addIndexToStack v = VM{
           instruct = instruct v,
           constVM = constVM v, 
           global = global v, 

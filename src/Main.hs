@@ -9,7 +9,7 @@ import Data.ByteString as BS
 
 main = do
 -- let a = [[0,1],2]; a[0][1]= True;
-  let s = parseStringToStatements("let a = 5; a = True;") 
+  let s = parseStringToStatements("let a = [0]; a[0] = True;") 
   print s
   let c = statementsToString(s)
   print c

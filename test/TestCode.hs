@@ -52,3 +52,9 @@ testCodeMap1= disassemble("", parseStatementToCompiled(parseStringToStatements("
 
 testCodeIndex1 :: String 
 testCodeIndex1 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2],0]; let b = a[0][1];")))
+
+testCodeIndex2 :: String 
+testCodeIndex2 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2],0]; a[0][1] = True;")))
+
+testCodeIndex3 :: String 
+testCodeIndex3 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2],0]; a[0] = True;")))
