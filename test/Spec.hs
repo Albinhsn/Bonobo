@@ -7,16 +7,14 @@ import TestParser
 import TestPrecedence
 import TestBool
 import TestIf 
+import TestNoSta
 import TestIdent
 import TestFunc
-import TestObject
-import TestEval
 import TestArray
 import TestMap
 import TestFor
 import TestCode
 import TestVM
-import TestNoSta
 
 main :: IO ()
 main = hspec $ do
@@ -284,12 +282,12 @@ main = hspec $ do
       do 
         testCodeIndex2
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a GETGLOBAL a "
+        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a CONST 1 CONST 0 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        ""
+        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a CONST 0 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -500,7 +498,17 @@ main = hspec $ do
       do 
         testVMIndexAssign1
         `shouldBe`
-        "Stack:  Globals: 0 = [[0, True, ],2 ]"
+        "Stack:  Globals: 0 = [[0, True, ], 2, ] "
+    it "test vm index assign 2" $
+      do 
+        testVMIndexAssign2
+        `shouldBe`
+        "Stack:  Globals: 0 = {0:{1:True, }, } "
+    it "test vm index assign 3" $
+      do 
+        testVMIndexAssign3
+        `shouldBe`
+        "Stack:  Globals: 0 = {0:[False, {0:[0, True, ], }, ], } "
   describe "test no sta" $ do
     it "test empty" $
       do 

@@ -11,7 +11,7 @@ import Object
 import Ast
 
 
-data OpCode = INDEXVALEND | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
 
 
 data Symbol = Symbol{
@@ -43,8 +43,6 @@ opCodes = DM.fromList [
   , (HASHEND, fromIntegral 21)
   , (INDEX, fromIntegral 22)
   , (SETINDEX, fromIntegral 23)
-  , (INDEXEND, fromIntegral 24)
-  , (INDEXENDVAL, fromIntegral 25)
   ]
 
 data Compiler = Compiler{

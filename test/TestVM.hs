@@ -131,4 +131,7 @@ testVMIndexAssign1 :: String
 testVMIndexAssign1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[0,1],2]; a[0][1]= True;"))))
 
 testVMIndexAssign2 :: String 
-testVMIndexAssign2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[0,1],2]; a[0] = True;"))))
+testVMIndexAssign2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:{1:False}}; a[0][1] = True;"))))
+
+testVMIndexAssign3 :: String 
+testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[False, {0:[0, False]}]}; a[0][1][0][1] = True;"))))

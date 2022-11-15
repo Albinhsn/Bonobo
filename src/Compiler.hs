@@ -45,12 +45,17 @@ compileArrayIndex :: ([Expression],Compiler) -> Compiler
 compileArrayIndex (e, c) = comp
   where 
     comp
-      | Prelude.null e = Compiler{
-          symbols = symbols c,
-          bytes = bytes c <> lookupOpCode INDEXEND,  
-          constants = constants c
-        } 
-      | otherwise = compileArrayIndex(removeFirst e, compileExpression(Prelude.head e, c)) 
+      | Prelude.null e = c 
+      | otherwise = compileArrayIndex(pop e, compileExpression(Prelude.last e, c)) 
+
+compileAssignIndex :: (Expression, Compiler) -> Compiler
+compileAssignIndex (e, c) = Compiler{
+    symbols = symbols c, 
+    constants = constants c,
+    bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) 
+  }
+
+  
 
 compileAssign :: (Expression, Compiler) -> Compiler 
 compileAssign (e, c) = comp 
@@ -59,11 +64,7 @@ compileAssign (e, c) = comp
       | expressionType e /= ASSIGNEXP = error "assignsta without assignexp?"
       | member (getAssignStrFromExp e) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
       --Check if assign exp has indexexp?
-      | expressionType (assignIdent e) == INDEXEXP = compileExpression(e, compileArrayIndex(arrayIndex (assignIdent e), Compiler{
-          symbols = symbols c,
-          bytes = bytes c <>lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c))<> lookupOpCode SETINDEX,  
-          constants = constants c
-        }))  
+      | expressionType (assignIdent e) == INDEXEXP = compileAssignIndex(e, compileExpression(assignExpression e,compileArrayIndex(arrayIndex (assignIdent e), c)))
       | otherwise = compileExpression(e, c) 
 
 getAssignStrFromExp:: Expression -> String 

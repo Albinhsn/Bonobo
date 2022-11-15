@@ -1,49 +1,9 @@
-TODO:   
-  check operandswidth in bytestring and if it's valid or not  
-    - test if vars is over 256?
-  better func to remove x items from array
-  check if variable already exists in constants and point to that variable in that case
-  Rework addOp -> evalAddOp to be one func
-  change from 256 to 66566 or w/e 
-  check every warning :)
-  change identExp 'ident' token -> String
-  addInstruction -> Token, Compiler -> Compiler
-  fix 'run'
-  better testing for vars in VM
-  NESTED ARRAY/MAP COMPILER STYLE
-  go through and remove unsued codes
-  redo testing files
-
-
-After compiler:
-  Test line numbers etc
-  implement !! or --?
-  fucking test invalid code
-  Fix README.md 
-  Do aoc examples
-  VALIDATION/ERROR HANDLING
-    check on semicolon valid statement
-    check at eof that last exp is valid
-  Fix REPL/interpretor
-  https://interpreterbook.com/lost/
-  Do efficency testing 
-  prebuilts:
-    split? 
-    read file?
-  Remove instructions: 
-    remove LTOp, SubOp 
-
 
 git ls-files | grep '\.hs' | xargs wc -l
 
 NOTES:
   Vars and funcs can be same list/map (Interpretor only?)
   Only return Tokens -> Statements etc (Not Compiler?) 
-  
-TODO haskell:
-  diff types 
-  "append"
-  NOT A FUCKING DATA EVERYWHERE C:
 
 CheatSheet:
   Conversions 
@@ -58,9 +18,3 @@ CheatSheet:
 --     putStrLn (prettyPrint (BSU.fromString line))
 --     main 
 
-data VM = VM{
-    instruct :: !ByteString,
-    const:: ![Object],
-    global :: ![(int, Object)],
-    stack :: ![Object] 
-  }

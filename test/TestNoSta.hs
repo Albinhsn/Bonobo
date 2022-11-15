@@ -5,7 +5,6 @@ import Ast
 import Lexer 
 import Token 
 import Utils 
-import Eval
 import Utils2
 
 testEmpty:: String

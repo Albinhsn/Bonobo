@@ -1,12 +1,9 @@
 let a = [[0]]; a[0][0] = True;
 
 #Creates a 
-GETGLOBAL A 
-SETINDEX 
 0 [0]
 0  0
-INDEXEND
-INDEXVAL
 TRUE
-INDEXVALEND
+GETGLOBAL A 
+SETINDEX 
 SETGLOBAL a 

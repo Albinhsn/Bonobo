@@ -190,34 +190,32 @@ runVM v = vm
           stack = stack v
         }))
       -- SETINDEX
-      -- | BS.head (instruct v)== 23 = runVM(evalAssignIndex(VM{
-      --     instruct = removeFirstInstruction (instruct v),
-      --     constVM = constVM v, 
-      --     global = global v,
-      --     stack = stack v
-      --   }))
       | BS.head (instruct v)== 23 = runVM(VM{
           instruct = removeFirstInstruction (instruct v),
           constVM = constVM v, 
           global = global v,
-          stack = stack v
+          stack = evalAssignIndex(
+            removeFirst(removeFirst(stack v)),
+            stack v!!0,
+            stack v!!1
+          ):[] 
         })
-      --INDEXEND 
-      | BS.head (instruct v)== 24 = error (Prelude.concat [inspectObject o | o <- stack v])  
       | otherwise = error "run" 
 
--- evalAssignIndex :: VM -> VM 
--- evalAssignIndex  v = vm 
---   where 
---     vm
---       -- INDEXEND
---       | BS.head (instruct v) == 24 = VM{
---           instruct = removeFirstInstruction(instruct v),
---           constVM = constVM v, 
---           global = global v, 
---           stack = stack v
---         } 
---       | otherwise = error (Prelude.concat [inspectObject o | o <- stack v]) 
+evalAssignIndex :: ([Object],Object, Object) -> Object 
+evalAssignIndex  (st ,list, newVal) = newList 
+  where 
+    newList 
+      | Prelude.length st == 1 = replaceIndex (list, (Prelude.head st), newVal) 
+      | otherwise = replaceIndex(
+        list, 
+        Prelude.head st, 
+        evalAssignIndex(
+          removeFirst st, 
+          evalIndex (Prelude.head st, list),
+          newVal
+        )
+      ) 
 
 addIndexToStack :: VM -> VM 
 addIndexToStack v = VM{
@@ -226,6 +224,27 @@ addIndexToStack v = VM{
           global = global v, 
           stack = (evalIndex (stack v!!0, stack v!!1)):(removeFirst(removeFirst (stack v)))
         } 
+
+replaceIndex :: (Object, Object, Object) -> Object 
+replaceIndex (l, idx, newVal) = newL 
+  where 
+    newL 
+      | objectType l == ARRAY_OBJ && isInt idx && isWithinBounds (intValue idx, Prelude.length (arrValue l))= ArrayObject{objectType = ARRAY_OBJ, arrValue = replaceNth (intValue idx) newVal (arrValue l)}
+      | objectType l == MAP_OBJ = MapObject{objectType = MAP_OBJ, mapValue = updateMapKey(idx, newVal, mapValue l)} 
+      | otherwise = error ("trying to index non array/map" ++ inspectObject l) 
+
+isInt :: Object -> Bool
+isInt o =
+  case objectType o of
+    INT_OBJ -> True
+    _ -> error "can't access array with non int"
+
+updateMapKey :: (Object, Object, [(Object, Object)]) -> [(Object, Object)]
+updateMapKey (k,v,m) = newMap 
+  where 
+    newMap 
+      | member k (fromList m) == False = toList(insert k v (fromList m))
+      | otherwise = toList(insert k v (delete k (fromList m))) 
 
 evalIndex :: (Object, Object) -> Object 
 evalIndex (k,l) = val 
