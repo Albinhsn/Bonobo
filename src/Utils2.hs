@@ -1,11 +1,21 @@
-module Utils2 where
+module Utils2 (
+  reverseList,
+  parseStringToStatementsString,
+  parseStringToStatements,
+  parseMakeToPretty,
+  parseStatementToCompiled,
+  parseStack,
+  inspectGlobal,
+  inspectObject,
+  disassemble
+
+) where
 
 
 import Object 
 import Ast
 import Compiler
 import Code 
-import Token
 import Lexer 
 import Utils
 import Parser
@@ -13,8 +23,8 @@ import VM
 
 
 import Data.ByteString as BS
-import Data.Map
 
+reverseList :: [a] -> [a]
 reverseList [] = []
 reverseList xs = Prelude.last xs : reverseList (Prelude.init xs)
 

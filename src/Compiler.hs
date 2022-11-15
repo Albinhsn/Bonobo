@@ -1,5 +1,6 @@
-module Compiler where 
-import Debug.Trace
+module Compiler (
+  compile
+)where 
 
 import Code 
 import Object 
@@ -7,11 +8,9 @@ import Ast
 import Utils
 import Token
 import Lexer
-import Data.Word (Word8)
 import Data.ByteString.UTF8 as BSU 
 import Data.ByteString as BS 
 import Data.Map as DM
-import Numeric (showHex)
 
 
 
@@ -54,7 +53,6 @@ compileAssignIndex (e, c) = Compiler{
     constants = constants c,
     bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) 
   }
-
   
 
 compileAssign :: (Expression, Compiler) -> Compiler 
@@ -75,13 +73,6 @@ getAssignStrFromExp e = st
       | expressionType e == INDEXEXP = getAssignStrFromExp(arrayIdent e) 
       | expressionType e == IDENTEXP = literal (ident e) 
       | otherwise = error ("getAssignStrFromExp: " ++ (show e))
-
-addSetOp :: Compiler -> Compiler
-addSetOp c = Compiler{
-    bytes = bytes c <> lookupOpCode SETGLOBAL,
-    constants = constants c,
-    symbols = symbols c
-  }
 
 
 compileLet :: (Statement, Compiler) -> Compiler 
@@ -248,19 +239,22 @@ addPrefixInstruction (t, c) =
         constants = constants c,
         symbols = symbols c
       }
+    _ -> error "non valid prefix"
 
 compileTF :: Expression -> OpCode  
 compileTF e =
   case bool e of 
     TRUE-> OPTRUE 
     FALSE -> OPFALSE
+    _ -> error "how can this even throw an error"
 
-addPopInstruction :: Compiler -> Compiler  
-addPopInstruction c = Compiler{
-    bytes = bytes c <> lookupOpCode(OPPOP),
-    constants = constants c,
-    symbols = symbols c
-  }
+-- THIS SHOULD BE USED :)
+-- addPopInstruction :: Compiler -> Compiler  
+-- addPopInstruction c = Compiler{
+--     bytes = bytes c <> lookupOpCode(OPPOP),
+--     constants = constants c,
+--     symbols = symbols c
+--   }
 
 addOperatorInstruction :: (Token, Compiler)-> Compiler 
 addOperatorInstruction (t, c)=
@@ -305,6 +299,8 @@ addBoolInstruction (t, c) =
         constants = constants c,
         symbols = symbols c
       }
+    _ -> error "cant add non valid bool instruction"
 
+mergeLists :: [a] -> [a] -> [a]
 mergeLists [] ys = ys 
 mergeLists (x:xs) ys = x:mergeLists ys xs 

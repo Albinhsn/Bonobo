@@ -1,10 +1,45 @@
-module VM where 
+module VM (
+  run,
+  VM(instruct, constVM, global, stack), 
+  runVM,
+  addIndexToStack,
+  replaceIndex,
+  isInt,
+  replaceNth,
+  updateMapKey,
+  evalIndex,
+  isWithinBounds,
+  evalMapIndex,
+  evalArrayIndex,
+  addEleToMap,
+  addEleToArray,
+  evalGetGlobal,
+  evalSetGlobal,
+  evalJump,
+  evalJumpNT,
+  bangOp,
+  minusOp,
+  eqOp,
+  neqOp,
+  gtOp,
+  evalGTOp,
+  addOp,
+  evalAddOp,
+  subOp,
+  evalSubOp,
+  divOp,
+  evalDivOp,
+  mulOp,
+  evalMulOp,
+  pushToStack,
+  removeNInstructions,
+  removeFirstInstruction
+)where 
 
 
 import Object
 import Code 
 import Utils
-import Lexer 
 
 import Debug.Trace
 import Data.ByteString as BS
@@ -379,18 +414,18 @@ evalJumpNT v = vm
 
 
 bangOp :: [Object] -> [Object]
-bangOp stack = o 
+bangOp s= o 
   where 
     o
-      | objectType (Prelude.head stack) /= BOOL_OBJ = error ("can't have bang prefix on non bool: " ++ (inspectObject (Prelude.head stack )))
-      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = not (boolValue (Prelude.head stack))}:(removeFirst stack)
+      | objectType (Prelude.head s) /= BOOL_OBJ = error ("can't have bang prefix on non bool: " ++ (inspectObject (Prelude.head s)))
+      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = not (boolValue (Prelude.head s))}:(removeFirst s)
 
 minusOp :: [Object] -> [Object]
-minusOp stack = o 
+minusOp s= o 
   where 
     o
-      | objectType (Prelude.head stack) /= INT_OBJ = error ("can't have minus prefix on non integer: " ++ (inspectObject (Prelude.head stack )))
-      | otherwise = IntObject{objectType = INT_OBJ, intValue = -1 * intValue (Prelude.head stack)}:(removeFirst stack)
+      | objectType (Prelude.head s) /= INT_OBJ = error ("can't have minus prefix on non integer: " ++ (inspectObject (Prelude.head s)))
+      | otherwise = IntObject{objectType = INT_OBJ, intValue = -1 * intValue (Prelude.head s)}:(removeFirst s)
 
 eqOp :: [Object] -> [Object]
 eqOp o = BoolObject{objectType = BOOL_OBJ, boolValue = o!!0 == o!!1}:(removeFirst(removeFirst o))
@@ -429,8 +464,8 @@ evalSubOp (o1, o2) = o
   where 
     o
       | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 /= INT_OBJ = error ("can't sub with non int type: " ++ (show (objectType o1))) 
       | objectType o1 == INT_OBJ = trace ("Subtracting " ++ show(intValue o1 ) ++ " - " ++ (show (intValue o2))) $ IntObject{objectType = INT_OBJ, intValue = intValue o2 - intValue o1}
+      | otherwise = error ("can't sub with non int type: " ++ (show (objectType o1))) 
 
 divOp :: [Object] -> [Object]
 divOp o = evalDivOp(o!!0, o!!1):(removeFirst (removeFirst o))
@@ -440,8 +475,8 @@ evalDivOp (o1, o2) = o
   where 
     o
       | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 /= INT_OBJ = error ("can't div with non int type: " ++ (show (objectType o1))) 
       | objectType o1 == INT_OBJ = trace ("Dividing " ++ show(intValue o1 ) ++ " / " ++ (show (intValue o2))) $ IntObject{objectType = INT_OBJ, intValue = intValue o2 `div` intValue o1}
+      | otherwise = error ("can't div with non int type: " ++ (show (objectType o1)))  
 
 mulOp :: [Object] -> [Object]
 mulOp o =evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
@@ -451,8 +486,8 @@ evalMulOp (o1, o2) = o
   where 
     o
       | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 /= INT_OBJ = error ("can't mul with non int type: " ++ (show (objectType o1))) 
       | objectType o1 == INT_OBJ = trace ("Multiplying " ++ show(intValue o2 ) ++ " * " ++ (show (intValue o1))) $ IntObject{objectType = INT_OBJ, intValue = intValue o1 * intValue o2}
+      | otherwise = error ("can't mul with non int type: " ++ (show (objectType o1))) 
 
 pushToStack :: VM -> VM 
 pushToStack v =  

@@ -16,7 +16,7 @@ data OpCode = INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | 
 
 data Symbol = Symbol{
     symName :: !String, 
-    symIndex :: !Int
+    symIndex :: !Integer
   }
 
 opCodes = DM.fromList [
