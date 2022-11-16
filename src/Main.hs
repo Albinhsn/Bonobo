@@ -9,8 +9,8 @@ import Data.ByteString as BS
 
 main = do
 -- let a = [[0,1],2]; a[0][1]= True;
-  let s = parseStringToStatements("let a = [[0,1],2]; a[0][1]= True;") 
-  -- print s
+  let s = parseStringToStatements("fn add(){return 5;}; ") 
+  print s
   let c = statementsToString(s)
   print c
   let a = parseStatementToCompiled s 

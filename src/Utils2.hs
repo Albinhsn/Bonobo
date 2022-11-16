@@ -184,4 +184,15 @@ disassemble (s,c)= str
           constants = constants c, 
           symbols = symbols c 
         })
+      | BS.head (bytes c) == 25 = disassemble(s ++ " RETURNVALUE ", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
+      | BS.head (bytes c) == 26 = disassemble(s ++ " OPRETURN ", Compiler{ 
+          bytes = removeFirstInstruction(bytes c),
+          constants = constants c, 
+          symbols = symbols c 
+        })
       | otherwise = error ("disassemble " ++ (show (BS.head (bytes c))))
+

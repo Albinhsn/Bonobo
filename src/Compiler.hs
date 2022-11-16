@@ -11,9 +11,7 @@ import Lexer
 import Data.ByteString.UTF8 as BSU 
 import Data.ByteString as BS 
 import Data.Map as DM
-
-
-
+import Debug.Trace
 
 
 compile :: ([Statement], Compiler)-> Compiler 
@@ -21,14 +19,40 @@ compile (s,c) = comp
   where 
     comp
       | Prelude.null s = c 
-      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(
+      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, addPopInstruction(compileExpression(
           expression (Prelude.head s),
-          c)) 
-      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c)) 
+          c)))
       | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
       | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
+      | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addReturnValueOp(compileExpression(expression (Prelude.head s), c)))
+      | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, extractFunc(expression (Prelude.head s),c, compile(
+          body (statementUni (Prelude.head s)),
+          Compiler{
+              bytes = BS.empty :: ByteString,
+              symbols = [], 
+              constants = []
+            }
+        )))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
+addReturnValueOp :: Compiler -> Compiler 
+addReturnValueOp c = Compiler{
+    bytes = bytes c <> lookupOpCode OPRETURNVALUE,
+    constants = constants c, 
+    symbols = symbols c
+  }
+
+extractFunc :: (Expression, Compiler, Compiler) -> Compiler 
+extractFunc (e,c1,c2) = c
+  where 
+    c 
+      | bytes c2 == BS.empty = error "got"
+      | otherwise = Compiler{
+          bytes = bytes c1,
+          symbols = (literal (ident e), Prelude.length (constants c1)):symbols c1, 
+          constants = constants c1 ++ [FuncObject{objectType = FUNC_OBJ, funcValue = bytes c2 <> lookupOpCode OPRETURN}]
+        }
 
 
 addLet :: Compiler -> Compiler 
@@ -248,13 +272,12 @@ compileTF e =
     FALSE -> OPFALSE
     _ -> error "how can this even throw an error"
 
--- THIS SHOULD BE USED :)
--- addPopInstruction :: Compiler -> Compiler  
--- addPopInstruction c = Compiler{
---     bytes = bytes c <> lookupOpCode(OPPOP),
---     constants = constants c,
---     symbols = symbols c
---   }
+addPopInstruction :: Compiler -> Compiler  
+addPopInstruction c = Compiler{
+    bytes = bytes c <> lookupOpCode(OPPOP),
+    constants = constants c,
+    symbols = symbols c
+  }
 
 addOperatorInstruction :: (Token, Compiler)-> Compiler 
 addOperatorInstruction (t, c)=

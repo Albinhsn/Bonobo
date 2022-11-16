@@ -7,7 +7,7 @@ import Utils
 import Data.ByteString as BS
 
 
-data ObjectType = MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
+data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
 
 data ReturnType = NONE | SMTH deriving (Eq, Show) 
 
@@ -22,7 +22,7 @@ data Object
   | BoolObject {objectType :: !ObjectType, boolValue :: !Bool}
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
-  | FunctionObject{objectType :: !ObjectType, funcValue :: ByteString}
+  | FuncObject{objectType :: !ObjectType, funcValue :: ByteString}
   deriving(Eq, Show, Ord)
 
 
