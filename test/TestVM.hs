@@ -5,73 +5,73 @@ import Utils2
 
 
 testVMOp1 :: String 
-testVMOp1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("1 + 2 * 3 / 1 - 5"))))
+testVMOp1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 1 + 2 * 3 / 1 - 5"))))
 
 testVMOp2 :: String 
-testVMOp2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("2 + 1 * 3 "))))
+testVMOp2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 2 + 1 * 3 "))))
 
 testVMOp3 :: String 
-testVMOp3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("2 * 2 + 3 * 2"))))
+testVMOp3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 2 * 2 + 3 * 2"))))
 
 testVMOp4 :: String 
-testVMOp4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 * 4 / 2 + 1"))))
+testVMOp4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 5 * 4 / 2 + 1"))))
 
 testVMOpBook1 :: String 
-testVMOpBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("1 - 2"))))
+testVMOpBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 1 - 2"))))
 
 testVMOpBook2 :: String 
-testVMOpBook2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("1 * 2"))))
+testVMOpBook2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 1 * 2"))))
 
 testVMOpBook3 :: String 
-testVMOpBook3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("4 / 2"))))
+testVMOpBook3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 4 / 2"))))
 
 testVMOpBook4 :: String 
-testVMOpBook4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("50 / 2 * 2 + 10 - 5"))))
+testVMOpBook4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 50 / 2 * 2 + 10 - 5"))))
 
 testVMOpBook5 :: String 
-testVMOpBook5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 + 5 + 5 + 5 - 10"))))
+testVMOpBook5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 5 + 5 + 5 + 5 - 10"))))
 
 testVMOpBook6 :: String 
-testVMOpBook6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("2 * 2 * 2 * 2 * 2"))))
+testVMOpBook6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 2 * 2 * 2 * 2 * 2"))))
 
 testVMOpBook7 :: String 
-testVMOpBook7 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 * 2 + 10"))))
+testVMOpBook7 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 5 * 2 + 10"))))
 
 testVMOpBook8 :: String 
-testVMOpBook8 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 + 2 * 10"))))
+testVMOpBook8 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 5 + 2 * 10"))))
 
 testVMOpBook9 :: String 
-testVMOpBook9 = parseStack(run(parseStatementToCompiled(parseStringToStatements("5 * (2 + 10)"))))
+testVMOpBook9 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 5 * (2 + 10)"))))
 
 testVMStrBook :: String 
-testVMStrBook = parseStack(run(parseStatementToCompiled(parseStringToStatements("\"monkey\"")))) 
+testVMStrBook = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = \"monkey\"")))) 
 
 testVMOpStrBook1 :: String 
-testVMOpStrBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("\"mon\" + \"key\"")))) 
+testVMOpStrBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = \"mon\" + \"key\"")))) 
 
 testVMOpStrBook2 :: String 
-testVMOpStrBook2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("\"mon\" + \"key\" + \"banana\"")))) 
+testVMOpStrBook2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = \"mon\" + \"key\" + \"banana\"")))) 
 
 testVMOpBig :: String 
-testVMOpBig = parseStack(run(parseStatementToCompiled(parseStringToStatements("70000 * 2"))))
+testVMOpBig = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 70000 * 2"))))
 
 testVMPrefixMinus:: String 
-testVMPrefixMinus= parseStack(run(parseStatementToCompiled(parseStringToStatements("-5"))))
+testVMPrefixMinus= parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = -5"))))
 
 testVMPrefixBang :: String 
-testVMPrefixBang = parseStack(run(parseStatementToCompiled(parseStringToStatements("!True"))))
+testVMPrefixBang = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = !True"))))
 
 testVMIf:: String 
-testVMIf= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(True){5;}else{10;};"))))
+testVMIf= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(True){let a = 5;}else{let b = 10;};"))))
 
 testVMElse:: String 
-testVMElse= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){5;}else{10;};"))))
+testVMElse= parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){let a = 5;}else{let b = 10;};"))))
 
 testVMNestedIf :: String 
-testVMNestedIf = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(True){if(True){3;}else{5;};};"))))
+testVMNestedIf = parseStack(run(parseStatementToCompiled(parseStringToStatements(" if(True){if(True){let a = 3;}else{let b = 5;};};"))))
 
 testVMNestedElse :: String 
-testVMNestedElse = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){2;}else{if(False){3;}else{5;};};"))))
+testVMNestedElse = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){let a = 2;}else{if(False){let a = 3;}else{let a = 5;};};"))))
 
 testVMLetBook1 :: String 
 testVMLetBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let one = 1; one;"))))
@@ -83,10 +83,10 @@ testVMLetBook3 :: String
 testVMLetBook3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let one = 1; let two = one + one; two + one;"))))
 
 testVMArray1 :: String 
-testVMArray1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("[]"))))
+testVMArray1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = []"))))
 
 testVMArray2 :: String 
-testVMArray2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("[1, \"hi\"]"))))
+testVMArray2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [1, \"hi\"]"))))
 
 testVMArray3 :: String 
 testVMArray3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = [[], [1,2]];"))))
@@ -135,3 +135,6 @@ testVMIndexAssign2 = parseStack(run(parseStatementToCompiled(parseStringToStatem
 
 testVMIndexAssign3 :: String 
 testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[False, {0:[0, False]}]}; a[0][1][0][1] = True;"))))
+
+testVMIndexAssign4 :: String 
+testVMIndexAssign4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;};"))))

@@ -1,3 +1,5 @@
+  
+
 
 git ls-files | grep '\.hs' | xargs wc -l
 
@@ -5,11 +7,17 @@ NOTES:
   Vars and funcs can be same list/map (Interpretor only?)
   Only return Tokens -> Statements etc (Not Compiler?) 
 
+
+
+
+
+
 CheatSheet:
   Conversions 
     https://stackoverflow.com/questions/3232074/what-is-the-best-way-to-convert-string-to-bytestring
   Subarray
     https://stackoverflow.com/questions/5522074/taking-sub-arrays-in-haskell
+
 -- putStrLn (prettyPrint c)
 -- line <- Prelude.getLine 
 -- if Prelude.null line 
