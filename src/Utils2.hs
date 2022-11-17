@@ -58,7 +58,7 @@ disassemble (s,c)= str
   where 
     str 
       | BS.null (bytes c) = s
-      | BS.head (bytes c) == 0 = disassemble(s ++ " CONST " ++  inspectObject (constants c!!(read(show (index (bytes c) 1)))), Compiler{
+      | BS.head (bytes c) == 0 = disassemble(s ++ " CONST " ++  show(fromIntegral (index (bytes c) 1)), Compiler{
           bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
           constants = constants c, 
           symbols = symbols c 
@@ -179,7 +179,7 @@ disassemble (s,c)= str
           constants = constants c, 
           symbols = symbols c 
         })
-      | BS.head (bytes c) == 24 = disassemble(s ++ " INDEXEND", Compiler{ 
+      | BS.head (bytes c) == 24 = disassemble(s ++ " OPCALL ", Compiler{ 
           bytes = removeFirstInstruction(bytes c),
           constants = constants c, 
           symbols = symbols c 

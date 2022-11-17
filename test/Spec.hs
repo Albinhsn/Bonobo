@@ -292,7 +292,7 @@ main = hspec $ do
       do 
         testCodeFN
         `shouldBe`
-        " CONST 0 CONST 1 ADD RETURNVALUE"
+        " CONST 0 CONST 1 ADD RETURNVALUE OPRETURN"
     it "test make true" $
       do 
         testMakeTFTrue 

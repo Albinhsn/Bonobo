@@ -51,6 +51,8 @@ opCodes = DM.fromList [
 data Compiler = Compiler{
     symbols :: [(String, Int)],
     bytes :: ByteString,
+    -- scopes :: [ByteString],
+    -- scopeIndex :: !Int,
     constants :: [Object]
   }
 

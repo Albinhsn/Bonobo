@@ -3,7 +3,6 @@ module Object where
 import Ast 
 import Token
 import Utils
-
 import Data.ByteString as BS
 
 
@@ -39,61 +38,9 @@ getVarValue (s, v) = o
       | otherwise = Prelude.head [varValue x | x <- v, varIdent x == s] 
 
 
---TODO error handle this 
-getFuncBody :: (String, [Function]) -> [Statement]
-getFuncBody (s, f) = Prelude.head [funcBody x | x <- f, funcIdent x == s] 
-
-identIsFunc :: (String, [Function]) -> Bool 
-identIsFunc (s, f) = (Prelude.null [x | x <- f, funcIdent x == s]) == False
-
-isVar :: (String, [Variable]) -> Bool 
-isVar (s, v) = (Prelude.null [x | x <- v, varIdent x== s]) == False
-
-getFunc :: (String, [Function])-> Function 
-getFunc (s, f) = Prelude.head [x | x <- f, funcIdent x == s]
-
-replaceVar :: (Variable, [Variable]) -> [Variable]
-replaceVar (v, va) = removeVar(varIdent v, va) ++ [v]
-
-addVar :: (Variable, [Variable], [Function]) -> [Variable]
-addVar (v, va, f) = var 
-  where 
-    var 
-      | Prelude.null [x | x <- f, varIdent v == funcIdent x] == False = error ("redeclaration of func: " ++ (varIdent v)) 
-      | isVar(varIdent v, va) == True = replaceVar(v, va)
-      | otherwise = va ++ [v]
-
-inspectVariable :: Variable -> String 
-inspectVariable v = (varIdent v) ++ " = " ++ (inspectObject (varValue v))
-
-inspectObject :: Object -> String 
-inspectObject o = 
-  case objectType o of 
-    NULL_OBJ -> "null"
-    INT_OBJ -> show (intValue o)
-    BOOL_OBJ -> show(boolValue o) 
-    STRING_OBJ -> "'" ++ stringValue o ++ "'"
-    ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
-    MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
-
 
 inspectFunction :: Function -> String
 inspectFunction f = "fn " ++ (funcIdent f) ++ paramToString(funcParams f) ++ "{" ++ statementsToString(funcBody f) ++ "};"
-
-removeVar :: (String, [Variable]) -> [Variable]
-removeVar (s, v) =  va 
-  where   
-    va 
-      | Prelude.null (checkVar(s, v)) = error ("can't assign to non existing variable " ++ s ++ (Prelude.concat [inspectVariable x | x <- v]))
-      | otherwise = [x | x <- v, varIdent x /= s]
-
-checkVar :: (String, [Variable]) -> [Variable] 
-checkVar (s, v) = b 
-  where 
-    b   
-      | Prelude.null v = [] 
-      | otherwise = [x | x <- v, varIdent x == s]
-
 
 readIntFromString :: Expression -> Int 
 readIntFromString e = i 
@@ -143,3 +90,18 @@ getLiteralFromAssignIndex e = s
     s
       | expressionType e == IDENTEXP = literal (ident e) 
       | expressionType e == INDEXEXP = getLiteralFromAssignIndex(arrayIdent e)
+
+inspectObject :: Object -> String 
+inspectObject o = 
+  case objectType o of 
+    NULL_OBJ -> "null"
+    INT_OBJ -> show (intValue o)
+    BOOL_OBJ -> show(boolValue o) 
+    STRING_OBJ -> "'" ++ stringValue o ++ "'"
+    ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
+    MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
+    -- TODO FIX THIS
+    FUNC_OBJ -> "fn " ++ "FUNC" ++ ";" 
+
+inspectVariable :: Variable -> String 
+inspectVariable v = (varIdent v) ++ " = " ++ (inspectObject (varValue v))

@@ -26,15 +26,20 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
       | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addReturnValueOp(compileExpression(expression (Prelude.head s), c)))
+      | statementType (Prelude.head s) == CALLSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c))
       | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, extractFunc(expression (Prelude.head s),c, compile(
           body (statementUni (Prelude.head s)),
           Compiler{
               bytes = BS.empty :: ByteString,
-              symbols = [], 
+              symbols = addParamsSym(params (statementUni (Prelude.head s))), 
               constants = []
             }
         )))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
+addParamsSym :: [Expression] -> [(String, Int)]
+addParamsSym e = [(literal (ident x),i) | (x,i) <-  Prelude.zip e [0..]]
+
 
 addReturnValueOp :: Compiler -> Compiler 
 addReturnValueOp c = Compiler{
@@ -50,8 +55,10 @@ extractFunc (e,c1,c2) = c
       | bytes c2 == BS.empty = error "got"
       | otherwise = Compiler{
           bytes = bytes c1,
-          symbols = (literal (ident e), Prelude.length (constants c1)):symbols c1, 
-          constants = constants c1 ++ [FuncObject{objectType = FUNC_OBJ, funcValue = bytes c2 <> lookupOpCode OPRETURN}]
+          symbols =   
+            (literal (ident e),Prelude.length (constants c2) + Prelude.length (constants c1)):symbols c1 ++ 
+            [(fst x, snd x + Prelude.length (symbols c1)) | x <- symbols c1], 
+          constants = constants c1 ++ constants c2 ++ [FuncObject{objectType = FUNC_OBJ, funcValue = bytes c2 <> lookupOpCode OPRETURN}]
         }
 
 
@@ -188,6 +195,11 @@ compileExpression (e,c) = comp
           constants = constants c,
           symbols = symbols c
         }
+      | expressionType e == CALLEXP = Compiler{
+          bytes = bytes c <> addParams(BS.empty :: ByteString, callParams e, c) <> lookupOpCode OPCONST <> chooseToUnroll(getSymbolKey(literal (ident (callIdent e)), symbols c)) <> lookupOpCode OPCALL,
+          constants = constants c,
+          symbols = symbols c
+        } 
       | expressionType e == PREFIXEXP = addPrefixInstruction(prefixOperator e, compileExpression(prefixExpression e, c)) 
       | expressionType e == IDENTEXP= Compiler{
           bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(literal (ident e), symbols c)),
@@ -196,6 +208,14 @@ compileExpression (e,c) = comp
         }
       | expressionType e == ASSIGNEXP = addAssignInstruction(getAssignStrFromExp (assignIdent e), compileExpression(assignExpression e, c)) 
       | otherwise = error (show e ++ " " ++ show (bytes c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+
+addParams :: (ByteString, [Expression], Compiler) -> ByteString
+addParams (b,e, c) = by 
+  where 
+    by 
+      | Prelude.null e = b 
+      | otherwise = addParams(b <> bytes (compileExpression(Prelude.head e, c)), removeFirst e,c) 
+
 
 addAssignInstruction :: (String,Compiler) -> Compiler
 addAssignInstruction (s, c) = Compiler{
