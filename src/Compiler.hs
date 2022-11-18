@@ -12,57 +12,32 @@ import Data.ByteString.UTF8 as BSU
 import Data.ByteString as BS 
 import Data.Map as DM
 import Debug.Trace
-
+import Control.Lens
 
 compile :: ([Statement], Compiler)-> Compiler 
 compile (s,c) = comp 
   where 
     comp
       | Prelude.null s = c 
-      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, addPopInstruction(compileExpression(
+      | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, addToScope(compileExpression(
           expression (Prelude.head s),
-          c)))
+          c),
+        lookupOpCode OPPOP
+        )
+      )
       | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
       | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
-      | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addReturnValueOp(compileExpression(expression (Prelude.head s), c)))
-      | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, extractFunc(expression (Prelude.head s),c, compile(
-          body (statementUni (Prelude.head s)),
-          Compiler{
-              bytes = BS.empty :: ByteString,
-              symbols = [], 
-              constants = []
-            }
-        )))
+      | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
-addReturnValueOp :: Compiler -> Compiler 
-addReturnValueOp c = Compiler{
-    bytes = bytes c <> lookupOpCode OPRETURNVALUE,
+addToScope :: (Compiler, ByteString) -> Compiler 
+addToScope (c, b) = Compiler{
     constants = constants c, 
-    symbols = symbols c
-  }
-
-extractFunc :: (Expression, Compiler, Compiler) -> Compiler 
-extractFunc (e,c1,c2) = c
-  where 
-    c 
-      | bytes c2 == BS.empty = error "got"
-      | otherwise = Compiler{
-          bytes = bytes c1,
-          symbols = (literal (ident e), Prelude.length (constants c1)):symbols c1, 
-          constants = constants c1 ++ [FuncObject{objectType = FUNC_OBJ, funcValue = bytes c2 <> lookupOpCode OPRETURN}]
-        }
-
-
-addLet :: Compiler -> Compiler 
-addLet c =Compiler{
     symbols = symbols c,
-    bytes = bytes c <> lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c) - 1),
-    constants = constants c
-  } 
-
-
+    scopes = (scopes c) & element (scopeIndex c) .~ (scopes c!!scopeIndex c<> b), 
+    scopeIndex = scopeIndex c 
+  }
 
 compileArrayIndex :: ([Expression],Compiler) -> Compiler 
 compileArrayIndex (e, c) = comp
@@ -71,13 +46,6 @@ compileArrayIndex (e, c) = comp
       | Prelude.null e = c 
       | otherwise = compileArrayIndex(pop e, compileExpression(Prelude.last e, c)) 
 
-compileAssignIndex :: (Expression, Compiler) -> Compiler
-compileAssignIndex (e, c) = Compiler{
-    symbols = symbols c, 
-    constants = constants c,
-    bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) 
-  }
-  
 
 compileAssign :: (Expression, Compiler) -> Compiler 
 compileAssign (e, c) = comp 
@@ -85,8 +53,16 @@ compileAssign (e, c) = comp
     comp 
       | expressionType e /= ASSIGNEXP = error "assignsta without assignexp?"
       | member (getAssignStrFromExp e) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
-      --Check if assign exp has indexexp?
-      | expressionType (assignIdent e) == INDEXEXP = compileAssignIndex(e, compileExpression(assignExpression e,compileArrayIndex(arrayIndex (assignIdent e), c)))
+      | expressionType (assignIdent e) == INDEXEXP = addToScope(
+          compileExpression(
+            assignExpression e,
+            compileArrayIndex(
+              arrayIndex (assignIdent e), 
+              c
+            )
+          ), 
+          lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c))
+        )
       | otherwise = compileExpression(e, c) 
 
 getAssignStrFromExp:: Expression -> String 
@@ -104,11 +80,13 @@ compileLet (s, c) = comp
   where 
     comp
       | member (identifier (statementUni s)) (fromList (symbols c)) == True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
-      | otherwise = addLet(compileExpression(expression s, Compiler{
-          bytes = bytes c,
+
+      | otherwise = addToScope(compileExpression(expression s, Compiler{
+          scopes = scopes c,
+          scopeIndex = scopeIndex c,
           constants = constants c,
           symbols = (identifier (statementUni s), Prelude.length (symbols c)):(symbols c)
-        }))
+        }), lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c) - 1))
 
 compileIf :: (BlockType, Statement, Compiler) -> Compiler 
 compileIf (bl, s, c) = comp 
@@ -127,107 +105,142 @@ compileIf (bl, s, c) = comp
           expression = expression s
         }, 
         addJumpNT(compile(con (statementUni s), Compiler{
-            bytes = BS.empty :: ByteString,
+            scopes = [],
+            scopeIndex = 0,
             constants = constants c,
             symbols = symbols c
           }
-      ), bytes c))
+      ), c))
       | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
-          bytes = BS.empty :: ByteString,
+          scopes = [],
+          scopeIndex = 0,
           constants = constants c,
           symbols = symbols c
-        }), bytes c)
+        }), c)
       | otherwise = error "compileIf"
 
+addJump :: (Compiler, Compiler) -> Compiler 
+addJump (c, old) = addToScope(
+    Compiler{
+      symbols = symbols old,
+      constants = constants old, 
+      scopes = scopes old, 
+      scopeIndex = scopeIndex old 
+    },
+    lookupOpCode JUMP <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 2)  <>scopes c!!0
+  )
 
-addJump :: (Compiler, ByteString) -> Compiler 
-addJump (c, b) = Compiler{
-    symbols = symbols c,
-    constants = constants c, 
-    bytes = b <> lookupOpCode JUMP <> chooseToUnroll (BS.length (bytes c) + 2) <> bytes c
-  }
-
-addJumpNT :: (Compiler, ByteString) -> Compiler 
-addJumpNT (c, b) = Compiler{
-    symbols = symbols c, 
-    constants = constants c, 
-    bytes = b <> lookupOpCode JUMPNT <> chooseToUnroll (BS.length (bytes c) + 4) <> bytes c
-  } 
+addJumpNT :: (Compiler, Compiler) -> Compiler 
+addJumpNT (c, old) =addToScope(
+    Compiler{
+      symbols = symbols old,
+      constants = constants old, 
+      scopes = scopes old, 
+      scopeIndex = scopeIndex old 
+    },
+    lookupOpCode JUMPNT <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 4)  <>scopes c!!0
+  )
 
 compileExpression :: (Expression, Compiler) -> Compiler 
 compileExpression (e,c) = comp 
   where 
     comp
       | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, c)))
-      | expressionType e == MAPEXP = addMapInstructions(mergeLists (fst (mapMap e)) (snd (mapMap e)), Compiler{
-          bytes = bytes c <> lookupOpCode HASHEND, 
-          constants = constants c,
-          symbols = symbols c 
-        })
-      | expressionType e == ARRAYEXP = addArrayInstructions(array e, Compiler{
-          bytes = bytes c <> lookupOpCode ARRAYEND,
-          constants = constants c,
-          symbols = symbols c
-        })  
-      | expressionType e == INDEXEXP = addIndexInstructions(arrayIndex e, compileExpression(arrayIdent e, c)) 
-      | expressionType e == INTEXP = Compiler{
-          bytes = bytes c <> make(OPCONST, Prelude.length (constants c)),
-          constants = constants c ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}],
-          symbols = symbols c
-        }
-      | expressionType e == STRINGEXP= Compiler{
-          bytes = bytes c <> make(OPCONST, Prelude.length (constants c)),
-          constants = constants c ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}],
-          symbols = symbols c
-        }
+      | expressionType e == MAPEXP = addMapInstructions(
+        mergeLists (fst (mapMap e)) (snd (mapMap e)), 
+        addToScope(
+          c,
+          lookupOpCode HASHEND
+        ))
+      | expressionType e == ARRAYEXP = 
+        addArrayInstructions(
+          array e, 
+          addToScope(
+            c, 
+            lookupOpCode ARRAYEND
+          )
+        )
+      | expressionType e == INDEXEXP = addIndexInstructions(
+          arrayIndex e, 
+          compileExpression(arrayIdent e, c)
+        ) 
+      | expressionType e == INTEXP = addToScope(
+          Compiler{
+              scopes = scopes c,
+              scopeIndex = scopeIndex c,
+              symbols = symbols c,
+              constants = constants c ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}]
+            },
+          make(OPCONST, Prelude.length (constants c))
+        ) 
+      | expressionType e == STRINGEXP= addToScope(
+        Compiler{
+            scopes = scopes c,
+            scopeIndex = scopeIndex c,
+            constants = constants c ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}],
+            symbols = symbols c
+          },
+          make(OPCONST, Prelude.length (constants c))
+        ) 
       | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,c) 
-      | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(boolOperator e, compileExpression(rightBool e, compileExpression(leftBool e, c)))
-      | expressionType e == BOOLEXP = addBoolInstruction(Token{line = line (boolOperator e),typ = GREATER_T, literal = ">"}, compileExpression(leftBool e, compileExpression(rightBool e, c)))
-      | expressionType e == TFEXP = Compiler{
-          bytes = bytes c <> lookupOpCode(compileTF e),
-          constants = constants c,
-          symbols = symbols c
-        }
-      | expressionType e == PREFIXEXP = addPrefixInstruction(prefixOperator e, compileExpression(prefixExpression e, c)) 
-      | expressionType e == IDENTEXP= Compiler{
-          bytes = bytes c <> lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(literal (ident e), symbols c)),
-          constants = constants c,
-          symbols = symbols c
-        }
-      | expressionType e == ASSIGNEXP = addAssignInstruction(getAssignStrFromExp (assignIdent e), compileExpression(assignExpression e, c)) 
-      | otherwise = error (show e ++ " " ++ show (bytes c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+      | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(
+          boolOperator e, 
+          compileExpression(
+            rightBool e, 
+            compileExpression(leftBool e, c)
+          )
+        )
+      | expressionType e == BOOLEXP = addBoolInstruction(
+        Token{line = line (boolOperator e),typ = GREATER_T, literal = ">"}, 
+        compileExpression(
+          leftBool e, 
+          compileExpression(rightBool e, c)
+          )
+        )
+      | expressionType e == TFEXP = addToScope(c, lookupOpCode(compileTF e))
+      | expressionType e == PREFIXEXP = addPrefixInstruction(
+          prefixOperator e, 
+          compileExpression(
+            prefixExpression e, 
+            c
+            )
+        ) 
+      | expressionType e == IDENTEXP= addToScope(
+        c,
+        lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(literal (ident e), symbols c))
+      ) 
+      | expressionType e == ASSIGNEXP = addAssignInstruction(
+          getAssignStrFromExp (assignIdent e), 
+          compileExpression(assignExpression e, c)
+        ) 
+      | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
 
 addAssignInstruction :: (String,Compiler) -> Compiler
-addAssignInstruction (s, c) = Compiler{
-    bytes = bytes c <> lookupOpCode SETGLOBAL <> chooseToUnroll ((fromList (symbols c)) ! s), 
-    constants = constants c,
-    symbols = symbols c 
-  }
+addAssignInstruction (s, c) = addToScope(
+    c,
+    lookupOpCode SETGLOBAL <> chooseToUnroll ((fromList (symbols c)) ! s)
+  ) 
 
 addIndexInstructions :: ([Expression], Compiler) -> Compiler 
 addIndexInstructions (e, c) = comp
   where   
     comp
       | Prelude.null e = c 
-      | otherwise = addIndexInstructions(removeFirst e, addIndex(compileExpression(Prelude.head e,c 
-        )))
-
-addIndex :: Compiler -> Compiler 
-addIndex c = Compiler{
-    bytes = bytes c <> lookupOpCode INDEX, 
-    constants = constants c, 
-    symbols = symbols c
-  }
+      | otherwise = addIndexInstructions(
+          removeFirst e, 
+          addToScope(
+            compileExpression(
+              Prelude.head e,
+              c 
+            ), lookupOpCode INDEX
+          )
+        )
 
 addMapInstructions :: ([Expression], Compiler) -> Compiler
 addMapInstructions (e, c) = comp 
   where 
     comp 
-      | Prelude.null e = Compiler{
-          bytes = bytes c <> lookupOpCode HASH,
-          constants = constants c,
-          symbols = symbols c 
-        } 
+      | Prelude.null e = addToScope(c, lookupOpCode HASH)
       | otherwise = addMapInstructions(pop e, compileExpression(Prelude.last e, c))
 
 
@@ -235,11 +248,7 @@ addArrayInstructions :: ([Expression], Compiler) -> Compiler
 addArrayInstructions (e, c) = comp 
   where 
     comp 
-      | Prelude.null e = Compiler{
-          bytes = bytes c <> lookupOpCode ARRAY, 
-          constants = constants c,
-          symbols = symbols c 
-        }
+      | Prelude.null e = addToScope(c, lookupOpCode ARRAY)
       | otherwise = addArrayInstructions(pop e, compileExpression(Prelude.last e, c))
 
 
@@ -253,16 +262,8 @@ getSymbolKey (s, sym)= i
 addPrefixInstruction :: (Token, Compiler) -> Compiler 
 addPrefixInstruction (t, c) = 
   case typ t of 
-    MINUS -> Compiler{
-        bytes = bytes c <> lookupOpCode OPMINUS,
-        constants = constants c,
-        symbols = symbols c
-      }
-    BANG -> Compiler{
-        bytes = bytes c <> lookupOpCode OPBANG,
-        constants = constants c,
-        symbols = symbols c
-      }
+    MINUS -> addToScope(c, lookupOpCode OPMINUS)
+    BANG -> addToScope(c, lookupOpCode OPBANG)
     _ -> error "non valid prefix"
 
 compileTF :: Expression -> OpCode  
@@ -272,56 +273,21 @@ compileTF e =
     FALSE -> OPFALSE
     _ -> error "how can this even throw an error"
 
-addPopInstruction :: Compiler -> Compiler  
-addPopInstruction c = Compiler{
-    bytes = bytes c <> lookupOpCode(OPPOP),
-    constants = constants c,
-    symbols = symbols c
-  }
-
 addOperatorInstruction :: (Token, Compiler)-> Compiler 
 addOperatorInstruction (t, c)=
   case typ t of 
-    PLUS -> Compiler{
-        bytes = bytes c <> lookupOpCode OPADD, 
-        constants = constants c,
-        symbols = symbols c
-      }
-    SLASH -> Compiler{
-        bytes = bytes c <> lookupOpCode OPDIV, 
-        constants = constants c,
-        symbols = symbols c
-      }
-    ASTERISK -> Compiler{
-        bytes = bytes c <> lookupOpCode OPMUL, 
-        constants = constants c,
-        symbols = symbols c
-      }
-    MINUS -> Compiler{
-        bytes = bytes c <> lookupOpCode OPSUB, 
-        constants = constants c,
-        symbols = symbols c
-      }
+    PLUS -> addToScope(c, lookupOpCode OPADD)
+    SLASH -> addToScope(c, lookupOpCode OPDIV)
+    ASTERISK -> addToScope(c, lookupOpCode OPMUL)
+    MINUS -> addToScope(c, lookupOpCode OPSUB)
     _ -> error ("not an operator " ++ (literal t))
 
 addBoolInstruction :: (Token, Compiler) -> Compiler 
 addBoolInstruction (t, c) = 
   case typ t of 
-    GREATER_T-> Compiler{
-        bytes = bytes c <> lookupOpCode OPGT, 
-        constants = constants c,
-        symbols = symbols c
-      }
-    EQUALS -> Compiler{
-        bytes = bytes c <> lookupOpCode OPEQ, 
-        constants = constants c,
-        symbols = symbols c
-      }
-    NOT_EQUALS -> Compiler{
-        bytes = bytes c <> lookupOpCode OPNEQ, 
-        constants = constants c,
-        symbols = symbols c
-      }
+    GREATER_T-> addToScope(c, lookupOpCode OPGT) 
+    EQUALS -> addToScope(c, lookupOpCode OPEQ)
+    NOT_EQUALS -> addToScope(c, lookupOpCode OPNEQ)
     _ -> error "cant add non valid bool instruction"
 
 mergeLists :: [a] -> [a] -> [a]

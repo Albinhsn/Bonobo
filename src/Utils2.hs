@@ -4,7 +4,6 @@ module Utils2 (
   parseStringToStatements,
   parseMakeToPretty,
   parseStatementToCompiled,
-  parseStack,
   inspectGlobal,
   inspectObject,
   disassemble
@@ -40,159 +39,88 @@ parseMakeToPretty (b, o) = (prettyPrint b ++ " - " ++ Prelude.concat [inspectObj
 
 parseStatementToCompiled :: [Statement] -> Compiler 
 parseStatementToCompiled s = compile(s, Compiler{
-    bytes = BS.empty :: ByteString,
+    scopes = [],
+    scopeIndex = 0,
     constants = [],
     symbols = []
   })
 
 
-parseStack ::  VM -> String 
-parseStack v = ("Stack: " ++ Prelude.concat [inspectObject x | x <- (stack v)] ++ " " ++ "Globals: " ++ Prelude.concat [inspectGlobal x | x <- (global v)])
+-- parseStack ::  VM -> String 
+-- parseStack v = ("Stack: " ++ Prelude.concat [inspectObject x | x <- (stack v)] ++ " " ++ "Globals: " ++ Prelude.concat [inspectGlobal x | x <- (global v)])
 
 inspectGlobal :: (Int, Object) -> String 
 inspectGlobal (i, o) = (show i) ++ " = " ++ inspectObject o ++ " "
 
 
-disassemble :: (String, Compiler) -> String 
-disassemble (s,c)= str 
+disassemble :: (String, ByteString) -> String 
+disassemble (s,bytes)= str 
   where 
     str 
-      | BS.null (bytes c) = s
-      | BS.head (bytes c) == 0 = disassemble(s ++ " CONST " ++  inspectObject (constants c!!(read(show (index (bytes c) 1)))), Compiler{
-          bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
-          constants = constants c, 
-          symbols = symbols c 
-        })
+      | BS.null bytes = s
+      | BS.head bytes == 0 = disassemble(s ++ " CONST " ++  (show (index (bytes) 1)), 
+          removeFirstInstruction(removeFirstInstruction bytes))
       --Pop
-      | BS.head (bytes c) == 1 = disassemble(s ++ " POP", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 2 = disassemble(s ++ " ADD", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 3 = disassemble(s ++ " SUB", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 4 = disassemble(s ++ " MUL", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 5 = disassemble(s ++ " DIV", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 6 = disassemble(s ++ " TRUE", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 7 = disassemble(s ++ " FALSE", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 8 = disassemble(s ++ " GT", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 9 = disassemble(s ++ " LT", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 10 = disassemble(s ++ " NEQ", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 11 = disassemble(s ++ " EQ", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 12 = disassemble(s ++ " MINUS", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 13 = disassemble(s ++ " BANG", Compiler{
-          bytes = removeFirstInstruction (bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 14 = disassemble(s ++ " JUMP " ++ (show (index (bytes c) 1)),Compiler{ 
-          bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 15 = disassemble(s ++ " JUMPNT " ++ (show (index (bytes c) 1)),Compiler{ 
-          bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 16 = disassemble(s ++ " SETGLOBAL " ++ (fst(symbols c !! (fromInteger(fromIntegral(index (bytes c) 1))))),Compiler{ 
-          bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 17 = disassemble(s ++ " GETGLOBAL " ++ (fst(symbols c !! (fromInteger(fromIntegral(index (bytes c) 1))))),Compiler{ 
-          bytes = removeFirstInstruction(removeFirstInstruction(bytes c)),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 18 = disassemble(s ++ " ARRAY", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 19 = disassemble(s ++ " ARRAYEND", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 20 = disassemble(s ++ " HASH", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 21 = disassemble(s ++ " HASHEND", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 22 = disassemble(s ++ " INDEX", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 23 = disassemble(s ++ " SETINDEX", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 24 = disassemble(s ++ " INDEXEND", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 25 = disassemble(s ++ " RETURNVALUE ", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | BS.head (bytes c) == 26 = disassemble(s ++ " OPRETURN ", Compiler{ 
-          bytes = removeFirstInstruction(bytes c),
-          constants = constants c, 
-          symbols = symbols c 
-        })
-      | otherwise = error ("disassemble " ++ (show (BS.head (bytes c))))
+      | BS.head bytes == 1 = disassemble(s ++ " POP",
+          removeFirstInstruction bytes
+        )
+      | BS.head bytes == 2 = disassemble(s ++ " ADD",
+          removeFirstInstruction bytes)
+      | BS.head bytes == 3 = disassemble(s ++ " SUB",
+          removeFirstInstruction bytes)
+      | BS.head bytes == 4 = disassemble(s ++ " MUL",
+          removeFirstInstruction bytes)
+      | BS.head bytes == 5 = disassemble(s ++ " DIV", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 6 = disassemble(s ++ " TRUE", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 7 = disassemble(s ++ " FALSE", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 8 = disassemble(s ++ " GT", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 9 = disassemble(s ++ " LT", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 10 = disassemble(s ++ " NEQ", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 11 = disassemble(s ++ " EQ", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 12 = disassemble(s ++ " MINUS", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 13 = disassemble(s ++ " BANG", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 14 = disassemble(s ++ " JUMP " ++ (show (index bytes 1)),
+          removeFirstInstruction(removeFirstInstruction bytes))
+      | BS.head bytes == 15 = disassemble(s ++ " JUMPNT " ++ (show (index bytes 1)),
+          removeFirstInstruction(removeFirstInstruction bytes))
+      | BS.head bytes == 16 = disassemble(s ++ " SETGLOBAL " ++ (show (fromInteger(fromIntegral(index bytes 1)))),
+          removeFirstInstruction(removeFirstInstruction bytes))
+      | BS.head bytes == 17 = disassemble(s ++ " GETGLOBAL " ++ (show (fromInteger(fromIntegral(index bytes 1)))),
+          removeFirstInstruction(removeFirstInstruction bytes))
+      | BS.head bytes == 18 = disassemble(s ++ " ARRAY", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 19 = disassemble(s ++ " ARRAYEND", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 20 = disassemble(s ++ " HASH",
+          removeFirstInstruction bytes)
+      | BS.head bytes == 21 = disassemble(s ++ " HASHEND", 
+          removeFirstInstruction bytes )
+      | BS.head bytes == 22 = disassemble(s ++ " INDEX", 
+          removeFirstInstruction bytes )
+      | BS.head bytes == 23 = disassemble(s ++ " SETINDEX", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 24 = disassemble(s ++ " INDEXEND", 
+          removeFirstInstruction bytes )
+      | BS.head bytes == 25 = disassemble(s ++ " RETURNVALUE ", 
+          removeFirstInstruction bytes)
+      | BS.head bytes == 26 = disassemble(s ++ " OPRETURN ", 
+          removeFirstInstruction bytes)
+      | otherwise = error ("disassemble " ++ (show (BS.head bytes)))
+
+
+removeFirstInstruction :: ByteString -> ByteString 
+removeFirstInstruction b = 
+  case BS.length b of 
+    0 -> error "can't remove instruction of length 0?"
+    1 -> BS.empty :: ByteString 
+    _ -> pack(removeFirst(unpack b))
 

@@ -50,9 +50,11 @@ opCodes = DM.fromList [
 
 data Compiler = Compiler{
     symbols :: [(String, Int)],
-    bytes :: ByteString,
+    -- bytes :: ByteString,
+    scopes :: ![ByteString],
+    scopeIndex :: !Int,
     constants :: [Object]
-  }
+  } deriving (Show)
 
     
 isValidOpCode :: OpCode -> Bool
