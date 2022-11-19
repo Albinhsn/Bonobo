@@ -5,6 +5,7 @@ import Token
 import Utils
 
 import Data.ByteString as BS
+import Debug.Trace
 
 
 data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
@@ -75,6 +76,7 @@ inspectObject o =
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
+    FUNC_OBJ -> "fn (){" ++ disassembleFunc("",funcValue o) ++ "};" 
 
 
 inspectFunction :: Function -> String
@@ -143,3 +145,45 @@ getLiteralFromAssignIndex e = s
     s
       | expressionType e == IDENTEXP = literal (ident e) 
       | expressionType e == INDEXEXP = getLiteralFromAssignIndex(arrayIdent e)
+
+
+disassembleFunc :: (String, ByteString) -> String 
+disassembleFunc (s,b)= str 
+  where 
+    str 
+      | BS.null b = s
+      | BS.head b == 0 = disassembleFunc(s ++ " CONST " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
+      | BS.head b == 1 = disassembleFunc(s ++ " POP", removeFirstInstruction2 b)
+      | BS.head b == 2 = disassembleFunc(s ++ " ADD", removeFirstInstruction2 b)
+      | BS.head b == 3 = disassembleFunc(s ++ " SUB", removeFirstInstruction2 b)
+      | BS.head b == 4 = disassembleFunc(s ++ " MUL", removeFirstInstruction2 b)
+      | BS.head b == 5 = disassembleFunc(s ++ " DIV", removeFirstInstruction2 b)
+      | BS.head b == 6 = disassembleFunc(s ++ " TRUE", removeFirstInstruction2 b)
+      | BS.head b == 7 = disassembleFunc(s ++ " FALSE", removeFirstInstruction2 b)
+      | BS.head b == 8 = disassembleFunc(s ++ " GT", removeFirstInstruction2 b)
+      | BS.head b == 9 = disassembleFunc(s ++ " LT", removeFirstInstruction2 b)
+      | BS.head b == 10 = disassembleFunc(s ++ " NEQ", removeFirstInstruction2 b)
+      | BS.head b == 11 = disassembleFunc(s ++ " EQ", removeFirstInstruction2 b)
+      | BS.head b == 12 = disassembleFunc(s ++ " MINUS", removeFirstInstruction2 b)
+      | BS.head b == 13 = disassembleFunc(s ++ " BANG", removeFirstInstruction2 b)
+      | BS.head b == 14 = disassembleFunc(s ++ " JUMP", removeFirstInstruction2 b)
+      | BS.head b == 15 = disassembleFunc(s ++ " JUMPNT", removeFirstInstruction2 b)
+      | BS.head b == 16 = disassembleFunc(s ++ " SETGLOBAL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
+      | BS.head b == 17 = disassembleFunc(s ++ " GETGLOBAL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
+      | BS.head b == 18 = disassembleFunc(s ++ " ARRAY", removeFirstInstruction2 b)
+      | BS.head b == 19 = disassembleFunc(s ++ " ARRAYEND", removeFirstInstruction2 b)
+      | BS.head b == 20 = disassembleFunc(s ++ " HASH", removeFirstInstruction2 b)
+      | BS.head b == 21 = disassembleFunc(s ++ " HASHEND", removeFirstInstruction2 b)
+      | BS.head b == 22 = disassembleFunc(s ++ " INDEX", removeFirstInstruction2 b)
+      | BS.head b == 23 = disassembleFunc(s ++ " SETINDEX", removeFirstInstruction2 b)
+      | BS.head b == 24 = disassembleFunc(s ++ " OPCALL", removeFirstInstruction2 b)
+      | BS.head b == 25 = disassembleFunc(s ++ " RETURNVALUE", removeFirstInstruction2 b)
+      | BS.head b == 26 = disassembleFunc(s ++ " OPRETURN", removeFirstInstruction2 b)
+      | otherwise = error ("disassemble " ++ (show (BS.head b)))
+
+removeFirstInstruction2:: ByteString -> ByteString 
+removeFirstInstruction2 b = 
+  case BS.length b of 
+    0 -> error "can't remove instruction of length 0?"
+    1 -> BS.empty :: ByteString 
+    _ -> pack(removeFirst(unpack b))

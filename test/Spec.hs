@@ -227,22 +227,22 @@ main = hspec $ do
       do 
         testMake2 
         `shouldBe`
-        " CONST 2 CONST 2 MUL CONST 3 CONST 2 MUL ADD POP"
+        " CONST 0 CONST 1 MUL CONST 2 CONST 3 MUL ADD POP"
     it "test code if" $
       do 
         testCodeIf
         `shouldBe`
-        " TRUE JUMPNT 7 CONST 5 POP JUMP 2"
+        " TRUE JUMPNT 7 CONST 0 POP JUMP 2"
     it "test code if else" $
       do 
         testCodeIfElse
         `shouldBe`
-        " TRUE JUMPNT 7 CONST 5 POP JUMP 5 CONST 10 POP"
+        " TRUE JUMPNT 7 CONST 0 POP JUMP 5 CONST 1 POP"
     it "test code let" $
       do 
         testCodeLet
         `shouldBe`
-        " CONST 5 SETGLOBAL five GETGLOBAL five POP"
+        " CONST 0 SETGLOBAL five GETGLOBAL five POP"
     it "test code array 1" $
       do 
         testCodeArray1
@@ -252,47 +252,52 @@ main = hspec $ do
       do 
         testCodeArray2
         `shouldBe`
-        " ARRAYEND CONST 'hi' CONST 1 ARRAY POP" 
+        " ARRAYEND CONST 0 CONST 1 ARRAY POP" 
     it "test code array 3" $
       do 
         testCodeArray3
         `shouldBe`
-        " ARRAYEND ARRAYEND CONST 2 CONST 1 ARRAY ARRAYEND ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAYEND ARRAY ARRAY SETGLOBAL a"
     it "test code array 4" $
       do 
         testCodeArray4
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAYEND CONST 2 CONST 1 ARRAY ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAY ARRAY SETGLOBAL a"
     it "test code array 5" $
       do 
         testCodeArray5
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAY ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND ARRAY ARRAYEND CONST 0 CONST 1 ARRAY ARRAY SETGLOBAL a"
     it "test code map 1" $
       do 
         testCodeMap1
         `shouldBe`
-        " HASHEND CONST 4 CONST 4 CONST 3 CONST 3 CONST 2 CONST 2 CONST 1 CONST 1 HASH SETGLOBAL a"
+        " HASHEND CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH SETGLOBAL a"
     it "test code index 1" $
       do 
         testCodeIndex1
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL b GETGLOBAL b CONST 0 INDEX CONST 1 INDEX SETGLOBAL a"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a GETGLOBAL a CONST 3 INDEX CONST 4 INDEX SETGLOBAL b"
     it "test code index 2" $
       do 
         testCodeIndex2
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a CONST 1 CONST 0 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a CONST 3 CONST 4 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 2 CONST 1 ARRAY ARRAY SETGLOBAL a CONST 0 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a CONST 3 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
     it "test code fn" $
       do 
         testCodeFN
         `shouldBe`
-        " CONST 0 CONST 1 ADD RETURNVALUE"
+        " CONST 0 CONST 1 ADD RETURNVALUE OPRETURN"
+    it "test code fn 2" $
+      do 
+        testCodeFN2
+        `shouldBe`
+        ""
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -408,7 +413,7 @@ main = hspec $ do
       do 
         testVMNestedElse
         `shouldBe`
-        "Stack:  Globals: 0 = 5"
+        "Stack:  Globals: 0 = 5 "
     it "test vm let book 1" $
       do 
         testVMLetBook1
@@ -514,6 +519,16 @@ main = hspec $ do
         testVMIndexAssign3
         `shouldBe`
         "Stack:  Globals: 0 = {0:[False, {0:[0, True, ], }, ], } "
+    it "test vm fn 1" $
+      do 
+        testVMFN1
+        `shouldBe`
+        "Stack:  Globals: 0 = fn (){ CONST 0 CONST 1 ADD RETURNVALUE OPRETURN}; 1 = 15 "
+    it "test vm fn 2" $
+      do 
+        testVMFN2
+        `shouldBe`
+        ""
   describe "test no sta" $ do
     it "test empty" $
       do 

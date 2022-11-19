@@ -8,16 +8,15 @@ import Code
 import Data.ByteString as BS
 
 main = do
--- let a = [[0,1],2]; a[0][1]= True;
-  let s = parseStringToStatements("if(True){if(False){3;}else{5;};};") 
-  print s
+-- fn add(a,b){return a + b;}; let a = add(1,2);
+  let s = parseStringToStatements("let a = 5; fn add(){return a;};  let b = add();") 
+  -- print s
   let c = statementsToString(s)
   print c
   let a = parseStatementToCompiled s 
-  -- print (disassemble ("", scopes a!!0))
-  print a
-  -- let k = parseStack(run a)
-  -- putStrLn k  
+  print (disassemble ("", a))
+  let k = parseStack(run a)
+  putStrLn k  
 
 
 

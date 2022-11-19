@@ -19,6 +19,7 @@ testBools=
         )
       ))
 
+
 testVMBool1 :: String 
 testVMBool1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = True == True"))))
 

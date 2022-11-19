@@ -6,18 +6,21 @@ import Data.Word (Word8)
 import Data.Map as DM
 import Data.Binary 
 import Data.Bits
+import Debug.Trace
 import Numeric (showHex)
 import Object 
 import Ast
 
 
-data OpCode = OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
 
+data Scope = GLOBAL | LOCAL deriving (Eq, Show)
 
 data Symbol = Symbol{
     symName :: !String, 
-    symIndex :: !Integer
-  }
+    symIndex :: !Integer,
+    symScope :: !Scope
+  } deriving (Eq, Show)
 
 opCodes = DM.fromList [
     (OPCONST ,fromIntegral 0 )
@@ -46,10 +49,12 @@ opCodes = DM.fromList [
   , (OPCALL, fromIntegral 24)
   , (OPRETURNVALUE, fromIntegral 25)
   , (OPRETURN, fromIntegral 26)
+  , (SETLOCAL, fromIntegral 27)
+  , (GETLOCAL, fromIntegral 28)
   ]
 
 data Compiler = Compiler{
-    symbols :: [(String, Int)],
+    symbols :: [Symbol],
     -- bytes :: ByteString,
     scopes :: ![ByteString],
     scopeIndex :: !Int,
@@ -90,5 +95,5 @@ make (o, i) = b
   where 
     b 
       | isValidOpCode o == False = error "opcode doesn't exist"
-      | otherwise = (lookupOpCode o) <> (chooseToUnroll i) 
+      | otherwise =(lookupOpCode o) <> (chooseToUnroll i) 
 

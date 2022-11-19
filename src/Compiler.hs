@@ -18,7 +18,8 @@ compile :: ([Statement], Compiler)-> Compiler
 compile (s,c) = comp 
   where 
     comp
-      | Prelude.null s = c 
+      | Prelude.null s = 
+        c 
       | statementType (Prelude.head s) == NOSTA = compile(removeFirst s, addToScope(compileExpression(
           expression (Prelude.head s),
           c),
@@ -27,12 +28,49 @@ compile (s,c) = comp
       )
       | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
+      | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
       | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
+      | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s,
+          exitScope(expression (Prelude.head s),
+            compile(
+              body (statementUni (Prelude.head s)), 
+              addParams(params (statementUni (Prelude.head s)), Compiler{
+                  scopeIndex = scopeIndex c + 1,
+                  scopes = scopes c ++ [BS.empty::ByteString],
+                  symbols = symbols c,
+                  constants = constants c
+                }
+            )
+          )
+        ))
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
+
+addParams :: ([Expression], Compiler) -> Compiler
+addParams (e, c) = comp   
+  where  
+    comp 
+      | Prelude.null e = c 
+      | otherwise = addParams(removeFirst e, Compiler{
+          scopeIndex = scopeIndex c,
+          scopes = scopes c, 
+          symbols = (literal(ident (Prelude.head e)), Prelude.length (constants c)):symbols c, 
+          constants = constants c ++ [NullObject{objectType = NULL_OBJ}]
+        })
+
+exitScope :: (Expression,Compiler)-> Compiler 
+exitScope (e, c) = 
+  addToScope(Compiler{
+    scopeIndex = scopeIndex c- 1, 
+    scopes = pop (scopes c),
+    symbols = (literal (ident e), Prelude.length (symbols c)):symbols c,
+    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, funcValue = (scopes c!!scopeIndex c) <> lookupOpCode OPRETURN}]
+  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupOpCode SETGLOBAL <>chooseToUnroll(Prelude.length (symbols c)))
+
 addToScope :: (Compiler, ByteString) -> Compiler 
-addToScope (c, b) = Compiler{
+addToScope (c, b) = 
+  Compiler{
     constants = constants c, 
     symbols = symbols c,
     scopes = (scopes c) & element (scopeIndex c) .~ (scopes c!!scopeIndex c<> b), 
@@ -80,13 +118,13 @@ compileLet (s, c) = comp
   where 
     comp
       | member (identifier (statementUni s)) (fromList (symbols c)) == True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
-
-      | otherwise = addToScope(compileExpression(expression s, Compiler{
+      | otherwise = 
+        addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c,
           constants = constants c,
           symbols = (identifier (statementUni s), Prelude.length (symbols c)):(symbols c)
-        }), lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c) - 1))
+        }), lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c)))
 
 compileIf :: (BlockType, Statement, Compiler) -> Compiler 
 compileIf (bl, s, c) = comp 
@@ -105,14 +143,14 @@ compileIf (bl, s, c) = comp
           expression = expression s
         }, 
         addJumpNT(compile(con (statementUni s), Compiler{
-            scopes = [],
+            scopes = [BS.empty :: ByteString],
             scopeIndex = 0,
             constants = constants c,
             symbols = symbols c
           }
       ), c))
       | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
-          scopes = [],
+          scopes = [BS.empty :: ByteString],
           scopeIndex = 0,
           constants = constants c,
           symbols = symbols c
@@ -122,23 +160,24 @@ compileIf (bl, s, c) = comp
 addJump :: (Compiler, Compiler) -> Compiler 
 addJump (c, old) = addToScope(
     Compiler{
-      symbols = symbols old,
-      constants = constants old, 
+      symbols = symbols c,
+      constants = constants c, 
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
     },
-    lookupOpCode JUMP <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 2)  <>scopes c!!0
+    lookupOpCode JUMP <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 2)  <>scopes c!!scopeIndex c
   )
 
 addJumpNT :: (Compiler, Compiler) -> Compiler 
-addJumpNT (c, old) =addToScope(
+addJumpNT (c, old) =
+  addToScope(
     Compiler{
-      symbols = symbols old,
-      constants = constants old, 
+      symbols = symbols c,
+      constants = constants c, 
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
     },
-    lookupOpCode JUMPNT <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 4)  <>scopes c!!0
+    lookupOpCode JUMPNT <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 4)  <>scopes c!!scopeIndex c 
   )
 
 compileExpression :: (Expression, Compiler) -> Compiler 
@@ -164,7 +203,8 @@ compileExpression (e,c) = comp
           arrayIndex e, 
           compileExpression(arrayIdent e, c)
         ) 
-      | expressionType e == INTEXP = addToScope(
+      | expressionType e == INTEXP = 
+        addToScope(
           Compiler{
               scopes = scopes c,
               scopeIndex = scopeIndex c,
@@ -213,7 +253,17 @@ compileExpression (e,c) = comp
           getAssignStrFromExp (assignIdent e), 
           compileExpression(assignExpression e, c)
         ) 
+      | expressionType e == CALLEXP = addCallParams(literal (ident (callIdent e)), callParams e,c)
       | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+
+addCallParams :: (String, [Expression], Compiler)-> Compiler 
+addCallParams (s, e,c) = comp 
+  where 
+    comp 
+      | Prelude.null e = 
+        addToScope(c,lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(s, symbols c)) <> lookupOpCode OPCALL)
+      | otherwise = addCallParams(s, removeFirst e, compileExpression(Prelude.head e, c))
+
 
 addAssignInstruction :: (String,Compiler) -> Compiler
 addAssignInstruction (s, c) = addToScope(

@@ -10,7 +10,7 @@ module Utils2 (
 
 ) where
 
-
+import Debug.Trace
 import Object 
 import Ast
 import Compiler
@@ -21,6 +21,7 @@ import Parser
 import VM
 
 
+import Control.Lens
 import Data.ByteString as BS
 
 reverseList :: [a] -> [a]
@@ -39,88 +40,67 @@ parseMakeToPretty (b, o) = (prettyPrint b ++ " - " ++ Prelude.concat [inspectObj
 
 parseStatementToCompiled :: [Statement] -> Compiler 
 parseStatementToCompiled s = compile(s, Compiler{
-    scopes = [],
+    scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     constants = [],
     symbols = []
   })
 
 
--- parseStack ::  VM -> String 
--- parseStack v = ("Stack: " ++ Prelude.concat [inspectObject x | x <- (stack v)] ++ " " ++ "Globals: " ++ Prelude.concat [inspectGlobal x | x <- (global v)])
-
-inspectGlobal :: (Int, Object) -> String 
-inspectGlobal (i, o) = (show i) ++ " = " ++ inspectObject o ++ " "
-
-
-disassemble :: (String, ByteString) -> String 
-disassemble (s,bytes)= str 
+disassemble :: (String, Compiler) -> String 
+disassemble (s,c)= str 
   where 
     str 
-      | BS.null bytes = s
-      | BS.head bytes == 0 = disassemble(s ++ " CONST " ++  (show (index (bytes) 1)), 
-          removeFirstInstruction(removeFirstInstruction bytes))
+      | BS.null (scopes c!!scopeIndex c) = s
+      | BS.head (scopes c!!scopeIndex c) == 0 = disassemble(s ++ " CONST " ++  (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
       --Pop
-      | BS.head bytes == 1 = disassemble(s ++ " POP",
-          removeFirstInstruction bytes
-        )
-      | BS.head bytes == 2 = disassemble(s ++ " ADD",
-          removeFirstInstruction bytes)
-      | BS.head bytes == 3 = disassemble(s ++ " SUB",
-          removeFirstInstruction bytes)
-      | BS.head bytes == 4 = disassemble(s ++ " MUL",
-          removeFirstInstruction bytes)
-      | BS.head bytes == 5 = disassemble(s ++ " DIV", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 6 = disassemble(s ++ " TRUE", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 7 = disassemble(s ++ " FALSE", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 8 = disassemble(s ++ " GT", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 9 = disassemble(s ++ " LT", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 10 = disassemble(s ++ " NEQ", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 11 = disassemble(s ++ " EQ", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 12 = disassemble(s ++ " MINUS", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 13 = disassemble(s ++ " BANG", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 14 = disassemble(s ++ " JUMP " ++ (show (index bytes 1)),
-          removeFirstInstruction(removeFirstInstruction bytes))
-      | BS.head bytes == 15 = disassemble(s ++ " JUMPNT " ++ (show (index bytes 1)),
-          removeFirstInstruction(removeFirstInstruction bytes))
-      | BS.head bytes == 16 = disassemble(s ++ " SETGLOBAL " ++ (show (fromInteger(fromIntegral(index bytes 1)))),
-          removeFirstInstruction(removeFirstInstruction bytes))
-      | BS.head bytes == 17 = disassemble(s ++ " GETGLOBAL " ++ (show (fromInteger(fromIntegral(index bytes 1)))),
-          removeFirstInstruction(removeFirstInstruction bytes))
-      | BS.head bytes == 18 = disassemble(s ++ " ARRAY", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 19 = disassemble(s ++ " ARRAYEND", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 20 = disassemble(s ++ " HASH",
-          removeFirstInstruction bytes)
-      | BS.head bytes == 21 = disassemble(s ++ " HASHEND", 
-          removeFirstInstruction bytes )
-      | BS.head bytes == 22 = disassemble(s ++ " INDEX", 
-          removeFirstInstruction bytes )
-      | BS.head bytes == 23 = disassemble(s ++ " SETINDEX", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 24 = disassemble(s ++ " INDEXEND", 
-          removeFirstInstruction bytes )
-      | BS.head bytes == 25 = disassemble(s ++ " RETURNVALUE ", 
-          removeFirstInstruction bytes)
-      | BS.head bytes == 26 = disassemble(s ++ " OPRETURN ", 
-          removeFirstInstruction bytes)
-      | otherwise = error ("disassemble " ++ (show (BS.head bytes)))
+      | BS.head (scopes c!!scopeIndex c) == 1 = disassemble(s ++ " POP", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 2 = disassemble(s ++ " ADD", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 3 = disassemble(s ++ " SUB", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 4 = disassemble(s ++ " MUL", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 5 = disassemble(s ++ " DIV", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 6 = disassemble(s ++ " TRUE", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 7 = disassemble(s ++ " FALSE", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 8 = disassemble(s ++ " GT", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 9 = disassemble(s ++ " LT", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 10 = disassemble(s ++ " NEQ", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 11 = disassemble(s ++ " EQ", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 12 = disassemble(s ++ " MINUS", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 13 = disassemble(s ++ " BANG", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 14 = disassemble(s ++ " JUMP " ++ (show (BS.index (scopes c!!scopeIndex c) 1)),removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 15 = disassemble(s ++ " JUMPNT " ++ (show (BS.index (scopes c!!scopeIndex c) 1)),removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 16 = 
+        disassemble(s ++ " SETGLOBAL " ++ (findSymbolFromVal(symbols c,(fromInteger(fromIntegral(BS.index (scopes c!!scopeIndex c) 1))))),removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 17 = 
+        disassemble(s ++ " GETGLOBAL " ++ (findSymbolFromVal(symbols c, (fromInteger(fromIntegral(BS.index (scopes c!!scopeIndex c) 1))))),removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 18 = disassemble(s ++ " ARRAY", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 19 = disassemble(s ++ " ARRAYEND", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 20 = disassemble(s ++ " HASH", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 21 = disassemble(s ++ " HASHEND", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 22 = disassemble(s ++ " INDEX", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 23 = disassemble(s ++ " SETINDEX", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 24 = disassemble(s ++ " OPCALL", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 25 = disassemble(s ++ " RETURNVALUE ", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 26 = disassemble(s ++ " OPRETURN ", removeFromScope c)
+      | otherwise = error ("disassemble " ++ (show (BS.head (scopes c!!scopeIndex c))))
 
+removeFromScope :: Compiler -> Compiler 
+removeFromScope c = Compiler{
+    constants = constants c,
+    symbols = symbols c, 
+    scopes = (scopes c) & element (scopeIndex c) .~ (removeFirstInstruction(scopes c!!scopeIndex c)),
+    scopeIndex = scopeIndex c 
+  }
 
-removeFirstInstruction :: ByteString -> ByteString 
-removeFirstInstruction b = 
-  case BS.length b of 
-    0 -> error "can't remove instruction of length 0?"
-    1 -> BS.empty :: ByteString 
-    _ -> pack(removeFirst(unpack b))
+findSymbolFromVal :: ([(String, Int)], Int) -> String 
+findSymbolFromVal (symbols, val) = 
+  trace (show symbols ++ " " ++ show val)
+  Prelude.head [x | (x,i) <- symbols, val == i]
+
+-- removeFirstInstruction :: ByteString -> ByteString 
+-- removeFirstInstruction b = 
+--   case BS.length b of 
+--     0 -> error "can't remove instruction of length 0?"
+--     1 -> BS.empty :: ByteString 
+--     _ -> pack(removeFirst(unpack b))
 

@@ -71,7 +71,7 @@ testVMNestedIf :: String
 testVMNestedIf = parseStack(run(parseStatementToCompiled(parseStringToStatements(" if(True){if(True){let a = 3;}else{let b = 5;};};"))))
 
 testVMNestedElse :: String 
-testVMNestedElse = parseStack(run(parseStatementToCompiled(parseStringToStatements("if(False){let a = 2;}else{if(False){let a = 3;}else{let a = 5;};};"))))
+testVMNestedElse = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 0; if(False){a = 2;}else{if(False){a = 3;}else{a = 5;};};"))))
 
 testVMLetBook1 :: String 
 testVMLetBook1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let one = 1; one;"))))
@@ -136,5 +136,8 @@ testVMIndexAssign2 = parseStack(run(parseStatementToCompiled(parseStringToStatem
 testVMIndexAssign3 :: String 
 testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[False, {0:[0, False]}]}; a[0][1][0][1] = True;"))))
 
-testVMIndexAssign4 :: String 
-testVMIndexAssign4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;};"))))
+testVMFN1 :: String 
+testVMFN1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();"))))
+
+testVMFN2:: String 
+testVMFN2= parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);"))))
