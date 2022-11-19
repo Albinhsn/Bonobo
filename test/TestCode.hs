@@ -67,4 +67,4 @@ testCodeFN :: String
 testCodeFN = disassembleFunc ("", funcValue(Prelude.last(constants(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;};"))))))
 
 testCodeFN2 :: String 
-testCodeFN2 = disassembleFunc ("", funcValue(Prelude.last(constants(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let a = add(1,2);"))))))
+testCodeFN2 = disassembleFunc ("", funcValue(Prelude.last(constants(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(1,2);"))))))
