@@ -16,7 +16,7 @@ main = do
   let a = parseStatementToCompiled s 
   print (disassemble ("", a))
   let k = parseStack(run a)
-  putStrLn k  
+  print k  
 
 
 

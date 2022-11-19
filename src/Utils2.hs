@@ -92,11 +92,6 @@ removeFromScope c = Compiler{
     scopeIndex = scopeIndex c 
   }
 
-findSymbolFromVal :: ([(String, Int)], Int) -> String 
-findSymbolFromVal (symbols, val) = 
-  trace (show symbols ++ " " ++ show val)
-  Prelude.head [x | (x,i) <- symbols, val == i]
-
 -- removeFirstInstruction :: ByteString -> ByteString 
 -- removeFirstInstruction b = 
 --   case BS.length b of 

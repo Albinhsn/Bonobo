@@ -18,7 +18,7 @@ data Scope = GLOBAL | LOCAL deriving (Eq, Show)
 
 data Symbol = Symbol{
     symName :: !String, 
-    symIndex :: !Integer,
+    symIndex :: !Int,
     symScope :: !Scope
   } deriving (Eq, Show)
 
@@ -53,6 +53,16 @@ opCodes = DM.fromList [
   , (GETLOCAL, fromIntegral 28)
   ]
 
+isSymbolName :: ([Symbol], String)-> Bool 
+isSymbolName (s, i) = Prelude.null [x | x <- s, i == symName x] == False
+
+getSymbolKey :: ([Symbol], String) -> Int
+getSymbolKey (sym, s)= i 
+  where 
+    i 
+      | isSymbolName(sym, s)== False = error ("Trying to access variable that doesn't exist: " ++ s)
+      | otherwise = Prelude.head [symIndex x | x <- sym , s == symName x] 
+
 data Compiler = Compiler{
     symbols :: [Symbol],
     -- bytes :: ByteString,
@@ -76,6 +86,10 @@ prettyPrint = BS.foldr showHex ""
 reverseUnroll :: Int -> ByteString
 reverseUnroll i = BS.reverse (unroll i)
 
+
+findSymbolFromVal :: ([Symbol], Int) -> String 
+findSymbolFromVal (symbols, val) = 
+  Prelude.head [symName x | x <- symbols, val == symIndex x]
 
 
 chooseToUnroll :: Int -> ByteString 

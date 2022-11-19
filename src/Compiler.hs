@@ -55,7 +55,7 @@ addParams (e, c) = comp
       | otherwise = addParams(removeFirst e, Compiler{
           scopeIndex = scopeIndex c,
           scopes = scopes c, 
-          symbols = (literal(ident (Prelude.head e)), Prelude.length (constants c)):symbols c, 
+          symbols = Symbol{symName = literal(ident (Prelude.head e)), symIndex = Prelude.length (constants c), symScope = GLOBAL }:symbols c, 
           constants = constants c ++ [NullObject{objectType = NULL_OBJ}]
         })
 
@@ -64,7 +64,7 @@ exitScope (e, c) =
   addToScope(Compiler{
     scopeIndex = scopeIndex c- 1, 
     scopes = pop (scopes c),
-    symbols = (literal (ident e), Prelude.length (symbols c)):symbols c,
+    symbols = Symbol{symName = literal (ident e), symIndex = Prelude.length (symbols c), symScope = GLOBAL}:symbols c,
     constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, funcValue = (scopes c!!scopeIndex c) <> lookupOpCode OPRETURN}]
   }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupOpCode SETGLOBAL <>chooseToUnroll(Prelude.length (symbols c)))
 
@@ -90,7 +90,7 @@ compileAssign (e, c) = comp
   where 
     comp 
       | expressionType e /= ASSIGNEXP = error "assignsta without assignexp?"
-      | member (getAssignStrFromExp e) (fromList (symbols c)) == False = error "can't assign to non existing variable" 
+      | isSymbolName(symbols c, getAssignStrFromExp e)== False = error "can't assign to non existing variable" 
       | expressionType (assignIdent e) == INDEXEXP = addToScope(
           compileExpression(
             assignExpression e,
@@ -99,7 +99,7 @@ compileAssign (e, c) = comp
               c
             )
           ), 
-          lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(getAssignStrFromExp e, symbols c))
+          lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e))
         )
       | otherwise = compileExpression(e, c) 
 
@@ -117,13 +117,13 @@ compileLet :: (Statement, Compiler) -> Compiler
 compileLet (s, c) = comp  
   where 
     comp
-      | member (identifier (statementUni s)) (fromList (symbols c)) == True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
+      | isSymbolName (symbols c, identifier (statementUni s))== True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
       | otherwise = 
         addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c,
           constants = constants c,
-          symbols = (identifier (statementUni s), Prelude.length (symbols c)):(symbols c)
+          symbols = Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = GLOBAL}:(symbols c)
         }), lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c)))
 
 compileIf :: (BlockType, Statement, Compiler) -> Compiler 
@@ -247,7 +247,7 @@ compileExpression (e,c) = comp
         ) 
       | expressionType e == IDENTEXP= addToScope(
         c,
-        lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(literal (ident e), symbols c))
+        lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident e)))
       ) 
       | expressionType e == ASSIGNEXP = addAssignInstruction(
           getAssignStrFromExp (assignIdent e), 
@@ -261,14 +261,14 @@ addCallParams (s, e,c) = comp
   where 
     comp 
       | Prelude.null e = 
-        addToScope(c,lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(s, symbols c)) <> lookupOpCode OPCALL)
+        addToScope(c,lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, s)) <> lookupOpCode OPCALL)
       | otherwise = addCallParams(s, removeFirst e, compileExpression(Prelude.head e, c))
 
 
 addAssignInstruction :: (String,Compiler) -> Compiler
 addAssignInstruction (s, c) = addToScope(
     c,
-    lookupOpCode SETGLOBAL <> chooseToUnroll ((fromList (symbols c)) ! s)
+    lookupOpCode SETGLOBAL <> chooseToUnroll (getSymbolKey (symbols c, s))
   ) 
 
 addIndexInstructions :: ([Expression], Compiler) -> Compiler 
@@ -302,12 +302,6 @@ addArrayInstructions (e, c) = comp
       | otherwise = addArrayInstructions(pop e, compileExpression(Prelude.last e, c))
 
 
-getSymbolKey :: (String, [(String, Int)]) -> Int  
-getSymbolKey (s, sym)= i 
-  where 
-    i 
-      | member s (fromList sym) == False = error ("Trying to access variable that doesn't exist: " ++ s)
-      | otherwise = (fromList sym) ! s
 
 addPrefixInstruction :: (Token, Compiler) -> Compiler 
 addPrefixInstruction (t, c) = 
