@@ -1,7 +1,8 @@
 module TestVM where 
 
 import VM 
-import Utils2
+import CompilerUtils
+import Compiler
 
 
 testVMOp1 :: String 
@@ -139,5 +140,18 @@ testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatem
 testVMFN1 :: String 
 testVMFN1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();"))))
 
-testVMFN2:: String 
-testVMFN2= parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);"))))
+testVMFN2 :: String 
+testVMFN2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();"))))
+
+testVMFN3 :: String 
+testVMFN3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();"))))
+
+testVMFN4 :: String 
+testVMFN4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let five = 5;}; let a = add();"))))
+
+testVMFN5 :: String 
+testVMFN5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn add(){let num = 5; return a + num;}; fn sub(){let num = 10; return a - num;}; let c = add() - sub();"))))
+
+testVMFN6 :: String 
+testVMFN6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);"))))
+

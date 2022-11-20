@@ -1,8 +1,11 @@
-ROADMAP FUNCS:
-  can't have callParams with same var name as others
-  get func with param to compile
-  fix vm with params 
-  fix scopes a la python
+ROADMAP:
+  Compile funcs without args or bindings 
+  Run func without args or bindings
+  Compile funcs with local bindings 
+  Run func with local bindings 
+  Compile funcs with args 
+  Run func with args 
+
 
 git ls-files | grep '\.hs' | xargs wc -l
 

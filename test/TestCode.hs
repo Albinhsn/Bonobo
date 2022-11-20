@@ -4,7 +4,8 @@ import Data.ByteString as BS
 
 import VM
 import Code 
-import Utils2
+import CompilerUtils
+import Compiler
 import Object
 
 
@@ -64,7 +65,7 @@ testCodeIndex3 :: String
 testCodeIndex3 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[1,2],0]; a[0] = True;")))
 
 testCodeFN :: String 
-testCodeFN = disassembleFunc ("", funcValue(Prelude.last(constants(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;};"))))))
+testCodeFN = disassembleFunc ("", scopes( parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;};")))!!0)
 
 testCodeFN2 :: String 
-testCodeFN2 = disassembleFunc ("", funcValue(Prelude.last(constants(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(1,2);"))))))
+testCodeFN2 = disassembleFunc ("",scopes (parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(1,2);")))!!0)

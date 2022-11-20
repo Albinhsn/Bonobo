@@ -1,11 +1,10 @@
-module Compiler (
-  compile
-)where 
+module Compiler where 
 
 import Code 
 import Object 
 import Ast
 import Utils
+import CompilerUtils
 import Token
 import Lexer
 import Data.ByteString.UTF8 as BSU 
@@ -28,45 +27,53 @@ compile (s,c) = comp
       )
       | statementType (Prelude.head s) == IFSTA= compile(removeFirst s, compileIf(CON, Prelude.head s, compileExpression(expression (Prelude.head s), c)))
       | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
-      | statementType (Prelude.head s) == LETSTA = compile(removeFirst s, compileLet(Prelude.head s, c))
       | statementType (Prelude.head s) == ASSIGNSTA = compile(removeFirst s, compileAssign(expression (Prelude.head s),c))
-      | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s,
-          exitScope(expression (Prelude.head s),
-            compile(
-              body (statementUni (Prelude.head s)), 
-              addParams(params (statementUni (Prelude.head s)), Compiler{
-                  scopeIndex = scopeIndex c + 1,
-                  scopes = scopes c ++ [BS.empty::ByteString],
-                  symbols = symbols c,
-                  constants = constants c
-                }
-            )
-          )
-        ))
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
+      | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, compileFunc(Prelude.head s, c))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
+extractFunc :: (Int,Int,String,Compiler) -> Compiler
+extractFunc (n,l,s,c) = addToScope(Compiler{
+    scopes = pop (scopes c), 
+    scopeIndex = scopeIndex c - 1,
+    symbols = Symbol{symName = s, symIndex = Prelude.length (symbols c), symScope = getSymScope(scopeIndex c - 1)}:symbols c, 
+    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1)}]
+  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c)))
 
-addParams :: ([Expression], Compiler) -> Compiler
-addParams (e, c) = comp   
-  where  
+compileFunc :: (Statement, Compiler) -> Compiler 
+compileFunc (s, c) = comp 
+  where 
     comp 
-      | Prelude.null e = c 
-      | otherwise = addParams(removeFirst e, Compiler{
-          scopeIndex = scopeIndex c,
-          scopes = scopes c, 
-          symbols = Symbol{symName = literal(ident (Prelude.head e)), symIndex = Prelude.length (constants c), symScope = GLOBAL }:symbols c, 
-          constants = constants c ++ [NullObject{objectType = NULL_OBJ}]
+      | otherwise =  extractFunc(
+        Prelude.length (params (statementUni s)),
+        Prelude.length (constants c), 
+        literal(ident (expression (s))), 
+        compile(body (statementUni s), addSetParams(Prelude.length (params(statementUni s)), Compiler{
+            scopes = scopes c,
+            scopeIndex = scopeIndex c,
+            constants = constants c,
+            symbols = [
+              Symbol{
+                  symName = literal (ident x), 
+                  symIndex =Prelude.length (symbols c) + i, 
+                  symScope = LOCAL
+                } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ] ++ symbols c
+          })))
+
+addSetParams :: (Int, Compiler) -> Compiler 
+addSetParams (i, c) = generateSet(i, Compiler{
+          scopes = scopes c++ [BS.empty :: ByteString],
+          scopeIndex = scopeIndex c+ 1, 
+          symbols =  symbols c, 
+          constants = constants c
         })
 
-exitScope :: (Expression,Compiler)-> Compiler 
-exitScope (e, c) = 
-  addToScope(Compiler{
-    scopeIndex = scopeIndex c- 1, 
-    scopes = pop (scopes c),
-    symbols = Symbol{symName = literal (ident e), symIndex = Prelude.length (symbols c), symScope = GLOBAL}:symbols c,
-    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, funcValue = (scopes c!!scopeIndex c) <> lookupOpCode OPRETURN}]
-  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupOpCode SETGLOBAL <>chooseToUnroll(Prelude.length (symbols c)))
+generateSet :: (Int, Compiler) -> Compiler 
+generateSet (i, c) = comp 
+  where 
+    comp 
+      | i == 0 = c
+      | otherwise = generateSet(i-1,addToScope(c, lookupOpCode SETLOCAL <> chooseToUnroll(Prelude.length (symbols c) - i)))
 
 addToScope :: (Compiler, ByteString) -> Compiler 
 addToScope (c, b) = 
@@ -99,7 +106,7 @@ compileAssign (e, c) = comp
               c
             )
           ), 
-          lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e)) <> lookupOpCode SETINDEX <> lookupOpCode SETGLOBAL <>  chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e))
+          lookupGetScope (scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e)) <> lookupOpCode SETINDEX <> lookupSetScope (scopeIndex c)<>  chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e))
         )
       | otherwise = compileExpression(e, c) 
 
@@ -123,8 +130,27 @@ compileLet (s, c) = comp
           scopes = scopes c,
           scopeIndex = scopeIndex c,
           constants = constants c,
-          symbols = Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = GLOBAL}:(symbols c)
-        }), lookupOpCode(SETGLOBAL) <> chooseToUnroll(Prelude.length (symbols c)))
+          symbols = Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = getSymScope (scopeIndex c)}:(symbols c)
+        }), lookupSetScope (scopeIndex c) <> chooseToUnroll(Prelude.length (symbols c)))
+
+lookupGetScope :: Int -> ByteString 
+lookupGetScope i = 
+  case i of 
+    0 -> lookupOpCode GETGLOBAL
+    _ -> lookupOpCode GETLOCAL
+
+lookupSetScope :: Int -> ByteString 
+lookupSetScope i = 
+  case i of 
+    0 -> lookupOpCode SETGLOBAL
+    _ -> lookupOpCode SETLOCAL
+
+getSymScope :: Int -> Scope 
+getSymScope i = 
+  case i of 
+    0 -> GLOBAL
+    _ -> LOCAL
+      
 
 compileIf :: (BlockType, Statement, Compiler) -> Compiler 
 compileIf (bl, s, c) = comp 
@@ -247,28 +273,37 @@ compileExpression (e,c) = comp
         ) 
       | expressionType e == IDENTEXP= addToScope(
         c,
-        lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident e)))
+        lookupGetScope (scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, literal (ident e)))
       ) 
       | expressionType e == ASSIGNEXP = addAssignInstruction(
           getAssignStrFromExp (assignIdent e), 
           compileExpression(assignExpression e, c)
         ) 
-      | expressionType e == CALLEXP = addCallParams(literal (ident (callIdent e)), callParams e,c)
+      | expressionType e == CALLEXP = addCallInstructions(e, c)
       | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
 
-addCallParams :: (String, [Expression], Compiler)-> Compiler 
-addCallParams (s, e,c) = comp 
-  where 
-    comp 
-      | Prelude.null e = 
-        addToScope(c,lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, s)) <> lookupOpCode OPCALL)
-      | otherwise = addCallParams(s, removeFirst e, compileExpression(Prelude.head e, c))
+addCallInstructions ::(Expression, Compiler) -> Compiler 
+addCallInstructions (e,c) = addToScope(c, lookupGetScope(scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))) <> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))) <> addCallParams(callParams e, c)) 
+
+getArgsFromSymbol :: (Compiler, String) -> Int 
+getArgsFromSymbol (c, str) = i 
+  where   
+    i
+      | objectType (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str])) /= FUNC_OBJ = error ("is not func: " ++ (show (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))))
+      | otherwise = numArgs (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))
+
+addCallParams :: ([Expression], Compiler) -> ByteString  
+addCallParams (e, c) = b 
+  where
+    b
+      | Prelude.null e = scopes c!!0 
+      | otherwise = addCallParams(removeFirst e,compileExpression(Prelude.head e, c))
 
 
 addAssignInstruction :: (String,Compiler) -> Compiler
 addAssignInstruction (s, c) = addToScope(
     c,
-    lookupOpCode SETGLOBAL <> chooseToUnroll (getSymbolKey (symbols c, s))
+    lookupSetScope (scopeIndex c)<> chooseToUnroll (getSymbolKey (symbols c, s))
   ) 
 
 addIndexInstructions :: ([Expression], Compiler) -> Compiler 
@@ -334,6 +369,10 @@ addBoolInstruction (t, c) =
     NOT_EQUALS -> addToScope(c, lookupOpCode OPNEQ)
     _ -> error "cant add non valid bool instruction"
 
-mergeLists :: [a] -> [a] -> [a]
-mergeLists [] ys = ys 
-mergeLists (x:xs) ys = x:mergeLists ys xs 
+parseStatementToCompiled :: [Statement] -> Compiler 
+parseStatementToCompiled s = compile(s, Compiler{
+    scopes = [BS.empty :: ByteString],
+    scopeIndex = 0,
+    constants = [],
+    symbols = []
+  })

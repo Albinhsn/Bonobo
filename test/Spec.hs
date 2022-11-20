@@ -242,7 +242,7 @@ main = hspec $ do
       do 
         testCodeLet
         `shouldBe`
-        " CONST 0 SETGLOBAL five GETGLOBAL five POP"
+        " CONST 0 SETGLOBAL 0 GETGLOBAL 0 POP"
     it "test code array 1" $
       do 
         testCodeArray1
@@ -257,47 +257,47 @@ main = hspec $ do
       do 
         testCodeArray3
         `shouldBe`
-        " ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAYEND ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAYEND ARRAY ARRAY SETGLOBAL 0"
     it "test code array 4" $
       do 
         testCodeArray4
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAY ARRAY SETGLOBAL 0"
     it "test code array 5" $
       do 
         testCodeArray5
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAY ARRAYEND CONST 0 CONST 1 ARRAY ARRAY SETGLOBAL a"
+        " ARRAYEND ARRAYEND ARRAY ARRAYEND CONST 0 CONST 1 ARRAY ARRAY SETGLOBAL 0"
     it "test code map 1" $
       do 
         testCodeMap1
         `shouldBe`
-        " HASHEND CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH SETGLOBAL a"
+        " HASHEND CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH SETGLOBAL 0"
     it "test code index 1" $
       do 
         testCodeIndex1
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a GETGLOBAL a CONST 3 INDEX CONST 4 INDEX SETGLOBAL b"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 GETGLOBAL 0 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 1"
     it "test code index 2" $
       do 
         testCodeIndex2
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a CONST 3 CONST 4 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 CONST 3 CONST 4 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL a CONST 3 TRUE GETGLOBAL a SETINDEX SETGLOBAL a"
+        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 CONST 3 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
     it "test code fn" $
       do 
         testCodeFN
         `shouldBe`
-        " CONST 0 CONST 1 ADD RETURNVALUE OPRETURN"
+        " CONST 2 SETGLOBAL 0"
     it "test code fn 2" $
       do 
         testCodeFN2
         `shouldBe`
-        ""
+        " CONST 0 SETGLOBAL 0 GETGLOBAL 0 OPCALL 0 SETGLOBAL 1"
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -523,10 +523,30 @@ main = hspec $ do
       do 
         testVMFN1
         `shouldBe`
-        "Stack:  Globals: 0 = fn (){ CONST 0 CONST 1 ADD RETURNVALUE OPRETURN}; 1 = 15 "
+        "Stack:  Globals: 0 = fn ( args: 0){ CONST 0 CONST 1 ADD RETURNVALUE OPRETURN}; 1 = 15 "
     it "test vm fn 2" $
       do 
         testVMFN2
+        `shouldBe`
+        ""
+    it "test vm fn 3" $
+      do 
+        testVMFN3
+        `shouldBe`
+        ""
+    it "test vm fn 4" $
+      do 
+        testVMFN4
+        `shouldBe`
+        ""
+    it "test vm fn 5" $
+      do 
+        testVMFN5
+        `shouldBe`
+        ""
+    it "test vm fn 6" $
+      do 
+        testVMFN6
         `shouldBe`
         ""
   describe "test no sta" $ do

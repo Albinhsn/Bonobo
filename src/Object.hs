@@ -3,10 +3,8 @@ module Object where
 import Ast 
 import Token
 import Utils
-
 import Data.ByteString as BS
 import Debug.Trace
-
 
 data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
 
@@ -23,49 +21,11 @@ data Object
   | BoolObject {objectType :: !ObjectType, boolValue :: !Bool}
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
-  | FuncObject{objectType :: !ObjectType, funcValue :: ByteString}
+  | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: ByteString}
   deriving(Eq, Show, Ord)
-
-
 
 getFuncParams :: (String, [Function]) -> [Expression]
 getFuncParams (s, f) = Prelude.head [funcParams x | x <- f, funcIdent x == s]
-
--- TODO error handle this
-getVarValue :: (String, [Variable]) -> Object 
-getVarValue (s, v) = o 
-  where 
-    o
-      | Prelude.null v = error "null vars"
-      | otherwise = Prelude.head [varValue x | x <- v, varIdent x == s] 
-
-
---TODO error handle this 
-getFuncBody :: (String, [Function]) -> [Statement]
-getFuncBody (s, f) = Prelude.head [funcBody x | x <- f, funcIdent x == s] 
-
-identIsFunc :: (String, [Function]) -> Bool 
-identIsFunc (s, f) = (Prelude.null [x | x <- f, funcIdent x == s]) == False
-
-isVar :: (String, [Variable]) -> Bool 
-isVar (s, v) = (Prelude.null [x | x <- v, varIdent x== s]) == False
-
-getFunc :: (String, [Function])-> Function 
-getFunc (s, f) = Prelude.head [x | x <- f, funcIdent x == s]
-
-replaceVar :: (Variable, [Variable]) -> [Variable]
-replaceVar (v, va) = removeVar(varIdent v, va) ++ [v]
-
-addVar :: (Variable, [Variable], [Function]) -> [Variable]
-addVar (v, va, f) = var 
-  where 
-    var 
-      | Prelude.null [x | x <- f, varIdent v == funcIdent x] == False = error ("redeclaration of func: " ++ (varIdent v)) 
-      | isVar(varIdent v, va) == True = replaceVar(v, va)
-      | otherwise = va ++ [v]
-
-inspectVariable :: Variable -> String 
-inspectVariable v = (varIdent v) ++ " = " ++ (inspectObject (varValue v))
 
 inspectObject :: Object -> String 
 inspectObject o = 
@@ -76,26 +36,11 @@ inspectObject o =
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
-    FUNC_OBJ -> "fn (){" ++ disassembleFunc("",funcValue o) ++ "};" 
+    FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){" ++ disassembleFunc("",funcValue o) ++ "};" 
 
 
 inspectFunction :: Function -> String
 inspectFunction f = "fn " ++ (funcIdent f) ++ paramToString(funcParams f) ++ "{" ++ statementsToString(funcBody f) ++ "};"
-
-removeVar :: (String, [Variable]) -> [Variable]
-removeVar (s, v) =  va 
-  where   
-    va 
-      | Prelude.null (checkVar(s, v)) = error ("can't assign to non existing variable " ++ s ++ (Prelude.concat [inspectVariable x | x <- v]))
-      | otherwise = [x | x <- v, varIdent x /= s]
-
-checkVar :: (String, [Variable]) -> [Variable] 
-checkVar (s, v) = b 
-  where 
-    b   
-      | Prelude.null v = [] 
-      | otherwise = [x | x <- v, varIdent x == s]
-
 
 readIntFromString :: Expression -> Int 
 readIntFromString e = i 
@@ -146,7 +91,6 @@ getLiteralFromAssignIndex e = s
       | expressionType e == IDENTEXP = literal (ident e) 
       | expressionType e == INDEXEXP = getLiteralFromAssignIndex(arrayIdent e)
 
-
 disassembleFunc :: (String, ByteString) -> String 
 disassembleFunc (s,b)= str 
   where 
@@ -176,10 +120,12 @@ disassembleFunc (s,b)= str
       | BS.head b == 21 = disassembleFunc(s ++ " HASHEND", removeFirstInstruction2 b)
       | BS.head b == 22 = disassembleFunc(s ++ " INDEX", removeFirstInstruction2 b)
       | BS.head b == 23 = disassembleFunc(s ++ " SETINDEX", removeFirstInstruction2 b)
-      | BS.head b == 24 = disassembleFunc(s ++ " OPCALL", removeFirstInstruction2 b)
+      | BS.head b == 24 = disassembleFunc(s ++ " OPCALL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
       | BS.head b == 25 = disassembleFunc(s ++ " RETURNVALUE", removeFirstInstruction2 b)
       | BS.head b == 26 = disassembleFunc(s ++ " OPRETURN", removeFirstInstruction2 b)
-      | otherwise = error ("disassemble " ++ (show (BS.head b)))
+      | BS.head b == 27 = disassembleFunc(s ++ " SETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))      
+      | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))      
+      | otherwise = error ("disassembleFunc " ++ (show (BS.head b)))
 
 removeFirstInstruction2:: ByteString -> ByteString 
 removeFirstInstruction2 b = 
@@ -187,3 +133,21 @@ removeFirstInstruction2 b =
     0 -> error "can't remove instruction of length 0?"
     1 -> BS.empty :: ByteString 
     _ -> pack(removeFirst(unpack b))
+
+isInt :: Object -> Bool
+isInt o =
+  case objectType o of
+    INT_OBJ -> True
+    _ -> error "can't access array with non int"
+
+
+isWithinBounds :: (Int, Int) -> Bool
+isWithinBounds (i, l) = b
+  where 
+    b
+      | i < 0 = error "can't access array with negative index"
+      | i >= l = error "trying to access array outside of bounds"
+      | otherwise = True
+
+getFuncs :: [Object] -> [Object] 
+getFuncs o = [x | x <- o, objectType x == FUNC_OBJ] 

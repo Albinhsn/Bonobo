@@ -65,7 +65,6 @@ getSymbolKey (sym, s)= i
 
 data Compiler = Compiler{
     symbols :: [Symbol],
-    -- bytes :: ByteString,
     scopes :: ![ByteString],
     scopeIndex :: !Int,
     constants :: [Object]

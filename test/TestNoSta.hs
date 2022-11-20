@@ -5,7 +5,7 @@ import Ast
 import Lexer 
 import Token 
 import Utils 
-import Utils2
+import CompilerUtils
 
 testEmpty:: String
 testEmpty=

@@ -6,7 +6,8 @@ import Lexer
 import Token 
 import Utils 
 import VM 
-import Utils2
+import CompilerUtils
+import Compiler
 
 testBools:: String
 testBools=
