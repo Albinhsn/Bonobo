@@ -10,7 +10,8 @@ import Object
 import Data.ByteString as BS
 
 main = do
-  let s = parseStringToStatements("fn add(a){return a;}; let c = add(2);") 
+  let s = parseStringToStatements("fn add(a,b){let five = 5; return five + a + b}; let c = add(2,3);") 
+  -- let s = parseStringToStatements("let five = 5; let c = five + 2 + 3") 
   -- print s
   let c = statementsToString(s)
   print c
@@ -18,7 +19,7 @@ main = do
   print ("Funcs: " ++ Prelude.concat [inspectObject o ++ " " | o <- getFuncs(constants a)])
   print (disassemble ("", a))
   let r = run a 
-  -- print r
+  print r
   let k = parseStack(r)
   print k  
 

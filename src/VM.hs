@@ -61,9 +61,8 @@ runVM v = vm
             global = global v, 
             stack = removeFirst (stack v)
           })
-      --Add
-      | BS.head (frames v !!frameIndex v)== 2 = 
-        runVM(VM{
+      --ADD
+      | BS.head (frames v !!frameIndex v)== 2 = runVM(VM{
             frames = removeFirstInstruction (frames v, frameIndex v),
             frameIndex = frameIndex v,
             basePointer = basePointer v,
@@ -259,14 +258,15 @@ runVM v = vm
         }))
       -- OPRETURNVALUE 
       | BS.head (frames v !! frameIndex v)== 25 = 
-        VM{
-          frames = pop (frames v), 
-          frameIndex = frameIndex v - 1, 
+        trace ("OPRETURNVALUE, Top of stack: " ++ inspectObject (Prelude.head (stack v)))
+         VM{
+          frames = frames v, 
+          frameIndex = frameIndex v, 
           basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = [Prelude.head (stack v)]
-        } 
+        }
       -- OPRETURN 
       | BS.head (frames v !! frameIndex v)== 26 = VM{
           frames = removeFirstInstruction(frames v,  frameIndex v), 
@@ -276,6 +276,7 @@ runVM v = vm
           global = global v,
           stack = []
         } 
+      -- SETLOCAL
       | BS.head (frames v !! frameIndex v)== 27 = runVM(setLocal(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
@@ -284,18 +285,21 @@ runVM v = vm
           global = global v,
           stack = stack v 
         })) 
-      | BS.head (frames v !!frameIndex v)== 28 = getLocal(VM{
+      -- GETLOCAL
+      | BS.head (frames v !!frameIndex v)== 28 = runVM(getLocal(VM{
         frames = removeFirstInstruction(frames v, frameIndex v), 
         frameIndex = frameIndex v, 
         basePointer = basePointer v,
         constVM = constVM v, 
         global = global v,
         stack = stack v 
-        })
+        }))
       | otherwise = error "run" 
 
 getLocal :: VM -> VM 
-getLocal v = VM{
+getLocal v = 
+  trace ("getLocal, Stack: " ++ concStack(stack v!!(fromIntegral (BS.head (frames v !! frameIndex v))) :stack v))
+  VM{
     frames = removeFirstInstruction (frames v, frameIndex v),
     frameIndex = frameIndex v,
     basePointer = basePointer v,
@@ -305,14 +309,19 @@ getLocal v = VM{
   }
 
 
+concStack :: [Object] -> String 
+concStack o = Prelude.concat [inspectObject x ++ " " | x <- o]
+
 setLocal :: VM -> VM 
-setLocal v = VM{
+setLocal v = 
+  trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (fromIntegral(BS.head (frames v !! frameIndex v)) + 1) .~ stack v!!0)))
+  VM{
     frames = removeFirstInstruction (frames v, frameIndex v),
     frameIndex = frameIndex v,
     basePointer = basePointer v,
     constVM = constVM v,
     global = global v,
-    stack = removeFirst(stack v & element (basePointer v - fromIntegral(BS.head (frames v !! frameIndex v))) .~ stack v!!0)
+    stack = removeFirst(stack v & element (fromIntegral(BS.head (frames v !! frameIndex v)) + 1) .~ stack v!!0)
   }
 
 errorStack :: VM -> VM 
@@ -322,37 +331,38 @@ evalParams :: VM -> VM
 evalParams v = vm 
   where 
     vm 
-      | numArgs (Prelude.head (stack v)) + numLocals (Prelude.head (stack v))/= Prelude.length (stack v) = error "wrong params" 
-      | otherwise = VM{
+      | 1 + numArgs (Prelude.head (stack v)) /= Prelude.length (stack v) = error (show (numArgs (Prelude.head (stack v))) ++ " " ++ show (stack v)) 
+      | otherwise = 
+        trace ("evalParams, BP: " ++ show(basePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
+        trace ("    Stack: " ++ concStack(stack v ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numArgs(Prelude.head (stack v)) + numLocals (Prelude.head (stack v)))]]))
+        trace ("    NumLocals: " ++ show(numLocals (Prelude.head (stack v))))
+        trace ("    NumArgs: " ++ show(numArgs(Prelude.head (stack v))))
+        VM{ 
           frames = removeFirstInstruction(frames v,  frameIndex v) ++ [funcValue (Prelude.head (stack v))], 
           frameIndex = frameIndex v + 1, 
           basePointer = basePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),
           constVM = constVM v, 
           global = global v,
-          stack = [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)))]]++ stack v 
+          stack = removeFirst(stack v)++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)))]] 
         } 
 
 
 evalCall :: VM -> VM 
--- evalCall v = error ("BP: "++ show(basePointer(evalParams v)) ++ " " ++ Prelude.concat [inspectObject x ++  " " | x <- stack (evalParams v)]) 
-evalCall v = 
-  trace (show (Prelude.head (stack v)))
-  evalReturn(runVM(evalParams(v))) 
+evalCall v = evalReturn(runVM(evalParams(v)))
 
 evalReturn :: VM -> VM 
 evalReturn v = vm 
   where 
     vm 
-      | objectType (Prelude.head (stack v)) == NULL_OBJ = v 
-      | otherwise = 
+      | otherwise =
         VM{
-          frames = frames v,
+          frames = pop (frames v),
           frameIndex = frameIndex v - 1,
-          basePointer = basePointer v,
+          basePointer = 0, -- SHOULD POINT TO START OF NEXT FRAME 
           constVM = constVM v, 
           global = global v, 
           stack = stack v 
-        } 
+        }
 
 
 
@@ -468,7 +478,8 @@ addEleToArray (v, arr) = vm
         }, ArrayObject{objectType = ARRAY_OBJ, arrValue = arrValue arr ++ [Prelude.head (stack v)]})
 
 evalGetGlobal :: VM ->  VM 
-evalGetGlobal v = VM{
+evalGetGlobal v = 
+  VM{
     frames = removeFirstInstruction(frames v, frameIndex v),
     frameIndex = frameIndex v,
     basePointer = basePointer v,
@@ -629,3 +640,6 @@ parseStack v = ("Stack: " ++ Prelude.concat [inspectObject x | x <- (stack v)] +
 
 inspectGlobal :: (Int, Object) -> String 
 inspectGlobal (i, o) = (show i) ++ " = " ++ inspectObject o ++ " "
+
+getGlobal :: (Int, VM) -> Object 
+getGlobal (i, v) = (fromList (global v)) ! i 

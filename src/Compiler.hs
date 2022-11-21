@@ -48,7 +48,7 @@ compileFunc (s, c) = comp
         Prelude.length (params (statementUni s)),
         Prelude.length (constants c), 
         literal(ident (expression (s))), 
-        compile(body (statementUni s), addSetParams(Prelude.length (params(statementUni s)), Compiler{
+        compile(body (statementUni s), enterScope(Compiler{
             scopes = scopes c,
             scopeIndex = scopeIndex c,
             constants = constants c,
@@ -60,20 +60,13 @@ compileFunc (s, c) = comp
                 } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ] ++ symbols c
           })))
 
-addSetParams :: (Int, Compiler) -> Compiler 
-addSetParams (i, c) = generateSet(i, Compiler{
+enterScope :: Compiler -> Compiler 
+enterScope c= Compiler{
           scopes = scopes c++ [BS.empty :: ByteString],
           scopeIndex = scopeIndex c+ 1, 
           symbols =  symbols c, 
           constants = constants c
-        })
-
-generateSet :: (Int, Compiler) -> Compiler 
-generateSet (i, c) = comp 
-  where 
-    comp 
-      | i == 0 = c
-      | otherwise = generateSet(i-1,addToScope(c, lookupOpCode SETLOCAL <> chooseToUnroll(Prelude.length (symbols c) - i)))
+        }
 
 addToScope :: (Compiler, ByteString) -> Compiler 
 addToScope (c, b) = 
@@ -283,7 +276,7 @@ compileExpression (e,c) = comp
       | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
 
 addCallInstructions ::(Expression, Compiler) -> Compiler 
-addCallInstructions (e,c) = addToScope(c, lookupGetScope(scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))) <> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))) <> addCallParams(callParams e, c)) 
+addCallInstructions (e,c) = addToScope(addCallParams(Prelude.reverse (callParams e), c), lookupGetScope(scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))) <> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))))
 
 getArgsFromSymbol :: (Compiler, String) -> Int 
 getArgsFromSymbol (c, str) = i 
@@ -292,11 +285,11 @@ getArgsFromSymbol (c, str) = i
       | objectType (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str])) /= FUNC_OBJ = error ("is not func: " ++ (show (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))))
       | otherwise = numArgs (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))
 
-addCallParams :: ([Expression], Compiler) -> ByteString  
-addCallParams (e, c) = b 
+addCallParams :: ([Expression], Compiler) -> Compiler 
+addCallParams (e, c) = comp 
   where
-    b
-      | Prelude.null e = scopes c!!0 
+    comp  
+      | Prelude.null e = c 
       | otherwise = addCallParams(removeFirst e,compileExpression(Prelude.head e, c))
 
 

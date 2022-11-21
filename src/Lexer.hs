@@ -85,6 +85,13 @@ pop :: [a] -> [a]
 pop [] = []
 pop a = init a
 
+popN :: (Int, [a]) -> [a]
+popN (i, a) = b 
+  where 
+    b 
+      | i == 0 = a 
+      | otherwise = popN(i-1, pop a)
+
 validateIdentifier :: Token -> Token
 validateIdentifier t =
   case literal t of

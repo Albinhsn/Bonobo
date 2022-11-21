@@ -523,32 +523,27 @@ main = hspec $ do
       do 
         testVMFN1
         `shouldBe`
-        "Stack:  Globals: 0 = fn ( args: 0){ CONST 0 CONST 1 ADD RETURNVALUE OPRETURN}; 1 = 15 "
+        "15"
     it "test vm fn 2" $
       do 
         testVMFN2
         `shouldBe`
-        ""
+        "15"
     it "test vm fn 3" $
       do 
         testVMFN3
         `shouldBe`
-        ""
+        "2"
     it "test vm fn 4" $
       do 
         testVMFN4
         `shouldBe`
-        ""
+        "5"
     it "test vm fn 5" $
       do 
         testVMFN5
         `shouldBe`
-        ""
-    it "test vm fn 6" $
-      do 
-        testVMFN6
-        `shouldBe`
-        ""
+        "5"
   describe "test no sta" $ do
     it "test empty" $
       do 

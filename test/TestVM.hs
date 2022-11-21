@@ -2,6 +2,7 @@ module TestVM where
 
 import VM 
 import CompilerUtils
+import Object
 import Compiler
 
 
@@ -138,20 +139,19 @@ testVMIndexAssign3 :: String
 testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[False, {0:[0, False]}]}; a[0][1][0][1] = True;"))))
 
 testVMFN1 :: String 
-testVMFN1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();"))))
+testVMFN1 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();")))))
 
 testVMFN2 :: String 
-testVMFN2 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();"))))
+testVMFN2 = inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();")))))
 
 testVMFN3 :: String 
-testVMFN3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();"))))
+testVMFN3 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn add(a){return a;}; let c = add(2);")))))
 
 testVMFN4 :: String 
-testVMFN4 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(){let five = 5;}; let a = add();"))))
+testVMFN4 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn add(){let five = 5; return 5;}; let a = add();")))))
 
 testVMFN5 :: String 
-testVMFN5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn add(){let num = 5; return a + num;}; fn sub(){let num = 10; return a - num;}; let c = add() - sub();"))))
-
-testVMFN6 :: String 
-testVMFN6 = parseStack(run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);"))))
+testVMFN5 = inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);")))))
+-- testVMFN5 :: String 
+-- testVMFN5 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn add(){let num = 5; return a + num;}; fn sub(){let num = 10; return a - num;}; let c = add() - sub();"))))
 

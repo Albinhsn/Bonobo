@@ -1,10 +1,16 @@
-ROADMAP:
-  Compile funcs without args or bindings 
-  Run func without args or bindings
-  Compile funcs with local bindings 
-  Run func with local bindings 
-  Compile funcs with args 
-  Run func with args 
+TODO:
+  Redo args to be prior to call and eval params and add them when you "run func"
+  Fix func with args 
+  Fix basepointer for x2 funcs
+    store in frames (Int, ByteString)
+  Redo global/local into separate ones and gets sent into func 
+    Func in func gets locals and put in global, not sent back
+  Do massive test suite for things
+  Do issue #3 (Prebuilt funcs)
+  Do issue #4 (Compiler issues)
+  Do issue #5 (Cleanup project after completion)
+  Do issue #8 (Look at lost chapter for macros)
+
 
 
 git ls-files | grep '\.hs' | xargs wc -l
