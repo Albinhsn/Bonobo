@@ -18,9 +18,8 @@ run :: Compiler -> VM
 run c = 
   runVM(
     VM{
-        frames = scopes c,
+        frames = [(0, scopes c!!0)],
         frameIndex = 0,
-        basePointer = 0,
         constVM = constants c,
         global = [],
         stack = []
@@ -29,216 +28,196 @@ run c =
 
 
 data VM = VM{
-    frames :: ![ByteString],
+    frames :: ![(Int,ByteString)],
     frameIndex :: !Int, 
-    basePointer :: !Int, 
     constVM:: ![Object],
-    global :: ![(Int, Object)],
+    global :: ![[(Int, Object)]],
     stack :: ![Object] 
   } deriving (Show)
 
-runVM :: VM -> VM
-runVM v = vm  
+getFirstInstruction :: (Int, ByteString) -> Int 
+getFirstInstruction  f = i 
   where 
-    vm 
-      | BS.null (frames v !!frameIndex v)= v 
-      --Constant
-      | BS.head (frames v !!frameIndex v)== 0 = runVM(pushToStack(VM{
+    i
+      | BS.null (snd (f)) = -1 
+      | otherwise = fromIntegral (BS.head (snd f))  
+
+runVM :: VM -> VM
+runVM v = 
+  case getFirstInstruction(frames v !! frameIndex v) of 
+    -- NULL 
+    -1 -> v 
+    --Constant
+    0 -> runVM(pushToStack(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = stack v
         }))
-      --Pop
-      | BS.head (frames v !!frameIndex v)== 1 =
-        runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
-            basePointer = basePointer v,
-            constVM = constVM v, 
-            global = global v, 
-            stack = removeFirst (stack v)
+    --Pop
+    1 -> runVM(VM{
+          frames = removeFirstInstruction (frames v, frameIndex v),
+          frameIndex = frameIndex v,
+          constVM = constVM v, 
+          global = global v, 
+          stack = removeFirst (stack v)
           })
-      --ADD
-      | BS.head (frames v !!frameIndex v)== 2 = runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
+    --ADD
+    2 ->  runVM(VM{
+            frames = changeBasePointer(-2, removeFirstInstruction (frames v, frameIndex v)),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v, 
             global = global v,
             stack =addOp (stack v)
           })
-      --Sub
-      | BS.head (frames v !!frameIndex v)== 3 = 
-        runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
+    --Sub
+    3 ->  runVM(VM{
+            frames = changeBasePointer(-2, removeFirstInstruction (frames v, frameIndex v)),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v, 
             global = global v,
             stack =subOp (stack v)
           })
-      --Mul
-      | BS.head (frames v !!frameIndex v)== 4 = 
-        runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
+    --Mul
+    4 -> runVM(VM{
+            frames = changeBasePointer(-2, removeFirstInstruction (frames v, frameIndex v)),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM  = constVM v, 
             global = global v,
             stack =mulOp (stack v)
           })
-      --Div
-      | BS.head (frames v !!frameIndex v)== 5 = 
-        runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
+    --Div
+    5 -> runVM(VM{
+            frames = changeBasePointer(-2, removeFirstInstruction (frames v, frameIndex v)),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v, 
             global = global v,
             stack =divOp (stack v)
           })
-      --True
-      | BS.head (frames v !!frameIndex v)== 6 = runVM(VM{
+    --True
+    6 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = True}:(stack v)
         }
       )
-      --False 
-      | BS.head (frames v !!frameIndex v)== 7 = runVM(VM{
+    --False 
+    7 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = False}:(stack v)
         })
-      --GT 
-      | BS.head (frames v !!frameIndex v)== 8 = runVM(VM{
+    --GT 
+    8 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = gtOp (stack v)
         }
       ) 
-      --NEQ 
-      | BS.head (frames v !!frameIndex v)== 10 = runVM(VM{
+    --NEQ 
+    10 -> 
+      runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = neqOp (stack v)
         }) 
-      --EQ
-      | BS.head (frames v !!frameIndex v)== 11 = runVM(VM{
+    --EQ
+    11 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = eqOp (stack v)
         }) 
-      --MINUS
-      | BS.head (frames v !!frameIndex v)== 12 = runVM(VM{
+    --MINUS
+    12 -> runVM(VM{
           frames = removeFirstInstruction (frames v,frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = minusOp (stack v)
         }) 
-      --BANG
-      | BS.head (frames v !!frameIndex v)== 13 = runVM(VM{
+    --BANG
+    13 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = bangOp (stack v)
         }) 
-      -- JUMP
-      | BS.head (frames v !! frameIndex v)== 14 = runVM(evalJump(v))
-      -- JUMPNT
-      | BS.head (frames v !! frameIndex v)== 15 = runVM(evalJumpNT(v))
-      -- SETGLOBAL
-      | BS.head (frames v !! frameIndex v) == 16 = runVM(evalSetGlobal(VM{
+    -- JUMP
+    14 -> runVM(evalJump(v))
+    -- JUMPNT
+    15 -> runVM(evalJumpNT(v))
+    -- SETGLOBAL
+    16 -> runVM(evalSetGlobal(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = stack v
         }))
-      -- GETGLOBAL
-      | BS.head (frames v !! frameIndex v)== 17 = runVM(evalGetGlobal(VM{
+    -- GETGLOBAL
+    17 -> runVM(evalGetGlobal(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = stack v
         }))  
       -- ARRAY
-      | BS.head (frames v !! frameIndex v)== 18 = 
-        runVM(addEleToArray (VM{
+    18 -> runVM(addEleToArray (VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = stack v
           }, ArrayObject{objectType = ARRAY_OBJ, arrValue = []}))  
-      -- ARRAYEND
-      | BS.head (frames v !! frameIndex v)== 19 = runVM(VM{
+    -- ARRAYEND
+    19 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = NullObject{objectType = NULL_OBJ}:stack v
         })  
-      -- HASH 
-      | BS.head (frames v !! frameIndex v)== 20 = 
-        runVM(addEleToMap (VM{
+    -- HASH 
+    20 -> runVM(addEleToMap (VM{
           frames = removeFirstInstruction (frames v,frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = stack v
         }, MapObject{objectType = MAP_OBJ, mapValue = []})) 
-      -- HASHEND
-      | BS.head (frames v !! frameIndex v)== 21 = runVM(VM{
+    -- HASHEND
+    21 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = NullObject{objectType = NULL_OBJ}:stack v
         })  
-      -- INDEX
-      | BS.head (frames v !! frameIndex v)== 22 = runVM(addIndexToStack(VM{
+    -- INDEX
+    22 -> runVM(addIndexToStack(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = stack v
         }))
-      -- SETINDEX
-      | BS.head (frames v !! frameIndex v)== 23 = runVM(VM{
+    -- SETINDEX
+    23 -> runVM(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = evalAssignIndex(
@@ -247,65 +226,62 @@ runVM v = vm
             stack v!!1
           ):[] 
         })
-      -- OPCALL 
-      | BS.head (frames v !! frameIndex v)== 24 = runVM(evalCall(VM{
+    -- OPCALL 
+    24 -> runVM(evalCall(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = stack v
         }))
-      -- OPRETURNVALUE 
-      | BS.head (frames v !! frameIndex v)== 25 = 
+    -- OPRETURNVALUE 
+    25 -> 
         trace ("OPRETURNVALUE, Top of stack: " ++ inspectObject (Prelude.head (stack v)))
          VM{
           frames = frames v, 
           frameIndex = frameIndex v, 
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = [Prelude.head (stack v)]
         }
-      -- OPRETURN 
-      | BS.head (frames v !! frameIndex v)== 26 = VM{
+    -- OPRETURN 
+    26 -> VM{
           frames = removeFirstInstruction(frames v,  frameIndex v), 
           frameIndex = frameIndex v, 
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = []
         } 
-      -- SETLOCAL
-      | BS.head (frames v !! frameIndex v)== 27 = runVM(setLocal(VM{
+    -- SETLOCAL
+    27 -> runVM(setLocal(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v,
           stack = stack v 
         })) 
-      -- GETLOCAL
-      | BS.head (frames v !!frameIndex v)== 28 = runVM(getLocal(VM{
+    -- GETLOCAL
+    28 -> runVM(getLocal(VM{
         frames = removeFirstInstruction(frames v, frameIndex v), 
         frameIndex = frameIndex v, 
-        basePointer = basePointer v,
         constVM = constVM v, 
         global = global v,
         stack = stack v 
         }))
-      | otherwise = error "run" 
+    _ -> error "run"
+
+changeBasePointer :: (Int, [(Int, ByteString)]) -> [(Int, ByteString)]
+changeBasePointer (i, f) = [(fst x + i, snd x) | x <- f]
 
 getLocal :: VM -> VM 
 getLocal v = 
-  trace ("getLocal, Stack: " ++ concStack(stack v!!(fromIntegral (BS.head (frames v !! frameIndex v))) :stack v))
+  trace ("getLocal, Stack: " ++ concStack(stack v!!(getFirstInstruction (frames v !! frameIndex v)) :stack v))
   VM{
-    frames = removeFirstInstruction (frames v, frameIndex v),
+    frames = changeBasePointer(1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
-    basePointer = basePointer v,
     constVM = constVM v,
     global = global v,
-    stack = stack v!!(fromIntegral (BS.head (frames v !! frameIndex v))) :stack v
+    stack = stack v!!(getBasePointer v - 1 - getFirstInstruction (frames v !! frameIndex v)) :stack v
   }
 
 
@@ -314,18 +290,20 @@ concStack o = Prelude.concat [inspectObject x ++ " " | x <- o]
 
 setLocal :: VM -> VM 
 setLocal v = 
-  trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (fromIntegral(BS.head (frames v !! frameIndex v)) + 1) .~ stack v!!0)))
+  trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)) .~ stack v!!0)))
   VM{
-    frames = removeFirstInstruction (frames v, frameIndex v),
+    frames = changeBasePointer(-1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
-    basePointer = basePointer v,
     constVM = constVM v,
     global = global v,
-    stack = removeFirst(stack v & element (fromIntegral(BS.head (frames v !! frameIndex v)) + 1) .~ stack v!!0)
+    stack = removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)+ 1) .~ stack v!!0)
   }
 
 errorStack :: VM -> VM 
-errorStack v = error ("FirstInstruct: " ++ (show (BS.head (frames v !! frameIndex v))) ++  " Stack: " ++ Prelude.concat [inspectObject x ++  " " | x <- stack v])
+errorStack v = error ("FirstInstruct: " ++ (show (getFirstInstruction (frames v !! frameIndex v))) ++  " Stack: " ++ Prelude.concat [inspectObject x ++  " " | x <- stack v])
+
+getBasePointer :: VM -> Int 
+getBasePointer v = fst(frames v !! frameIndex v)
 
 evalParams :: VM -> VM 
 evalParams v = vm 
@@ -333,14 +311,13 @@ evalParams v = vm
     vm 
       | 1 + numArgs (Prelude.head (stack v)) /= Prelude.length (stack v) = error (show (numArgs (Prelude.head (stack v))) ++ " " ++ show (stack v)) 
       | otherwise = 
-        trace ("evalParams, BP: " ++ show(basePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
+        trace ("evalParams, BP: " ++ show(getBasePointer v+ numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
         trace ("    Stack: " ++ concStack(stack v ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numArgs(Prelude.head (stack v)) + numLocals (Prelude.head (stack v)))]]))
         trace ("    NumLocals: " ++ show(numLocals (Prelude.head (stack v))))
         trace ("    NumArgs: " ++ show(numArgs(Prelude.head (stack v))))
         VM{ 
-          frames = removeFirstInstruction(frames v,  frameIndex v) ++ [funcValue (Prelude.head (stack v))], 
+          frames = removeFirstInstruction(frames v,  frameIndex v) ++ [(getBasePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
-          basePointer = basePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),
           constVM = constVM v, 
           global = global v,
           stack = removeFirst(stack v)++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)))]] 
@@ -358,7 +335,6 @@ evalReturn v = vm
         VM{
           frames = pop (frames v),
           frameIndex = frameIndex v - 1,
-          basePointer = 0, -- SHOULD POINT TO START OF NEXT FRAME 
           constVM = constVM v, 
           global = global v, 
           stack = stack v 
@@ -385,7 +361,6 @@ addIndexToStack :: VM -> VM
 addIndexToStack v = VM{
           frames = frames v, 
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v, 
           global = global v, 
           stack = (evalIndex (stack v!!0, stack v!!1)):(removeFirst(removeFirst (stack v)))
@@ -438,7 +413,6 @@ addEleToMap (v, mp) = vm
         VM{
           frames = frames v, 
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = mp:(removeFirst (stack v))
@@ -447,7 +421,6 @@ addEleToMap (v, mp) = vm
         addEleToMap(VM{
           frames = frames v,
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = removeFirst(removeFirst(stack v))
@@ -462,7 +435,6 @@ addEleToArray (v, arr) = vm
         VM{
           frames = frames v,
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v,
           stack = arr:(removeFirst (stack v))
@@ -471,7 +443,6 @@ addEleToArray (v, arr) = vm
         addEleToArray(VM{
           frames = frames v,
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
           global = global v, 
           stack = removeFirst(stack v) 
@@ -482,39 +453,35 @@ evalGetGlobal v =
   VM{
     frames = removeFirstInstruction(frames v, frameIndex v),
     frameIndex = frameIndex v,
-    basePointer = basePointer v,
     constVM = constVM v,
     global = global v, 
-    stack = fromList (global v) ! (fromIntegral (BS.head (frames v !!frameIndex v))):(stack v) 
+    stack = fromList (global v) ! (getFirstInstruction (frames v !! frameIndex v)):(stack v) 
   }
 
 evalSetGlobal :: VM ->  VM 
 evalSetGlobal v = vm
   where 
     vm 
-      | member (fromIntegral (BS.head (frames v !! frameIndex v))) (fromList (global v)) == False = VM{
+      | member (getFirstInstruction (frames v !! frameIndex v)) (fromList (global v)) == False = VM{
           frames = removeFirstInstruction (frames v, frameIndex v), 
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
-          global = global v ++ [(fromIntegral (BS.head (frames v!! frameIndex v)),(Prelude.head (stack v)))], 
+          global = global v ++ [(getFirstInstruction (frames v !!frameIndex v),(Prelude.head (stack v)))], 
           stack = removeFirst (stack v)
         } 
       | otherwise = VM{
           frames = removeFirstInstruction (frames v, frameIndex v), 
           frameIndex = frameIndex v,
-          basePointer = basePointer v,
           constVM = constVM v,
-          global = (fromIntegral (BS.head (frames v !!frameIndex v)), Prelude.head (stack v)):[x | x <- global v, fst x /= fromIntegral (BS.head (frames v !! frameIndex v))],
+          global = (getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)],
           stack = removeFirst (stack v)
         }
 
 
 evalJump :: VM -> VM 
 evalJump v = VM{
-    frames = removeNInstructions (fromIntegral (toInteger (BS.index (frames v !!frameIndex v) 1)) :: Int, frames v, frameIndex v),
+    frames = removeNInstructions (fromIntegral (toInteger (BS.index (snd (frames v !!frameIndex v)) 1)) :: Int, frames v, frameIndex v),
     frameIndex = frameIndex v,
-    basePointer = basePointer v,
     constVM = constVM v,
     global = global v,
     stack = stack v
@@ -530,7 +497,6 @@ evalJumpNT v = vm
         VM{
             frames = removeNInstructions(2, frames v, frameIndex v),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v,
             global = global v,
             stack = removeFirst (stack v)
@@ -538,9 +504,8 @@ evalJumpNT v = vm
       -- Should jump 
       | otherwise = 
         VM{
-            frames = removeNInstructions (fromIntegral (BS.index (frames v !! frameIndex v) 1) :: Int, frames v, frameIndex v),
+            frames = removeNInstructions (fromIntegral (BS.index (snd (frames v !! frameIndex v)) 1), frames v, frameIndex v),
             frameIndex = frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v,
             global = global v,
             stack = removeFirst (stack v) 
@@ -628,10 +593,9 @@ pushToStack v =
         VM{
             frames = removeFirstInstruction (frames v, frameIndex v),
             frameIndex =frameIndex v,
-            basePointer = basePointer v,
             constVM = constVM v,
             global = global v, 
-            stack = (constVM v)!!(fromIntegral (BS.head (frames v !!frameIndex v))):(stack v)
+            stack = (constVM v)!!(getFirstInstruction(frames v !!frameIndex v)):(stack v)
           }
 
 

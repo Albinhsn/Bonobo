@@ -1,8 +1,10 @@
 TODO:
-  Redo args to be prior to call and eval params and add them when you "run func"
-  Fix func with args 
-  Fix basepointer for x2 funcs
-    store in frames (Int, ByteString)
+  Implement x2 globals 
+  Implement x2 funcs
+  Test other types inside funcs 
+    Array
+    Map
+    String 
   Redo global/local into separate ones and gets sent into func 
     Func in func gets locals and put in global, not sent back
   Do massive test suite for things

@@ -80,19 +80,19 @@ removeFirstBS b =
     1 -> BS.empty :: ByteString 
     _ -> pack(removeFirst(unpack b))
 
-removeNInstructions :: (Int, [ByteString], Int) -> [ByteString]
+removeNInstructions :: (Int, [(Int, ByteString)], Int) -> [(Int, ByteString)]
 removeNInstructions (i, b, idx) = bs 
   where 
     bs 
       | i == 0 = b 
       | otherwise = removeNInstructions(i-1, removeFirstInstruction (b, idx), idx)
 
-removeFirstInstruction :: ([ByteString], Int)-> [ByteString]
+removeFirstInstruction :: ([(Int, ByteString)], Int)-> [(Int, ByteString)]
 removeFirstInstruction (b,i) = 
-  case BS.length (b!!i) of 
+  case BS.length (snd (b!!i)) of 
     0 -> error "can't remove instruction of length 0?"
-    1 -> b & element i .~ (BS.empty :: ByteString)
-    _ -> b & element i .~ pack(removeFirst(unpack (b!!i)))
+    1 -> b & element i .~ (fst (b!!i), BS.empty :: ByteString)
+    _ -> b & element i .~ (fst (b!!i), pack(removeFirst(unpack (snd (b!!i)))))
 
 
 mergeLists :: [a] -> [a] -> [a]
