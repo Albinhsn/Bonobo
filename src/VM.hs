@@ -31,7 +31,7 @@ data VM = VM{
     frames :: ![(Int,ByteString)],
     frameIndex :: !Int, 
     constVM:: ![Object],
-    global :: ![[(Int, Object)]],
+    global :: ![(Int, Object)],
     stack :: ![Object] 
   } deriving (Show)
 
@@ -236,7 +236,7 @@ runVM v =
         }))
     -- OPRETURNVALUE 
     25 -> 
-        trace ("OPRETURNVALUE, Top of stack: " ++ inspectObject (Prelude.head (stack v)))
+        -- trace ("OPRETURNVALUE, Top of stack: " ++ inspectObject (Prelude.head (stack v)))
          VM{
           frames = frames v, 
           frameIndex = frameIndex v, 
@@ -275,7 +275,7 @@ changeBasePointer (i, f) = [(fst x + i, snd x) | x <- f]
 
 getLocal :: VM -> VM 
 getLocal v = 
-  trace ("getLocal, Stack: " ++ concStack(stack v!!(getFirstInstruction (frames v !! frameIndex v)) :stack v))
+  -- trace ("getLocal, Stack: " ++ concStack(stack v!!(getFirstInstruction (frames v !! frameIndex v)) :stack v))
   VM{
     frames = changeBasePointer(1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
@@ -290,7 +290,7 @@ concStack o = Prelude.concat [inspectObject x ++ " " | x <- o]
 
 setLocal :: VM -> VM 
 setLocal v = 
-  trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)) .~ stack v!!0)))
+  -- trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)) .~ stack v!!0)))
   VM{
     frames = changeBasePointer(-1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
@@ -311,10 +311,10 @@ evalParams v = vm
     vm 
       | 1 + numArgs (Prelude.head (stack v)) /= Prelude.length (stack v) = error (show (numArgs (Prelude.head (stack v))) ++ " " ++ show (stack v)) 
       | otherwise = 
-        trace ("evalParams, BP: " ++ show(getBasePointer v+ numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
-        trace ("    Stack: " ++ concStack(stack v ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numArgs(Prelude.head (stack v)) + numLocals (Prelude.head (stack v)))]]))
-        trace ("    NumLocals: " ++ show(numLocals (Prelude.head (stack v))))
-        trace ("    NumArgs: " ++ show(numArgs(Prelude.head (stack v))))
+        -- trace ("evalParams, BP: " ++ show(getBasePointer v+ numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
+        -- trace ("    Stack: " ++ concStack(stack v ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numArgs(Prelude.head (stack v)) + numLocals (Prelude.head (stack v)))]]))
+        -- trace ("    NumLocals: " ++ show(numLocals (Prelude.head (stack v))))
+        -- trace ("    NumArgs: " ++ show(numArgs(Prelude.head (stack v))))
         VM{ 
           frames = removeFirstInstruction(frames v,  frameIndex v) ++ [(getBasePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
