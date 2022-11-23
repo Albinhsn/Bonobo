@@ -53,18 +53,32 @@ opCodes = DM.fromList [
   , (GETLOCAL, fromIntegral 28)
   ]
 
-isSymbolName :: ([Symbol], String)-> Bool 
-isSymbolName (s, i) = Prelude.null [x | x <- s, i == symName x] == False
+isSymbolName :: (Int, [[Symbol]], String)-> Bool 
+isSymbolName (idx, s, i) = b 
+  where 
+    b
+      | idx == 0 &&  Prelude.null [x | x <- s!!0, i == symName x] = False  
+      | Prelude.null [x | x <- s!!idx, i == symName x] == False = True 
+      | otherwise = isSymbolName(idx - 1, s, i)
 
-getSymbolKey :: ([Symbol], String) -> Int
+
+getSymbolKey :: ([[Symbol]], String) -> Int
 getSymbolKey (sym, s)= i 
   where 
     i 
-      | isSymbolName(sym, s)== False = error ("Trying to access variable that doesn't exist: " ++ s)
-      | otherwise = Prelude.head [symIndex x | x <- sym , s == symName x] 
+      | isSymbolName(Prelude.length sym - 1, sym, s)== False = error ("Trying to access variable that doesn't exist: " ++ s)
+      | otherwise = gsk(Prelude.length sym - 1, sym, s) 
+
+gsk :: (Int, [[Symbol]], String)-> Int 
+gsk (idx, s,str) = i
+  where 
+    i 
+      | i == 0 = Prelude.head [symIndex x | x <- s!!0, str == symName x]
+      | Prelude.null [symIndex x | x <- s!!0, str == symName x] = gsk(i-1, s, str)
+      | otherwise = Prelude.head [symIndex x | x <- s!!i, str == symName x] 
 
 data Compiler = Compiler{
-    symbols :: [Symbol],
+    symbols :: [[Symbol]],
     scopes :: ![ByteString],
     scopeIndex :: !Int,
     constants :: [Object]

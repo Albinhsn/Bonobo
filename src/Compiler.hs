@@ -33,12 +33,22 @@ compile (s,c) = comp
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
 extractFunc :: (Int,Int,String,Compiler) -> Compiler
-extractFunc (n,l,s,c) = addToScope(Compiler{
+extractFunc (n,l,s,c) = addToLastSymbol(
+  Symbol{symName = s, symIndex = Prelude.length (symbols c), symScope = getSymScope(scopeIndex c - 1)},
+  addToScope(Compiler{
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
-    symbols = Symbol{symName = s, symIndex = Prelude.length (symbols c), symScope = getSymScope(scopeIndex c - 1)}:symbols c, 
+    symbols =  symbols c, 
     constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1)}]
-  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c)))
+  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c))))
+
+addToLastSymbol :: (Symbol, Compiler) -> Compiler 
+addToLastSymbol (s, c) = Compiler{
+    scopes = scopes c, 
+    scopeIndex = scopeIndex c,
+    constants = constants c,
+    symbols = pop (symbols c) ++ [(s:Prelude.last (symbols c))]
+  }
 
 compileFunc :: (Statement, Compiler) -> Compiler 
 compileFunc (s, c) = comp 
@@ -52,19 +62,19 @@ compileFunc (s, c) = comp
             scopes = scopes c,
             scopeIndex = scopeIndex c,
             constants = constants c,
-            symbols = [
+            symbols = symbols c ++ [[
               Symbol{
                   symName = literal (ident x), 
                   symIndex =Prelude.length (symbols c) + i, 
                   symScope = LOCAL
-                } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ] ++ symbols c
+                } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]]
           })))
 
 enterScope :: Compiler -> Compiler 
 enterScope c= Compiler{
           scopes = scopes c++ [BS.empty :: ByteString],
           scopeIndex = scopeIndex c+ 1, 
-          symbols =  symbols c, 
+          symbols =  symbols c ++ [[]], 
           constants = constants c
         }
 
@@ -90,7 +100,7 @@ compileAssign (e, c) = comp
   where 
     comp 
       | expressionType e /= ASSIGNEXP = error "assignsta without assignexp?"
-      | isSymbolName(symbols c, getAssignStrFromExp e)== False = error "can't assign to non existing variable" 
+      | isSymbolName(Prelude.length (symbols c) -1, symbols c, getAssignStrFromExp e)== False = error "can't assign to non existing variable" 
       | expressionType (assignIdent e) == INDEXEXP = addToScope(
           compileExpression(
             assignExpression e,
@@ -117,14 +127,14 @@ compileLet :: (Statement, Compiler) -> Compiler
 compileLet (s, c) = comp  
   where 
     comp
-      | isSymbolName (symbols c, identifier (statementUni s))== True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
+      | isSymbolName (Prelude.length (symbols c) - 1, symbols c, identifier (statementUni s))== True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
       | otherwise = 
-        addToScope(compileExpression(expression s, Compiler{
+        addToLastSymbol(Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = getSymScope (scopeIndex c)},addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c,
           constants = constants c,
-          symbols = Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = getSymScope (scopeIndex c)}:(symbols c)
-        }), lookupSetScope (scopeIndex c) <> chooseToUnroll(Prelude.length (symbols c)))
+          symbols = symbols c 
+        }), lookupSetScope (scopeIndex c) <> chooseToUnroll(Prelude.length (symbols c))))
 
 lookupGetScope :: Int -> ByteString 
 lookupGetScope i = 
@@ -260,8 +270,8 @@ compileExpression (e,c) = comp
       | expressionType e == PREFIXEXP = addPrefixInstruction(
           prefixOperator e, 
           compileExpression(
-            prefixExpression e, 
-            c
+              prefixExpression e, 
+              c
             )
         ) 
       | expressionType e == IDENTEXP= addToScope(
@@ -282,8 +292,17 @@ getArgsFromSymbol :: (Compiler, String) -> Int
 getArgsFromSymbol (c, str) = i 
   where   
     i
-      | objectType (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str])) /= FUNC_OBJ = error ("is not func: " ++ (show (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))))
-      | otherwise = numArgs (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))
+      -- | objectType (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str])) /= FUNC_OBJ = error ("is not func: " ++ (show (constants c!! symIndex (Prelude.head [x | x <- symbols c, symName x== str]))))
+      | objectType (constants c !!symIndex (findSymbol (c, str))) /= FUNC_OBJ = error ("is not func: " ++ str)
+      | otherwise = numArgs (constants c!!symIndex(findSymbol (c, str)))
+
+findSymbol :: (Compiler, String) -> Symbol
+findSymbol (c, s) = sym 
+  where 
+    sym
+      | Prelude.length (symbols c) == 1 && Prelude.null [x | x <- symbols c!!0, symName x == s] == True = error ("Couldn't find symbol: " ++ s)
+      | Prelude.null [x | x <- symbols c!!(Prelude.length (symbols c) - 1), symName x == s] == True = error ("Couldn't find symbol: " ++ s)
+      | otherwise = Prelude.head [x | x <- (symbols c!!(Prelude.length (symbols c) - 1)), symName x == s]
 
 addCallParams :: ([Expression], Compiler) -> Compiler 
 addCallParams (e, c) = comp 
