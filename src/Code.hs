@@ -64,7 +64,7 @@ getSymbolKey (sym, s)= i
       | otherwise = Prelude.head [symIndex x | x <- sym , s == symName x] 
 
 data Compiler = Compiler{
-    symbols :: [Symbol],
+    symbols :: [[Symbol]],
     scopes :: ![ByteString],
     scopeIndex :: !Int,
     constants :: [Object]
