@@ -69,3 +69,6 @@ testCodeFN = disassembleFunc ("", scopes( parseStatementToCompiled(parseStringTo
 
 testCodeFN2 :: String 
 testCodeFN2 = disassembleFunc ("",scopes (parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(1,2);")))!!0)
+
+testCodeFN3 :: String 
+testCodeFN3 = disassembleFunc ("",scopes (parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))!!0)

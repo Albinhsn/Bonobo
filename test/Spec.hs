@@ -544,6 +544,16 @@ main = hspec $ do
         testVMFN5
         `shouldBe`
         "5"
+    it "test vm fn 6" $
+      do 
+        testVMFN6
+        `shouldBe`
+        "5"
+    it "test vm fn 7" $
+      do 
+        testVMFN7
+        `shouldBe`
+        "5"
   describe "test no sta" $ do
     it "test empty" $
       do 

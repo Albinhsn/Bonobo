@@ -275,7 +275,6 @@ changeBasePointer (i, f) = [(fst x + i, snd x) | x <- f]
 
 getLocal :: VM -> VM 
 getLocal v = 
-  -- trace ("getLocal, Stack: " ++ concStack(stack v!!(getFirstInstruction (frames v !! frameIndex v)) :stack v))
   VM{
     frames = changeBasePointer(1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
@@ -290,7 +289,6 @@ concStack o = Prelude.concat [inspectObject x ++ " " | x <- o]
 
 setLocal :: VM -> VM 
 setLocal v = 
-  -- trace ("setLocal, Stack: " ++ concStack(removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)) .~ stack v!!0)))
   VM{
     frames = changeBasePointer(-1, removeFirstInstruction (frames v, frameIndex v)),
     frameIndex = frameIndex v,
@@ -310,13 +308,8 @@ evalParams v = vm
   where 
     vm 
       | 1 + numArgs (Prelude.head (stack v)) /= Prelude.length (stack v) = error (show (numArgs (Prelude.head (stack v))) ++ " " ++ show (stack v)) 
-      | otherwise = 
-        -- trace ("evalParams, BP: " ++ show(getBasePointer v+ numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v))))
-        -- trace ("    Stack: " ++ concStack(stack v ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numArgs(Prelude.head (stack v)) + numLocals (Prelude.head (stack v)))]]))
-        -- trace ("    NumLocals: " ++ show(numLocals (Prelude.head (stack v))))
-        -- trace ("    NumArgs: " ++ show(numArgs(Prelude.head (stack v))))
-        VM{ 
-          frames = removeFirstInstruction(frames v,  frameIndex v) ++ [(getBasePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),funcValue (Prelude.head (stack v)))], 
+      | otherwise = VM{ 
+          frames = changeBasePointer(numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),removeFirstInstruction(frames v,  frameIndex v)) ++ [(getBasePointer v + numLocals (Prelude.head (stack v)) + numArgs (Prelude.head (stack v)),funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
           constVM = constVM v, 
           global = global v,
@@ -333,7 +326,7 @@ evalReturn v = vm
     vm 
       | otherwise =
         VM{
-          frames = pop (frames v),
+          frames =  changeBasePointer(-1 * fst(Prelude.last(frames v)),(pop (frames v))),
           frameIndex = frameIndex v - 1,
           constVM = constVM v, 
           global = global v, 

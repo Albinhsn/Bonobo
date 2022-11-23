@@ -153,3 +153,8 @@ testVMFN4 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringT
 testVMFN5 :: String 
 testVMFN5 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);")))))
 
+testVMFN6 :: String 
+testVMFN6 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))))
+
+testVMFN7 :: String 
+testVMFN7 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){let a = five(); return a;}; let c = add();")))))
