@@ -606,4 +606,8 @@ inspectGlobal :: (Int, Object) -> String
 inspectGlobal (i, o) = (show i) ++ " = " ++ inspectObject o ++ " "
 
 getGlobal :: (Int, VM) -> Object 
-getGlobal (i, v) = (fromList (global v)) ! i 
+getGlobal (i, v) = o 
+  where 
+    o
+      | member i (fromList (global v)) == False = error ("Can't find global: " ++ (show i) ++ " in " ++ Prelude.concat ["i:" ++ show (fst x) ++  " o:" ++ inspectObject(snd x) ++ " ,"| x <- global v])
+      | otherwise = fromList(global v) ! i

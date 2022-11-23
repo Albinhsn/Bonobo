@@ -33,17 +33,21 @@ compile (s,c) = comp
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
 extractFunc :: (Int,Int,String,Compiler) -> Compiler
-extractFunc (n,l,s,c) = addToLastSymbol(
-  Symbol{symName = s, symIndex = Prelude.length (symbols c), symScope = getSymScope(scopeIndex c - 1)},
+extractFunc (n,l,s,c) = 
+  trace ("extractFunc: " ++ show (symbols c))
+  addToLastSymbol(
+  Symbol{symName = s, symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c)-2)), symScope = getSymScope(scopeIndex c - 1)},
   addToScope(Compiler{
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
-    symbols =  symbols c, 
+    symbols =  pop(symbols c), 
     constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1)}]
-  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c))))
+  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2)))))
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 
-addToLastSymbol (s, c) = Compiler{
+addToLastSymbol (s, c) = 
+  trace ("addToLastSymbol: " ++ show(symbols c))
+  Compiler{
     scopes = scopes c, 
     scopeIndex = scopeIndex c,
     constants = constants c,
@@ -54,27 +58,37 @@ compileFunc :: (Statement, Compiler) -> Compiler
 compileFunc (s, c) = comp 
   where 
     comp 
-      | otherwise =  extractFunc(
-        Prelude.length (params (statementUni s)),
-        Prelude.length (constants c), 
-        literal(ident (expression (s))), 
-        compile(body (statementUni s), enterScope(Compiler{
-            scopes = scopes c,
-            scopeIndex = scopeIndex c,
-            constants = constants c,
-            symbols = symbols c ++ [[
-              Symbol{
-                  symName = literal (ident x), 
-                  symIndex =Prelude.length (symbols c) + i, 
-                  symScope = LOCAL
-                } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]]
+      | otherwise =  
+      trace (show (
+          symbols c ++ [[
+                Symbol{
+                    symName = literal (ident x), 
+                    symIndex =Prelude.length (symbols c!!(Prelude.length (symbols c) - 1)) + i, 
+                    symScope = LOCAL
+                  } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]]
+
+      ))
+        extractFunc(
+          Prelude.length (params (statementUni s)),
+          Prelude.length (constants c), 
+          literal(ident (expression (s))), 
+          compile(body (statementUni s), enterScope(Compiler{
+              scopes = scopes c,
+              scopeIndex = scopeIndex c,
+              constants = constants c,
+              symbols = symbols c ++ [[
+                Symbol{
+                    symName = literal (ident x), 
+                    symIndex =Prelude.length (symbols c!!(Prelude.length (symbols c) - 1)) + i, 
+                    symScope = LOCAL
+                  } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]]
           })))
 
 enterScope :: Compiler -> Compiler 
 enterScope c= Compiler{
           scopes = scopes c++ [BS.empty :: ByteString],
           scopeIndex = scopeIndex c+ 1, 
-          symbols =  symbols c ++ [[]], 
+          symbols =  symbols c, 
           constants = constants c
         }
 
@@ -129,12 +143,12 @@ compileLet (s, c) = comp
     comp
       | isSymbolName (Prelude.length (symbols c) - 1, symbols c, identifier (statementUni s))== True = error ("can't assign to already existing variable: " ++ identifier (statementUni s)) 
       | otherwise = 
-        addToLastSymbol(Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c), symScope = getSymScope (scopeIndex c)},addToScope(compileExpression(expression s, Compiler{
+        addToLastSymbol(Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1)), symScope = getSymScope (scopeIndex c)},addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c,
           constants = constants c,
           symbols = symbols c 
-        }), lookupSetScope (scopeIndex c) <> chooseToUnroll(Prelude.length (symbols c))))
+        }), lookupSetScope (scopeIndex c) <> chooseToUnroll(Prelude.length (symbols c!!(Prelude.length (symbols c ) - 1)))))
 
 lookupGetScope :: Int -> ByteString 
 lookupGetScope i = 
@@ -386,5 +400,5 @@ parseStatementToCompiled s = compile(s, Compiler{
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     constants = [],
-    symbols = []
+    symbols = [[]]
   })

@@ -54,6 +54,7 @@ opCodes = DM.fromList [
   ]
 
 isSymbolName :: (Int, [[Symbol]], String)-> Bool 
+-- isSymbolName (idx, s, i) = error (show (idx) ++ " " ++ show (Prelude.length s))
 isSymbolName (idx, s, i) = b 
   where 
     b
@@ -73,9 +74,9 @@ gsk :: (Int, [[Symbol]], String)-> Int
 gsk (idx, s,str) = i
   where 
     i 
-      | i == 0 = Prelude.head [symIndex x | x <- s!!0, str == symName x]
-      | Prelude.null [symIndex x | x <- s!!0, str == symName x] = gsk(i-1, s, str)
-      | otherwise = Prelude.head [symIndex x | x <- s!!i, str == symName x] 
+      | idx == 0 = Prelude.head [symIndex x | x <- s!!0, str == symName x]
+      | Prelude.null [symIndex x | x <- s!!idx, str == symName x] = gsk(idx-1, s, str)
+      | otherwise = Prelude.head [symIndex x | x <- s!!idx, str == symName x] 
 
 data Compiler = Compiler{
     symbols :: [[Symbol]],
@@ -98,12 +99,6 @@ prettyPrint = BS.foldr showHex ""
 
 reverseUnroll :: Int -> ByteString
 reverseUnroll i = BS.reverse (unroll i)
-
-
-findSymbolFromVal :: ([Symbol], Int) -> String 
-findSymbolFromVal (symbols, val) = 
-  Prelude.head [symName x | x <- symbols, val == symIndex x]
-
 
 chooseToUnroll :: Int -> ByteString 
 chooseToUnroll i = 
