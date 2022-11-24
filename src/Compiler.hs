@@ -40,7 +40,7 @@ extractFunc (n,l,s,c) =
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
     symbols =  pop(symbols c), 
-    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1)}]
+    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN}]
   }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2)))))
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 

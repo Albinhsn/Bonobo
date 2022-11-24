@@ -100,7 +100,7 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
             ))
       | typ (head t) == RBRACE && b == CON = parseStatements(parseElse(ALT, (removeFirst t, closeLastOpen(b,s))))
       | typ (head t) == RBRACE && b == ALT = parseStatements(parseSemicolon(findLastBlockType(EXP, last s), (removeFirst t, closeLastOpen(b,s))))
-      | typ (head t) == RBRACE && b == BOD = parseStatements(parseSemicolon(EXP, (removeFirst t, s)))
+      | typ (head t) == RBRACE && b == BOD = parseStatements(parseSemicolon(findLastBlockType(EXP, last s), (removeFirst t, closeLastSta s)))
       | typ (head t) == RBRACE && b == EXP && statementType(last s) == FUNCSTA = parseExpression(EXP, (removeFirst t, s))
       | typ (head t) == IF = 
         parseExpression(
@@ -271,7 +271,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         )
         )
       | typ (head t) == RPAREN && b == PAR = parseFunc(PAR, (t, s)) 
-      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, s)) 
+      | typ (head t) == RBRACE && isListExpression(b, last s) == False&& b == BOD= parseExpression(EXP, (removeFirst t, closeLastSta s)) 
       | typ (head t) == RBRACE && isListExpression(b, last s) == False && b == CON = parseIf(CON, (t, s))
       | typ (head t) == RBRACE && isListExpression(b, last s) == False && b == ALT = parseElse(ALT, (t, s))
       | typ (head t) == RBRACE && isListExpression(b, last s) && isValidMap(s) = parseExpression(b, (removeFirst t, pop s ++ [closeLastMap(last s)]))
@@ -337,7 +337,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == LBRACE && isListExpression(b, last s)= parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == LBRACE = parseIf(b, (t,s))
-      | otherwise = error ("error parsing expression" ++ (literal (head t)) ++ " b: "++ (show b) ++ " "++ (show (isValidMap(s))) ++ " " ++ (statementToString (last s)))
+      | otherwise = error ("error parsing expression" ++ (literal (head t)) ++ " b: "++ (show b) ++ " "++ (statementsToString (s)))
 
 
 
