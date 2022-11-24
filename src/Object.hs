@@ -36,11 +36,8 @@ inspectObject o =
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
-    FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){" ++ disassembleFunc("",funcValue o) ++ "};" 
+    FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
 
-
-inspectFunction :: Function -> String
-inspectFunction f = "fn " ++ (funcIdent f) ++ paramToString(funcParams f) ++ "{" ++ statementsToString(funcBody f) ++ "};"
 
 readIntFromString :: Expression -> Int 
 readIntFromString e = i 
@@ -114,10 +111,8 @@ disassembleFunc (s,b)= str
       | BS.head b == 15 = disassembleFunc(s ++ " JUMPNT", removeFirstInstruction2 b)
       | BS.head b == 16 = disassembleFunc(s ++ " SETGLOBAL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
       | BS.head b == 17 = disassembleFunc(s ++ " GETGLOBAL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
-      | BS.head b == 18 = disassembleFunc(s ++ " ARRAY", removeFirstInstruction2 b)
-      | BS.head b == 19 = disassembleFunc(s ++ " ARRAYEND", removeFirstInstruction2 b)
-      | BS.head b == 20 = disassembleFunc(s ++ " HASH", removeFirstInstruction2 b)
-      | BS.head b == 21 = disassembleFunc(s ++ " HASHEND", removeFirstInstruction2 b)
+      | BS.head b == 18 = disassembleFunc(s ++ " ARRAY " ++(show (fromIntegral (BS.head (removeFirstInstruction2 b)))) , removeFirstInstruction2(removeFirstInstruction2 b))
+      | BS.head b == 20 = disassembleFunc(s ++ " HASH "++(show (fromIntegral (BS.head (removeFirstInstruction2 b)))) , removeFirstInstruction2(removeFirstInstruction2 b))
       | BS.head b == 22 = disassembleFunc(s ++ " INDEX", removeFirstInstruction2 b)
       | BS.head b == 23 = disassembleFunc(s ++ " SETINDEX", removeFirstInstruction2 b)
       | BS.head b == 24 = disassembleFunc(s ++ " OPCALL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))

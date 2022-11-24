@@ -249,7 +249,7 @@ noPopAddToStatement(b, s, sta) = st
           body = getBody(s) ++ [sta] 
         },
         expression = expression (last s) 
-        }] 
+        }]
       | b == BOD && statementType (last s) == FORSTA = pop s ++ [
         Statement{
           closedSta = False, 
@@ -440,13 +440,23 @@ addToLastStatement (b, t, e, s) = sta
           },
         expression = expression (last s)
         } 
-      | b == PAR  && statementType (last s) == FUNCSTA = Statement{
+      | b == PAR  && statementType (last s) == FUNCSTA && null (getBody s) == True = Statement{
         closedSta = False, 
         staLine = staLine (last s),
         statementType = FUNCSTA,
         statementUni = FuncStatement{
           params = pop (getParams(s)) ++ [addXToExp(b, t, e, getLastParam(getParams(s)))],
           body = []
+          },
+        expression = expression (last s)
+        } 
+      | b == PAR  && statementType (last s) == FUNCSTA = Statement{
+        closedSta = False, 
+        staLine = staLine (last s),
+        statementType = FUNCSTA,
+        statementUni = FuncStatement{
+          params = params (statementUni (last s)),
+          body = pop (getBody(s)) ++ [addToLastStatement(PAR, t, e, getBody(s))]  
           },
         expression = expression (last s)
         } 
@@ -459,7 +469,7 @@ addToLastStatement (b, t, e, s) = sta
           staLine = staLine (last s),
           statementType = statementType (last s), 
           statementUni = FuncStatement{
-            params = [],
+            params = getParams (s),
             body = pop (getBody(s)) ++ [addToLastStatement(EXP, t, e, getBody(s))]},  
           expression = expression (last s)
           }
@@ -634,7 +644,8 @@ addArrayToLastExp(b, t, e) = ex
       | expressionType e == MAPEXP && null (getVal e) == False && expressionType (last (getVal e)) == MAPEXP && closedMap (last (getVal e)) == False = MapExpression{nextItem = KEY, closedMap = False, expressionType = MAPEXP, expLine = expLine e, mapMap = (getKey e, pop (getVal e) ++ [addArrayToLastExp(b, t, last (getVal e))])} 
       | expressionType e == MAPEXP && nextItem e == VAL = MapExpression{expLine = expLine e, expressionType = MAPEXP, nextItem = VAL, closedMap = False, mapMap = (fst (mapMap e), pop (snd (mapMap e)) ++ [addArrayToLastExp(b,t,last (snd (mapMap e)))])} 
       | expressionType e == MAPEXP && nextItem e == KEY = MapExpression{expLine = expLine e, expressionType = MAPEXP, nextItem = KEY, closedMap = False, mapMap = (pop (fst (mapMap e)) ++ [addArrayToLastExp(b,t,(last (fst (mapMap e))))], snd (mapMap e) )} 
-      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addArrayToLastExp(b, t, getLastParam(callParams e))]}
+      | expressionType e == CALLEXP && typ t /= COMMA = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = pop (callParams e) ++ [addArrayToLastExp(b, t, getLastParam(callParams e))]}
+      | expressionType e == CALLEXP = CallExpression{expLine = expLine e,expressionType = CALLEXP, closedCall = False, callIdent = callIdent e, callParams = (callParams e) ++ [Expression{expLine = -1, expressionType = EMPTYEXP}]}
       | expressionType e == ASSIGNEXP = AssignExpression {expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addArrayToLastExp(b,t,assignExpression e)}
       | expressionType e == IDENTEXP = IndexExpression{closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = e, arrayIndex = [Expression{expLine = -1, expressionType = EMPTYEXP}]}
       | expressionType e == INDEXEXP && closedIndex e == False = IndexExpression {closedIndex = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = pop (arrayIndex e) ++ [addArrayToLastExp(b, t, last (arrayIndex e))]}
@@ -878,13 +889,23 @@ addEmptyToLastParam :: Statement -> Statement
 addEmptyToLastParam s = sta 
   where 
     sta 
-      | statementType s == FUNCSTA = Statement{
+      | statementType s == FUNCSTA && null (body (statementUni s))= Statement{
         closedSta = False, 
         staLine = staLine s,
         statementType = FUNCSTA,
         statementUni = FuncStatement{
             body = [],
             params = params (statementUni s)++ [Expression{expLine = staLine s, expressionType = EMPTYEXP}]
+          },
+        expression = expression s
+      }
+      | statementType s == FUNCSTA = Statement{
+        closedSta = False, 
+        staLine = staLine s,
+        statementType = FUNCSTA,
+        statementUni = FuncStatement{
+            body = pop (getBody [s]) ++ [addEmptyToLastParam(last (getBody [s]))],
+            params = params (statementUni s) 
           },
         expression = expression s
       }

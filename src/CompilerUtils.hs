@@ -52,9 +52,8 @@ disassemble (s,c)= str
         disassemble(s ++ " SETGLOBAL " ++ (show (BS.index (scopes c!!scopeIndex c) 1)),removeFromScope(removeFromScope c))
       | BS.head (scopes c!!scopeIndex c) == 17 = 
         disassemble(s ++ " GETGLOBAL " ++ (show (BS.index (scopes c!!scopeIndex c) 1)),removeFromScope(removeFromScope c))
-      | BS.head (scopes c!!scopeIndex c) == 18 = disassemble(s ++ " ARRAY", removeFromScope c)
-      | BS.head (scopes c!!scopeIndex c) == 19 = disassemble(s ++ " ARRAYEND", removeFromScope c)
-      | BS.head (scopes c!!scopeIndex c) == 20 = disassemble(s ++ " HASH", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 18 = disassemble(s ++ " ARRAY "++ (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 20 =  disassemble(s ++ " HASH "++ (show ((BS.index (scopes c!!scopeIndex c) 1)`div` 2)), removeFromScope(removeFromScope c))      
       | BS.head (scopes c!!scopeIndex c) == 21 = disassemble(s ++ " HASHEND", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 22 = disassemble(s ++ " INDEX", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 23 = disassemble(s ++ " SETINDEX", removeFromScope c)

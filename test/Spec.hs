@@ -51,6 +51,21 @@ main = hspec $ do
         testReturnStatement
         `shouldBe`
         "return 5; return (5 + 5);"
+    it "testing fn" $ 
+      do 
+        testParserFN
+        `shouldBe`
+        "fn add(){fn sub(){return 5;};};"
+    it "testing fn2" $ 
+      do 
+        testParserFN2
+        `shouldBe`
+        "fn add(){fn sub(){}; return 5;};"
+    it "testing fn3" $ 
+      do 
+        testParserFN3
+        `shouldBe`
+        "fn add(f,s){fn div(a,b){let d = (a / b); return d;}; fn sub(a,b){let d = (a - b); return div(a,d);}; let a = sub(f,s); return d;}; let c = add(10,5);"
       
   describe "Testing precedence" $ do
     it "testing plus minus" $ 
@@ -144,7 +159,7 @@ main = hspec $ do
         `shouldBe`
         "five = 5; five = (5 * 5); five = 5 == 5; five = (-5); five = ((5 + 5)); let five = (2 + three); let five = three; let five = (-five); let five = ((three + two)); let five = three == 3;"
   describe "Testing Func" $ do
-    it "testing empty func" $
+    it "testing big func" $
       do
         testFunc 
         `shouldBe`
@@ -247,47 +262,47 @@ main = hspec $ do
       do 
         testCodeArray1
         `shouldBe`
-        " ARRAYEND ARRAY POP"
+        " ARRAY 0 POP"
     it "test code array 2" $
       do 
         testCodeArray2
         `shouldBe`
-        " ARRAYEND CONST 0 CONST 1 ARRAY POP" 
+        " CONST 0 CONST 1 ARRAY 2 POP" 
     it "test code array 3" $
       do 
         testCodeArray3
         `shouldBe`
-        " ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAYEND ARRAY ARRAY SETGLOBAL 0"
+        " ARRAY 0 CONST 0 CONST 1 ARRAY 2 ARRAY 2 SETGLOBAL 0"
     it "test code array 4" $
       do 
         testCodeArray4
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAYEND CONST 0 CONST 1 ARRAY ARRAY ARRAY SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 0"
     it "test code array 5" $
       do 
         testCodeArray5
         `shouldBe`
-        " ARRAYEND ARRAYEND ARRAY ARRAYEND CONST 0 CONST 1 ARRAY ARRAY SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 0"
     it "test code map 1" $
       do 
         testCodeMap1
         `shouldBe`
-        " HASHEND CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH SETGLOBAL 0"
+        " CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH 4 SETGLOBAL 0"
     it "test code index 1" $
       do 
         testCodeIndex1
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 GETGLOBAL 0 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 1"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 GETGLOBAL 0 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 1"
     it "test code index 2" $
       do 
         testCodeIndex2
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 CONST 3 CONST 4 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 CONST 3 CONST 4 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        " ARRAYEND CONST 0 ARRAYEND CONST 1 CONST 2 ARRAY ARRAY SETGLOBAL 0 CONST 3 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 CONST 3 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
     it "test code fn" $
       do 
         testCodeFN
@@ -297,7 +312,7 @@ main = hspec $ do
       do 
         testCodeFN2
         `shouldBe`
-        " CONST 0 SETGLOBAL 0 GETGLOBAL 0 OPCALL 0 SETGLOBAL 1"
+        " CONST 0 SETGLOBAL 0 CONST 1 CONST 2 GETGLOBAL 0 OPCALL 0 SETGLOBAL 1"
     it "test make true" $
       do 
         testMakeTFTrue 
@@ -554,6 +569,46 @@ main = hspec $ do
         testVMFN7
         `shouldBe`
         "5"
+    it "test vm fn 8" $
+      do 
+        testVMFN8
+        `shouldBe`
+        "null"
+    it "test vm fn 9" $
+      do 
+        testVMFN9
+        `shouldBe`
+        "5"
+    it "test vm fn 10" $
+      do 
+        testVMFN10
+        `shouldBe`
+        "2"
+    it "test vm fn 11" $
+      do 
+        testVMFN11
+        `shouldBe`
+        "2"
+    it "test vm fn 12" $
+      do 
+        testVMFN12
+        `shouldBe`
+        "True"
+    it "test vm fn 13" $
+      do 
+        testVMFN13
+        `shouldBe`
+        "True"
+    it "test vm fn 14" $
+      do 
+        testVMFN14
+        `shouldBe`
+        "False"
+    it "test vm fn 15" $
+      do 
+        testVMFN15
+        `shouldBe`
+        "2"
   describe "test no sta" $ do
     it "test empty" $
       do 

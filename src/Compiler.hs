@@ -32,15 +32,17 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, compileFunc(Prelude.head s, c))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
-extractFunc :: (Int,Int,String,Compiler) -> Compiler
-extractFunc (n,l,s,c) = 
+extractFunc :: (Int,String,Compiler) -> Compiler
+extractFunc (n,s,c) = 
+  trace ("extractFunc: " ++ show(Prelude.length (symbols c)))
+  trace ("      new symbols: " ++ show(Prelude.length (symbols c!!(Prelude.length (symbols c) - 1))))
   addToLastSymbol(
   Symbol{symName = s, symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c)-2)), symScope = getSymScope(scopeIndex c - 1)},
   addToScope(Compiler{
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
     symbols =  pop(symbols c), 
-    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (constants c)-l, funcValue = scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN}]
+    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1 )), funcValue = scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN}]
   }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupSetScope (scopeIndex c - 1) <> chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2)))))
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 
@@ -59,7 +61,6 @@ compileFunc (s, c) = comp
       | otherwise =  
         extractFunc(
           Prelude.length (params (statementUni s)),
-          Prelude.length (constants c), 
           literal(ident (expression (s))), 
           compile(body (statementUni s), enterScope(Compiler{
               scopes = scopes c,
@@ -112,7 +113,6 @@ compileAssign (e, c) = comp
               c
             )
           ), 
-          -- lookupGetScope (scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e)) <> lookupOpCode SETINDEX <> lookupSetScope (scopeIndex c)<>  chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e))
           getScopeAndKey(getAssignStrFromExp e, c) <> lookupOpCode SETINDEX <> lookupSetScope (scopeIndex c)<>  chooseToUnroll(getSymbolKey(symbols c, getAssignStrFromExp e))
         )
       | otherwise = compileExpression(e, c) 
@@ -147,13 +147,6 @@ getScopeAndKey (s, c) = b
       | scopeIndex c == 0 =lookupOpCode GETGLOBAL <> chooseToUnroll(symIndex (Prelude.head [x | x <- symbols c !! 0, symName x == s])) 
       | Prelude.null [x | x <- symbols c !! 0, symName x == s] = lookupOpCode GETLOCAL <>  chooseToUnroll(getSymbolKey(symbols c, s)) 
       | otherwise = lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, s)) 
-
-
--- lookupGetScope :: Int -> ByteString 
--- lookupGetScope i = 
---   case i of 
---     0 -> lookupOpCode GETGLOBAL
---     _ -> lookupOpCode GETLOCAL
 
 lookupSetScope :: Int -> ByteString 
 lookupSetScope i = 
@@ -228,18 +221,15 @@ compileExpression (e,c) = comp
     comp
       | expressionType e == OPERATOREXP = addOperatorInstruction(operator e, compileExpression(rightOperator e, compileExpression(leftOperator e, c)))
       | expressionType e == MAPEXP = addMapInstructions(
-        mergeLists (fst (mapMap e)) (snd (mapMap e)), 
-        addToScope(
-          c,
-          lookupOpCode HASHEND
-        ))
+        Prelude.length (fst (mapMap e)), 
+        mergeLists (fst (mapMap e)) (snd (mapMap e)),
+        c
+        )
       | expressionType e == ARRAYEXP = 
         addArrayInstructions(
+          Prelude.length (array e),
           array e, 
-          addToScope(
-            c, 
-            lookupOpCode ARRAYEND
-          )
+          c
         )
       | expressionType e == INDEXEXP = addIndexInstructions(
           arrayIndex e, 
@@ -347,20 +337,20 @@ addIndexInstructions (e, c) = comp
           )
         )
 
-addMapInstructions :: ([Expression], Compiler) -> Compiler
-addMapInstructions (e, c) = comp 
+addMapInstructions :: (Int, [Expression], Compiler) -> Compiler
+addMapInstructions (i, e, c) = comp 
   where 
     comp 
-      | Prelude.null e = addToScope(c, lookupOpCode HASH)
-      | otherwise = addMapInstructions(pop e, compileExpression(Prelude.last e, c))
+      | Prelude.null e = addToScope(c, lookupOpCode HASH <> chooseToUnroll (i * 2))
+      | otherwise = addMapInstructions(i, removeFirst e, compileExpression(Prelude.head e, c))
 
 
-addArrayInstructions :: ([Expression], Compiler) -> Compiler
-addArrayInstructions (e, c) = comp 
+addArrayInstructions :: (Int, [Expression], Compiler) -> Compiler
+addArrayInstructions (i, e, c) = comp 
   where 
     comp 
-      | Prelude.null e = addToScope(c, lookupOpCode ARRAY)
-      | otherwise = addArrayInstructions(pop e, compileExpression(Prelude.last e, c))
+      | Prelude.null e = addToScope(c, lookupOpCode ARRAY <> chooseToUnroll i)
+      | otherwise = addArrayInstructions(i, removeFirst e, compileExpression(Prelude.head e, c))
 
 
 

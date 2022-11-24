@@ -1,11 +1,11 @@
 TODO:
-  Implement x2 funcs
-  Test other types inside funcs 
+  fix other types inside funcs 
     Array
+      remove arrayend, add length of array instead
     Map
-    String 
-  Redo global/local into separate ones and gets sent into func 
-    Func in func gets locals and put in global, not sent back
+  fix local def of func
+  test if var exist in other local
+    fix if needed
   Do massive test suite for things
   Do issue #3 (Prebuilt funcs)
   Do issue #4 (Compiler issues)

@@ -10,6 +10,24 @@ import Token
 isBoolPrefix :: Token -> Bool
 isBoolPrefix t = typ t == LESS_T || typ t == GREATER_T || typ t == EQUALS || typ t == NOT_EQUALS
 
+removeFirstN :: (Int, [a]) -> [a]
+removeFirstN (i, a) = ar 
+  where 
+    ar  
+      | i == 0 = a 
+      | i >= 0 && length a < i = error "can't remove more then already exists" 
+      | otherwise = removeFirstN(i-1, removeFirst a)
+
+
+getFirstN :: (Int, [a], [a]) -> [a]
+getFirstN (i, old, new) = ar 
+  where   
+    ar 
+      | i > length old = error "can't get more then length of array" 
+      | i == 0 = new
+      | otherwise = getFirstN(i-1, removeFirst old, old!!0:new) 
+      
+
 removeFirst:: [a] -> [a]
 removeFirst xs = case xs of
   [] -> []
