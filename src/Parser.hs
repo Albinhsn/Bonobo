@@ -114,14 +114,6 @@ parseStatements (b, (t, s)) = (bok, (tokens, statements))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == SEMICOLON = parseStatements(b, (removeFirst t, s))
       | typ (head t) == ELSE = parseStatements(parseElse(b, (t, s)))
-      
-      | null s == False && (b == EXP || (statementType (last s) == IFSTA && getClosedCon s == True && getClosedAlt s == True))= parseStatements(parseExpression(b,(t,s ++ [Statement{
-          staLine = -1,
-          statementType = NOSTA,
-          statementUni = NoStatement{},
-          closedSta = False,
-          expression = Expression{expLine = -1, expressionType = EMPTYEXP}
-      }])))
       | otherwise = parseExpression(b,(t,s ))
       --error ("error parsing statement: " ++ (literal (head t)) ++ " on line: "++ (show (line (head t))))
 
@@ -158,13 +150,9 @@ parseIdent (b, (t, s)) = (bok, (tok, sta))
   where
     (bok, (tok, sta))
       | null t == True = (b, (t, s))
-      | typ (head t) == LPAREN && b == EXP && statementType (last s) == NOSTA = parseIdent(
-          PAR, 
-          (removeFirst t,changeSta(b,head t, s))
-        ) 
       | typ (head t) == LPAREN && b == EXP = parseIdent(
           PAR, 
-          (removeFirst t, s))
+          (removeFirst t, changeSta(b, head t, s)))
       | typ (head t) == RPAREN && b == PAR= parseFunc(b, (t, s))
       | typ (head t) == ASSIGN && b == EXP = parseExpression(
         b, 
@@ -245,9 +233,10 @@ parseFunc(b, (t, s)) = (block, (tokens, statements))
         )
         )
 
-      | typ (head t) == RPAREN && b == PAR = parseFunc(EXP, (removeFirst t, s)) 
+      | typ (head t) == RPAREN && b == PAR && statementType (last s) == CALLSTA = parseFunc(b, (removeFirst t, pop s ++ [closeLastGroupedSta(last s)])) 
+      | typ (head t) == RPAREN && b == PAR =  parseFunc(EXP, (removeFirst t, s)) 
       | typ (head t) == EOF = (b, (t,changeFuncToCall s))
-      | otherwise = (EXP, (t, changeFuncToCall s)) 
+      | otherwise =  (EXP, (t, changeFuncToCall s)) 
 
 parseExpression :: (BlockType, ([Token], [Statement])) -> (BlockType, ([Token], [Statement]))
 parseExpression (b, (t, s)) = (block, (tokens, statements))
@@ -298,7 +287,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
         && 
           null s == False
         &&
-          isValidMinus (getLastExpression s) =
+          isValidMinus (getActualLastExp (last s)) =
             parseExpression (
               parsePrefixExpression (b, (t, s))
             )
@@ -337,7 +326,7 @@ parseExpression (b, (t, s)) = (block, (tokens, statements))
       | typ (head t) == EOF = (b, (removeFirst t, s))
       | typ (head t) == LBRACE && isListExpression(b, last s)= parseExpression(b, (removeFirst t, pop s ++ [addToLastStatement(b, head t, MAPEXP, s)]))
       | typ (head t) == LBRACE = parseIf(b, (t,s))
-      | otherwise = error ("error parsing expression" ++ (literal (head t)) ++ " b: "++ (show b) ++ " "++ (statementsToString (s)))
+      | otherwise = error ("error parsing expression " ++ (show t) ++ " b: "++ (show b) ++ " "++ (statementsToString (s)))
 
 
 

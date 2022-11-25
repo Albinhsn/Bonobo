@@ -7,12 +7,10 @@ import TestParser
 import TestPrecedence
 import TestBool
 import TestIf 
-import TestNoSta
 import TestIdent
 import TestFunc
 import TestArray
 import TestMap
-import TestFor
 import TestCode
 import TestVM
 
@@ -66,7 +64,16 @@ main = hspec $ do
         testParserFN3
         `shouldBe`
         "fn add(f,s){fn div(a,b){let d = (a / b); return d;}; fn sub(a,b){let d = (a - b); return div(a,d);}; let a = sub(f,s); return d;}; let c = add(10,5);"
-      
+    it "testing for" $ 
+      do 
+        testParserFor
+        `shouldBe`
+        "for(i = 0; i < 5; i = i + 1){a = a + 1;};"
+    it "testing for" $ 
+      do 
+        testParserFor2
+        `shouldBe`
+        "for(i = 0; i < add(a,b); i = i + sub(a,b)){a = a + 1;};"
   describe "Testing precedence" $ do
     it "testing plus minus" $ 
       do 
@@ -232,42 +239,21 @@ main = hspec $ do
         testArrayIdxWierd
         `shouldBe`
         "let arr = a[((((2 * b)) + c[3]))];"
-  describe "test code" $ do
-    it "test make " $
-      do 
-        testMake 
-        `shouldBe`
-        "000121 - 1 2 "
-    it "test make 2" $
-      do 
-        testMake2 
-        `shouldBe`
-        " CONST 0 CONST 1 MUL CONST 2 CONST 3 MUL ADD POP"
     it "test code if" $
       do 
         testCodeIf
         `shouldBe`
-        " TRUE JUMPNT 7 CONST 0 POP JUMP 2"
+        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 0 JUMP 2"
     it "test code if else" $
       do 
         testCodeIfElse
         `shouldBe`
-        " TRUE JUMPNT 7 CONST 0 POP JUMP 5 CONST 1 POP"
+        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 0 JUMP 6 CONST 1 SETGLOBAL 1"
     it "test code let" $
       do 
         testCodeLet
         `shouldBe`
-        " CONST 0 SETGLOBAL 0 GETGLOBAL 0 POP"
-    it "test code array 1" $
-      do 
-        testCodeArray1
-        `shouldBe`
-        " ARRAY 0 POP"
-    it "test code array 2" $
-      do 
-        testCodeArray2
-        `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 POP" 
+        " CONST 0 SETGLOBAL 0"
     it "test code array 3" $
       do 
         testCodeArray3
@@ -313,16 +299,6 @@ main = hspec $ do
         testCodeFN2
         `shouldBe`
         " CONST 0 SETGLOBAL 0 CONST 1 CONST 2 GETGLOBAL 0 OPCALL 0 SETGLOBAL 1"
-    it "test make true" $
-      do 
-        testMakeTFTrue 
-        `shouldBe`
-        "61"
-    it "test make false" $
-      do 
-        testMakeTFFalse
-        `shouldBe`
-        "71"
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
@@ -609,24 +585,13 @@ main = hspec $ do
         testVMFN15
         `shouldBe`
         "2"
-  describe "test no sta" $ do
-    it "test empty" $
+    it "test vm fn 16" $
       do 
-        testEmpty
+        testVMFN15
         `shouldBe`
-        "5;"
-    it "test empty if " $
+        "5"
+    it "test vm fn book" $
       do 
-        testIfEmpty
+        testVMFNBook
         `shouldBe`
-        "if(True){5;}else{3;}; 2;"
-    it "test empty func" $
-      do 
-        testFuncEmpty
-        `shouldBe`
-        "fn add(a,b){5; return (a + b);}; 10;"
-    it "test empty for" $
-      do 
-        testForEmpty
-        `shouldBe`
-        "for(i = 0; i < 5; (i + 1);){5;}; 10;"
+        "97"

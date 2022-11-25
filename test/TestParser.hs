@@ -69,6 +69,26 @@ testParserFN3 =
           ))
         ))
       )
+testParserFor:: String 
+testParserFor= 
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "for(i = 0; i < 5; i = i + 1){a = a + 1;};", [])),
+            []
+          ))
+        ))
+      )
+testParserFor2:: String 
+testParserFor2= 
+  statementsToString 
+      (snd( snd 
+        ( parseStatements
+          (EXP,( getTokens(parseTokens(0, "for(i = 0; i < add(a,b); i = i + sub(a,b)){a = a + 1;};", [])),
+            []
+          ))
+        ))
+      )
 
 
 testReturnStatement :: String 

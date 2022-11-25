@@ -27,6 +27,11 @@ run c =
       }
   )
 
+traceVM :: (String, VM) -> String 
+-- traceVM (s, v) =  s ++ " frameIndex: " ++ show(frameIndex v) ++ " bpOffset: " ++ show(bpOffset v) ++ " bp: " ++ (show (fst (Prelude.last (frames v)))) ++ " stack: " ++ concStack (stack v)
+traceVM (s, v) =  s ++ " bpOffset: " ++ show(bpOffset v) ++ " bp: " ++ (show (fst (Prelude.last (frames v)))) ++ " firstInstruct: " ++ show(getFirstInstruction(frames v !! frameIndex v))
+   
+
 
 data VM = VM{
     frames :: ![(Int,ByteString)],
@@ -51,7 +56,7 @@ runVM v =
     -1 -> v 
     --Constant
     0 -> 
-      trace ("CONST, bp: " ++ show(bpOffset v + 1))
+      -- trace (traceVM("CONST", v))
       runVM(pushToStack(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
@@ -70,41 +75,49 @@ runVM v =
           stack = removeFirst (stack v)
           })
     --ADD
-    2 ->  runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
-            bpOffset = bpOffset v- 1,
-            constVM = constVM v, 
-            global = global v,
-            stack =addOp (stack v)
-          })
+    2 ->  
+      trace ("add")
+      runVM(VM{
+              frames = removeFirstInstruction (frames v, frameIndex v),
+              frameIndex = frameIndex v,
+              bpOffset = bpOffset v- 1,
+              constVM = constVM v, 
+              global = global v,
+              stack =addOp (stack v)
+            })
     --Sub
-    3 ->  runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
-            bpOffset = bpOffset v- 1,
-            constVM = constVM v, 
-            global = global v,
-            stack =subOp (stack v)
-          })
+    3 ->  
+        trace ("sub")
+        runVM(VM{
+              frames = removeFirstInstruction (frames v, frameIndex v),
+              frameIndex = frameIndex v,
+              bpOffset = bpOffset v- 1,
+              constVM = constVM v, 
+              global = global v,
+              stack =subOp (stack v)
+            })
     --Mul
-    4 -> runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
-            bpOffset = bpOffset v- 1,
-            constVM  = constVM v, 
-            global = global v,
-            stack =mulOp (stack v)
-          })
+    4 -> 
+      trace ("mul")
+      runVM(VM{
+              frames = removeFirstInstruction (frames v, frameIndex v),
+              frameIndex = frameIndex v,
+              bpOffset = bpOffset v- 1,
+              constVM  = constVM v, 
+              global = global v,
+              stack =mulOp (stack v)
+            })
     --Div
-    5 -> runVM(VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
-            bpOffset = bpOffset v- 1,
-            constVM = constVM v, 
-            global = global v,
-            stack =divOp (stack v)
-          })
+    5 -> 
+      trace ("div")
+      runVM(VM{
+              frames = removeFirstInstruction (frames v, frameIndex v),
+              frameIndex = frameIndex v,
+              bpOffset = bpOffset v- 1,
+              constVM = constVM v, 
+              global = global v,
+              stack =divOp (stack v)
+            })
     --True
     6 -> runVM(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
@@ -177,7 +190,7 @@ runVM v =
     15 -> runVM(evalJumpNT(v))
     -- SETGLOBAL
     16 -> 
-      trace ("SETGLOBAL, bp: " ++ show(bpOffset v - 1))
+      -- trace (traceVM ("setGlobal", v))
       runVM(evalSetGlobal(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
@@ -188,7 +201,7 @@ runVM v =
         }))
     -- GETGLOBAL
     17 -> 
-      trace ("GETGLOBAL, bp: " ++ show(bpOffset v + 1))
+      -- trace (traceVM ("getGlobal", v))
       runVM(evalGetGlobal(VM{
           frames = removeFirstInstruction (frames v, frameIndex v),
           frameIndex = frameIndex v,
@@ -237,7 +250,7 @@ runVM v =
         })
     -- OPCALL 
     24 ->   
-        trace("OPCALL: bp: " ++ (show (bpOffset v)))
+        -- trace("OPCALL: bp: " ++ (show (bpOffset v)))
         runVM(evalCall(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
@@ -288,20 +301,17 @@ runVM v =
 
 getLocal :: VM -> VM 
 getLocal v = 
-  trace("getLocal, new bpOffset: " ++ show(bpOffset v + 1))
-  trace("      old bpOffset: " ++ show(bpOffset v))
-  trace("      bp: " ++ show(getBasePointer v))
-  trace("      instruct: " ++ show(getFirstInstruction (frames v !! frameIndex v)))
-  trace("     accessing idx: " ++ show(bpOffset v - 1 + getBasePointer v + getFirstInstruction (frames v !! frameIndex v)))
-  trace("     new stack lngth: " ++ show(1 + Prelude.length (stack v)))
-  trace("     new stack: " ++ show(stack v!!(bpOffset v + getBasePointer v + getFirstInstruction (frames v !! frameIndex v)) :stack v))
+  trace(traceVM ("getLocal", v))
+  trace("     accessing idx: " ++ show(getBasePointer v  + bpOffset v - getFirstInstruction (frames v !! frameIndex v)))
+  trace("     element: " ++ show(stack v!!(getBasePointer v  - 1 + bpOffset v - getFirstInstruction (frames v !! frameIndex v))))
+  trace("     new stack: " ++ concStack(stack v!!(getBasePointer v  - 1 + bpOffset v - getFirstInstruction (frames v !! frameIndex v)) :stack v))
   VM{
     frames = removeFirstInstruction (frames v, frameIndex v),
     frameIndex = frameIndex v,
     bpOffset = bpOffset v+ 1,
     constVM = constVM v,
     global = global v,
-    stack = stack v!!(bpOffset v + getBasePointer v + getFirstInstruction (frames v !! frameIndex v)) :stack v
+    stack = stack v!!(getBasePointer v  - 1 + bpOffset v - getFirstInstruction (frames v !! frameIndex v)) :stack v
   }
 
 concStack :: [Object] -> String 
@@ -309,15 +319,19 @@ concStack o = Prelude.concat [inspectObject x ++ " " | x <- o]
 
 setLocal :: VM -> VM 
 setLocal v = 
-  trace("setLocal, bpOffset: " ++ show(bpOffset v- 1 ))
-  trace("     stack: " ++ show(removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)+ 1) .~ stack v!!0)))
+  trace(traceVM ("setLocal", v))
+  trace("     idx: " ++ show(getBasePointer v - getFirstInstruction (frames v !! frameIndex v) - 1 + bpOffset v))
+  trace("     element: " ++ inspectObject (stack v !!0))
+  trace("     stack: " ++ concStack(stack v)) 
+  trace("     replaced: " ++ inspectObject (stack v !!(getBasePointer v - getFirstInstruction (frames v !! frameIndex v) - 1 + bpOffset v)))
+  trace("     new stack: " ++ concStack(removeFirst(stack v & element (getBasePointer v - getFirstInstruction (frames v !! frameIndex v) - 1 + bpOffset v) .~ stack v!!0)))
   VM{
     frames = removeFirstInstruction (frames v, frameIndex v),
     frameIndex = frameIndex v,
     bpOffset = bpOffset v- 1,
     constVM = constVM v,
     global = global v,
-    stack = removeFirst(stack v & element (getFirstInstruction (frames v !! frameIndex v)+ 1) .~ stack v!!0)
+    stack = removeFirst(stack v & element (getBasePointer v - getFirstInstruction (frames v !! frameIndex v) + bpOffset v - 1 ) .~ stack v!!0)
   }
 
 errorStack :: VM -> VM 
@@ -331,24 +345,20 @@ evalParams v = vm
   where 
     vm 
       | otherwise = 
-        trace("evalParams, new bpOffset: " ++ show(bpOffset v - numArgs(Prelude.head (stack v)) -1 ))
-        trace("     new stack: " ++ show([NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ (removeFirst (stack v)) ))
-        trace("     frame BP: " ++ show(getNewBP(getBasePointer v, numLocals (Prelude.head (stack v)), numArgs(Prelude.head (stack v)))))
+        trace("evalParams")
+        trace("      new bp: " ++ show(getNewBP(getBasePointer v, numLocals (Prelude.head (stack v)), numArgs(Prelude.head (stack v)))))
+        trace("      new stack: " ++  concStack(removeFirst (stack v) ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]]))
         VM{ 
           frames = removeFirstInstruction(frames v,  frameIndex v) ++ [(getNewBP(getBasePointer v, numLocals (Prelude.head (stack v)), numArgs(Prelude.head (stack v))),funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
           bpOffset = bpOffset v - numArgs(Prelude.head (stack v)) - 1,
           constVM = constVM v, 
           global = global v,
-          stack =  removeFirst (stack v) ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] 
+          stack = [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst (stack v)
         } 
 
 getNewBP :: (Int, Int, Int) -> Int 
-getNewBP (bp, l, a) = i 
-  where 
-    i
-      | l > a = bp + l - a - 1 
-      | otherwise = bp 
+getNewBP (bp, l, a) = bp + l 
 
 evalCall :: VM -> VM 
 evalCall v = evalReturn(runVM(evalParams(v)))
@@ -357,27 +367,30 @@ evalReturn :: VM -> VM
 evalReturn v = vm 
   where 
     vm 
-      | objectType (Prelude.head (stack v)) == NULL_OBJ = VM{
+      | objectType (Prelude.head (stack v)) == NULL_OBJ = 
+        trace("evalReturn: ")
+        trace("     bpOffset: " ++ show(bpOffset v))
+        trace("     bp: " ++ show(fst(Prelude.last (frames v))))
+        trace("     toRemove: " ++ show(bpOffset v + fst(Prelude.last (frames v)), stack v) ++ " from: " ++ show(Prelude.length(stack v)))
+        -- trace("     stack: " ++ concStack(removeFirstN(bpOffset v + fst(Prelude.last (frames v)), stack v)))
+        VM{
           frames =  pop (frames v),
           frameIndex = frameIndex v - 1,
           constVM = constVM v, 
-          bpOffset = 1,
+          bpOffset = 0,
           global = global v, 
-          stack = stack v
+          stack = removeFirstN(fst(Prelude.last (frames v)) - fst((frames v )!!(frameIndex v - 1)), stack v)
         }
       | otherwise =
-        trace("Eval return, new BP: " ++ show (1))
-        trace("   frames:" ++ show(pop (frames v)))
-        trace("   Stack: " ++ show (stack v))
+        -- trace(traceVM("evalReturn", v))
         VM{
           frames =  pop (frames v),
           frameIndex = frameIndex v - 1,
           constVM = constVM v, 
           bpOffset = 1,
           global = global v, 
-          stack = stack v 
+          stack =stack v !!0:removeFirstN(fst(Prelude.last (frames v)) - fst((frames v)!!(frameIndex v - 1)) + 1, stack v) 
         }
-
 
 
 evalAssignIndex :: ([Object],Object, Object) -> Object 

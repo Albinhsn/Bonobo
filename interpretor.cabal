@@ -44,10 +44,8 @@ test-suite interpretor-test
     , TestDifficult
     , TestArray
     , TestMap
-    , TestFor
     , TestCode
     , TestVM 
-    , TestNoSta
   hs-source-dirs:
       test 
     , src

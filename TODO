@@ -1,16 +1,5 @@
 TODO:
-  fix other types inside funcs 
-    Array
-      remove arrayend, add length of array instead
-    Map
-  fix local def of func
-  test if var exist in other local
-    fix if needed
-  Do massive test suite for things
-  Do issue #3 (Prebuilt funcs)
-  Do issue #4 (Compiler issues)
-  Do issue #5 (Cleanup project after completion)
-  Do issue #8 (Look at lost chapter for macros)
+  CALLSTA should have pop 
 
 
 
@@ -24,3 +13,4 @@ git ls-files | grep '\.hs' | xargs wc -l
 --     putStrLn (prettyPrint (BSU.fromString line))
 --     main 
 
+/* fn print(s){}; fn len(s){}; fn append(a,b){}; */

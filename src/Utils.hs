@@ -15,7 +15,7 @@ removeFirstN (i, a) = ar
   where 
     ar  
       | i == 0 = a 
-      | i >= 0 && length a < i = error "can't remove more then already exists" 
+      | i >= 0 && length a < i = error ("can't remove more then already exists, i: " ++ show (i) ++ " a:" ++ show(length a))
       | otherwise = removeFirstN(i-1, removeFirst a)
 
 
@@ -46,7 +46,12 @@ isValidMinus e = b
       | expressionType e == BOOLEXP = isValidMinus (rightBool e)
       | expressionType e == GROUPEDEXP = isValidMinus (groupedExpression e)
       | expressionType e == EMPTYEXP = True
-      | otherwise = False 
+      | expressionType e == CALLEXP && null (callParams e)= True 
+      | expressionType e == CALLEXP = isValidMinus(last (callParams e))
+      | expressionType e == ASSIGNEXP && expressionType (assignExpression e) == EMPTYEXP= True 
+      | expressionType e == ARRAYEXP = isValidMinus(last (array e)) 
+      | expressionType e == ASSIGNEXP = isValidMinus(assignExpression e)
+      | otherwise = False
 
 isOperator :: Token -> Bool 
 isOperator t = typ t == PLUS || typ t == ASTERISK || typ t == SLASH || typ t == MINUS 
@@ -136,7 +141,7 @@ expressionToString e = s
       | expressionType e == TFEXP && bool e == FALSE = "False"
       | expressionType e == IDENTEXP = literal (ident e)
       | expressionType e == EMPTYEXP = " empty "
-      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"
+      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"--isClosedCall e 
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";" 
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
       | expressionType e == ARRAYEXP && closedArr e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
@@ -145,6 +150,13 @@ expressionToString e = s
       -- | expressionType e == MAPEXP && closedMap e == False = "{" ++ concatMapMap(mapMap e) 
       | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e)++ "}"
       | otherwise = error "couldn't parse type"
+
+-- isClosedCall :: Expression -> String 
+-- isClosedCall e = s 
+--   where 
+--     s 
+--       | closedCall e = ")"
+--       | otherwise = "XX"
 
 indexToString :: [Expression] -> String 
 indexToString e = (concat ["[" ++ (expressionToString x) ++ "]" | x <- e])
@@ -183,6 +195,18 @@ getLastExpressionType (b, s) = e
 
 getLastExpression:: [Statement] -> Expression
 getLastExpression s = expression (last s)
+
+getActualLastExp :: Statement-> Expression 
+getActualLastExp s = e 
+  where   
+    e 
+      | statementType s == LETSTA || statementType s == CALLSTA || statementType s == RETSTA || statementType s == ASSIGNSTA = expression s
+      | statementType s == FUNCSTA && null (body (statementUni s)) = last (params (statementUni s))
+      | statementType s == FUNCSTA = getActualLastExp(last (body (statementUni s)))
+      | statementType s == IFSTA && closedCon (statementUni s) == True = getActualLastExp(last (alt (statementUni s)))
+      | statementType s == IFSTA && closedCon (statementUni s) == False = getActualLastExp(last (con (statementUni s)))
+      | otherwise = error ("getActualLastExp" ++ show (statementType s))
+
 
 getLastOperator :: [Statement] -> Token 
 getLastOperator s = operator (expression (last s))

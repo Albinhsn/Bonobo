@@ -36,7 +36,8 @@ inspectObject o =
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
-    FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
+    FUNC_OBJ -> "fn" 
+    -- FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
 
 
 readIntFromString :: Expression -> Int 

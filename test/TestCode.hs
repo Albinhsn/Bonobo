@@ -9,39 +9,20 @@ import Compiler
 import Object
 
 
-
-testMake :: String 
-testMake = parseMakeToPretty(scopes(parseStatementToCompiled(parseStringToStatements("1 + 2")))!!0, constants (parseStatementToCompiled(parseStringToStatements("1 + 2"))))
-    
-testMake2 :: String 
-testMake2 = disassemble("", parseStatementToCompiled(parseStringToStatements("2 * 2 + 3 * 2")))
-
-testMakeTFTrue :: String 
-testMakeTFTrue = prettyPrint(scopes(parseStatementToCompiled(parseStringToStatements("True")))!!0)
-
-testMakeTFFalse :: String 
-testMakeTFFalse = prettyPrint(scopes (parseStatementToCompiled(parseStringToStatements("False")))!!0)
-
 testCodeIf:: String 
-testCodeIf= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){5;};")))
+testCodeIf= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){let a = 5;};")))
 
 testCodeIfElse:: String 
-testCodeIfElse= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){5;}else{10;};")))
+testCodeIfElse= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){let a = 5;}else{let b = 10;};")))
 
 testCodeNestedIf:: String 
-testCodeNestedIf= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){if(False){3;}else{5;};};")))
+testCodeNestedIf= disassemble("", parseStatementToCompiled(parseStringToStatements("if(True){if(False){let a = 3;}else{let b = 5;};};")))
 
 testCodeNestedElse:: String 
-testCodeNestedElse= disassemble("", parseStatementToCompiled(parseStringToStatements("if(False){}else{if(False){3;}else{5;};};")))
+testCodeNestedElse= disassemble("", parseStatementToCompiled(parseStringToStatements("if(False){}else{if(False){let c = 3;}else{let b = 5;};};")))
 
 testCodeLet:: String 
-testCodeLet= disassemble("", parseStatementToCompiled(parseStringToStatements("let five = 5; five;")))
-
-testCodeArray1 :: String 
-testCodeArray1 = disassemble("", parseStatementToCompiled(parseStringToStatements("[]")))
-
-testCodeArray2 :: String 
-testCodeArray2 = disassemble("", parseStatementToCompiled(parseStringToStatements("[1, \"hi\"]")))
+testCodeLet= disassemble("", parseStatementToCompiled(parseStringToStatements("let five = 5;")))
 
 testCodeArray3 :: String 
 testCodeArray3 = disassemble("", parseStatementToCompiled(parseStringToStatements("let a = [[], [1,2]];")))
