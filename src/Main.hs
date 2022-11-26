@@ -8,7 +8,6 @@ import Code
 import Object
 
 import Data.ByteString as BS
-
 main = do
   let s = parseStringToStatements("fn add(f,s){fn div(a,b){let d = a / b; return d;}; fn sub(a,b){let d = a - b; return div(a,d);};let a = sub(f,s); return a;};let c = add(10, 5);") 
   -- print s

@@ -188,3 +188,9 @@ testVMFN16 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseString
 
 testVMFNBook:: String 
 testVMFNBook= inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("let globalSeed = 50; fn minusOne(){let num = 1; return globalSeed-num;}; fn minusTwo() {let num = 2; return globalSeed - num;}; let res = minusOne() + minusTwo();")))))
+
+testVMFN17 :: String 
+testVMFN17 = inspectObject(getGlobal(0, run(parseStatementToCompiled(parseStringToStatements("let e = 50; fn a(){let c = 10; fn b(){let d = 2; c = c - d;}; b(); e = e - c;}; a();")))))
+
+testVMFN18 :: String 
+testVMFN18 = inspectObject(getGlobal(0, run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn sub(){let c = 20; a = a - c;}; sub();")))))

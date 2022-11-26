@@ -1,6 +1,8 @@
 TODO:
-  CALLSTA should have pop 
-
+  change BP to always be 0 at last frame, inc the ones behind instead 
+  fix setLocal and setGlobal 
+    use BP from idx of frame + instruct + offset
+        
 
 
 git ls-files | grep '\.hs' | xargs wc -l
@@ -14,3 +16,11 @@ git ls-files | grep '\.hs' | xargs wc -l
 --     main 
 
 /* fn print(s){}; fn len(s){}; fn append(a,b){}; */
+
+fn a()
+  c = 10 
+  fn b()
+    d = 2 
+    c = c - d; 
+
+

@@ -36,8 +36,8 @@ inspectObject o =
     STRING_OBJ -> "'" ++ stringValue o ++ "'"
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
-    FUNC_OBJ -> "fn" 
-    -- FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
+    -- FUNC_OBJ -> "fn" 
+    FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
 
 
 readIntFromString :: Expression -> Int 
@@ -119,8 +119,8 @@ disassembleFunc (s,b)= str
       | BS.head b == 24 = disassembleFunc(s ++ " OPCALL " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
       | BS.head b == 25 = disassembleFunc(s ++ " RETURNVALUE", removeFirstInstruction2 b)
       | BS.head b == 26 = disassembleFunc(s ++ " OPRETURN", removeFirstInstruction2 b)
-      | BS.head b == 27 = disassembleFunc(s ++ " SETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))      
-      | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))      
+      | BS.head b == 27 = disassembleFunc(s ++ " SETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++" " ++ (show (BS.index (b) 2)) , removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
+      | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | otherwise = error ("disassembleFunc " ++ (show (BS.head b)))
 
 removeFirstInstruction2:: ByteString -> ByteString 
