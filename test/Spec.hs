@@ -587,9 +587,19 @@ main = hspec $ do
         "2"
     it "test vm fn 16" $
       do 
-        testVMFN15
+        testVMFN16
         `shouldBe`
         "5"
+    it "test vm fn 17" $
+      do 
+        testVMFN17
+        `shouldBe`
+        "42"
+    it "test vm fn 18" $
+      do 
+        testVMFN18
+        `shouldBe`
+        "30"
     it "test vm fn book" $
       do 
         testVMFNBook

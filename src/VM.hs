@@ -301,10 +301,12 @@ runVM v =
 
 getLocal :: VM -> VM 
 getLocal v = 
+  trace("")
   trace(traceVM ("getLocal", v))
-  trace("     accessing idx: " ++ show(getLocalEleIdx v))
-  trace("     element: " ++ show(stack v!!(getLocalEleIdx v)))
+  trace("     accessing idx: " ++ show(getLocalEleIdx v) ++ " tot len" ++ show(Prelude.length (stack v)))
+  trace("     element: " ++ inspectObject(stack v!!(getLocalEleIdx v)))
   trace("     new stack: " ++ concStack(stack v!!(getLocalEleIdx v):stack v))
+  trace("     prev stack: " ++ concStack(stack v))
   VM{
     frames = removeFirstInstruction(removeFirstInstruction (frames v, frameIndex v), frameIndex v),
     frameIndex = frameIndex v,
@@ -323,13 +325,12 @@ concStack o = s
 
 setLocal :: VM -> VM 
 setLocal v = 
+  trace("")
   trace(traceVM ("setLocal", v))
-  trace("     bp: " ++ show(fst(frames v!!(Prelude.length (frames v) - 1))))
-  trace("     bps:" ++ Prelude.concat [show(fst x) ++ " "| x <- frames v])
-  trace("     idx: " ++ show(getLocalEleIdx v))
+  -- trace("     bp: " ++ show(fst(frames v!!(Prelude.length (frames v) - 1))))
+  -- trace("     bps:" ++ Prelude.concat [show(fst x) ++ " "| x <- frames v])
   trace("     element: " ++ inspectObject (stack v !!0))
-  trace("     stack: " ++ concStack(stack v))
-  trace("     localEleIdx: " ++ show(getLocalEleIdx v))
+  -- trace("     stack: " ++ concStack(stack v))
   trace("     replaced: " ++ inspectObject (stack v !!(getLocalEleIdx v)))
   trace("     new stack: " ++ concStack(
     removeFirst(
@@ -358,15 +359,17 @@ getBasePointer v = fst(frames v !! frameIndex v)
 
 getLocalEleIdx :: VM -> Int 
 getLocalEleIdx v = 
-  trace("   getLocalEleIdx: ")
+  -- trace("   getLocalEleIdx: ")
   -- trace("       getBPIDX: " ++ show(getBasePointerIdx(getNInstruction(0, frames v, frameIndex v), v) ))
-  trace("       getNInstruction: " ++ show(getNInstruction(Prelude.length (frames v) - 1, frames v, frameIndex v)))
-  trace("       instructs: " ++ Prelude.concat[show(fromIntegral x)++ " "| x <- unpack(snd(frames v!!frameIndex v))])
-  trace("       Prelude.lgnth: " ++ show(Prelude.length(frames v) - 1))
-  trace("       mby should be this?: " ++ show(getNInstruction(1, frames v, frameIndex v)))
-  getBasePointerIdx(getNInstruction(0, frames v, frameIndex v), v) + 
-  bpOffset v + 
+  -- trace("       bpOffset: " ++ show(bpOffset v))
+  -- trace("       getN: " ++ show(getNInstruction(1, frames v, frameIndex v)))
+  getBasePointerIdx(getNInstruction(0,frames v, frameIndex v)-1, v) - 1 + 
+  bpOffset v - 
   getNInstruction(1, frames v, frameIndex v) 
+
+getPrevBP :: VM -> Int 
+getPrevBP v = fst(frames v!!(frameIndex v - 1 )) 
+
 
 getBasePointerIdx :: (Int,VM) -> Int 
 getBasePointerIdx (i,v) = fst(frames v !!i)
@@ -376,17 +379,21 @@ evalParams v = vm
   where 
     vm 
       | otherwise = 
+        trace("")
         trace("evalParams")
-        trace("      new stack: " ++  concStack([NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst (stack v)))
-        trace("      new offset: " ++  show(bpOffset v - numArgs(Prelude.head (stack v)) - 1))
-        trace("      new bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))]])
+        -- trace("      new stack: " ++  concStack([NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v) ))
+        trace("      current stack: " ++ concStack(stack v))
+        trace("      new stack: " ++ concStack(removeFirst(stack v) ++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]]))
+        -- trace("      curr offset: " ++  show(bpOffset v))
+        -- trace("      new offset: " ++  show(bpOffset v - numArgs(Prelude.head (stack v)) - 1))
+        -- trace("      new bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))]])
         VM{ 
           frames = removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
           bpOffset = bpOffset v - numArgs(Prelude.head (stack v)) - 1,
           constVM = constVM v, 
           global = global v,
-          stack =removeFirst (stack v)++ [NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] 
+          stack =[NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v) 
         } 
 
 changeBP :: (Int, [(Int, ByteString)]) -> [(Int, ByteString)] 
@@ -401,7 +408,9 @@ evalReturn v = vm
     vm 
       | objectType (Prelude.head (stack v)) == NULL_OBJ = 
         trace("evalReturn")
-        trace("     removeN:" ++show(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1) )
+        -- trace("     removeN:" ++show(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1) )
+        -- trace("      old bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- frames v])
+        -- trace("      new bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- changeBP( getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v))])
         VM{
           frames =  changeBP( getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v)),
           frameIndex = frameIndex v - 1,
@@ -412,13 +421,15 @@ evalReturn v = vm
         }
       | otherwise =
         trace(traceVM("evalReturn", v))
-        trace("     bpOffset: " ++ show(bpOffset v))
+        trace("      old bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- frames v])
+        trace("      new bps: " ++ Prelude.concat [show(fst x) ++ " " | x <- changeBP( getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v))])
+        -- trace("     bpOffset: " ++ show(bpOffset v))
         trace("     removing: " ++ show(getBasePointerIdx(Prelude.length (frames v) -2, v)))
-        trace("     bps:" ++ Prelude.concat (pop[show(fst x) ++ " "| x <- frames v]))
+        -- trace("     bps:" ++ Prelude.concat (pop[show(fst x) ++ " "| x <- frames v]))
         trace("     prev stack: " ++ show(concStack(stack v)))
         trace("     returning: " ++ inspectObject(stack v!!0))
         VM{
-          frames =  changeBP(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v)),
+          frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v)),
           frameIndex = frameIndex v - 1,
           constVM = constVM v, 
           bpOffset = 1,
