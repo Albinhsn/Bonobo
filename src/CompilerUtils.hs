@@ -16,10 +16,10 @@ reverseList [] = []
 reverseList xs = Prelude.last xs : reverseList (Prelude.init xs)
 
 parseStringToStatementsString :: String -> String 
-parseStringToStatementsString s =  statementsToString(snd(snd( parseStatements(EXP,( getTokens(parseTokens(0, s, [])),[])))))
+parseStringToStatementsString s =  statementsToString(parseStatements(getTokens(parseTokens(0, s, []))))
 
 parseStringToStatements :: String -> [Statement] 
-parseStringToStatements s = snd(snd( parseStatements(EXP,( getTokens(parseTokens(0, s, [])),[]))))
+parseStringToStatements s = parseStatements(getTokens(parseTokens(0, s, [])))
 
 
 parseMakeToPretty :: (ByteString, [Object]) -> String 
