@@ -134,6 +134,7 @@ expressionToString e = s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
       | expressionType e == PREFIXEXP = "(" ++ literal (prefixOperator e) ++ "" ++ expressionToString (prefixExpression e) ++ ")"
       | expressionType e == INTEXP = literal (integerLiteral e)
+      | expressionType e == GROUPEDEXP && closedExp e == False= "XX" ++ expressionToString (groupedExpression e) 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "True"
@@ -143,6 +144,7 @@ expressionToString e = s
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"--isClosedCall e 
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";" 
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
+      | expressionType e == ARRAYEXP && closedExp e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 
       | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ indexToString(arrayIndex e) 
       -- | expressionType e == MAPEXP && closedMap e == False = "{" ++ concatMapMap(mapMap e) 

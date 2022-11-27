@@ -10,7 +10,7 @@ import Object
 
 import Data.ByteString as BS
 main = do
-  let s = parseStringToStatements("let a = 5 + 5 * 5;") 
+  let s = parseStringToStatements("let a = {}") 
   print s
   let c = statementsToString(s)
   print c

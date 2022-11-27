@@ -322,7 +322,7 @@ addMapValToLastExp e = exp
     exp 
       | expressionType e == ASSIGNEXP = AssignExpression {closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addMapValToLastExp( assignExpression e)}
       | expressionType e == ARRAYEXP = ArrayExpression {closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = append (pop (array e)) (addMapValToLastExp(last (array e)))}
-      | expressionType e == MAPEXP= MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), snd(mapMap e) ++ [Expression{expressionType=EMPTYEXP, closedExp= False, expLine = -1}])}
+      | expressionType e == MAPEXP= MapExpression{closedExp = False, nextItem = VAL, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), snd(mapMap e) ++ [Expression{expressionType=EMPTYEXP, closedExp= False, expLine = -1}])}
       | otherwise = error ("addMapValToLastExp " ++ expressionToString e)
 -- TODO FIX PRECEDENCE
 addOperatorToLastExp :: (Token, Expression) -> Expression 
@@ -331,8 +331,10 @@ addOperatorToLastExp (t,e) = exp
     exp 
       | expressionType e == IDENTEXP || expressionType e == INTEXP || expressionType e == STRINGEXP = OperatorExpression{expressionType = OPERATOREXP, closedExp = False, expLine = line t, leftOperator = e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}} 
       | expressionType e == BOOLEXP = BoolExpression {closedExp = False, expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addOperatorToLastExp(t, rightBool e)}
-      | expressionType e == GROUPEDEXP = GroupedExpression {closedExp = False, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
-      | expressionType e == OPERATOREXP && checkPrecedence(t, e) = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = rightOperator e, operator = t, rightOperator = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}}
+      | expressionType e == GROUPEDEXP && closedExp e == False= GroupedExpression {closedExp = False, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
+      | expressionType e == GROUPEDEXP = OperatorExpression{closedExp = False, expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}}
+      | expressionType e == OPERATOREXP && checkPrecedence(t, e) && expressionType (leftOperator e) /= GROUPEDEXP  = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = rightOperator e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}}
+      | expressionType e == OPERATOREXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}
       | expressionType e == ASSIGNEXP = AssignExpression {closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addOperatorToLastExp(t, assignExpression e)}
       | expressionType e == MAPEXP && nextItem e == KEY = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (append (pop (fst(mapMap e))) (addOperatorToLastExp(t, last (fst(mapMap e)))), snd(mapMap e))}
       | expressionType e == MAPEXP = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), append (pop (snd(mapMap e))) (addOperatorToLastExp(t, last (snd(mapMap e)))))}
@@ -371,6 +373,7 @@ addArrayToLastExp :: Expression -> Expression
 addArrayToLastExp e = exp 
   where 
     exp 
+      | expressionType e == EMPTYEXP = ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = []}
       | expressionType e == ASSIGNEXP = AssignExpression {closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addArrayToLastExp(assignExpression e)}
       | expressionType e == ARRAYEXP = ArrayExpression {closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = append (pop (array e)) (addArrayToLastExp(last (array e)))}
       | expressionType e == MAPEXP= MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), append (pop (snd(mapMap e))) (addArrayToLastExp(last (snd(mapMap e)))))}
@@ -385,7 +388,7 @@ addIdentifier (t, s) = sta
           staLine = line t, 
           statementType = ASSIGNSTA, 
           statementUni = AssignStatement{},
-          expression = Expression{expressionType = EMPTYEXP, expLine = -1, closedExp = False}
+          expression = IdentExpression{closedExp = False,expLine = (line t), expressionType = IDENTEXP, ident = t} 
         } 
       | statementType (last s) == ASSIGNSTA || statementType (last s) == RETSTA || statementType (last s) == LETSTA = append (pop s) Statement{
           closedSta = False, 
@@ -401,6 +404,7 @@ addIdentifierToLastExp (t, e) = exp
   where 
     exp 
       | expressionType e == EMPTYEXP = IdentExpression{closedExp = False ,expLine = (line t), expressionType = IDENTEXP, ident = t}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIdentifierToLastExp(t, assignExpression e)}
       | otherwise = error ("addIdentifierToLastExp: " ++ expressionToString e) 
 
 
@@ -419,7 +423,10 @@ addIntToLastExp (t, e) = exp
     exp 
       | expressionType e == EMPTYEXP = IntegerLiteralExpression{expLine = line t, closedExp = True, expressionType = INTEXP, integerLiteral = t}
       | expressionType e == OPERATOREXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = addIntToLastExp(t, rightOperator e)} 
+      | expressionType e == ARRAYEXP && null (array e) = ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = [addIntToLastExp(t, Expression{expLine = -1, expressionType = EMPTYEXP, closedExp =False})]} 
       | expressionType e == ARRAYEXP =ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = append (pop (array e)) (addIntToLastExp(t, last (array e)))} 
+      --TODO error handle below
+      | expressionType e == MAPEXP && null (fst(mapMap e)) = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = ([addIntToLastExp(t, Expression{expressionType = EMPTYEXP, expLine = -1, closedExp = False })], [])} 
       | expressionType e == MAPEXP && nextItem e == KEY = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (append (pop (fst(mapMap e))) (addIntToLastExp(t, last (fst(mapMap e)))), snd(mapMap e))}
       | expressionType e == MAPEXP = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), append (pop (snd(mapMap e))) (addIntToLastExp(t, last (snd(mapMap e)))))}
       | expressionType e == BOOLEXP = BoolExpression {closedExp = False, expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIntToLastExp(t, rightBool e)}
@@ -427,8 +434,9 @@ addIntToLastExp (t, e) = exp
       | expressionType e == ASSIGNEXP = AssignExpression {closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addIntToLastExp(t, assignExpression e)}
       | expressionType e == CALLEXP && null (callParams e)= CallExpression {closedExp = False, expLine = expLine e,expressionType = CALLEXP, callIdent = callIdent e, callParams = [addIntToLastExp(t, Expression{closedExp = False, expressionType = EMPTYEXP, expLine = expLine e})]}
       | expressionType e == CALLEXP = CallExpression {closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (pop (callParams e)) (addIntToLastExp(t, last(callParams e)))}
+      | expressionType e == PREFIXEXP = PrefixExpression{closedExp = False,expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = prefixOperator e, prefixExpression = addIntToLastExp(t, prefixExpression e)}
       | expressionType e == INDEXEXP = IndexExpression {closedExp = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = append (pop (arrayIndex e)) (addIntToLastExp(t, last (arrayIndex e)))}
-      | otherwise = error ("addIntToLastExp" ++ expressionToString e)
+      | otherwise = error ("addIntToLastExp " ++ expressionToString e)
 
 addMinusToLastExp :: Expression -> Expression 
 addMinusToLastExp e = exp 
@@ -483,12 +491,21 @@ addGroupToLastExp :: Expression -> Expression
 addGroupToLastExp e = exp 
   where 
     exp 
+      | expressionType e == EMPTYEXP = GroupedExpression{closedExp = False, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = Expression{closedExp = False, expLine = -1, expressionType =EMPTYEXP}}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False, expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addGroupToLastExp(assignExpression e)}
       | otherwise = error ("addGroupToLastExp " ++ expressionToString e) 
 
 addLParen :: Statement -> Statement 
 addLParen s = sta 
   where 
     sta 
+      | statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
+        closedSta = False, 
+        staLine =staLine s, 
+        statementUni = statementUni s,
+        statementType = statementType s,
+        expression = addGroupToLastExp(expression s)
+      }
       | otherwise = error ("addLParen " ++ statementToString s) 
 
 closeLast :: Statement -> Statement 
@@ -504,35 +521,121 @@ closeLast s = sta
         }
       | otherwise = error ("closeLast " ++ statementToString s) 
 
+
+findGrouped :: Expression -> Bool 
+findGrouped e = b 
+  where 
+    b 
+      | otherwise = False 
+
+closeLastParenExp :: Expression -> Expression 
+closeLastParenExp e = ex 
+  where 
+    ex 
+      | expressionType e == GROUPEDEXP && findGrouped(groupedExpression e) == False = GroupedExpression{closedExp = True,expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = groupedExpression e} 
+      | expressionType e == OPERATOREXP = OperatorExpression{closedExp = False, expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = closeLastParenExp(rightOperator e)}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False,expLine = expLine e, expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = closeLastParenExp(assignExpression e)}
+      | otherwise = error ("closeLastParenExp " ++ expressionToString e)
 closeLastParen :: Statement -> Statement
 closeLastParen s = sta 
   where 
     sta 
+      | statementType s == RETSTA || statementType s == ASSIGNSTA || statementType s == LETSTA = Statement{
+          staLine = staLine s, 
+          statementType = statementType s, 
+          statementUni = statementUni s, 
+          closedSta = False, 
+          expression = closeLastParenExp (expression s)
+        }
       | otherwise = error ("closeLastParen " ++ statementToString s) 
 
 closeArray :: Statement -> Statement 
 closeArray s = sta 
   where 
     sta 
+      | statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
+          staLine =staLine s,
+          statementUni =statementUni s,
+          closedSta = False, 
+          statementType = statementType s,
+          expression = closeArrayExp(expression s)
+        } 
       | otherwise = error ("closeArray " ++ statementToString s) 
+
+
+closeArrayExp :: Expression -> Expression 
+closeArrayExp e = ex 
+  where 
+    ex 
+      | expressionType e == ARRAYEXP = ArrayExpression{closedExp = True, expLine = expLine e, expressionType = ARRAYEXP, array = array e}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False,expLine =expLine e, expressionType = ASSIGNEXP, assignIdent =assignIdent e, assignExpression = closeArrayExp(assignExpression e)}
+      | otherwise = error ("closeArrayExp " ++ expressionToString e)
+
+addMapToExp :: Expression -> Expression 
+addMapToExp e = ex 
+  where 
+    ex  
+      | expressionType e == EMPTYEXP = MapExpression{closedExp = False, nextItem = KEY , expLine = -1, expressionType = MAPEXP, mapMap = ([], [])} 
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False,expLine =expLine e, expressionType = ASSIGNEXP, assignIdent =assignIdent e, assignExpression = addMapToExp(assignExpression e)}
+      | otherwise = error ("addMapToExp " ++ expressionToString e)
+
 
 parseLBrace :: Statement -> Statement 
 parseLBrace s = sta 
   where 
     sta 
+      | statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
+          staLine =staLine s,
+          statementUni =statementUni s,
+          closedSta = False, 
+          statementType = statementType s,
+          expression = addMapToExp(expression s)
+        } 
       | otherwise = error ("parseLBrace " ++ statementToString s) 
+
+addEleToArray :: Expression -> Expression 
+addEleToArray e = ex 
+  where 
+    ex 
+      | expressionType e == ARRAYEXP = ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = append (array e) Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False,expLine =expLine e, expressionType = ASSIGNEXP, assignIdent =assignIdent e, assignExpression = addEleToArray (assignExpression e)}
+      | expressionType e == MAPEXP = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (append (fst(mapMap e)) Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}, snd(mapMap e))}
+      | otherwise = error ("addEleToArray " ++ expressionToString e)
+
 
 addComma :: Statement -> Statement 
 addComma s = sta 
   where 
     sta 
+      | statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
+          staLine =staLine s,
+          statementUni =statementUni s,
+          closedSta = False, 
+          statementType = statementType s,
+          expression = addEleToArray(expression s)
+        } 
       | otherwise = error ("addComma " ++ statementToString s)
+
+closeLastMapExp :: Expression -> Expression
+closeLastMapExp e = ex 
+  where 
+    ex 
+      | expressionType e == MAPEXP && length(fst(mapMap e)) /= length(snd(mapMap e)) = error ("invalid map diff length of keys and vals: " ++ expressionToString e)
+      | expressionType e == MAPEXP = MapExpression{closedExp = True, nextItem = nextItem e, expLine = expLine e, expressionType = MAPEXP, mapMap = mapMap e}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = False,expLine =expLine e, expressionType = ASSIGNEXP, assignIdent =assignIdent e, assignExpression = closeLastMapExp(assignExpression e)}
 
 parseRBrace :: Statement -> Statement 
 parseRBrace s = sta 
   where 
     sta 
-      | otherwise = error ("parseLBrace " ++ statementToString s) 
+      | statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
+          staLine =staLine s,
+          statementUni =statementUni s,
+          closedSta = False, 
+          statementType = statementType s,
+          expression = closeLastMapExp(expression s)
+        } 
+      | otherwise = error ("parseRBrace " ++ statementToString s) 
 
 addElse :: ([Token], [Statement]) -> ([Token], [Statement])
 addElse (t,s) = sta 
