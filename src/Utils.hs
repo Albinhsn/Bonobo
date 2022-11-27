@@ -148,7 +148,8 @@ expressionToString e = s
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 
       | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ indexToString(arrayIndex e) 
       -- | expressionType e == MAPEXP && closedMap e == False = "{" ++ concatMapMap(mapMap e) 
-      | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e)++ "}"
+      | expressionType e == MAPEXP && closedExp e = "{" ++ concatMapMap(mapMap e)++ "}"
+      | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e) 
       | otherwise = error "couldn't parse type"
 
 -- isClosedCall :: Expression -> String 

@@ -612,14 +612,19 @@ main = hspec $ do
       do 
         testBasicLet
         `shouldBe`
-        "let five = 5; let five = 'five'; let five = (-5); let five = (5 + 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 + (-5)); let five = (((5 + 5)) * 5); let five = five; let five = True; let five = 5 == 5; let five = [1, 2, ]; let five = {1:1, 'hello':'world', };"
+        "let five = 5; let five = 'five'; let five = (-5); let five = (5 + 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 + (-5)); let five = (((5 + 5)) * 5); let five = five; let five = True; let five = 5 == 5; let five = [1, 2, ]; let five = {1:1, 'hello':'world', }; let five = (!two);"
     it "test parser basic return" $
       do 
         testBasicReturn
         `shouldBe`
-        "return 5; return 'five'; return (-5); return (5 + 5); return (5 + (5 * 5)); return ((5 * 5) + 5); return (5 + (-5)); return (((5 + 5)) * 5); return five; return True; return 5 == 5; return [1, 2, ]; return {1:1, 'hello':'world', };"
+        "return 5; return 'five'; return (-5); return (5 + 5); return (5 + (5 * 5)); return ((5 * 5) + 5); return (5 + (-5)); return (((5 + 5)) * 5); return five; return True; return 5 == 5; return [1, 2, ]; return {1:1, 'hello':'world', }; return (!five);"
     it "test parser basic assign" $
       do 
         testBasicAssign
         `shouldBe`
-        "five = 5; five = 'five'; five = (-5); five = (5 + 5); five = (5 + (5 * 5)); five = ((5 * 5) + 5); five = (5 + (-5)); five = (((5 + 5)) * 5); five = five; five = True; five = 5 == 5; five = [1, 2, ]; five = {1:1, 'hello':'world', };"
+        "five = 5; five = 'five'; five = (-5); five = (5 + 5); five = (5 + (5 * 5)); five = ((5 * 5) + 5); five = (5 + (-5)); five = (((5 + 5)) * 5); five = five; five = True; five = 5 == 5; five = [1, 2, ]; five = {1:1, 'hello':'world', }; five = (!five);"
+    it "test parser am" $
+      do 
+        testAM
+        `shouldBe`
+        "return [(!True), {1:(!True), '2':[True, {0:((2 + (-3))), }, ], }, ];"

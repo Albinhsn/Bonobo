@@ -10,7 +10,7 @@ import Object
 
 import Data.ByteString as BS
 main = do
-  let s = parseStringToStatements("let a = {}") 
+  let s = parseStringToStatements("let five = 5; let five = 5;") 
   print s
   let c = statementsToString(s)
   print c
@@ -24,5 +24,4 @@ main = do
 --   let k = parseStack(r)
 --   print k  
 -- -- let a = 50; fn sub(b){a = a - b;}; sub(20);
-
 -- -- fn a(){fn b(){let a = 5; return a;}; let c = b(); return c;};let x = a();
