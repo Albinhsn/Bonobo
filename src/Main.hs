@@ -10,7 +10,7 @@ import Object
 
 import Data.ByteString as BS
 main = do
-  let s = parseStringToStatements("let five = 5; let five = 5;") 
+  let s = parseStringToStatements("if(True){}else{if(True){}else{};};") 
   print s
   let c = statementsToString(s)
   print c

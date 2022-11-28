@@ -628,3 +628,43 @@ main = hspec $ do
         testAM
         `shouldBe`
         "return [(!True), {1:(!True), '2':[True, {0:((2 + (-3))), }, ], }, ];"
+    it "test parser fn" $
+      do 
+        testFN
+        `shouldBe`
+        "fn add(){}; fn add(a){let five = 5;}; fn add(a,b){let c = (a + b); return c;}; fn a(a,b){fn b(a,b){return 5;}; b(1,2);}; fn a(){if(True){let five = 5; return 5;}; return 2;};"
+    it "test parser fnexp" $
+      do 
+        testFNExp
+        `shouldBe`
+        "fn add(a){let a = 5; let a = '5'; let a = True; let a = a[0]; let a = {1:1, }; let a = [0, 1, 2, ]; add(2,3);};"
+    it "test parser index" $
+      do 
+        testIndex
+        `shouldBe`
+        "let a = b[0]; let a = b['c']; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0];"
+    it "test parser call" $
+      do 
+        testCall
+        `shouldBe`
+        "add(); add(1); add(1,2); add(a,b); add('a'); add((1 + 2)); add(((1 + (-5)))); add(sub());"
+    it "test parser if params" $
+      do 
+        testIfParams
+        `shouldBe`
+        "if(True){}; if(1 == 1){}; if(a > 1){}; if(add()){}; if('a' == 'a'){}; if(True == False){}; if(a[0]){};"
+    it "test parser if" $
+      do 
+        testIf
+        `shouldBe`
+        "if(True){let five = 5; return five;}; if(True){return a[0];}; if(True){return True;}; if(True){return 'hi';}; if(True){if(True){};};"
+    it "test parser if exp" $
+      do 
+        testIfExp
+        `shouldBe`
+        "if(True){let five = a[0]; let b = {1:1, }; add(2,3);};"
+    it "test parser else" $
+      do 
+        testElse
+        `shouldBe`
+        "if(True){}else{let five = 5;};"

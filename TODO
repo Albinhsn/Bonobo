@@ -1,3 +1,6 @@
+TODO:
+  do todos in code :)
+  nested if else #Parse else fucks it 
 
 git ls-files | grep '\.hs' | xargs wc -l
 

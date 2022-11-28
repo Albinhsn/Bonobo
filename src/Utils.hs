@@ -123,9 +123,9 @@ ifToString :: (Bool, Statement) -> String
 ifToString (b, s) = str 
   where 
     str 
-      | b == False= "{" ++(concat [statementToString x | x <- con (statementUni s)]) 
+      | b == False= "{" ++(concat [statementToString x ++ " "| x <- con (statementUni s)]) 
       | null (con (statementUni s)) = "{}"
-      | otherwise = "{" ++(concat [statementToString x | x <- con (statementUni s)]) ++  "}" 
+      | otherwise = "{" ++(pop (concat [statementToString x ++ " "| x <- con (statementUni s)])) ++  "}" 
 
 expressionToString :: Expression -> String
 expressionToString e = s
@@ -134,34 +134,42 @@ expressionToString e = s
       | expressionType e == OPERATOREXP = "(" ++ expressionToString (leftOperator e) ++ " " ++ literal (operator e) ++ " " ++ expressionToString (rightOperator e) ++ ")"
       | expressionType e == PREFIXEXP = "(" ++ literal (prefixOperator e) ++ "" ++ expressionToString (prefixExpression e) ++ ")"
       | expressionType e == INTEXP = literal (integerLiteral e)
-      | expressionType e == GROUPEDEXP && closedExp e == False= "XX" ++ expressionToString (groupedExpression e) 
+      | expressionType e == GROUPEDEXP && closedExp e == False= "(" ++ expressionToString (groupedExpression e) ++ "X" 
       | expressionType e == GROUPEDEXP = "(" ++ expressionToString (groupedExpression e) ++ ")" 
       | expressionType e == BOOLEXP =  expressionToString (leftBool e) ++ " " ++ literal (boolOperator e) ++ " " ++ expressionToString (rightBool e)  
       | expressionType e == TFEXP && bool e == TRUE = "True"
       | expressionType e == TFEXP && bool e == FALSE = "False"
       | expressionType e == IDENTEXP = literal (ident e)
       | expressionType e == EMPTYEXP = " empty "
-      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ ")"--isClosedCall e 
+      | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ isClosedCall e 
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";" 
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
       | expressionType e == ARRAYEXP && closedExp e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 
-      | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ indexToString(arrayIndex e) 
+      | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ concat ["[" ++ expressionToString x ++ isClosedArrayIndex(x) | x <- arrayIndex e]
       -- | expressionType e == MAPEXP && closedMap e == False = "{" ++ concatMapMap(mapMap e) 
       | expressionType e == MAPEXP && closedExp e = "{" ++ concatMapMap(mapMap e)++ "}"
       | expressionType e == MAPEXP = "{" ++ concatMapMap(mapMap e) 
       | otherwise = error "couldn't parse type"
 
--- isClosedCall :: Expression -> String 
--- isClosedCall e = s 
---   where 
---     s 
---       | closedCall e = ")"
---       | otherwise = "XX"
 
-indexToString :: [Expression] -> String 
-indexToString e = (concat ["[" ++ (expressionToString x) ++ "]" | x <- e])
+isClosedArrayIndex :: Expression -> String 
+isClosedArrayIndex e = 
+  case closedExp e of 
+    True -> "]"
+    False -> ""
 
+
+isClosedCall :: Expression -> String 
+isClosedCall e = s 
+  where 
+    s 
+      | closedExp e = ")"
+      | otherwise = "XX"
+
+isClosedIndex :: Bool -> String 
+isClosedIndex True = "]"
+isClosedIndex False = ""
 
 concatMapMap :: ([Expression], [Expression]) -> String 
 concatMapMap (key, val) = s 
