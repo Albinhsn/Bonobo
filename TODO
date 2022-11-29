@@ -1,6 +1,6 @@
-TODO:
-  do todos in code :)
-  nested if else #Parse else fucks it 
+let a = 5; fn b(){a = 10 + 5;}; 
+    a remains as 5 for some reason
+
 
 git ls-files | grep '\.hs' | xargs wc -l
 

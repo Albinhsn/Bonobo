@@ -10,18 +10,18 @@ import Object
 
 import Data.ByteString as BS
 main = do
-  let s = parseStringToStatements("if(True){}else{if(True){}else{};};") 
-  print s
+  let s = parseStringToStatements("fn a(){let c = 10; fn b(){let d = 2; c = c - d;}; b();}; a();") 
+  -- print s
   let c = statementsToString(s)
   print c
---   let a = parseStatementToCompiled s 
---   print a
---   print ("Symbols: " ++ show(symbols a)) 
---   print ("Funcs: " ++ Prelude.concat [inspectObject o ++ " " | o <- getFuncs(constants a)])
---   print (disassemble ("", a))
---   let r = run a 
---   -- print r
---   let k = parseStack(r)
---   print k  
--- -- let a = 50; fn sub(b){a = a - b;}; sub(20);
--- -- fn a(){fn b(){let a = 5; return a;}; let c = b(); return c;};let x = a();
+  let a = parseStatementToCompiled s 
+  -- print a
+  print ("Symbols: " ++ show(symbols a)) 
+  print ("Funcs: " ++ Prelude.concat [inspectObject o ++ " " | o <- getFuncs(constants a)])
+  print (disassemble ("", a))
+  let r = run a 
+  -- print r
+  let k = parseStack(r)
+  print k  
+-- let a = 50; fn sub(b){a = a - b;}; sub(20);
+-- fn a(){fn b(){let a = 5; return a;}; let c = b(); return c;};let x = a();

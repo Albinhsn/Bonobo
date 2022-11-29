@@ -9,17 +9,6 @@ import VM
 import CompilerUtils
 import Compiler
 
-testBools:: String
-testBools=
-  statementsToString 
-      (snd( snd 
-        ( parseStatements
-          (EXP,( getTokens(parseTokens(0, "let five = 5 == 5; let five = 5 == 5 + 5; let five = 5 == 5 + 5 * 5; let five = 5 == 5 + -5; let five = 5 == 5 + -5 * -5; let five = 5 > 5 * 2 == 2 + -3 * 5 > 1; let five = b[0] == b[0];", [])),
-            []
-          ))
-        )
-      ))
-
 
 testVMBool1 :: String 
 testVMBool1 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = True == True"))))
