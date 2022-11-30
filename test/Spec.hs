@@ -5,7 +5,7 @@ import TestLexer
 import TestCode
 import TestBool 
 import TestVM
-import TestParserV2
+import TestParser
 
 main :: IO ()
 main = hspec $ do
@@ -463,7 +463,7 @@ main = hspec $ do
       do 
         testFN
         `shouldBe`
-        "fn add(){}; fn add(a){let five = 5;}; fn add(a,b){let c = (a + b); return c;}; fn a(a,b){fn b(a,b){return 5;}; b(1,2);}; fn a(){if(True){let five = 5; return 5;}; return 2;}; fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[], }, ], }, ], }, ];};};};};};"
+        "fn add(){}; fn add(a){let five = 5;}; fn add(a,b){let c = (a + b); return c;}; fn a(a,b){fn b(a,b){return 5;}; b(1,2);}; fn a(){if(True){let five = 5; return 5;}; return 2;}; fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[], }, ], }, ], }, ];};};};};}; fn add(((2 + 3))){};"
     it "test parser fnexp" $
       do 
         testFNExp
@@ -473,12 +473,12 @@ main = hspec $ do
       do 
         testIndex
         `shouldBe`
-        "let a = b[0]; let a = b['c']; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0];"
+        "let a = b[0]; let a = b['c']; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0]; let a = b[b[b[b[0]]]]; let a = a[add(2,3)]; let a = b[b[0][0]][0];"
     it "test parser call" $
       do 
         testCall
         `shouldBe`
-        "add(); add(1); add(1,2); add(a,b); add('a'); add((1 + 2)); add(((1 + (-5)))); add(sub());"
+        "add(); add(1); add(1,2); add(a,b); add('a'); add((1 + 2)); add(((1 + (-5)))); add(sub()); add(a[0]);"
     it "test parser if params" $
       do 
         testIfParams

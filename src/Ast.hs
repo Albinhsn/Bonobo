@@ -101,7 +101,7 @@ data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
   | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
-  | FuncStatement {closedParams :: !Bool, params :: ![Expression], body :: ![Statement]} 
+  | FuncStatement {closedParams :: !Bool, closedBody :: !Bool, params :: ![Expression], body :: ![Statement]} 
   | ForStatement{start :: !Expression, stop ::  !Expression, inc :: !Expression ,forBody :: ![Statement]}
   | CallStatement {} 
   | AssignStatement{}

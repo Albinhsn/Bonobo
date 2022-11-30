@@ -32,20 +32,11 @@ test-suite interpretor-test
     , Compiler
     , VM 
     , CompilerUtils 
-    -- , TestLexer
-    -- , TestPrecedence
-    -- , TestParser
-    -- , TestBool
-    -- , TestIf
-    -- , TestIdent
-    -- , TestFunc
-    -- , TestTFT
-    -- , TestDifficult
-    -- , TestArray
-    -- , TestMap
-    -- , TestCode
-    -- , TestVM in
-    , TestParserV2
+    , TestLexer
+    , TestBool 
+    , TestCode
+    , TestVM
+    , TestParser
   hs-source-dirs:
       test 
     , src
