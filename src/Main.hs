@@ -9,8 +9,11 @@ import Code
 import Object
 
 import Data.ByteString as BS
+import Data.ByteString.UTF8 as BSU      -- from utf8-string
+
+
 main = do
-  let s = parseStringToStatements("fn add((2+3)){};") 
+  let s = parseStringToStatements("add(add(2,3,4),2,3);") 
 --      
   print s
 
@@ -25,6 +28,3 @@ main = do
   -- -- print r
   -- let k = parseStack(r)
   -- print k  
-
---Make a[a[0][1]] work
--- Fix isGroupedExpression

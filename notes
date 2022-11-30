@@ -1,9 +1,0 @@
-let a = [[0]]; a[0][0] = True;
-
-#Creates a 
-0 [0]
-0  0
-TRUE
-GETGLOBAL A 
-SETINDEX 
-SETGLOBAL a 

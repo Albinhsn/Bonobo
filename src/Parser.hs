@@ -477,6 +477,7 @@ addArrayToLastExp e = ex
       | expressionType e == INDEXEXP && expressionType (last (arrayIndex e)) == IDENTEXP && closedExp (last (arrayIndex e)) == False = IndexExpression{closedExp = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = append (pop (arrayIndex e)) (addArrayToLastExp(last (arrayIndex e)))}
       | expressionType e == INDEXEXP && expressionType (last (arrayIndex e)) == INDEXEXP && closedExp (last (arrayIndex e)) == False = IndexExpression{closedExp = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = append (pop (arrayIndex e)) (addArrayToLastExp(last (arrayIndex e)))}
       | expressionType e == INDEXEXP = IndexExpression{closedExp = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = append (arrayIndex e) Expression{expLine = -1, expressionType = EMPTYEXP, closedExp = False}}
+      | expressionType e == CALLEXP && null (callParams e) = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams =[ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = []}] }
       | expressionType e == CALLEXP = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (pop (callParams e)) (addArrayToLastExp(last(callParams e)))}
       | otherwise = error ("addArrayToLastExp " ++ expressionToString e)
 -- CHECK IF LAST IS CLOSED INSIDE CON/ALT/BODY 
@@ -1233,7 +1234,8 @@ checkNestedListCall e = b
   where   
     b 
       | null (callParams e) = False 
-      | expressionType (last (callParams e)) == CALLEXP = True
+      | expressionType (last (callParams e)) == CALLEXP && closedExp (last (callParams e)) == False = True
+      | expressionType (last (callParams e)) == ARRAYEXP && closedExp (last (callParams e)) == False = True
       | otherwise = False
 
 checkNestedIndex :: Expression -> Bool 

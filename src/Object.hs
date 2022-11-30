@@ -8,12 +8,6 @@ import Debug.Trace
 
 data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
 
-data ReturnType = NONE | SMTH deriving (Eq, Show) 
-
-data Function = Function{funcIdent :: !String, funcParams :: ![Expression], funcBody :: ![Statement]} deriving (Eq, Show)
-
-data Variable = Variable{varIdent :: !String, varValue :: Object} deriving (Eq, Show)
-
 data Object 
   = NullObject {objectType :: !ObjectType}
   | IntObject {objectType :: !ObjectType, intValue :: !Int}
@@ -23,9 +17,6 @@ data Object
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
   | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: ByteString}
   deriving(Eq, Show, Ord)
-
-getFuncParams :: (String, [Function]) -> [Expression]
-getFuncParams (s, f) = Prelude.head [funcParams x | x <- f, funcIdent x == s]
 
 inspectObject :: Object -> String 
 inspectObject o = 
@@ -121,6 +112,7 @@ disassembleFunc (s,b)= str
       | BS.head b == 26 = disassembleFunc(s ++ " OPRETURN", removeFirstInstruction2 b)
       | BS.head b == 27 = disassembleFunc(s ++ " SETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++" " ++ (show (BS.index (b) 2)) , removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
+      | BS.head b == 29 = disassembleFunc(s ++ " GETPREBUILT "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | otherwise = error ("disassembleFunc " ++ (show (BS.head b)))
 
 removeFirstInstruction2:: ByteString -> ByteString 
@@ -147,3 +139,12 @@ isWithinBounds (i, l) = b
 
 getFuncs :: [Object] -> [Object] 
 getFuncs o = [x | x <- o, objectType x == FUNC_OBJ] 
+
+getObjectLen :: Object -> Int 
+getObjectLen o= i 
+  where 
+    i 
+      | objectType o == STRING_OBJ = Prelude.length (stringValue o)
+      | objectType o == MAP_OBJ = Prelude.length (mapValue o)
+      | objectType o == ARRAY_OBJ = Prelude.length (arrValue o)
+      | otherwise = error "can't get len of this type"

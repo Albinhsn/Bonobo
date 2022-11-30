@@ -1,3 +1,6 @@
+OPCONST 
+FIX READFILE -> WRITE FILE OF BYTES 
+READFILE -> RUNFILE 
 TEST A FUCK TON OF RANDOM SHIT
 COMPILER ISSUES
 
@@ -13,3 +16,13 @@ git ls-files | grep '\.hs' | xargs wc -l
 
 /* fn print(s){}; fn len(s){}; fn append(a,b){}; */
 
+types: 
+  str = 0
+  int = 1 
+  bool = 2
+  fn = 3 # 
+OPCONST 
+str/int/bool: 
+  TYPE  VALUE 
+fn:
+  TYPE ARGS LOCALS VALUE

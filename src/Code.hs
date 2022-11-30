@@ -12,7 +12,7 @@ import Object
 import Ast
 
 
-data OpCode = SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = CALLPREBUILT | SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
 
 data Scope = GLOBAL | LOCAL deriving (Eq, Show)
 
@@ -41,9 +41,7 @@ opCodes = DM.fromList [
   , (SETGLOBAL, fromIntegral 16)
   , (GETGLOBAL, fromIntegral 17)
   , (ARRAY, fromIntegral 18)
-  -- , (ARRAYEND, fromIntegral 19)
   , (HASH, fromIntegral 20)
-  -- , (HASHEND, fromIntegral 21)
   , (INDEX, fromIntegral 22)
   , (SETINDEX, fromIntegral 23)
   , (OPCALL, fromIntegral 24)
@@ -51,6 +49,7 @@ opCodes = DM.fromList [
   , (OPRETURN, fromIntegral 26)
   , (SETLOCAL, fromIntegral 27)
   , (GETLOCAL, fromIntegral 28)
+  , (CALLPREBUILT, fromIntegral 29)
   ]
 
 isSymbolName :: (Int, [[Symbol]], String)-> Bool 
@@ -118,4 +117,11 @@ make (o, i) = b
     b 
       | isValidOpCode o == False = error "opcode doesn't exist"
       | otherwise =(lookupOpCode o) <> (chooseToUnroll i) 
+
+addPrebuilts :: [Symbol]
+addPrebuilts = [
+    Symbol{symIndex = 0, symName = "len", symScope = GLOBAL}
+  , Symbol{symIndex = 1, symName = "print", symScope = GLOBAL}
+  , Symbol{symIndex = 2, symName = "append", symScope = GLOBAL}
+  ] 
 

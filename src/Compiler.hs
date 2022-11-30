@@ -310,7 +310,11 @@ compileExpression (e,c) = comp
       | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
 
 addCallInstructions ::(Expression, Compiler) -> Compiler 
-addCallInstructions (e,c) = addToScope(addCallParams((callParams e), c), getScopeAndKey(literal (ident (callIdent e)), c)<> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))))
+addCallInstructions (e,c) = comp 
+  where 
+    comp  
+      | isPrebuilt (literal (ident (callIdent e))) = addToScope(addCallParams((callParams e), c), lookupOpCode CALLPREBUILT <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e))))) 
+      | otherwise = addToScope(addCallParams((callParams e), c), getScopeAndKey(literal (ident (callIdent e)), c)<> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))))
 
 getArgsFromSymbol :: (Compiler, String) -> Int 
 getArgsFromSymbol (c, str) = i 
@@ -409,5 +413,13 @@ parseStatementToCompiled s = compile(s, Compiler{
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     constants = [],
-    symbols = [[]]
+    symbols = [addPrebuilts]
   })
+
+isPrebuilt :: String -> Bool 
+isPrebuilt s = s == "len" || s == "print" || s == "append"
+
+convertStringToBytes :: String -> BS.ByteString 
+convertStringToBytes s = BSU.fromString s 
+
+

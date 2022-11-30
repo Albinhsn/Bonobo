@@ -139,55 +139,55 @@ testVMIndexAssign3 :: String
 testVMIndexAssign3 = parseStack(run(parseStatementToCompiled(parseStringToStatements("let a = {0:[False, {0:[0, False]}]}; a[0][1][0][1] = True;"))))
 
 testVMFN1 :: String 
-testVMFN1 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();")))))
+testVMFN1 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(){return 5 + 10;}; let a = add();")))))
 
 testVMFN2 :: String 
-testVMFN2 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();")))))
+testVMFN2 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = 5; let b = 10; return 5 + 10;}; let c = add();")))))
 
 testVMFN3 :: String 
-testVMFN3 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(a){return a;}; let c = add(2);")))))
+testVMFN3 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(a){return a;}; let c = add(2);")))))
 
 testVMFN4 :: String 
-testVMFN4 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){let five = 5; return 5;}; let a = add();")))))
+testVMFN4 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(){let five = 5; return 5;}; let a = add();")))))
 
 testVMFN5 :: String 
-testVMFN5 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);")))))
+testVMFN5 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(a,b){return a + b;}; let c = add(2,3);")))))
 
 testVMFN6 :: String 
-testVMFN6 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))))
+testVMFN6 = inspectObject(getGlobal(5, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))))
 
 testVMFN7 :: String 
-testVMFN7 = inspectObject(getGlobal(2, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){let a = five(); return a;}; let c = add();")))))
+testVMFN7 = inspectObject(getGlobal(5, run(parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){let a = five(); return a;}; let c = add();")))))
 
 testVMFN9 :: String 
-testVMFN9 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn f(){fn l(){return 5;}; return l();}; let c = f();")))))
+testVMFN9 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn f(){fn l(){return 5;}; return l();}; let c = f();")))))
 
 testVMFN10 :: String 
-testVMFN10 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = [0,1,2,3]; return a[2];}; let c = add();")))))
+testVMFN10 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = [0,1,2,3]; return a[2];}; let c = add();")))))
 
 testVMFN11 :: String 
-testVMFN11 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(b){let a = [0,1,2,3]; return a[b];}; let c = add(2);")))))
+testVMFN11 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(b){let a = [0,1,2,3]; return a[b];}; let c = add(2);")))))
 
 testVMFN12 :: String 
-testVMFN12 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = {2:True}; return a[2];}; let c = add();")))))
+testVMFN12 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(){let a = {2:True}; return a[2];}; let c = add();")))))
 
 testVMFN13 :: String 
-testVMFN13 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(b){let a = {2:True}; return a[b];}; let c = add(2);")))))
+testVMFN13 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(b){let a = {2:True}; return a[b];}; let c = add(2);")))))
 
 testVMFN14 :: String 
-testVMFN14 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s,t,p){let a = {0:[False, {0:[0, False]}]}; return a[f][s][t][p];}; let c = add(0,1,0,1);")))))
+testVMFN14 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s,t,p){let a = {0:[False, {0:[0, False]}]}; return a[f][s][t][p];}; let c = add(0,1,0,1);")))))
 
 testVMFN15 :: String 
-testVMFN15 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s){fn div(a,b){let d = a / b; return d;}; fn sub(a,b){let d = a - b; return div(a,d);};let a = sub(f,s); return a;};let c = add(10, 5);")))))
+testVMFN15 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s){fn div(a,b){let d = a / b; return d;}; fn sub(a,b){let d = a - b; return div(a,d);};let a = sub(f,s); return a;};let c = add(10, 5);")))))
 
 testVMFN16 :: String 
-testVMFN16 = inspectObject(getGlobal(1, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s){fn sub(a,b){let c = a - b;return c;}; let d = sub(f,s); return d;};let c = add(10, 5);")))))
+testVMFN16 = inspectObject(getGlobal(4, run(parseStatementToCompiled(parseStringToStatements("fn add(f,s){fn sub(a,b){let c = a - b;return c;}; let d = sub(f,s); return d;};let c = add(10, 5);")))))
 
 testVMFNBook:: String 
-testVMFNBook= inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("let globalSeed = 50; fn minusOne(){let num = 1; return globalSeed-num;}; fn minusTwo() {let num = 2; return globalSeed - num;}; let res = minusOne() + minusTwo();")))))
+testVMFNBook= inspectObject(getGlobal(6, run(parseStatementToCompiled(parseStringToStatements("let globalSeed = 50; fn minusOne(){let num = 1; return globalSeed-num;}; fn minusTwo() {let num = 2; return globalSeed - num;}; let res = minusOne() + minusTwo();")))))
 
 testVMFN17 :: String 
-testVMFN17 = inspectObject(getGlobal(0, run(parseStatementToCompiled(parseStringToStatements("let e = 50; fn a(){let c = 10; fn b(){let d = 2; c = c - d;}; b(); e = e - c;}; a();")))))
+testVMFN17 = inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("let e = 50; fn a(){let c = 10; fn b(){let d = 2; c = c - d;}; b(); e = e - c;}; a();")))))
 
 testVMFN18 :: String 
-testVMFN18 = inspectObject(getGlobal(0, run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn sub(){let c = 20; a = a - c;}; sub();")))))
+testVMFN18 = inspectObject(getGlobal(3, run(parseStatementToCompiled(parseStringToStatements("let a = 50; fn sub(){let c = 20; a = a - c;}; sub();")))))

@@ -296,8 +296,47 @@ runVM v =
           global = global v,
           stack = stack v 
         }))
+    29 -> runVM(runPrebuilt(VM{
+          frames = removeFirstInstruction(frames v, frameIndex v), 
+          frameIndex = frameIndex v, 
+          bpOffset = bpOffset v,
+          constVM = constVM v, 
+          global = global v,
+          stack = stack v 
+        }))
     _ -> error "run"
 
+
+runPrebuilt :: VM -> VM 
+runPrebuilt v = vm 
+  where 
+    vm 
+      | getFirstInstruction(frames v !! frameIndex v) == 0 = VM{
+          frames = removeFirstInstruction(frames v, frameIndex v), 
+          frameIndex = frameIndex v, 
+          bpOffset = bpOffset v,
+          constVM = constVM v, 
+          global = global v,
+          stack = IntObject{objectType = INT_OBJ, intValue = getObjectLen(Prelude.head (stack v))}:removeFirst(stack v)
+
+        } 
+      | getFirstInstruction(frames v !! frameIndex v) == 1 = trace(inspectObject(Prelude.head (stack v)))VM{
+          frames = removeFirstInstruction(frames v, frameIndex v), 
+          frameIndex = frameIndex v, 
+          bpOffset = bpOffset v,
+          constVM = constVM v, 
+          global = global v,
+          stack = removeFirst(stack v)
+        } 
+      | getFirstInstruction(frames v !! frameIndex v) == 2 = VM{
+          frames = removeFirstInstruction(frames v, frameIndex v), 
+          frameIndex = frameIndex v, 
+          bpOffset = bpOffset v,
+          constVM = constVM v, 
+          global = global v,
+          stack = ArrayObject{objectType = ARRAY_OBJ, arrValue = arrValue (stack v !!1)++ [Prelude.head (stack v)]}:removeFirstN(2, stack v)
+        } 
+      | otherwise = error ("not implemented prebuilt" ++ show (getFirstInstruction(frames v !! frameIndex v)))
 
 getLocal :: VM -> VM 
 getLocal v = 
@@ -400,7 +439,10 @@ changeBP :: (Int, [(Int, ByteString)]) -> [(Int, ByteString)]
 changeBP (i, f) = [(fst x + i, snd x) | x <- f] 
 
 evalCall :: VM -> VM 
-evalCall v = evalReturn(runVM(evalParams(v)))
+evalCall v = vm 
+  where 
+    vm 
+      | otherwise = evalReturn(runVM(evalParams(v)))
 
 evalReturn :: VM -> VM 
 evalReturn v = vm 

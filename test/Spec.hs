@@ -25,328 +25,328 @@ main = hspec $ do
       do
         testVMBool1
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test vm bool 2" $ 
       do
         testVMBool2
         `shouldBe`
-        "Stack:  Globals: 0 = False "
+        "Stack:  Globals: 3 = False "
     it "test vm bool 3" $ 
       do
         testVMBool3
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test vm bool 4" $ 
       do
         testVMBool4
         `shouldBe`
-        "Stack:  Globals: 0 = False "
+        "Stack:  Globals: 3 = False "
     it "test vm bool 5" $ 
       do
         testVMBool5
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test vm bool 6" $ 
       do
         testVMBool6
         `shouldBe`
-        "Stack:  Globals: 0 = False "
+        "Stack:  Globals: 3 = False "
     it "test vm bool 7" $ 
       do
         testVMBool7
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test vm bool 8" $ 
       do
         testVMBool8
         `shouldBe`
-        "Stack:  Globals: 0 = False "
+        "Stack:  Globals: 3 = False "
     it "test vm bool book 1" $ 
       do
         testVMBoolBook1
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test vm bool book 2" $ 
       do
         testVMBoolBook2
         `shouldBe`
-        "Stack:  Globals: 0 = False "
+        "Stack:  Globals: 3 = False "
     it "test vm bool book 3" $ 
       do
         testVMBoolBook3
         `shouldBe`
-        "Stack:  Globals: 0 = True "
+        "Stack:  Globals: 3 = True "
     it "test code if" $
       do 
         testCodeIf
         `shouldBe`
-        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 0 JUMP 2"
+        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 3 JUMP 2"
     it "test code if else" $
       do 
         testCodeIfElse
         `shouldBe`
-        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 0 JUMP 6 CONST 1 SETGLOBAL 1"
+        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 3 JUMP 6 CONST 1 SETGLOBAL 4"
     it "test code let" $
       do 
         testCodeLet
         `shouldBe`
-        " CONST 0 SETGLOBAL 0"
+        " CONST 0 SETGLOBAL 3"
     it "test code array 3" $
       do 
         testCodeArray3
         `shouldBe`
-        " ARRAY 0 CONST 0 CONST 1 ARRAY 2 ARRAY 2 SETGLOBAL 0"
+        " ARRAY 0 CONST 0 CONST 1 ARRAY 2 ARRAY 2 SETGLOBAL 3"
     it "test code array 4" $
       do 
         testCodeArray4
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 3"
     it "test code array 5" $
       do 
         testCodeArray5
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 3"
     it "test code map 1" $
       do 
         testCodeMap1
         `shouldBe`
-        " CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH 4 SETGLOBAL 0"
+        " CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH 4 SETGLOBAL 3"
     it "test code index 1" $
       do 
         testCodeIndex1
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 GETGLOBAL 0 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 1"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 GETGLOBAL 3 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 4"
     it "test code index 2" $
       do 
         testCodeIndex2
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 CONST 3 CONST 4 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 CONST 3 CONST 4 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 0 CONST 3 TRUE GETGLOBAL 0 SETINDEX SETGLOBAL 0"
+        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 CONST 3 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
     it "test code fn" $
       do 
         testCodeFN
         `shouldBe`
-        " CONST 2 SETGLOBAL 0"
+        " CONST 2 SETGLOBAL 3"
     it "test code fn 2" $
       do 
         testCodeFN2
         `shouldBe`
-        " CONST 0 SETGLOBAL 0 CONST 1 CONST 2 GETGLOBAL 0 OPCALL 0 SETGLOBAL 1"
+        " CONST 0 SETGLOBAL 3 CONST 1 CONST 2 GETGLOBAL 3 OPCALL 3 SETGLOBAL 4"
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
         testVMOp1
         `shouldBe`
-        "Stack:  Globals: 0 = 2 "
+        "Stack:  Globals: 3 = 2 "
     it "test vm op 2" $
       do 
         testVMOp2
         `shouldBe`
-        "Stack:  Globals: 0 = 5 "
+        "Stack:  Globals: 3 = 5 "
     it "test vm op 3" $
       do 
         testVMOp3
         `shouldBe`
-        "Stack:  Globals: 0 = 10 "
+        "Stack:  Globals: 3 = 10 "
     it "test vm op 4" $
       do 
         testVMOp4
         `shouldBe`
-        "Stack:  Globals: 0 = 11 "
+        "Stack:  Globals: 3 = 11 "
     it "test vm book 1" $
       do 
         testVMOpBook1
         `shouldBe`
-        "Stack:  Globals: 0 = -1 "
+        "Stack:  Globals: 3 = -1 "
     it "test vm book 2" $
       do 
         testVMOpBook2
         `shouldBe`
-        "Stack:  Globals: 0 = 2 "
+        "Stack:  Globals: 3 = 2 "
     it "test vm book 3" $
       do 
         testVMOpBook3
         `shouldBe`
-        "Stack:  Globals: 0 = 2 "
+        "Stack:  Globals: 3 = 2 "
     it "test vm book 4" $
       do 
         testVMOpBook4
         `shouldBe`
-        "Stack:  Globals: 0 = 55 "
+        "Stack:  Globals: 3 = 55 "
     it "test vm book 5" $
       do 
         testVMOpBook5
         `shouldBe`
-        "Stack:  Globals: 0 = 10 "
+        "Stack:  Globals: 3 = 10 "
     it "test vm book 6" $
       do 
         testVMOpBook6
         `shouldBe`
-        "Stack:  Globals: 0 = 32 "
+        "Stack:  Globals: 3 = 32 "
     it "test vm book 7" $
       do 
         testVMOpBook7
         `shouldBe`
-        "Stack:  Globals: 0 = 20 "
+        "Stack:  Globals: 3 = 20 "
     it "test vm book 8" $
       do 
         testVMOpBook8
         `shouldBe`
-        "Stack:  Globals: 0 = 25 "
+        "Stack:  Globals: 3 = 25 "
     it "test vm book 9" $
       do 
         testVMOpBook9
         `shouldBe`
-        "Stack:  Globals: 0 = 60 "
+        "Stack:  Globals: 3 = 60 "
     it "test vm str book" $
       do 
         testVMStrBook
         `shouldBe`
-        "Stack:  Globals: 0 = 'monkey' "
+        "Stack:  Globals: 3 = 'monkey' "
     it "test vm str op book 1" $
       do 
         testVMOpStrBook1
         `shouldBe`
-        "Stack:  Globals: 0 = 'monkey' "
+        "Stack:  Globals: 3 = 'monkey' "
     it "test vm str op book 2" $
       do 
         testVMOpStrBook2
         `shouldBe`
-        "Stack:  Globals: 0 = 'monkeybanana' "
+        "Stack:  Globals: 3 = 'monkeybanana' "
     it "test vm op big" $
       do 
         testVMOpBig
         `shouldBe`
-        "Stack:  Globals: 0 = 140000 "
+        "Stack:  Globals: 3 = 140000 "
     it "test vm if" $
       do 
         testVMIf
         `shouldBe`
-        "Stack:  Globals: 0 = 5 "
+        "Stack:  Globals: 3 = 5 "
     it "test vm else" $
       do 
         testVMElse
         `shouldBe`
-        "Stack:  Globals: 1 = 10 "
+        "Stack:  Globals: 4 = 10 "
     it "test vm nested if" $
       do 
         testVMNestedIf
         `shouldBe`
-        "Stack:  Globals: 0 = 3 "
+        "Stack:  Globals: 3 = 3 "
     it "test vm nested else" $
       do 
         testVMNestedElse
         `shouldBe`
-        "Stack:  Globals: 0 = 5 "
+        "Stack:  Globals: 3 = 5 "
     it "test vm let book 1" $
       do 
         testVMLetBook1
         `shouldBe`
-        "Stack:  Globals: 0 = 1 "
+        "Stack:  Globals: 3 = 1 "
     it "test vm let book 2" $
       do 
         testVMLetBook2
         `shouldBe`
-        "Stack:  Globals: 0 = 1 1 = 2 2 = 3 "
+        "Stack:  Globals: 3 = 1 4 = 2 5 = 3 "
     it "test vm let book 2" $
       do 
         testVMLetBook3
         `shouldBe`
-        "Stack:  Globals: 0 = 1 1 = 2 2 = 3 "
+        "Stack:  Globals: 3 = 1 4 = 2 5 = 3 "
     it "test vm array 1" $
       do 
         testVMArray1
         `shouldBe`
-        "Stack:  Globals: 0 = [] "
+        "Stack:  Globals: 3 = [] "
     it "test vm array 2" $
       do 
         testVMArray2
         `shouldBe`
-        "Stack:  Globals: 0 = [1, 'hi', ] "
+        "Stack:  Globals: 3 = [1, 'hi', ] "
     it "test vm array 3" $
       do 
         testVMArray3
         `shouldBe`
-        "Stack:  Globals: 0 = [[], [1, 2, ], ] "
+        "Stack:  Globals: 3 = [[], [1, 2, ], ] "
     it "test vm array 4" $
       do 
         testVMArray4
         `shouldBe`
-        "Stack:  Globals: 0 = [[[1, 2, ], ], ] "
+        "Stack:  Globals: 3 = [[[1, 2, ], ], ] "
     it "test vm array 5" $
       do 
         testVMArray5
         `shouldBe`
-        "Stack:  Globals: 0 = [[1, 2, ], [], ] "
+        "Stack:  Globals: 3 = [[1, 2, ], [], ] "
     it "test vm map 1" $
       do 
         testVMMap1
         `shouldBe`
-        "Stack:  Globals: 0 = {1:1, 2:2, 3:3, 4:4, } "
+        "Stack:  Globals: 3 = {1:1, 2:2, 3:3, 4:4, } "
     it "test vm map 2" $
       do 
         testVMMap2
         `shouldBe`
-        "Stack:  Globals: 0 = {1:{1:1, 2:2, }, } "
+        "Stack:  Globals: 3 = {1:{1:1, 2:2, }, } "
     it "test vm array map 1" $
       do 
         testVMAM1
         `shouldBe`
-        "Stack:  Globals: 0 = [{1:2, }, ] "
+        "Stack:  Globals: 3 = [{1:2, }, ] "
     it "test vm array map 2" $
       do 
         testVMAM2
         `shouldBe`
-        "Stack:  Globals: 0 = {1:[1, 2, ], } "
+        "Stack:  Globals: 3 = {1:[1, 2, ], } "
     it "test vm index 1" $
       do 
         testVMIndex1
         `shouldBe`
-        "Stack:  Globals: 0 = [[0, 1, ], 2, ] 1 = 1 "
+        "Stack:  Globals: 3 = [[0, 1, ], 2, ] 4 = 1 "
     it "test vm index 2" $
       do 
         testVMIndex2
         `shouldBe`
-        "Stack:  Globals: 0 = {0:{1:2, }, } 1 = 2 "
+        "Stack:  Globals: 3 = {0:{1:2, }, } 4 = 2 "
     it "test vm index 3" $
       do 
         testVMIndex3
         `shouldBe`
-        "Stack:  Globals: 0 = [{1:True, }, ] 1 = True "
+        "Stack:  Globals: 3 = [{1:True, }, ] 4 = True "
     it "test vm index 4" $
       do 
         testVMIndex4
         `shouldBe`
-        "Stack:  Globals: 0 = {0:[1, True, ], } 1 = True "
+        "Stack:  Globals: 3 = {0:[1, True, ], } 4 = True "
     it "test vm index 5" $
       do 
         testVMIndex5
         `shouldBe`
-        "Stack:  Globals: 0 = [{'a':[0, {'b':True, }, ], }, ] 1 = True "
+        "Stack:  Globals: 3 = [{'a':[0, {'b':True, }, ], }, ] 4 = True "
     it "test vm index 6" $
       do 
         testVMIndex6
         `shouldBe`
-        "Stack:  Globals: 0 = [0, 1, True, ] 1 = True "
+        "Stack:  Globals: 3 = [0, 1, True, ] 4 = True "
     it "test vm index assign 1" $
       do 
         testVMIndexAssign1
         `shouldBe`
-        "Stack:  Globals: 0 = [[0, True, ], 2, ] "
+        "Stack:  Globals: 3 = [[0, True, ], 2, ] "
     it "test vm index assign 2" $
       do 
         testVMIndexAssign2
         `shouldBe`
-        "Stack:  Globals: 0 = {0:{1:True, }, } "
+        "Stack:  Globals: 3 = {0:{1:True, }, } "
     it "test vm index assign 3" $
       do 
         testVMIndexAssign3
         `shouldBe`
-        "Stack:  Globals: 0 = {0:[False, {0:[0, True, ], }, ], } "
+        "Stack:  Globals: 3 = {0:[False, {0:[0, True, ], }, ], } "
     it "test vm fn 1" $
       do 
         testVMFN1

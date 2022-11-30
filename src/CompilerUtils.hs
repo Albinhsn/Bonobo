@@ -61,7 +61,8 @@ disassemble (s,c)= str
       | BS.head (scopes c!!scopeIndex c) == 25 = disassemble(s ++ " RETURNVALUE ", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 26 = disassemble(s ++ " OPRETURN ", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 27 = disassemble(s ++ " SETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
-      | BS.head (scopes c!!scopeIndex c) == 26 = disassemble(s ++ " GETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
+      | BS.head (scopes c!!scopeIndex c) == 28 = disassemble(s ++ " GETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
+      | BS.head (scopes c!!scopeIndex c) == 29 = disassemble(s ++ " CALLPREBUILT "++ (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
       | otherwise = error ("disassemble " ++ (show (BS.head (scopes c!!scopeIndex c))))
 
 removeFromScope :: Compiler -> Compiler 
