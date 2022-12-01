@@ -24,7 +24,7 @@ inspectObject o =
     NULL_OBJ -> "null"
     INT_OBJ -> show (intValue o)
     BOOL_OBJ -> show(boolValue o) 
-    STRING_OBJ -> "'" ++ stringValue o ++ "'"
+    STRING_OBJ -> "" ++ stringValue o ++ ""
     ARRAY_OBJ -> "["++ Prelude.concat [inspectObject x ++ ", " | x <- arrValue o] ++ "]"
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
     -- FUNC_OBJ -> "fn" 
@@ -80,12 +80,23 @@ getLiteralFromAssignIndex e = s
       | expressionType e == IDENTEXP = literal (ident e) 
       | expressionType e == INDEXEXP = getLiteralFromAssignIndex(arrayIdent e)
 
+disassembleConst :: (String, ByteString)-> (String, ByteString) 
+disassembleConst (s, b) = str 
+  where 
+    str 
+      -- STR 
+      | BS.index b 1 == 0 = (s ++ " CONST " ++ "STR" ++ (show (BS.index b 2)), removeFirstNInstructions2(3, b))
+      -- INT  
+      | BS.index b 1 == 1 = (s ++ " CONST " ++ "INT LEN: " ++ (show (BS.index b 2)), removeFirstNInstructions2(3 + (fromIntegral(BS.index b 2)),b))
+      -- FUNC
+      | BS.index b 1 == 3  = (s ++ " CONST " ++ "FUNC " ++ "ARGS: " ++ (show (BS.index b 2)) ++ " LOCALS: " ++ (show (BS.index b 3)) ++ " LEN: " ++ (show (BS.index b 4)), removeFirstNInstructions2(fromIntegral(BS.index b 4) +5,b))
+
 disassembleFunc :: (String, ByteString) -> String 
 disassembleFunc (s,b)= str 
   where 
     str 
       | BS.null b = s
-      | BS.head b == 0 = disassembleFunc(s ++ " CONST " ++ (show (fromIntegral (BS.head (removeFirstInstruction2 b)))), removeFirstInstruction2(removeFirstInstruction2 b))
+      | BS.head b == 0 = disassembleFunc(Object.disassembleConst(s,b))
       | BS.head b == 1 = disassembleFunc(s ++ " POP", removeFirstInstruction2 b)
       | BS.head b == 2 = disassembleFunc(s ++ " ADD", removeFirstInstruction2 b)
       | BS.head b == 3 = disassembleFunc(s ++ " SUB", removeFirstInstruction2 b)
@@ -114,6 +125,12 @@ disassembleFunc (s,b)= str
       | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | BS.head b == 29 = disassembleFunc(s ++ " GETPREBUILT "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | otherwise = error ("disassembleFunc " ++ (show (BS.head b)))
+removeFirstNInstructions2 :: (Int, ByteString) -> ByteString
+removeFirstNInstructions2 (i, b) = bs 
+  where 
+    bs 
+      | i == 0 = b 
+      | otherwise = removeFirstNInstructions2(i-1, removeFirstInstruction2 b)
 
 removeFirstInstruction2:: ByteString -> ByteString 
 removeFirstInstruction2 b = 

@@ -7,24 +7,24 @@ import Utils
 import VM
 import Code
 import Object
-
-import Data.ByteString as BS
-import Data.ByteString.UTF8 as BSU      -- from utf8-string
-
+import System.Environment 
+import Data.ByteString.UTF8 as BSU 
 
 main = do
-  let s = parseStringToStatements("add(add(2,3,4),2,3);") 
---      
-  print s
-
+  args <- getArgs 
+  -- print f 
+  x <- readFile (args!!0)
+  let s = parseStringToStatements(x) 
+  -- print s
+  let dis = (args!!1) == "--dis" 
   let c = statementsToString(s)
-  print c
-  -- let a = parseStatementToCompiled s 
-  -- -- print a
+  -- print c
+  let a = parseStatementToCompiled s 
+  writeFile "a.out" (BSU.toString(scopes a !! 0))
+  -- print a
   -- print ("Symbols: " ++ show(symbols a)) 
-  -- print ("Funcs: " ++ Prelude.concat [inspectObject o ++ " " | o <- getFuncs(constants a)])
   -- print (disassemble ("", a))
-  -- let r = run a 
-  -- -- print r
-  -- let k = parseStack(r)
-  -- print k  
+  y <- readFile "a.out"
+  let r = run (BSU.fromString y) 
+  mapM_ print r
+  putStrLn "" 

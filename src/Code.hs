@@ -2,13 +2,16 @@ module Code where
 
 import Data.ByteString as BS
 import Data.ByteString.UTF8 as BSU 
+import Data.ByteString.Char8 as BSC
 import Data.Word (Word8)
+import Numeric as DN 
 import Data.Map as DM
 import Data.Binary 
-import Data.Bits
+import Data.Bits as DB
 import Debug.Trace
-import Numeric (showHex)
 import Object 
+import Lexer
+import Utils
 import Ast
 
 
@@ -80,8 +83,7 @@ gsk (idx, s,str) = i
 data Compiler = Compiler{
     symbols :: [[Symbol]],
     scopes :: ![ByteString],
-    scopeIndex :: !Int,
-    constants :: [Object]
+    scopeIndex :: !Int
   } deriving (Show)
 
     
@@ -92,8 +94,20 @@ lookupOpCode :: OpCode -> ByteString
 lookupOpCode o = BS.singleton (opCodes ! o)
 
 
-prettyPrint :: BS.ByteString -> String
-prettyPrint = BS.foldr showHex ""
+bsToInt :: ByteString -> Int 
+bsToInt b = (roll(0, b, 0))
+
+
+roll :: (Int, ByteString, Int) -> Int 
+roll (i,b, x) = int 
+  where 
+    int 
+      | BS.null b = x 
+      | i == 0 = roll(i+1,rmfBS b, x + (fromIntegral (BS.head b)))
+      | otherwise = roll(i+1,rmfBS b, x + (fromIntegral(BS.head b)*  2^(8 * i)))
+
+rmfBS :: ByteString -> ByteString 
+rmfBS b = BS.pack(removeFirst(BS.unpack b))
 
 
 reverseUnroll :: Int -> ByteString
@@ -106,17 +120,10 @@ chooseToUnroll i =
     _ -> unroll i 
 
 unroll :: Int -> ByteString 
-unroll = unfoldr step
+unroll = BS.unfoldr step
   where 
     step 0 = Nothing 
     step i = Just (fromIntegral i, i `shiftR` 8)
-
-make :: (OpCode, Int) -> ByteString 
-make (o, i) = b 
-  where 
-    b 
-      | isValidOpCode o == False = error "opcode doesn't exist"
-      | otherwise =(lookupOpCode o) <> (chooseToUnroll i) 
 
 addPrebuilts :: [Symbol]
 addPrebuilts = [

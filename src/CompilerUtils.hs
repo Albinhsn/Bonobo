@@ -10,6 +10,7 @@ import Parser
 
 import Control.Lens
 import Data.ByteString as BS
+import Data.ByteString.UTF8 as BSU 
 
 reverseList :: [a] -> [a]
 reverseList [] = []
@@ -22,17 +23,38 @@ parseStringToStatements :: String -> [Statement]
 parseStringToStatements s = parseStatements(getTokens(parseTokens(0, s, [])))
 
 
-parseMakeToPretty :: (ByteString, [Object]) -> String 
-parseMakeToPretty (b, o) = (prettyPrint b ++ " - " ++ Prelude.concat [inspectObject x ++ " " | x  <- o])
 
+disassembleConst :: (String, Compiler)-> (String, Compiler) 
+disassembleConst (s, c) = str 
+  where 
+    str 
+      -- STR 
+      | BS.index (scopes c !! scopeIndex c) 1 == 0 = (s ++ " CONST " ++ "STR LEN " ++ 
+        (show (BS.index (scopes c !! scopeIndex c) 2)) ++ " " ++ 
+        (
+          convertBytesToString(
+            getFirstNInstructions(
+              fromIntegral(BS.index (scopes c !! scopeIndex c) 2),
+              BS.empty :: ByteString,
+              (0,scopes (removeNFromScope(3, c)) !! scopeIndex c)))), 
+            removeNFromScope(3 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2), c))
+      -- INT  
+      | BS.index (scopes c !! scopeIndex c) 1 == 1 = (s ++ " CONST " ++ "INT LEN " ++ 
+        (show (BS.index (scopes c!!scopeIndex c) 2)) ++ " " ++ show(bsToInt(
+          getFirstNInstructions(
+              fromIntegral(BS.index (scopes c !! scopeIndex c) 2),
+              BS.empty :: ByteString,
+              (0,scopes (removeNFromScope(3, c)) !! scopeIndex c)))), 
+        removeNFromScope(3 + (fromIntegral(BS.index (scopes c!!scopeIndex c) 2)),c))
+      -- FUNC
+      | BS.index (scopes c !! scopeIndex c) 1 == 3  = (s ++ " CONST " ++ "FUNC ARGS: " ++ (show (BS.index (scopes c!!scopeIndex c) 2)) ++ " LOCALS: "++ (show (BS.index (scopes c!!scopeIndex c) 3)) ++ " LEN: " ++ (show (BS.index (scopes c!!scopeIndex c) 4)), removeNFromScope(5 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 4)), c))
 
 disassemble :: (String, Compiler) -> String 
 disassemble (s,c)= str 
   where 
     str 
       | BS.null (scopes c!!scopeIndex c) = s
-      | BS.head (scopes c!!scopeIndex c) == 0 = disassemble(s ++ " CONST " ++  (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
-      --Pop
+      | BS.head (scopes c!!scopeIndex c) == 0 = disassemble(CompilerUtils.disassembleConst(s,c))
       | BS.head (scopes c!!scopeIndex c) == 1 = disassemble(s ++ " POP", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 2 = disassemble(s ++ " ADD", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 3 = disassemble(s ++ " SUB", removeFromScope c)
@@ -67,11 +89,17 @@ disassemble (s,c)= str
 
 removeFromScope :: Compiler -> Compiler 
 removeFromScope c = Compiler{
-    constants = constants c,
     symbols = symbols c, 
     scopes = (scopes c) & element (scopeIndex c) .~ (removeFirstBS (scopes c!!scopeIndex c)),
     scopeIndex = scopeIndex c 
   }
+
+removeNFromScope :: (Int, Compiler) -> Compiler 
+removeNFromScope (i, c) = comp 
+  where 
+    comp 
+      | i == 0 = c 
+      | otherwise = removeNFromScope(i-1, removeFromScope c)
 
 removeFirstBS :: ByteString -> ByteString 
 removeFirstBS b = 
@@ -94,7 +122,19 @@ removeFirstInstruction (b,i) =
     1 -> b & element i .~ (fst (b!!i), BS.empty :: ByteString)
     _ -> b & element i .~ (fst (b!!i), pack(removeFirst(unpack (snd (b!!i)))))
 
+getFirstNInstructions :: (Int, ByteString,(Int, ByteString)) -> ByteString 
+getFirstNInstructions (i,new, old) = bs 
+  where   
+    bs 
+      | i == 0 = new 
+      | otherwise =getFirstNInstructions(i-1, new <> pack([BS.head (snd old)]), Prelude.head (removeFirstInstruction([old], 0)))
 
 mergeLists :: [a] -> [a] -> [a]
 mergeLists [] ys = ys 
 mergeLists (x:xs) ys = x:mergeLists ys xs 
+
+convertStringToBytes :: String -> BS.ByteString 
+convertStringToBytes s = BSU.fromString s 
+
+convertBytesToString :: BS.ByteString -> String 
+convertBytesToString b = BSU.toString b

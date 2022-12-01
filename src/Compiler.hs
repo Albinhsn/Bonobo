@@ -7,7 +7,6 @@ import Utils
 import CompilerUtils
 import Token
 import Lexer
-import Data.ByteString.UTF8 as BSU 
 import Data.ByteString as BS 
 import Data.Map as DM
 import Debug.Trace
@@ -40,16 +39,23 @@ extractFunc (n,s,c) =
   addToScope(Compiler{
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
-    symbols =  pop(symbols c), 
-    constants = constants c ++ [FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1 )), funcValue = scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN}]
-  }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) <> lookupLetScope (scopeIndex c - 1 ) <> chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2)))))
+    symbols =  pop(symbols c)
+  }, 
+    lookupOpCode OPCONST <> 
+    chooseToUnroll(3) <> -- FUNC 
+    chooseToUnroll(n) <> -- ARGS 
+    chooseToUnroll(Prelude.length (symbols c!!(Prelude.length (symbols c) - 1 ))) <> -- LOCALS
+    chooseToUnroll(BS.length (scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN)) <> -- BS LENGTH OF FUNC
+    scopes c!!(Prelude.length (scopes c) - 1) <> -- FUNC  
+    lookupOpCode OPRETURN <> -- FUNC 
+    lookupLetScope (scopeIndex c - 1 ) <> -- SET 
+    chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2))))) -- SYMBOL KEY/NAME
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 
 addToLastSymbol (s, c) = 
   Compiler{
     scopes = scopes c, 
     scopeIndex = scopeIndex c,
-    constants = constants c,
     symbols = pop (symbols c) ++ [(s:Prelude.last (symbols c))]
   }
 
@@ -64,7 +70,6 @@ compileFunc (s, c) = comp
           compile(body (statementUni s), enterScope(Compiler{
               scopes = scopes c,
               scopeIndex = scopeIndex c,
-              constants = constants c,
               symbols = symbols c ++ [[
                 Symbol{
                     symName = literal (ident x), 
@@ -77,14 +82,12 @@ enterScope :: Compiler -> Compiler
 enterScope c= Compiler{
           scopes = scopes c++ [BS.empty :: ByteString],
           scopeIndex = scopeIndex c+ 1, 
-          symbols =  symbols c, 
-          constants = constants c
+          symbols =  symbols c
         }
 
 addToScope :: (Compiler, ByteString) -> Compiler 
 addToScope (c, b) = 
   Compiler{
-    constants = constants c, 
     symbols = symbols c,
     scopes = (scopes c) & element (scopeIndex c) .~ (scopes c!!scopeIndex c<> b), 
     scopeIndex = scopeIndex c 
@@ -135,7 +138,6 @@ compileLet (s, c) = comp
         addToLastSymbol(Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1)), symScope = getSymScope (scopeIndex c)},addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c,
-          constants = constants c,
           symbols = symbols c 
         }), lookupLetScope (scopeIndex c)<> chooseToUnroll(Prelude.length (symbols c!!(Prelude.length (symbols c ) - 1)))))
 
@@ -155,7 +157,6 @@ getScopeFromKey(s, c) = i
       |Prelude.null [x | x <- symbols c !!(Prelude.length (symbols c ) - 1), symName x == s] =  getScopeFromKey(s, Compiler{
           scopes = scopes c,
           scopeIndex = scopeIndex c, 
-          constants = constants c, 
           symbols = pop (symbols c)
         })
       | otherwise =  Prelude.length (symbols c) - 1 
@@ -200,14 +201,12 @@ compileIf (bl, s, c) = comp
         addJumpNT(compile(con (statementUni s), Compiler{
             scopes = [BS.empty :: ByteString],
             scopeIndex = 0,
-            constants = constants c,
             symbols = symbols c
           }
       ), c))
       | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
           scopes = [BS.empty :: ByteString],
           scopeIndex = 0,
-          constants = constants c,
           symbols = symbols c
         }), c)
       | otherwise = error "compileIf"
@@ -216,7 +215,6 @@ addJump :: (Compiler, Compiler) -> Compiler
 addJump (c, old) = addToScope(
     Compiler{
       symbols = symbols c,
-      constants = constants c, 
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
     },
@@ -228,7 +226,6 @@ addJumpNT (c, old) =
   addToScope(
     Compiler{
       symbols = symbols c,
-      constants = constants c, 
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
     },
@@ -260,19 +257,18 @@ compileExpression (e,c) = comp
           Compiler{
               scopes = scopes c,
               scopeIndex = scopeIndex c,
-              symbols = symbols c,
-              constants = constants c ++ [IntObject{objectType = INT_OBJ, intValue = readIntFromString e}]
+              symbols = symbols c
             },
-          make(OPCONST, Prelude.length (constants c))
+          lookupOpCode OPCONST <> chooseToUnroll(1) <> chooseToUnroll(BS.length(chooseToUnroll(readIntFromString e)))<> chooseToUnroll(readIntFromString e)
         ) 
-      | expressionType e == STRINGEXP= addToScope(
+      | expressionType e == STRINGEXP= 
+        addToScope(
         Compiler{
             scopes = scopes c,
             scopeIndex = scopeIndex c,
-            constants = constants c ++ [StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}],
             symbols = symbols c
           },
-          make(OPCONST, Prelude.length (constants c))
+          lookupOpCode OPCONST <> chooseToUnroll(0) <> chooseToUnroll(BS.length (convertStringToBytes(literal (stringLiteral e)))) <>convertStringToBytes(literal (stringLiteral e))
         ) 
       | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,c) 
       | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(
@@ -307,7 +303,7 @@ compileExpression (e,c) = comp
           compileExpression(assignExpression e, c)
         ) 
       | expressionType e == CALLEXP = addCallInstructions(e, c)
-      | otherwise = error (show e ++ " " ++ show (scopes c!!scopeIndex c) ++ " " ++ show (constants c) ++ " " ++ show (symbols c))
+      | otherwise = error ("unknown expressiontype" ++ show(expressionType e))
 
 addCallInstructions ::(Expression, Compiler) -> Compiler 
 addCallInstructions (e,c) = comp 
@@ -316,12 +312,6 @@ addCallInstructions (e,c) = comp
       | isPrebuilt (literal (ident (callIdent e))) = addToScope(addCallParams((callParams e), c), lookupOpCode CALLPREBUILT <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e))))) 
       | otherwise = addToScope(addCallParams((callParams e), c), getScopeAndKey(literal (ident (callIdent e)), c)<> lookupOpCode OPCALL <> chooseToUnroll(getSymbolKey(symbols c, literal (ident (callIdent e)))))
 
-getArgsFromSymbol :: (Compiler, String) -> Int 
-getArgsFromSymbol (c, str) = i 
-  where   
-    i
-      | objectType (constants c !!symIndex (findSymbol (c, str))) /= FUNC_OBJ = error ("is not func: " ++ str)
-      | otherwise = numArgs (constants c!!symIndex(findSymbol (c, str)))
 
 findSymbol :: (Compiler, String) -> Symbol
 findSymbol (c, s) = sym 
@@ -412,14 +402,8 @@ parseStatementToCompiled :: [Statement] -> Compiler
 parseStatementToCompiled s = compile(s, Compiler{
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
-    constants = [],
     symbols = [addPrebuilts]
   })
 
 isPrebuilt :: String -> Bool 
 isPrebuilt s = s == "len" || s == "print" || s == "append"
-
-convertStringToBytes :: String -> BS.ByteString 
-convertStringToBytes s = BSU.fromString s 
-
-

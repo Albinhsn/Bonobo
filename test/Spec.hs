@@ -80,62 +80,62 @@ main = hspec $ do
       do 
         testCodeIf
         `shouldBe`
-        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 3 JUMP 2"
+        " TRUE JUMPNT 10 CONST INT LEN 1 5 SETGLOBAL 3 JUMP 2"
     it "test code if else" $
       do 
         testCodeIfElse
         `shouldBe`
-        " TRUE JUMPNT 8 CONST 0 SETGLOBAL 3 JUMP 6 CONST 1 SETGLOBAL 4"
+        " TRUE JUMPNT 10 CONST INT LEN 1 5 SETGLOBAL 3 JUMP 8 CONST INT LEN 1 10 SETGLOBAL 4"
     it "test code let" $
       do 
         testCodeLet
         `shouldBe`
-        " CONST 0 SETGLOBAL 3"
+        " CONST INT LEN 1 5 SETGLOBAL 3"
     it "test code array 3" $
       do 
         testCodeArray3
         `shouldBe`
-        " ARRAY 0 CONST 0 CONST 1 ARRAY 2 ARRAY 2 SETGLOBAL 3"
+        " ARRAY 0 CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 2 SETGLOBAL 3"
     it "test code array 4" $
       do 
         testCodeArray4
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 3"
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 3"
     it "test code array 5" $
       do 
         testCodeArray5
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 3"
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 3"
     it "test code map 1" $
       do 
         testCodeMap1
         `shouldBe`
-        " CONST 0 CONST 1 CONST 2 CONST 3 CONST 4 CONST 5 CONST 6 CONST 7 HASH 4 SETGLOBAL 3"
+        " CONST INT LEN 1 1 CONST INT LEN 1 1 CONST INT LEN 1 2 CONST INT LEN 1 2 CONST INT LEN 1 3 CONST INT LEN 1 3 CONST INT LEN 1 4 CONST INT LEN 1 4 HASH 4 SETGLOBAL 3"
     it "test code index 1" $
       do 
         testCodeIndex1
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 GETGLOBAL 3 CONST 3 INDEX CONST 4 INDEX SETGLOBAL 4"
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 GETGLOBAL 3 CONST INT LEN 1 0 INDEX CONST INT LEN 1 1 INDEX SETGLOBAL 4"
     it "test code index 2" $
       do 
         testCodeIndex2
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 CONST 3 CONST 4 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 CONST INT LEN 1 1 CONST INT LEN 1 0 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
     it "test code index 3" $
       do 
         testCodeIndex3
         `shouldBe`
-        " CONST 0 CONST 1 ARRAY 2 CONST 2 ARRAY 2 SETGLOBAL 3 CONST 3 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 CONST INT LEN 1 0 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
     it "test code fn" $
       do 
         testCodeFN
         `shouldBe`
-        " CONST 2 SETGLOBAL 3"
+        " CONST FUNC ARGS: 0 LOCALS: 0 LEN: 11 SETGLOBAL 3"
     it "test code fn 2" $
       do 
         testCodeFN2
         `shouldBe`
-        " CONST 0 SETGLOBAL 3 CONST 1 CONST 2 GETGLOBAL 3 OPCALL 3 SETGLOBAL 4"
+        " CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 3 CONST INT LEN: 1 CONST INT LEN: 1 GETGLOBAL 3 OPCALL 3 SETGLOBAL 4"
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
@@ -437,7 +437,6 @@ main = hspec $ do
         testVMFNBook
         `shouldBe`
         "97"
-  
   describe "test parser v2" $ do
     it "test parser basic let" $
       do 
