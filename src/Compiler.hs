@@ -398,12 +398,12 @@ addBoolInstruction (t, c) =
     NOT_EQUALS -> addToScope(c, lookupOpCode OPNEQ)
     _ -> error "cant add non valid bool instruction"
 
-parseStatementToCompiled :: [Statement] -> Compiler 
-parseStatementToCompiled s = compile(s, Compiler{
+parseStatementToCompiled :: [Statement] -> ByteString 
+parseStatementToCompiled s = scopes (compile(s, Compiler{
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     symbols = [addPrebuilts]
-  })
+  }))!!0
 
 isPrebuilt :: String -> Bool 
 isPrebuilt s = s == "len" || s == "print" || s == "append"

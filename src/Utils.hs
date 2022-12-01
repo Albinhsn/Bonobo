@@ -65,7 +65,7 @@ statementToString s = str
   where
     str
       | statementType s == RETSTA = "return " ++ expressionToString (expression s) ++ ";"
-      | statementType s == FORSTA = "for(" ++ expressionToString (start (statementUni s)) ++ " " ++ expressionToString (stop (statementUni s)) ++ "; " ++ expressionToString(inc (statementUni s)) ++ ";)" ++ (forBodyToString s) ++ ";" 
+      | statementType s == FORSTA = "for(" ++ expressionToString (start (statementUni s)) ++ "; " ++ expressionToString (stop (statementUni s)) ++ "; " ++ expressionToString(inc (statementUni s)) ++ ";)" ++ (forBodyToString s) ++ ";" 
       | statementType s == IFSTA = "if" ++ expressionToString (expression s) ++ ifToString(closedCon (statementUni s), s) ++ elseToString (closedAlt (statementUni s), s) ++ ";" 
       | statementType s == LETSTA=
           "let "
@@ -73,7 +73,7 @@ statementToString s = str
             ++ " = "
             ++ expressionToString (expression s)
             ++ ";"
-      | statementType s == ASSIGNSTA = expressionToString (expression s)
+      | statementType s == ASSIGNSTA = expressionToString (expression s) ++ ";"
       | statementType s == NOSTA = expressionToString(expression (s)) ++ ";"
       | statementType s == FUNCSTA = "fn" ++ " " ++ expressionToString(expression s) ++ paramToString(params (statementUni s)) ++ bodyToString(s) ++ ";"
       | statementType s == CALLSTA = expressionToString(expression s) ++ ";"
@@ -142,7 +142,7 @@ expressionToString e = s
       | expressionType e == IDENTEXP = literal (ident e)
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ isClosedCall e 
-      | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";" 
+      | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e)
       | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
       | expressionType e == ARRAYEXP && closedExp e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 

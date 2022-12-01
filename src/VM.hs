@@ -15,9 +15,9 @@ import Data.Map
 
 
 -- run :: Compiler -> [String] 
-run :: ByteString -> [String] 
+run :: ByteString -> VM 
 run b = 
-  outputs(runVM(
+  runVM(
     VM{
         frames = [(0, b)],
         frameIndex = 0,
@@ -26,7 +26,7 @@ run b =
         stack = [],
         outputs =[]
       }
-  ))
+  )
 
 
 

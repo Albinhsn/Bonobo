@@ -22,6 +22,8 @@ parseT (t,s) =
           staLine = line (head t), 
           statementType = FORSTA, 
           statementUni = ForStatement{
+              closedForCon = True,
+              closedForBody = True,
               start = Expression{closedExp = False,expressionType = EMPTYEXP, expLine = -1},
               stop = Expression{closedExp = False,expressionType = EMPTYEXP, expLine = -1},
               inc = Expression{closedExp = False,expressionType = EMPTYEXP, expLine = -1},
@@ -128,7 +130,6 @@ parseLet (t,s) = (tok, sta)
     (tok, sta)
       | typ (t!!0) /= IDENT = error ("can't have non ident after let: " ++ show (literal (head t)))  
       | typ (t!!1) /= ASSIGN = error ("can't have non assign after let + ident: " ++ show (literal (head t)))  
-      -- TODO CHECK THIS
       | null s || closedSta (last s)= (removeFirst(removeFirst t),addStatement(s, Statement{
           staLine = line (head t), 
           closedSta = False,
@@ -172,6 +173,40 @@ parseLet (t,s) = (tok, sta)
           },
           expression = expression (last s)
         }) 
+      | statementType (last s) == FORSTA && closedForBody (statementUni (last s)) == False && null (forBody (statementUni (last s)))= (removeFirst(removeFirst t), append (pop s) Statement{
+            staLine = staLine (last s), 
+            closedSta = False,
+            statementType = FORSTA, 
+            statementUni = ForStatement{
+              closedForCon = True, 
+              start = start (statementUni (last s)),
+              stop = stop (statementUni (last s)),
+              inc = inc (statementUni (last s)),
+              forBody = [Statement{
+                staLine = line (head t), 
+                closedSta = False,
+                statementType = LETSTA, 
+                statementUni = LetStatement{identifier = literal (head t)},
+                expression = Expression{expLine = -1, expressionType = EMPTYEXP, closedExp = False} 
+              }],
+              closedForBody = False
+            },
+          expression = expression (last s)
+        })
+      | statementType (last s) == FORSTA && closedForBody (statementUni (last s)) == False = (removeFirst(removeFirst t), append (pop s) Statement{
+            staLine = staLine (last s), 
+            closedSta = False,
+            statementType = FORSTA, 
+            statementUni = ForStatement{
+              closedForCon = True, 
+              start = start (statementUni (last s)),
+              stop = stop (statementUni (last s)),
+              inc = inc (statementUni (last s)),
+              forBody = snd(parseLet(t, (forBody (statementUni (last s))))),
+              closedForBody = False
+            },
+          expression = expression (last s)
+        })
       | otherwise = error ("parseLet: " ++ (statementToString (last s)))
 
 addStatement :: ([Statement], Statement) -> [Statement]
@@ -258,7 +293,9 @@ addToLastExpression (s, t) = sta
               start = addXToExp(start(statementUni s), t),
               stop = stop (statementUni s),
               inc = inc (statementUni s),
-              forBody = []
+              forBody = [],
+              closedForCon= False, 
+              closedForBody = True
             },
           expression = expression s
         }   
@@ -271,6 +308,8 @@ addToLastExpression (s, t) = sta
               start = start (statementUni s),
               stop = addXToExp(stop (statementUni s), t),
               inc = inc (statementUni s),
+              closedForCon= False, 
+              closedForBody = True,
               forBody = []
             },
           expression = expression s
@@ -284,6 +323,8 @@ addToLastExpression (s, t) = sta
               start = start (statementUni s),
               stop = stop (statementUni s),
               inc = addXToExp(inc (statementUni s), t),
+              closedForCon= False, 
+              closedForBody = True,
               forBody = []
             },
           expression = expression s
@@ -297,6 +338,8 @@ addToLastExpression (s, t) = sta
               start = start (statementUni s),
               stop = stop (statementUni s),
               inc = inc (statementUni s),
+              closedForCon= True, 
+              closedForBody = False,
               forBody = append (pop (forBody (statementUni s))) (addToLastExpression(last (forBody (statementUni s)), t))
             },
           expression = expression s
@@ -633,6 +676,82 @@ addIdentifier (t, s) = sta
             },
           expression = expression (last s) 
         }
+      | statementType (last s) == FORSTA && closedForCon (statementUni (last s)) == False && closedExp (start (statementUni (last s))) == False = append (pop s) Statement{
+          closedSta = False, 
+          staLine =staLine (last s),
+          statementType = statementType (last s),
+          statementUni = ForStatement{
+              closedForCon = False,
+              start = addXToExp(start (statementUni (last s)), t),
+              stop = stop (statementUni (last s)),
+              inc = inc (statementUni (last s)),
+              forBody = [],
+              closedForBody = True
+            },
+          expression = expression (last s) 
+        }
+      | statementType (last s) == FORSTA && closedForCon (statementUni (last s)) == False && closedExp (stop (statementUni (last s))) == False = append (pop s) Statement{
+          closedSta = False, 
+          staLine =staLine (last s),
+          statementType = statementType (last s),
+          statementUni = ForStatement{
+              closedForCon = False,
+              start = start (statementUni (last s)),
+              stop = addXToExp(stop (statementUni (last s)), t),
+              inc = inc (statementUni (last s)),
+              forBody = [],
+              closedForBody = True
+            },
+          expression = expression (last s) 
+        }
+      | statementType (last s) == FORSTA && closedForCon (statementUni (last s)) == False && closedExp (inc (statementUni (last s))) == False = append (pop s) Statement{
+          closedSta = False, 
+          staLine =staLine (last s),
+          statementType = statementType (last s),
+          statementUni = ForStatement{
+              closedForCon = False,
+              start = start (statementUni (last s)),
+              stop = stop (statementUni (last s)),
+              inc = addXToExp(inc (statementUni (last s)), t),
+              forBody = [],
+              closedForBody = True
+            },
+          expression = expression (last s) 
+        }
+      | statementType (last s) == FORSTA && closedForBody (statementUni (last s)) == False && null (body (statementUni (last s)))= append (pop s) Statement{
+          closedSta = False, 
+          staLine =staLine (last s),
+          statementType = statementType (last s),
+          statementUni = ForStatement{
+              closedForCon = False,
+              start = start (statementUni (last s)),
+              stop = stop (statementUni (last s)),
+              inc = inc (statementUni (last s)),
+              forBody = [Statement{
+                  closedSta = False,
+                  staLine = line t, 
+                  statementType = ASSIGNSTA, 
+                  statementUni = AssignStatement{},
+                  expression = IdentExpression{closedExp = False,expLine = (line t), expressionType = IDENTEXP, ident = t} 
+                }],
+              closedForBody = True
+            },
+          expression = expression (last s) 
+        }
+      | statementType (last s) == FORSTA && closedForBody (statementUni (last s)) == False = append (pop s) Statement{
+          closedSta = False, 
+          staLine =staLine (last s),
+          statementType = statementType (last s),
+          statementUni = ForStatement{
+              closedForCon = False,
+              start = start (statementUni (last s)),
+              stop = stop (statementUni (last s)),
+              inc = inc (statementUni (last s)),
+              forBody = addIdentifier(t, forBody (statementUni (last s))),
+              closedForBody = True
+            },
+          expression = expression (last s) 
+        }
       | otherwise = error ("addIdentifier: " ++ statementsToString s) 
 closeExpression :: Expression -> Expression
 closeExpression e = ex 
@@ -773,7 +892,6 @@ addLParen s = sta
         statementUni = CallStatement{},
         statementType = CALLSTA,
         expression = addGroupToLastExp(expression s)
-
         }
       | statementType s == CALLSTA || statementType s == RETSTA || statementType s == LETSTA || statementType s == ASSIGNSTA = Statement{
         closedSta = False, 
@@ -867,6 +985,62 @@ addLParen s = sta
           },
         expression = expression s  
         }
+      | statementType s == FORSTA && closedForBody (statementUni s) && closedForCon (statementUni s) = Statement{
+          closedSta = False, 
+          staLine = staLine s, 
+          statementType = FORSTA, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = start (statementUni s), 
+              stop = stop (statementUni s), 
+              inc = inc (statementUni s), 
+              closedForBody = True,
+              forBody = []
+            },
+          expression = expression s
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (start (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine = staLine s, 
+          statementType = FORSTA, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = addGroupToLastExp(start (statementUni s)), 
+              stop = stop (statementUni s), 
+              inc = inc (statementUni s), 
+              closedForBody = True,
+              forBody = []
+            },
+          expression = expression s
+        } 
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (stop (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine = staLine s, 
+          statementType = FORSTA, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = start (statementUni s), 
+              stop = addGroupToLastExp(stop (statementUni s)), 
+              inc = inc (statementUni s), 
+              closedForBody = True,
+              forBody = []
+            },
+          expression = expression s
+        } 
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (inc (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine = staLine s, 
+          statementType = FORSTA, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = start (statementUni s), 
+              stop = stop (statementUni s), 
+              inc = addGroupToLastExp (inc (statementUni s)), 
+              closedForBody = True,
+              forBody = []
+            },
+          expression = expression s
+        } 
       | otherwise = error ("addLParen " ++ statementToString s) 
 
 closeLast :: Statement -> Statement 
@@ -931,6 +1105,62 @@ closeLast s = sta
               con = con (statementUni s),
               alt = append (pop (alt (statementUni s))) (closeLast (last (alt (statementUni s)))),
               closedAlt = False 
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (start (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              closedForBody = True, 
+              start = closeLastExpression(start(statementUni s)),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody = []
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (stop (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              closedForBody = True, 
+              start = start (statementUni s),
+              stop = closeLastExpression(stop (statementUni s)),
+              inc = inc (statementUni s),
+              forBody = []
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (inc (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              closedForBody = True, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = closeLastExpression(inc (statementUni s)),
+              forBody = []
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }
+      | statementType s == FORSTA && closedForBody (statementUni s) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = True, 
+              closedForBody = False, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody = append (pop (forBody (statementUni s))) (closeLast (last (forBody (statementUni s)))) 
             },
           statementType = statementType s,
           expression = expression s 
@@ -1057,6 +1287,62 @@ closeLastParen s = sta
           statementType = IFSTA, 
           expression = expression s
         }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (start (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = closeLastParenExp(start (statementUni s)),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              closedForBody = True,
+              forBody = []
+            },
+          statementType = FORSTA, 
+          expression = expression s
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (stop (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = start (statementUni s),
+              stop = closeLastParenExp(stop (statementUni s)),
+              inc = inc (statementUni s),
+              closedForBody = True,
+              forBody = []
+            },
+          statementType = FORSTA, 
+          expression = expression s
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (inc (statementUni s)) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = False, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = closeLastParenExp(inc (statementUni s)),
+              closedForBody = True,
+              forBody = []
+            },
+          statementType = FORSTA, 
+          expression = expression s
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForCon = True, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc =inc (statementUni s),
+              closedForBody = True,
+              forBody = []
+            },
+          statementType = FORSTA, 
+          expression = expression s
+        }
       | otherwise = error ("closeLastParen " ++ statementToString s) 
 
 closeArray :: Statement -> Statement 
@@ -1116,6 +1402,9 @@ closeLastExpression e = ex
       | expressionType e == PREFIXEXP = PrefixExpression {closedExp = True, expLine = expLine e, expressionType = expressionType e, prefixOperator = prefixOperator e, prefixExpression = prefixExpression e}
       | expressionType e == IDENTEXP  = IdentExpression {closedExp = True, expLine = expLine e, expressionType = expressionType e, ident = ident e}
       | expressionType e == CALLEXP = CallExpression {closedExp = True, expLine = expLine e, expressionType = expressionType e, callParams = callParams e, callIdent = callIdent e}
+      | expressionType e == ASSIGNEXP = AssignExpression{closedExp = True ,expLine =expLine e, expressionType = ASSIGNEXP, assignIdent =assignIdent e, assignExpression = assignExpression e}
+      | expressionType e == GROUPEDEXP = GroupedExpression {closedExp = True, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = groupedExpression e}
+      | expressionType e == BOOLEXP = BoolExpression{closedExp = True, expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = rightBool e}
       | otherwise = error ("closeLastExpression " ++ expressionToString e)
 
 closeArrayExp :: Expression -> Expression 
@@ -1216,6 +1505,20 @@ parseLBrace s = sta
           statementType = statementType s,
           expression = expression s 
         }
+      | statementType s == FORSTA && closedForBody (statementUni s) == True = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForBody = False, 
+              closedForCon = True, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody = []
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }
       | otherwise = error ("parseLBrace " ++ statementToString s) 
 
 checkNestedListArr :: Expression -> Bool
@@ -1228,7 +1531,6 @@ checkNestedListArr e = b
 checkNestedListMap :: Expression -> Bool 
 checkNestedListMap e = null (snd (mapMap e)) || (closedExp (last (snd (mapMap e))) == False && (expressionType (last (snd(mapMap e))) == MAPEXP || expressionType (last (snd (mapMap e))) == ARRAYEXP)) 
 
--- TODO FIX THIS 
 checkNestedListCall :: Expression -> Bool
 checkNestedListCall e = b 
   where   
@@ -1472,7 +1774,35 @@ parseRBrace s = sta
           statementType = statementType s,
           expression = expression s 
         }
-      
+      | statementType s == FORSTA && null (forBody (statementUni s))  = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForBody = True,
+              closedForCon = True,
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody =forBody (statementUni s)
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }      
+      -- TODO FIX A CHECK TO SEE IF IT EXISTS DEEPER
+      | statementType s == FORSTA = Statement{
+          closedSta = False, 
+          staLine =staLine s, 
+          statementUni = ForStatement{
+              closedForBody = True,
+              closedForCon = True,
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody =forBody (statementUni s)
+            },
+          statementType = statementType s,
+          expression = expression s 
+        }      
       | otherwise = error ("parseRBrace " ++ statementToString s) 
 
 addElse :: ([Token], [Statement]) -> ([Token], [Statement])
