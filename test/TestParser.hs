@@ -43,3 +43,6 @@ testElse = statementsToString(parseStatements(getTokens(parseTokens(0, "if(True)
 
 testDiff :: String 
 testDiff = statementsToString(parseStatements(getTokens(parseTokens(0, "fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[]}]}]}];if(True){if(True){if(True){}else{return 5;};}else{return 5;};}else{if(True){if(True){}else{return 5;};}else{return 5;};}; };};};};};", []))))
+
+testFor :: String 
+testFor = statementsToString(parseStatements(getTokens(parseTokens(0, "for(i = 0; i < 5; i = i + 1;){let five = 5;};", []))))

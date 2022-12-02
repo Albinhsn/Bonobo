@@ -28,7 +28,16 @@ run b =
       }
   ))
 
-
+runTest :: ByteString -> VM 
+runTest b = runVM(VM{
+        frames = [(0, b)],
+        frameIndex = 0,
+        bpOffset = 0, 
+        global = [],
+        stack = [],
+        outputs =[]
+      }
+    )
 
 data VM = VM{
     frames :: ![(Int,ByteString)],

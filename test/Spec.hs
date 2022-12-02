@@ -19,7 +19,7 @@ main = hspec $ do
       do 
         testActual 
         `shouldBe`
-        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "'Hello World!'","for","EOF"]
+        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "Hello World!","for","EOF"]
   describe "Testing bools" $ do
     it "test vm bool 1" $ 
       do
@@ -206,17 +206,17 @@ main = hspec $ do
       do 
         testVMStrBook
         `shouldBe`
-        "Stack:  Globals: 3 = 'monkey' "
+        "Stack:  Globals: 3 = monkey "
     it "test vm str op book 1" $
       do 
         testVMOpStrBook1
         `shouldBe`
-        "Stack:  Globals: 3 = 'monkey' "
+        "Stack:  Globals: 3 = monkey "
     it "test vm str op book 2" $
       do 
         testVMOpStrBook2
         `shouldBe`
-        "Stack:  Globals: 3 = 'monkeybanana' "
+        "Stack:  Globals: 3 = monkeybanana "
     it "test vm op big" $
       do 
         testVMOpBig
@@ -266,7 +266,7 @@ main = hspec $ do
       do 
         testVMArray2
         `shouldBe`
-        "Stack:  Globals: 3 = [1, 'hi', ] "
+        "Stack:  Globals: 3 = [1, hi, ] "
     it "test vm array 3" $
       do 
         testVMArray3
@@ -326,7 +326,7 @@ main = hspec $ do
       do 
         testVMIndex5
         `shouldBe`
-        "Stack:  Globals: 3 = [{'a':[0, {'b':True, }, ], }, ] 4 = True "
+        "Stack:  Globals: 3 = [{a:[0, {b:True, }, ], }, ] 4 = True "
     it "test vm index 6" $
       do 
         testVMIndex6
@@ -442,22 +442,22 @@ main = hspec $ do
       do 
         testBasicLet
         `shouldBe`
-        "let five = 5; let five = 'five'; let five = (-5); let five = (5 + 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 + (-5)); let five = (((5 + 5)) * 5); let five = five; let five = True; let five = 5 == 5; let five = [1, 2, ]; let five = {1:1, 'hello':'world', }; let five = (!two);"
+        "let five = 5; let five = five; let five = (-5); let five = (5 + 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 + (-5)); let five = (((5 + 5)) * 5); let five = five; let five = True; let five = 5 == 5; let five = [1, 2, ]; let five = {1:1, hello:world, }; let five = (!two);"
     it "test parser basic return" $
       do 
         testBasicReturn
         `shouldBe`
-        "return 5; return 'five'; return (-5); return (5 + 5); return (5 + (5 * 5)); return ((5 * 5) + 5); return (5 + (-5)); return (((5 + 5)) * 5); return five; return True; return 5 == 5; return [1, 2, ]; return {1:1, 'hello':'world', }; return (!five);"
+        "return 5; return five; return (-5); return (5 + 5); return (5 + (5 * 5)); return ((5 * 5) + 5); return (5 + (-5)); return (((5 + 5)) * 5); return five; return True; return 5 == 5; return [1, 2, ]; return {1:1, hello:world, }; return (!five);"
     it "test parser basic assign" $
       do 
         testBasicAssign
         `shouldBe`
-        "five = 5; five = 'five'; five = (-5); five = (5 + 5); five = (5 + (5 * 5)); five = ((5 * 5) + 5); five = (5 + (-5)); five = (((5 + 5)) * 5); five = five; five = True; five = 5 == 5; five = [1, 2, ]; five = {1:1, 'hello':'world', }; five = (!five);"
+        "five = 5; five = five; five = (-5); five = (5 + 5); five = (5 + (5 * 5)); five = ((5 * 5) + 5); five = (5 + (-5)); five = (((5 + 5)) * 5); five = five; five = True; five = 5 == 5; five = [1, 2, ]; five = {1:1, hello:world, }; five = (!five);"
     it "test parser am" $
       do 
         testAM
         `shouldBe`
-        "return [(!True), {1:(!True), '2':[True, {0:((2 + (-3))), }, ], }, ];"
+        "return [(!True), {1:(!True), 2:[True, {0:((2 + (-3))), }, ], }, ];"
     it "test parser fn" $
       do 
         testFN
@@ -467,27 +467,27 @@ main = hspec $ do
       do 
         testFNExp
         `shouldBe`
-        "fn add(a){let a = 5; let a = '5'; let a = True; let a = a[0]; let a = {1:1, }; let a = [0, 1, 2, ]; add(2,3);};"
+        "fn add(a){let a = 5; let a = 5; let a = True; let a = a[0]; let a = {1:1, }; let a = [0, 1, 2, ]; add(2,3);};"
     it "test parser index" $
       do 
         testIndex
         `shouldBe`
-        "let a = b[0]; let a = b['c']; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0]; let a = b[b[b[b[0]]]]; let a = a[add(2,3)]; let a = b[b[0][0]][0];"
+        "let a = b[0]; let a = b[c]; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0]; let a = b[b[b[b[0]]]]; let a = a[add(2,3)]; let a = b[b[0][0]][0];"
     it "test parser call" $
       do 
         testCall
         `shouldBe`
-        "add(); add(1); add(1,2); add(a,b); add('a'); add((1 + 2)); add(((1 + (-5)))); add(sub()); add(a[0]);"
+        "add(); add(1); add(1,2); add(a,b); add(a); add((1 + 2)); add(((1 + (-5)))); add(sub()); add(a[0]);"
     it "test parser if params" $
       do 
         testIfParams
         `shouldBe`
-        "if(True){}; if(1 == 1){}; if(a > 1){}; if(add()){}; if('a' == 'a'){}; if(True == False){}; if(a[0]){};"
+        "if(True){}; if(1 == 1){}; if(a > 1){}; if(add()){}; if(a == a){}; if(True == False){}; if(a[0]){};"
     it "test parser if" $
       do 
         testIf
         `shouldBe`
-        "if(True){let five = 5; return five;}; if(True){return a[0];}; if(True){return True;}; if(True){return 'hi';}; if(True){if(True){};};"
+        "if(True){let five = 5; return five;}; if(True){return a[0];}; if(True){return True;}; if(True){return hi;}; if(True){if(True){};};"
     it "test parser if exp" $
       do 
         testIfExp
@@ -503,4 +503,9 @@ main = hspec $ do
         testDiff
         `shouldBe`
         "fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[], }, ], }, ], }, ]; if(True){if(True){if(True){}else{return 5;};}else{return 5;};}else{if(True){if(True){}else{return 5;};}else{return 5;};};};};};};};"
+    it "test parser for" $
+      do 
+        testFor
+        `shouldBe`
+        "for(i = 0; (i < 5); i = (i + 1);){let five = 5;};"
 

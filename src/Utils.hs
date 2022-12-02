@@ -143,7 +143,7 @@ expressionToString e = s
       | expressionType e == EMPTYEXP = " empty "
       | expressionType e == CALLEXP = expressionToString(callIdent e) ++ "(" ++ callParamsToString(e) ++ isClosedCall e 
       | expressionType e == ASSIGNEXP = expressionToString(assignIdent e) ++ " = " ++ expressionToString(assignExpression e) ++ ";" 
-      | expressionType e == STRINGEXP = "'" ++ literal (stringLiteral e) ++ "'" 
+      | expressionType e == STRINGEXP = literal (stringLiteral e)
       | expressionType e == ARRAYEXP && closedExp e == True = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) ++ "]"
       | expressionType e == ARRAYEXP = "[" ++ (concat [expressionToString x ++ ", " | x <- array e]) 
       | expressionType e == INDEXEXP = (expressionToString (arrayIdent e)) ++ concat ["[" ++ expressionToString x ++ isClosedArrayIndex(x) | x <- arrayIndex e]
@@ -183,7 +183,6 @@ tokenToString :: Token -> String
 tokenToString t = s 
   where
     s
-      | typ t == STRING = "'" ++ literal t ++ "'"
       | otherwise = literal t
 
 getLastExpressionType:: (BlockType, [Statement]) -> ExpressionType  
