@@ -46,7 +46,43 @@ disassembleConst (s, c) = str
               BS.empty :: ByteString,
               (0,scopes (removeNFromScope(3, c)) !! scopeIndex c)))), 
         removeNFromScope(3 + (fromIntegral(BS.index (scopes c!!scopeIndex c) 2)),c))
-      -- FUNC
+      -- FOR 
+      | BS.index (scopes c !! scopeIndex c) 1 == 2 = 
+        trace( show (BS.length (scopes c !! scopeIndex c)) ++ " " ++ show ( 1 + 
+              (BS.index (scopes c !! scopeIndex c)) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+                      fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+                      (fromIntegral 
+                        (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                        ))) + 
+              5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+                      fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+                      (fromIntegral 
+                        (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                        ))))$ 
+      (s ++ 
+        " CONST FOR START: " ++ (show(BS.index (scopes c !! scopeIndex c) 2))  ++
+        " STOP: " ++ show(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) ++ 
+        " INC: " ++ show((BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2))))))) ++ 
+        " BODY: " ++ show(
+            BS.index (scopes c !! scopeIndex c) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+              fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+              (fromIntegral 
+                (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                ))
+            ))
+        , removeNFromScope( 1 + 
+      fromIntegral((BS.index (scopes c !! scopeIndex c)) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+              fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+              (fromIntegral 
+                (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                )))) + 
+      5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+              fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+              (fromIntegral 
+                (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                )), c))
+        -- " BODY: " ++ show((BS.index (scopes c !!scopeIndex c) (((1 + fromIntegral (BS.index (scopes c !!scopeIndex c) ((fromIntegral(BS.index (scopes c !!scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !! scopeIndex c) 2)))))+ fromIntegral(BS.index (scopes c !! scopeIndex c) ((fromIntegral(BS.index (scopes c !!scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !! scopeIndex c) 2)))))+4+(fromIntegral(BS.index (scopes c !! scopeIndex c) 2))))))) + fromIntegral(BS.index (scopes c !!scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !! scopeIndex c) 2)))))+ fromIntegral(BS.index (scopes c !! scopeIndex c) ((fromIntegral(BS.index (scopes c !!scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !! scopeIndex c) 2)))))+4+(fromIntegral(BS.index (scopes c !! scopeIndex c) 2)))))))) 
+        -- FUNC
       | BS.index (scopes c !! scopeIndex c) 1 == 3  = (s ++ " CONST " ++ "FUNC ARGS: " ++ (show (BS.index (scopes c!!scopeIndex c) 2)) ++ " LOCALS: "++ (show (BS.index (scopes c!!scopeIndex c) 3)) ++ " LEN: " ++ (show (BS.index (scopes c!!scopeIndex c) 4)), removeNFromScope(5 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 4)), c))
 
 disassemble :: (String, Compiler) -> String 
@@ -82,9 +118,10 @@ disassemble (s,c)= str
       | BS.head (scopes c!!scopeIndex c) == 24 = disassemble(s ++ " OPCALL " ++ (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
       | BS.head (scopes c!!scopeIndex c) == 25 = disassemble(s ++ " RETURNVALUE ", removeFromScope c)
       | BS.head (scopes c!!scopeIndex c) == 26 = disassemble(s ++ " OPRETURN ", removeFromScope c)
-      | BS.head (scopes c!!scopeIndex c) == 27 = disassemble(s ++ " SETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
-      | BS.head (scopes c!!scopeIndex c) == 28 = disassemble(s ++ " GETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
+      | BS.head (scopes c!!scopeIndex c) == 27 = disassemble(s ++ " SETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ " " ++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
+      | BS.head (scopes c!!scopeIndex c) == 28 = disassemble(s ++ " GETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ " " ++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
       | BS.head (scopes c!!scopeIndex c) == 29 = disassemble(s ++ " CALLPREBUILT "++ (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
+      | BS.head (scopes c!!scopeIndex c) == 30 = disassemble(s ++ " FOR ", removeFromScope c)
       | otherwise = error ("disassemble " ++ (show (BS.head (scopes c!!scopeIndex c))))
 
 removeFromScope :: Compiler -> Compiler 

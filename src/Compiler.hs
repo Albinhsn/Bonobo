@@ -30,7 +30,110 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
       | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, compileFunc(Prelude.head s, c))
       | statementType (Prelude.head s) == CALLSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c))
+      | statementType (Prelude.head s) == FORSTA = compile(removeFirst s, compileFor(Prelude.head s, 
+          -- ADD SYMBOL FOR START
+          addToScope(addToLastSymbol(
+            Symbol{symName = literal (ident (assignIdent (start (statementUni (Prelude.head s))))), symIndex = 0, symScope = LOCAL},
+            Compiler{
+              scopes = scopes c ++ [BS.empty :: ByteString],
+              scopeIndex = scopeIndex c + 1, 
+              symbols = symbols c ++ [[]]
+            }), lookupOpCode OPCONST <> chooseToUnroll(2))))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
+
+
+
+compileFor :: (Statement, Compiler) -> Compiler 
+compileFor (s,c) = comp 
+  where 
+    comp  
+      | otherwise = 
+        trace("start: " ++ disassembleFunc("" ,extractScope(compileExpression(start (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          }))))
+        trace("start: " ++ (show (BS.length (scopes (compileExpression(start (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          }))!! scopeIndex c))))
+        trace("stop: " ++ disassemble("" ,compileExpression(stop (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          })))
+        trace("stop: " ++ (show (BS.length (scopes (compileExpression(stop (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          }))!! scopeIndex c))))
+        trace("inc: " ++ disassembleFunc("" ,extractScope(compileExpression(inc (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          }))))
+        trace("inc: " ++ show(BS.length (scopes (compileExpression(inc (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c
+          })) !!scopeIndex c)))
+        trace("forBody: " ++ disassemble("" ,compile(forBody (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c ++ [[]]
+          })))
+        trace("forBody: " ++ show(BS.length (scopes (compile(forBody (statementUni s), Compiler{
+            scopes = pop (scopes c) ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c,
+            symbols = symbols c ++ [[]]
+          }))!!scopeIndex c)))
+        extractFor( 
+        addToScope(
+          c,
+          extractScope(compileExpression(start (statementUni s), Compiler{
+              scopes = pop (scopes c) ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c,
+              symbols = symbols c ++ [[]]
+            })) <> 
+          extractScope(compileExpression(stop (statementUni s), Compiler{
+              scopes = pop (scopes c) ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c,
+              symbols = symbols c ++ [[]]
+            })) <> 
+          extractScope(compileExpression(inc (statementUni s), Compiler{
+              scopes = pop (scopes c) ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c,
+              symbols = symbols c ++ [[]]
+            })) <> 
+          extractScope(compile(forBody (statementUni s), Compiler{
+              scopes = pop (scopes c) ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c,
+              symbols = symbols c ++ [[]]
+            })) <> lookupOpCode OPFOR
+        ))
+
+extractFor :: Compiler -> Compiler 
+extractFor c = addToScope(
+  Compiler{
+      scopes = pop (scopes c),
+      scopeIndex = scopeIndex c - 1,
+      symbols = symbols c
+    },
+  scopes c!!(Prelude.length (scopes c) - 1)
+  )
+
+extractScope :: Compiler -> ByteString 
+extractScope c = chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c !! scopeIndex c
+
+idk :: ([Int], ByteString) -> [Int]
+idk (a,b) = c 
+  where 
+    c   
+      | BS.null b = a 
+      | otherwise = idk(a ++ [fromIntegral (BS.head b)], pack(removeFirst(unpack b)))
+
 
 extractFunc :: (Int,String,Compiler) -> Compiler
 extractFunc (n,s,c) = 
@@ -295,7 +398,6 @@ compileExpression (e,c) = comp
         ) 
       | expressionType e == IDENTEXP= addToScope(
         c,
-        -- lookupGetScope (scopeIndex c) <> chooseToUnroll(getSymbolKey(symbols c, literal (ident e)))
         getScopeAndKey(literal (ident e), c) 
       ) 
       | expressionType e == ASSIGNEXP = addAssignInstruction(

@@ -136,6 +136,11 @@ main = hspec $ do
         testCodeFN2
         `shouldBe`
         " CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 3 CONST INT LEN: 1 CONST INT LEN: 1 GETGLOBAL 3 OPCALL 3 SETGLOBAL 4"
+    it "test code for" $
+      do 
+        testCodeFor
+        `shouldBe`
+        ""
   describe "test vm" $ do
     it "test vm op 1 " $
       do 
@@ -507,5 +512,5 @@ main = hspec $ do
       do 
         testFor
         `shouldBe`
-        "for(i = 0; (i < 5); i = (i + 1);){let five = 5;};"
+        "for(i = 0; i < 5; i = (i + 1);){let five = 5;}; for(i = 0; i < 5; i = (i + 1);){add();}; for(i = 0; i < 5; i = (i + 1);){if(i == 2){add();};};"
 

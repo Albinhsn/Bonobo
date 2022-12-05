@@ -1,24 +1,18 @@
-TEST A FUCK TON OF RANDOM SHIT
+TODO:
+  get bytestring for start, stop, inc 
+
+
+
 
 git ls-files | grep '\.hs' | xargs wc -l
 
--- putStrLn (prettyPrint c)
--- line <- Prelude.getLine 
--- if Prelude.null line 
---   then return ()
---   else do
---     putStrLn (prettyPrint (BSU.fromString line))
---     main 
+forsta 
+bring start var as local 
+store instructions for stop 
+after loop run inc expression code 
+"return" after condition is True 
+Stack: 
+  START CODE  
+  CON CODE 
+   
 
-/* fn print(s){}; fn len(s){}; fn append(a,b){}; */
-
-types: 
-  str = 0
-  int = 1 
-  bool = 2
-  fn = 3 # 
-OPCONST 
-str/int/bool: 
-  TYPE  VALUE 
-fn:
-  TYPE ARGS LOCALS VALUE

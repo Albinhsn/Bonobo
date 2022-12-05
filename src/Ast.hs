@@ -102,7 +102,7 @@ data StatementUni
   | ReturnStatement {}
   | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
   | FuncStatement {closedParams :: !Bool, closedBody :: !Bool, params :: ![Expression], body :: ![Statement]} 
-  | ForStatement{start :: !Expression, stop ::  !Expression, inc :: !Expression ,forBody :: ![Statement]}
+  | ForStatement{closedForBody :: !Bool, closedForCon :: !Bool, start :: !Expression, stop ::  !Expression, inc :: !Expression ,forBody :: ![Statement]}
   | CallStatement {} 
   | AssignStatement{}
   | NoStatement {}

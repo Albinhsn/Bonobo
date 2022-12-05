@@ -53,3 +53,6 @@ testCodeFN2 = disassembleFunc ("",parseStatementToCompiled(parseStringToStatemen
 
 testCodeFN3 :: String 
 testCodeFN3 = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))
+
+testCodeFor :: String 
+testCodeFor = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("for(i == 0; i < 5; i = i + 1;){let five = 5;}")))

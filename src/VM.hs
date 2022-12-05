@@ -14,8 +14,8 @@ import Data.ByteString as BS
 import Data.Map
 
 
--- run :: Compiler -> [String] 
 run :: ByteString -> [String] 
+-- run :: ByteString -> [] 
 run b = 
   outputs(runVM(
     VM{
@@ -303,8 +303,16 @@ runVM v =
           stack = stack v, 
           outputs = outputs v
         }))
+    30 -> runVM(runFor(v))
     _ -> error "run"
 
+
+runFor :: VM -> VM 
+runFor v = vm 
+  where 
+    vm
+      | Prelude.null (stack v) || objectType (Prelude.head (stack v)) /= FOR_OBJ = error "not for :)"
+      | otherwise = error (concStack (stack v))
 
 runPrebuilt :: VM -> VM 
 runPrebuilt v = vm 
@@ -701,22 +709,26 @@ pushToStack v = vm
           :stack v,
           outputs = outputs v
         } 
-      | getFirstInstruction(frames v !! frameIndex v) == 3 = VM{
-          frames = removeNInstructions(4 + (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 3)), frames v, frameIndex v),
+      | getFirstInstruction (frames v !! frameIndex v) == 2 = VM{
+          frames = removeNInstructions(
+            -- for + start + stop + inc + body 
+            5 +  
+            -- start
+            fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1) + 
+            -- stop
+            fromIntegral(BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))) +  
+            -- inc 
+            fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))))) + 
+            -- body
+            fromIntegral (BS.index (snd(frames v !! frameIndex v)) (4 + fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1) + fromIntegral(BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))) + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))))))))
+          , frames v, frameIndex v),
           frameIndex = frameIndex v,
-          bpOffset = bpOffset v, 
+          bpOffset = bpOffset v,
           global = global v, 
-          stack = VM.parseFunc(
-            fromIntegral(BS.index (snd(frames v !!frameIndex v)) 1),
-            fromIntegral(BS.index (snd(frames v !!frameIndex v)) 2),
-            getFirstNInstructions(
-              fromIntegral(BS.index (snd(frames v !!frameIndex v)) 3),
-              BS.empty :: ByteString, 
-              (0,snd((removeNInstructions(4, frames v, frameIndex v)) !! frameIndex v))
-            )
-          ):stack v,
-          outputs = outputs v
-        } 
+          stack = ForObject{objectType = FOR_OBJ, forStart = getFirstNInstructions(,BS.empty ::ByteString, frames v !! frameIndex v), forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString}:stack v,
+-- getFirstNInstructions :: (Int, ByteString,(Int, ByteString)) -> ByteString 
+-- getFirstNInstructions (i,new, old) = bs 
+        }
       | otherwise = error "unknown const"
 
 parseInt :: Int-> Object 

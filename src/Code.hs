@@ -15,7 +15,7 @@ import Utils
 import Ast
 
 
-data OpCode = CALLPREBUILT | SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = OPFOR | CALLPREBUILT | SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
 
 data Scope = GLOBAL | LOCAL deriving (Eq, Show)
 
@@ -53,6 +53,7 @@ opCodes = DM.fromList [
   , (SETLOCAL, fromIntegral 27)
   , (GETLOCAL, fromIntegral 28)
   , (CALLPREBUILT, fromIntegral 29)
+  , (OPFOR, fromIntegral 30)
   ]
 
 isSymbolName :: (Int, [[Symbol]], String)-> Bool 

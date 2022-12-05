@@ -6,7 +6,7 @@ import Utils
 import Data.ByteString as BS
 import Debug.Trace
 
-data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ deriving (Eq, Show, Ord) 
+data ObjectType = FUNC_OBJ | MAP_OBJ | ARRAY_OBJ | NULL_OBJ | INT_OBJ | BOOL_OBJ | STRING_OBJ | FOR_OBJ deriving (Eq, Show, Ord) 
 
 data Object 
   = NullObject {objectType :: !ObjectType}
@@ -15,7 +15,8 @@ data Object
   | BoolObject {objectType :: !ObjectType, boolValue :: !Bool}
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
-  | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: ByteString}
+  | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: !ByteString}
+  | ForObject{objectType :: !ObjectType, forStart :: !ByteString, forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString}
   deriving(Eq, Show, Ord)
 
 inspectObject :: Object -> String 
@@ -89,6 +90,7 @@ disassembleConst (s, b) = str
       -- INT  
       | BS.index b 1 == 1 = (s ++ " CONST " ++ "INT LEN: " ++ (show (BS.index b 2)), removeFirstNInstructions2(3 + (fromIntegral(BS.index b 2)),b))
       -- FUNC
+      | BS.index b 1 == 2 = error "disassembleConst for"
       | BS.index b 1 == 3  = (s ++ " CONST " ++ "FUNC " ++ "ARGS: " ++ (show (BS.index b 2)) ++ " LOCALS: " ++ (show (BS.index b 3)) ++ " LEN: " ++ (show (BS.index b 4)), removeFirstNInstructions2(fromIntegral(BS.index b 4) +5,b))
 
 disassembleFunc :: (String, ByteString) -> String 
