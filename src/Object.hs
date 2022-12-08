@@ -30,6 +30,8 @@ inspectObject o =
     MAP_OBJ -> "{" ++ Prelude.concat [inspectObject i ++ ":" ++ inspectObject x ++ ", " | (i, x) <- mapValue o] ++ "}"
     -- FUNC_OBJ -> "fn" 
     FUNC_OBJ -> "fn ( args: " ++show (numArgs o) ++ "){ locals: "++ show(numLocals o)++ " " ++ disassembleFunc("",funcValue o) ++ "};" 
+    -- FOR_OBJ -> "for(" ++ disassembleFunc("", forStart o) ++ ", " ++ disassembleFunc("", forCon o) ++ ", " ++ disassembleFunc("", forInc o) ++ "){" ++ disassembleFunc("", forBod o) ++ "};"
+    FOR_OBJ -> "for" 
 
 
 readIntFromString :: Expression -> Int 
@@ -90,7 +92,30 @@ disassembleConst (s, b) = str
       -- INT  
       | BS.index b 1 == 1 = (s ++ " CONST " ++ "INT LEN: " ++ (show (BS.index b 2)), removeFirstNInstructions2(3 + (fromIntegral(BS.index b 2)),b))
       -- FUNC
-      | BS.index b 1 == 2 = error "disassembleConst for"
+      | BS.index b 1 == 2 = 
+      (s ++ 
+        " CONST FOR START: " ++ (show(BS.index b 2))  ++
+        " STOP: " ++ show(BS.index b (3 + (fromIntegral (BS.index b 2)))) ++ 
+        " INC: " ++ show((BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2))))))) ++ 
+        " BODY: " ++ show(
+            BS.index b (5 + fromIntegral(BS.index b 2) + 
+              fromIntegral(BS.index b (3 + (fromIntegral (BS.index b 2)))) + 
+              (fromIntegral 
+                (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2)))))
+                ))
+            ))
+        , removeFirstNInstructions2( 1 + 
+      fromIntegral((BS.index b) (5 + fromIntegral(BS.index b 2) + 
+              fromIntegral(BS.index b (3 + (fromIntegral (BS.index b 2)))) + 
+              (fromIntegral 
+                (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2)))))
+                )))) + 
+      5 + fromIntegral(BS.index b 2) + 
+              fromIntegral(BS.index b (3 + (fromIntegral (BS.index b 2)))) + 
+              (fromIntegral 
+                (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b  (3 + (fromIntegral (BS.index b 2)))))
+                )), b))
+ 
       | BS.index b 1 == 3  = (s ++ " CONST " ++ "FUNC " ++ "ARGS: " ++ (show (BS.index b 2)) ++ " LOCALS: " ++ (show (BS.index b 3)) ++ " LEN: " ++ (show (BS.index b 4)), removeFirstNInstructions2(fromIntegral(BS.index b 4) +5,b))
 
 disassembleFunc :: (String, ByteString) -> String 
@@ -126,6 +151,7 @@ disassembleFunc (s,b)= str
       | BS.head b == 27 = disassembleFunc(s ++ " SETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++" " ++ (show (BS.index (b) 2)) , removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | BS.head b == 28 = disassembleFunc(s ++ " GETLOCAL "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
       | BS.head b == 29 = disassembleFunc(s ++ " GETPREBUILT "++ (show (fromIntegral (BS.head (removeFirstInstruction2 b))))++ " " ++ (show (BS.index (b) 2)), removeFirstInstruction2(removeFirstInstruction2(removeFirstInstruction2 b)))
+      | BS.head b == 30 = disassembleFunc(s ++ " OPFOR ", removeFirstInstruction2 b)
       | otherwise = error ("disassembleFunc " ++ (show (BS.head b)))
 removeFirstNInstructions2 :: (Int, ByteString) -> ByteString
 removeFirstNInstructions2 (i, b) = bs 

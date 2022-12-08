@@ -801,6 +801,7 @@ addIdentifierToLastExp (t, e) = ex
       | expressionType e == CALLEXP && null (callParams e) = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP, callIdent = callIdent e, callParams = [IdentExpression{closedExp = False ,expLine = (line t), expressionType = IDENTEXP, ident = t}]}
       | expressionType e == CALLEXP = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP, callIdent = callIdent e, callParams = append (pop (callParams e)) (addIdentifierToLastExp(t, last(callParams e)))}
       | expressionType e == GROUPEDEXP = GroupedExpression{closedExp = False, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = addIdentifierToLastExp(t, groupedExpression e)}
+      | expressionType e == BOOLEXP = BoolExpression{expressionType = BOOLEXP, closedExp = False, expLine = expLine e, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addIdentifierToLastExp(t, rightBool e)}
       | otherwise = error ("addIdentifierToLastExp: " ++ expressionToString e) 
 
 
@@ -1216,7 +1217,7 @@ closeLast s = sta
               start = start (statementUni s),
               stop = stop (statementUni s),
               inc = inc (statementUni s),
-              forBody = append (pop (forBody (statementUni s))) (closeLast (last (forBody (statementUni s)))) 
+              forBody = forBody (statementUni s) 
             },
           statementType = statementType s,
           expression = expression s 
@@ -1642,6 +1643,7 @@ addEleToArray e = ex
       | expressionType e == INDEXEXP = IndexExpression{closedExp = False, expLine = expLine e, expressionType = INDEXEXP, arrayIdent = arrayIdent e, arrayIndex = append (pop (arrayIndex e)) (addEleToArray(last (arrayIndex e)))}
       | expressionType e == CALLEXP && checkNestedListCall e== False = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (callParams e) Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}} 
       | expressionType e == CALLEXP = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (pop (callParams e)) (addEleToArray(last (callParams e)))} 
+      | expressionType e == BOOLEXP = BoolExpression{closedExp = False, expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addEleToArray(rightBool e)}
       | otherwise = error ("addEleToArray " ++ expressionToString e)
 
 
@@ -1687,6 +1689,62 @@ addComma s = sta
               con = append (pop (con (statementUni s))) (addComma(last (con (statementUni s)))),
               closedAlt =True,
               alt = []
+            },
+          closedSta = False, 
+          statementType = statementType s,
+          expression = expression s  
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (start (statementUni s)) == False = Statement{
+          staLine =staLine s,
+          statementUni =ForStatement{
+              closedForCon = False,
+              closedForBody = True, 
+              forBody = [],
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              start = addEleToArray(start (statementUni s)) 
+            },
+          closedSta = False, 
+          statementType = statementType s,
+          expression = expression s  
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (stop (statementUni s)) == False = Statement{
+          staLine =staLine s,
+          statementUni =ForStatement{
+              closedForCon = False,
+              closedForBody = True, 
+              forBody = [],
+              stop = addEleToArray(stop (statementUni s)) ,
+              inc = inc (statementUni s),
+              start = start (statementUni s) 
+            },
+          closedSta = False, 
+          statementType = statementType s,
+          expression = expression s  
+        }
+      | statementType s == FORSTA && closedForCon (statementUni s) == False && closedExp (inc (statementUni s)) == False = Statement{
+          staLine =staLine s,
+          statementUni =ForStatement{
+              closedForCon = False,
+              closedForBody = True, 
+              forBody = [],
+              stop = stop (statementUni s),
+              inc = addEleToArray(inc (statementUni s)) ,
+              start = start (statementUni s) 
+            },
+          closedSta = False, 
+          statementType = statementType s,
+          expression = expression s  
+        }
+      | statementType s == FORSTA && closedForBody (statementUni s) == False = Statement{
+          staLine =staLine s,
+          statementUni =ForStatement{
+              closedForCon = True,
+              closedForBody = False, 
+              forBody = append (pop (forBody (statementUni s))) (addComma (last (forBody (statementUni s)))),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              start = start (statementUni s) 
             },
           closedSta = False, 
           statementType = statementType s,

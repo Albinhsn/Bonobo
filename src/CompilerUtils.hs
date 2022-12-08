@@ -48,17 +48,6 @@ disassembleConst (s, c) = str
         removeNFromScope(3 + (fromIntegral(BS.index (scopes c!!scopeIndex c) 2)),c))
       -- FOR 
       | BS.index (scopes c !! scopeIndex c) 1 == 2 = 
-        trace( show (BS.length (scopes c !! scopeIndex c)) ++ " " ++ show ( 1 + 
-              (BS.index (scopes c !! scopeIndex c)) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
-                      fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
-                      (fromIntegral 
-                        (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
-                        ))) + 
-              5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
-                      fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
-                      (fromIntegral 
-                        (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
-                        ))))$ 
       (s ++ 
         " CONST FOR START: " ++ (show(BS.index (scopes c !! scopeIndex c) 2))  ++
         " STOP: " ++ show(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) ++ 
@@ -121,7 +110,7 @@ disassemble (s,c)= str
       | BS.head (scopes c!!scopeIndex c) == 27 = disassemble(s ++ " SETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ " " ++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
       | BS.head (scopes c!!scopeIndex c) == 28 = disassemble(s ++ " GETLOCAL "++ (show (BS.index (scopes c!!scopeIndex c) 1))++ " " ++ (show (BS.index (scopes c!!scopeIndex c) 2)), removeFromScope(removeFromScope(removeFromScope c)))
       | BS.head (scopes c!!scopeIndex c) == 29 = disassemble(s ++ " CALLPREBUILT "++ (show (BS.index (scopes c!!scopeIndex c) 1)), removeFromScope(removeFromScope c))
-      | BS.head (scopes c!!scopeIndex c) == 30 = disassemble(s ++ " FOR ", removeFromScope c)
+      | BS.head (scopes c!!scopeIndex c) == 30 = disassemble(s ++ " OPFOR ", removeFromScope c)
       | otherwise = error ("disassemble " ++ (show (BS.head (scopes c!!scopeIndex c))))
 
 removeFromScope :: Compiler -> Compiler 

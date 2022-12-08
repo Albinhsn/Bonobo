@@ -96,7 +96,11 @@ lookupOpCode o = BS.singleton (opCodes ! o)
 
 
 bsToInt :: ByteString -> Int 
-bsToInt b = (roll(0, b, 0))
+bsToInt b = i 
+  where 
+    i 
+      | BS.length b == 1 = fromIntegral (BS.head b)
+      | otherwise = (roll(0, b, 0))
 
 
 roll :: (Int, ByteString, Int) -> Int 

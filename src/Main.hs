@@ -13,19 +13,27 @@ import Data.ByteString as BS
 
 
 main = do
-  let x = "for(i = 0; i < 5; i = i + 1;){let five = 5;};"
+  -- let x = "let d = 0; fn power(a){return a * a; }; for(i = 3; i < 6; i = i + 2;){d = d + power(i);}; print(d);"
+  -- let x = "let d = 0; fn power(a){return a * a; }; fn add(){d = power(2);}; add(); print(d);"
+  let x = "let d = 0; fn a(){return 5;}; for(i = 0; i < 3; i = i + 1;){d = d + a();}; print(d);"
   let s = parseStringToStatements(x) 
   -- print s
   let c = statementsToString(s)
-  -- print c
+  print c
   let a = parseStatementToCompiled s 
-  let k = idk([], a) 
-  print (k !! 30)
-  print k
-  let d = parseStatementToCompiler s 
-  print (disassemble("", d))
   -- print a
-  -- print (disassemble ("", a))
+  let k = idk([], a) 
+  let d = parseStatementToCompiler s 
+  -- print d
+  print (disassemble("", d))
+  -- let f = runVM(VM{
+  --         frames = [(0, a)],
+  --         frameIndex = 0,
+  --         bpOffset = 0, 
+  --         global = [],
+  --         stack = [],
+  --         outputs =[]})
+  -- print f
   let r = run a
   mapM_ print r
 -- import System.Environment 

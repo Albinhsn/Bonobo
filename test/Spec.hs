@@ -140,7 +140,17 @@ main = hspec $ do
       do 
         testCodeFor
         `shouldBe`
-        ""
+        " CONST FOR START: 7 STOP: 8 INC: 11 BODY: 7 OPFOR "
+    it "test code for 2" $
+      do 
+        testCodeFor2
+        `shouldBe`
+        " CONST INT LEN: 1 SETGLOBAL 3 CONST FOR START: 7 STOP: 8 INC: 11 BODY: 8 OPFOR "
+    it "test code for 3" $
+      do 
+        testCodeFor3
+        `shouldBe`
+        " CONST INT LEN: 1 SETGLOBAL 3 CONST INT LEN: 1 SETGLOBAL 4 CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 5 CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 6 CONST FOR START: 5 STOP: 13 INC: 11 BODY: 8 OPFOR "
   describe "test vm" $ do
     it "test vm op 1 " $
       do 

@@ -55,4 +55,10 @@ testCodeFN3 :: String
 testCodeFN3 = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("fn five(){return 5;};fn add(){return five();}; let c = add();")))
 
 testCodeFor :: String 
-testCodeFor = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("for(i == 0; i < 5; i = i + 1;){let five = 5;}")))
+testCodeFor = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("for(i = 0; i < 5; i = i + 1;){let five = 5;}")))
+
+testCodeFor2 :: String 
+testCodeFor2 = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("let a = 5; for(i = 5; i < 10; i = i + 2;){a = a + i;};")))
+
+testCodeFor3 :: String 
+testCodeFor3 = disassembleFunc ("",parseStatementToCompiled(parseStringToStatements("let a = 2; let c = 3; fn add(fst,snd){return fst + snd;}; fn sub(fst, snd){return fst - snd;};for(i = a; i < add(i,a); i = sub(a,c);){a = i + c;}")))

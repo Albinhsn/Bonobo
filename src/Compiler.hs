@@ -42,86 +42,49 @@ compile (s,c) = comp
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
 
 
-
-
 compileFor :: (Statement, Compiler) -> Compiler 
 compileFor (s,c) = comp 
   where 
     comp  
       | otherwise = 
-        trace("start: " ++ disassembleFunc("" ,extractScope(compileExpression(start (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          }))))
-        trace("start: " ++ (show (BS.length (scopes (compileExpression(start (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          }))!! scopeIndex c))))
-        trace("stop: " ++ disassemble("" ,compileExpression(stop (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          })))
-        trace("stop: " ++ (show (BS.length (scopes (compileExpression(stop (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          }))!! scopeIndex c))))
-        trace("inc: " ++ disassembleFunc("" ,extractScope(compileExpression(inc (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          }))))
-        trace("inc: " ++ show(BS.length (scopes (compileExpression(inc (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c
-          })) !!scopeIndex c)))
-        trace("forBody: " ++ disassemble("" ,compile(forBody (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c ++ [[]]
-          })))
-        trace("forBody: " ++ show(BS.length (scopes (compile(forBody (statementUni s), Compiler{
-            scopes = pop (scopes c) ++ [BS.empty::ByteString],
-            scopeIndex = scopeIndex c,
-            symbols = symbols c ++ [[]]
-          }))!!scopeIndex c)))
         extractFor( 
+        extractForBod(
+        forBody (statementUni s),
         addToScope(
           c,
           extractScope(compileExpression(start (statementUni s), Compiler{
-              scopes = pop (scopes c) ++ [BS.empty::ByteString],
-              scopeIndex = scopeIndex c,
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
               symbols = symbols c ++ [[]]
             })) <> 
           extractScope(compileExpression(stop (statementUni s), Compiler{
-              scopes = pop (scopes c) ++ [BS.empty::ByteString],
-              scopeIndex = scopeIndex c,
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
               symbols = symbols c ++ [[]]
             })) <> 
           extractScope(compileExpression(inc (statementUni s), Compiler{
-              scopes = pop (scopes c) ++ [BS.empty::ByteString],
-              scopeIndex = scopeIndex c,
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
               symbols = symbols c ++ [[]]
-            })) <> 
-          extractScope(compile(forBody (statementUni s), Compiler{
-              scopes = pop (scopes c) ++ [BS.empty::ByteString],
-              scopeIndex = scopeIndex c,
-              symbols = symbols c ++ [[]]
-            })) <> lookupOpCode OPFOR
-        ))
+            }))
+        )))
+
+extractForBod :: ([Statement], Compiler) -> Compiler 
+extractForBod (s,c) = compile(s,Compiler{
+    scopes = scopes c ++ [BS.empty::ByteString],
+    scopeIndex = scopeIndex c + 1,
+    symbols = symbols c ++ [[]]
+  }) 
 
 extractFor :: Compiler -> Compiler 
-extractFor c = addToScope(
+extractFor c = 
+  addToScope(
   Compiler{
-      scopes = pop (scopes c),
-      scopeIndex = scopeIndex c - 1,
-      symbols = symbols c
+      scopes = pop (pop(scopes c)),
+      scopeIndex = scopeIndex c - 2,
+      symbols = pop(pop(symbols c))
     },
-  scopes c!!(Prelude.length (scopes c) - 1)
+  scopes c!!(Prelude.length (scopes c) -2 )  <> chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPFOR
   )
 
 extractScope :: Compiler -> ByteString 
