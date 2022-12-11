@@ -15,7 +15,36 @@ import Utils
 import Ast
 
 
-data OpCode = OPFOR | CALLPREBUILT | SETLOCAL | GETLOCAL | OPRETURN | OPRETURNVALUE | OPCALL | INDEXEND | SETINDEX | INDEX | HASHEND | HASH | ARRAYEND | ARRAY | GETGLOBAL | SETGLOBAL | JUMPNT | JUMP | OPMINUS | OPBANG | OPGT | OPNEQ | OPEQ | OPTRUE | OPFALSE | OPSUB | OPMUL | OPDIV | OPPOP | OPCONST | OPADD deriving (Eq, Show, Ord) 
+data OpCode = 
+  OPFOR | -- start of for loop  
+  CALLPREBUILT | -- calling prebuilt function  
+  SETLOCAL | -- setting local variable 
+  GETLOCAL | -- getting local variable 
+  OPRETURN | -- returning from function 
+  OPRETURNVALUE | -- returning with value from function 
+  OPCALL | -- calling function 
+  SETINDEX | -- setting index, a[0] = 2; 
+  INDEX | -- getting from index, let a = b[0];
+  HASH | -- creation of a map 
+  ARRAY | -- creation of an array 
+  GETGLOBAL | -- getting global variable 
+  SETGLOBAL | -- setting global variable 
+  JUMPNT | -- jump if not true 
+  JUMP | -- jump always 
+  OPMINUS | -- infix operator for '-'
+  OPBANG | -- boolean operator for '!'
+  OPGT | -- boolean operator for '>' 
+  OPNEQ | -- boolean operator for '!='
+  OPEQ | -- boolean operator for '=='
+  OPTRUE | -- boolean True 
+  OPFALSE | -- boolean False 
+  OPADD | -- operator for addition
+  OPSUB | -- operator for subtraction 
+  OPMUL | -- operator for multiplication 
+  OPDIV | -- operator for division 
+  OPPOP | -- operator for popping a varible off the stack 
+  OPCONST -- operator for creating a constant variable 
+  deriving (Eq, Show, Ord) 
 
 data Scope = GLOBAL | LOCAL deriving (Eq, Show)
 

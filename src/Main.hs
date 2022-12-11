@@ -15,7 +15,7 @@ import Data.ByteString as BS
 main = do
   -- let x = "let d = 0; fn power(a){return a * a; }; for(i = 3; i < 6; i = i + 2;){d = d + power(i);}; print(d);"
   -- let x = "let d = 0; fn power(a){return a * a; }; fn add(){d = power(2);}; add(); print(d);"
-  let x = "let d = 0; fn a(){return 5;}; for(i = 0; i < 3; i = i + 1;){d = d + a();}; print(d);"
+  let x = "let d = 5;"
   let s = parseStringToStatements(x) 
   -- print s
   let c = statementsToString(s)
