@@ -16,7 +16,7 @@ data Object
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
   | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: !ByteString}
-  | ForObject{objectType :: !ObjectType, forStart :: !ByteString, forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString}
+  | ForObject{objectType :: !ObjectType, forStart :: !ByteString, forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString, forLocals :: !Int}
   deriving(Eq, Show, Ord)
 
 inspectObject :: Object -> String 

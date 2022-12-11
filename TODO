@@ -1,6 +1,10 @@
 TODO:
-  get bytestring for start, stop, inc 
-
+  remove opconst and send it constants 
+  fix for loop 
+  look for general improvements in vm
+    remove frameindex just check last frame 
+    see what needs to be sent where aka remove VM as a type 
+      
 
 
 
