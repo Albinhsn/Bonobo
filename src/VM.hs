@@ -66,10 +66,10 @@ runVM v =
       v 
     --Constant
     0 -> 
-      trace("const")
-      trace(show (constVM v))
-      trace(show (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1)))
-      trace(show((constVM v!!(fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1))):stack v))
+      -- trace("const")
+      -- trace(show (constVM v))
+      -- trace(show (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1)))
+      -- trace(show((constVM v!!(fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1))):stack v))
       runVM(VM{
           frames = removeFirstInstruction(removeFirstInstruction (frames v, frameIndex v), frameIndex v),
           frameIndex = frameIndex v,
@@ -107,7 +107,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =subOp (stack v),
+              stack =evalSubOp(stack v!!0, stack v!!1):(removeFirstN(2, stack v)),
               constVM = constVM v, 
               outputs = outputs v
             })
@@ -350,19 +350,7 @@ runVM v =
 
 
 getStart :: VM -> VM 
-getStart v =   
-  trace("getStart stack: " ++ concStack (stack (
-    runVM(VM{
-      frames = changeBP(1, frames v) ++ [(0,forStart(Prelude.head (stack v)))], 
-      frameIndex = frameIndex v + 1,
-      bpOffset = bpOffset v - 1, 
-      constVM = constVM v, 
-      global = global v, 
-      stack = NullObject{objectType = NULL_OBJ}:stack v,
-      outputs = outputs v
-    })
-  )))
-  runVM(VM{
+getStart v = runVM(VM{
     frames = changeBP(1, frames v) ++ [(0,forStart(Prelude.head (stack v)))], 
     frameIndex = frameIndex v + 1,
     bpOffset = bpOffset v - 1, 
@@ -388,7 +376,7 @@ runFor v = vm
       | Prelude.null (stack v) = error "null stack?"
       | objectType (Prelude.head (stack v)) /= FOR_OBJ = error ("not for :) " ++ concStack (stack v))
       -- | otherwise = error ("runFor " ++ concStack (stack (getStart v)))
-      | otherwise = error "works?"--runForEval(popLastFrame(getStart v))
+      | otherwise = runForEval(popLastFrame(getStart v))
 
 
 runForEval :: VM -> VM 
@@ -426,8 +414,8 @@ runForEval v = b
 
 runInc :: VM -> VM 
 runInc v = 
-  trace("runInc stack: " ++ concStack (stack v))
-  trace("runInc frames: " ++ show(frames v ++ [(0, forInc (stack v !! 1))]))
+  -- trace("runInc stack: " ++ concStack (stack v))
+  -- trace("runInc frames: " ++ show(frames v ++ [(0, forInc (stack v !! 1))]))
   popLastFrame(runVM(VM{
     frames = frames v ++ [(0, forInc (stack v !! 1))],
     frameIndex = frameIndex v + 1,
@@ -581,10 +569,10 @@ evalReturn v = vm
           outputs = outputs v
         }
       | otherwise =
-        trace("evalReturn stack prior : " ++ concStack (stack v))
-        trace("evalReturn stack prior : " ++ show(stack v!!0))
-        trace("evalReturn getBPIDX: " ++ show(getBasePointerIdx(Prelude.length (frames v) -2, v)))
-        trace("evalReturn: " ++ concStack (stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
+        -- trace("evalReturn stack prior : " ++ concStack (stack v))
+        -- trace("evalReturn stack prior : " ++ show(stack v!!0))
+        -- trace("evalReturn getBPIDX: " ++ show(getBasePointerIdx(Prelude.length (frames v) -2, v)))
+        -- trace("evalReturn: " ++ concStack (stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
         VM{
           frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v)),
           frameIndex = frameIndex v - 1,
@@ -713,8 +701,8 @@ evalSetGlobal v = vm
           outputs = outputs v
         } 
       | otherwise = 
-        trace("evalSetGlobal global: " ++ concStack ([snd x | x <- (getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)]]))
-        trace("evalSetGlobal stack: " ++ concStack(removeFirst(stack v))) 
+        -- trace("evalSetGlobal global: " ++ concStack ([snd x | x <- (getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)]]))
+        -- trace("evalSetGlobal stack: " ++ concStack(removeFirst(stack v))) 
         VM{
           frames = removeFirstInstruction (frames v, frameIndex v), 
           frameIndex = frameIndex v,
@@ -812,9 +800,6 @@ evalAddOp(o1, o2) = o
       | objectType o1 == STRING_OBJ = StringObject{objectType = STRING_OBJ, stringValue = stringValue o2 ++ stringValue o1}
       | otherwise = error ("can't do operation with types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
 
-subOp :: [Object] -> [Object]
-subOp o =evalSubOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
-
 evalSubOp :: (Object, Object) -> Object 
 evalSubOp (o1, o2) = o 
   where 
@@ -836,12 +821,12 @@ evalDivOp (o1, o2) = o
 
 mulOp :: [Object] -> [Object]
 mulOp o =
-  trace("mulOp prior: " ++ concStack(
-    o
-  ))
-  trace("mulOp after: " ++ concStack(
-    evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
-  ))
+  -- trace("mulOp prior: " ++ concStack(
+  --   o
+  -- ))
+  -- trace("mulOp after: " ++ concStack(
+  --   evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
+  -- ))
   evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
 
 evalMulOp :: (Object, Object) -> Object 

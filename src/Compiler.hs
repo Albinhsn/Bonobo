@@ -30,68 +30,103 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
       | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, compileFunc(Prelude.head s, c))
       | statementType (Prelude.head s) == CALLSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c))
-      | statementType (Prelude.head s) == FORSTA = compile(removeFirst s, addToScope(compileFor(Prelude.head s, 
+      | statementType (Prelude.head s) == FORSTA = 
+        compile(removeFirst s, addToScope(compileFor(Prelude.head s, 
           -- ADD SYMBOL FOR START
-          addToScope(addToLastSymbol(
-            Symbol{symName = literal (ident (assignIdent (start (statementUni (Prelude.head s))))), symIndex = 0, symScope = LOCAL},
-            Compiler{
-              constants = append (constants c),
-              scopes = scopes c ++ [BS.empty :: ByteString],
-              scopeIndex = scopeIndex c + 1, 
-              symbols = symbols c ++ [[]]
-            }), lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c))))
-        , lookupOpCode OPFOR
-      ))
+          compileExpression(
+            start (statementUni (Prelude.head s)), Compiler{
+                  constants = constants c,
+                  scopes = Utils.append (scopes c) (BS.empty :: ByteString),
+                  scopeIndex = scopeIndex c + 1,
+                  symbols = symbols c ++ [[Symbol{
+                      symName = literal (ident (assignIdent(start (statementUni (Prelude.head s))))),
+                      symIndex = 0,
+                      symScope = LOCAL 
+                    }]]
+              } 
+          ) 
+      ), lookupOpCode OPFOR))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
+
+compileForInc :: (Object,Compiler) -> (Object, Compiler)
+compileForInc (o, c)= (ForObject{
+      objectType = FOR_OBJ,
+      forStart = forStart o,
+      forCon = forCon o,
+      forInc = scopes c !! scopeIndex c, 
+      forLocals = forLocals o,
+      forBod = forBod o
+    },
+      Compiler{
+          constants = constants c, 
+          scopes = Utils.append (pop (scopes c)) (BS.empty :: ByteString), 
+          scopeIndex = scopeIndex c, 
+          symbols = symbols c
+        }
+    )
+
+compileForCon :: (Statement,Object,Compiler) -> (Object, Compiler)
+compileForCon (s,o,c) = 
+  (ForObject{
+      objectType = FOR_OBJ,
+      forStart = forStart o,
+      forCon = scopes c !! scopeIndex c,
+      forInc = forInc o, 
+      forLocals = forLocals o,
+      forBod = forBod o
+    },
+  compileExpression(inc(statementUni s), Compiler{
+    constants = constants c,
+    scopes = Utils.append (pop(scopes c)) (BS.empty :: ByteString),
+    scopeIndex = scopeIndex c,
+    symbols = symbols c ++ [[]]
+    }))
+
 
 compileFor :: (Statement, Compiler) -> Compiler 
 compileFor (s,c) = comp 
   where 
     comp  
-      | otherwise = parseForBod(
-        ForObject{
-              objectType = FOR_OBJ, 
-              forStart = extractScope(
-                compileExpression(start (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = Utils.append (scopes c) (BS.empty :: ByteString),
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forCon = extractScope(
-                compileExpression(stop (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = Utils.append (scopes c) (BS.empty :: ByteString),
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forInc = extractScope(
-                compileExpression(inc (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = scopes c ++ [BS.empty::ByteString],
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forBod = BS.empty :: ByteString,
-              forLocals = 0
-        },
-      compile(forBody(statementUni s), c),
-      Compiler{
-          scopes = scopes c, 
-          scopeIndex = scopeIndex c, 
-          constants = constants c, 
-          symbols = symbols c
-        }
-      )
+      | otherwise = extractForBod(parseForBod(
+        s,        
+        compileForInc(
+          compileForCon(
+            s,
+            ForObject{
+                  objectType = FOR_OBJ, 
+                  forStart = scopes c !! scopeIndex c, 
+                  forCon = BS.empty :: ByteString, 
+                  forInc = BS.empty :: ByteString, 
+                  forBod = BS.empty :: ByteString,
+                  forLocals = 0
+            },
+            compileExpression(
+              stop(statementUni s),
+              Compiler{
+                constants = constants c,
+                scopes = Utils.append (pop(scopes c)) (BS.empty :: ByteString),
+                scopeIndex = scopeIndex c,
+                symbols = symbols c ++ [[]]
+              }
+            )
+          )
+        )
+      ))
 
-parseForBod :: (Object, Compiler, Compiler) -> Compiler 
-parseForBod (o, new,old) = comp 
+parseForBod :: (Statement, (Object, Compiler)) -> (Object,Compiler, Compiler)
+parseForBod (s,(o,c)) =(
+      o,
+      c,
+      compile(forBody(statementUni s), c)
+  ) 
+
+extractForBod :: (Object, Compiler, Compiler) -> Compiler 
+extractForBod (o, old,new) = comp 
   where 
     comp 
       | otherwise = 
+        trace("extractForBod: " ++ show(Prelude.length (constants new)))
         addToScope(Compiler{
           constants = Utils.append (constants new) ForObject{
             objectType = FOR_OBJ, 
@@ -104,7 +139,7 @@ parseForBod (o, new,old) = comp
           symbols = symbols new, 
           scopes = pop(scopes old),
           scopeIndex = scopeIndex old - 1
-        }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants new) + 1))
+        }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants new)))
 
 
 extractScope :: Compiler -> ByteString 
