@@ -111,9 +111,8 @@ gsk (idx, s,str) = i
       | otherwise = Prelude.head [symIndex x | x <- s!!idx, str == symName x] 
 
 data Compiler = Compiler{
-    symbols :: ![[Symbol]],
+    symbols :: [[Symbol]],
     scopes :: ![ByteString],
-    constants :: ![Object],
     scopeIndex :: !Int
   } deriving (Show)
 

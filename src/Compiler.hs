@@ -30,85 +30,72 @@ compile (s,c) = comp
       | statementType (Prelude.head s) == RETSTA = compile(removeFirst s, addToScope(compileExpression(expression (Prelude.head s), c), lookupOpCode OPRETURNVALUE ))
       | statementType (Prelude.head s) == FUNCSTA = compile(removeFirst s, compileFunc(Prelude.head s, c))
       | statementType (Prelude.head s) == CALLSTA = compile(removeFirst s, compileExpression(expression (Prelude.head s), c))
-      | statementType (Prelude.head s) == FORSTA = compile(removeFirst s, addToScope(compileFor(Prelude.head s, 
+      | statementType (Prelude.head s) == FORSTA = compile(removeFirst s, compileFor(Prelude.head s, 
           -- ADD SYMBOL FOR START
           addToScope(addToLastSymbol(
             Symbol{symName = literal (ident (assignIdent (start (statementUni (Prelude.head s))))), symIndex = 0, symScope = LOCAL},
             Compiler{
-              constants = append (constants c),
               scopes = scopes c ++ [BS.empty :: ByteString],
               scopeIndex = scopeIndex c + 1, 
               symbols = symbols c ++ [[]]
-            }), lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c))))
-        , lookupOpCode OPFOR
-      ))
+            }), lookupOpCode OPCONST <> chooseToUnroll(2))))
       | otherwise = error ("unkown statementType compiler " ++ (show (statementType (Prelude.head s)))) 
+
 
 compileFor :: (Statement, Compiler) -> Compiler 
 compileFor (s,c) = comp 
   where 
     comp  
-      | otherwise = parseForBod(
-        ForObject{
-              objectType = FOR_OBJ, 
-              forStart = extractScope(
-                compileExpression(start (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = Utils.append (scopes c) (BS.empty :: ByteString),
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forCon = extractScope(
-                compileExpression(stop (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = Utils.append (scopes c) (BS.empty :: ByteString),
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forInc = extractScope(
-                compileExpression(inc (statementUni s), Compiler{
-                  constants = constants c,
-                  scopes = scopes c ++ [BS.empty::ByteString],
-                  scopeIndex = scopeIndex c + 1,
-                  symbols = symbols c ++ [[]]
-                })
-              ), 
-              forBod = BS.empty :: ByteString,
-              forLocals = 0
-        },
-      compile(forBody(statementUni s), c),
-      Compiler{
-          scopes = scopes c, 
-          scopeIndex = scopeIndex c, 
-          constants = constants c, 
-          symbols = symbols c
-        }
-      )
-
-parseForBod :: (Object, Compiler, Compiler) -> Compiler 
-parseForBod (o, new,old) = comp 
-  where 
-    comp 
       | otherwise = 
-        addToScope(Compiler{
-          constants = Utils.append (constants new) ForObject{
-            objectType = FOR_OBJ, 
-            forStart = forStart o, 
-            forCon = forCon o, 
-            forInc = forInc o, 
-            forBod = scopes new !!scopeIndex new, 
-            forLocals = Prelude.length (constants new) - Prelude.length (constants old) 
-          },
-          symbols = symbols new, 
-          scopes = pop(scopes old),
-          scopeIndex = scopeIndex old - 1
-        }, lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants new) + 1))
+        extractFor( 
+        extractForBod(
+        forBody (statementUni s),
+        addToScope(
+          c,
+          extractScope(compileExpression(start (statementUni s), Compiler{
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
+              symbols = symbols c ++ [[]]
+            })) <> 
+          extractScope(compileExpression(stop (statementUni s), Compiler{
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
+              symbols = symbols c ++ [[]]
+            })) <> 
+          extractScope(compileExpression(inc (statementUni s), Compiler{
+              scopes = scopes c ++ [BS.empty::ByteString],
+              scopeIndex = scopeIndex c + 1,
+              symbols = symbols c ++ [[]]
+            }))
+        )))
 
+extractForBod :: ([Statement], Compiler) -> Compiler 
+extractForBod (s,c) = compile(s,Compiler{
+    scopes = scopes c ++ [BS.empty::ByteString],
+    scopeIndex = scopeIndex c + 1,
+    symbols = symbols c ++ [[]]
+  }) 
+
+extractFor :: Compiler -> Compiler 
+extractFor c = 
+  addToScope(
+  Compiler{
+      scopes = pop (pop(scopes c)),
+      scopeIndex = scopeIndex c - 2,
+      symbols = pop(pop(symbols c))
+    },
+  scopes c!!(Prelude.length (scopes c) -2 )  <> chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPFOR
+  )
 
 extractScope :: Compiler -> ByteString 
 extractScope c = chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c !! scopeIndex c
+
+idk :: ([Int], ByteString) -> [Int]
+idk (a,b) = c 
+  where 
+    c   
+      | BS.null b = a 
+      | otherwise = idk(a ++ [fromIntegral (BS.head b)], pack(removeFirst(unpack b)))
 
 
 extractFunc :: (Int,String,Compiler) -> Compiler
@@ -116,19 +103,23 @@ extractFunc (n,s,c) =
   addToLastSymbol(
   Symbol{symName = s, symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c)-2)), symScope = getSymScope(scopeIndex c - 1)},
   addToScope(Compiler{
-    constants = Utils.append (constants c) FuncObject{objectType = FUNC_OBJ, numArgs = n, numLocals = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1 )), funcValue =scopes c!!(Prelude.length (scopes c) - 1) },
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
     symbols =  pop(symbols c)
   }, 
     lookupOpCode OPCONST <> 
-    chooseToUnroll(Prelude.length (constants c)) 
-  ))
+    chooseToUnroll(3) <> -- FUNC 
+    chooseToUnroll(n) <> -- ARGS 
+    chooseToUnroll(Prelude.length (symbols c!!(Prelude.length (symbols c) - 1 ))) <> -- LOCALS
+    chooseToUnroll(BS.length (scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPRETURN)) <> -- BS LENGTH OF FUNC
+    scopes c!!(Prelude.length (scopes c) - 1) <> -- FUNC  
+    lookupOpCode OPRETURN <> -- FUNC 
+    lookupLetScope (scopeIndex c - 1 ) <> -- SET 
+    chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2))))) -- SYMBOL KEY/NAME
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 
 addToLastSymbol (s, c) = 
   Compiler{
-    constants = constants c,
     scopes = scopes c, 
     scopeIndex = scopeIndex c,
     symbols = pop (symbols c) ++ [(s:Prelude.last (symbols c))]
@@ -143,7 +134,6 @@ compileFunc (s, c) = comp
           Prelude.length (params (statementUni s)),
           literal(ident (expression (s))), 
           compile(body (statementUni s), enterScope(Compiler{
-              constants = constants c,
               scopes = scopes c,
               scopeIndex = scopeIndex c,
               symbols = symbols c ++ [[
@@ -156,7 +146,6 @@ compileFunc (s, c) = comp
 
 enterScope :: Compiler -> Compiler 
 enterScope c= Compiler{
-          constants = constants c,
           scopes = scopes c++ [BS.empty :: ByteString],
           scopeIndex = scopeIndex c+ 1, 
           symbols =  symbols c
@@ -165,7 +154,6 @@ enterScope c= Compiler{
 addToScope :: (Compiler, ByteString) -> Compiler 
 addToScope (c, b) = 
   Compiler{
-    constants = constants c,
     symbols = symbols c,
     scopes = (scopes c) & element (scopeIndex c) .~ (scopes c!!scopeIndex c<> b), 
     scopeIndex = scopeIndex c 
@@ -215,7 +203,6 @@ compileLet (s, c) = comp
       | otherwise = 
         addToLastSymbol(Symbol{symName = identifier(statementUni s), symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c) - 1)), symScope = getSymScope (scopeIndex c)},addToScope(compileExpression(expression s, Compiler{
           scopes = scopes c,
-          constants = constants c,
           scopeIndex = scopeIndex c,
           symbols = symbols c 
         }), lookupLetScope (scopeIndex c)<> chooseToUnroll(Prelude.length (symbols c!!(Prelude.length (symbols c ) - 1)))))
@@ -234,7 +221,6 @@ getScopeFromKey(s, c) = i
     i 
       | Prelude.length (symbols c) == 0 = error ("couldn't find: " ++ s ++ " c: " ++ show(c))
       |Prelude.null [x | x <- symbols c !!(Prelude.length (symbols c ) - 1), symName x == s] =  getScopeFromKey(s, Compiler{
-          constants = constants c,
           scopes = scopes c,
           scopeIndex = scopeIndex c, 
           symbols = pop (symbols c)
@@ -279,14 +265,12 @@ compileIf (bl, s, c) = comp
           expression = expression s
         }, 
         addJumpNT(compile(con (statementUni s), Compiler{
-            constants = constants c,
             scopes = [BS.empty :: ByteString],
             scopeIndex = 0,
             symbols = symbols c
           }
       ), c))
       | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
-          constants = constants c,
           scopes = [BS.empty :: ByteString],
           scopeIndex = 0,
           symbols = symbols c
@@ -296,7 +280,6 @@ compileIf (bl, s, c) = comp
 addJump :: (Compiler, Compiler) -> Compiler 
 addJump (c, old) = addToScope(
     Compiler{
-      constants = constants c,
       symbols = symbols c,
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
@@ -308,7 +291,6 @@ addJumpNT :: (Compiler, Compiler) -> Compiler
 addJumpNT (c, old) =
   addToScope(
     Compiler{
-      constants = constants c,
       symbols = symbols c,
       scopes = scopes old, 
       scopeIndex = scopeIndex old 
@@ -339,22 +321,20 @@ compileExpression (e,c) = comp
       | expressionType e == INTEXP = 
         addToScope(
           Compiler{
-              constants = Utils.append (constants c) IntObject{objectType = INT_OBJ, intValue = readIntFromString(e)},
               scopes = scopes c,
               scopeIndex = scopeIndex c,
               symbols = symbols c
             },
-          lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) 
+          lookupOpCode OPCONST <> chooseToUnroll(1) <> chooseToUnroll(BS.length(chooseToUnroll(readIntFromString e)))<> chooseToUnroll(readIntFromString e)
         ) 
       | expressionType e == STRINGEXP= 
         addToScope(
         Compiler{
-            constants = Utils.append (constants c) StringObject{objectType = STRING_OBJ, stringValue = literal (stringLiteral e)}, 
             scopes = scopes c,
             scopeIndex = scopeIndex c,
             symbols = symbols c
           },
-          lookupOpCode OPCONST <> chooseToUnroll(Prelude.length (constants c)) 
+          lookupOpCode OPCONST <> chooseToUnroll(0) <> chooseToUnroll(BS.length (convertStringToBytes(literal (stringLiteral e)))) <>convertStringToBytes(literal (stringLiteral e))
         ) 
       | expressionType e == GROUPEDEXP = compileExpression(groupedExpression e,c) 
       | expressionType e == BOOLEXP && typ (boolOperator e) /= LESS_T = addBoolInstruction(
@@ -485,7 +465,6 @@ addBoolInstruction (t, c) =
 
 parseStatementToCompiled :: [Statement] -> ByteString 
 parseStatementToCompiled s = Prelude.head (scopes (compile(s, Compiler{
-    constants = [],
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     symbols = [addPrebuilts]
@@ -493,7 +472,6 @@ parseStatementToCompiled s = Prelude.head (scopes (compile(s, Compiler{
 
 parseStatementToCompiler :: [Statement] -> Compiler 
 parseStatementToCompiler s = compile(s, Compiler{
-    constants = [],
     scopes = [BS.empty :: ByteString],
     scopeIndex = 0,
     symbols = [addPrebuilts]

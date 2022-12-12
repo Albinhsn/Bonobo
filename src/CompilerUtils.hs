@@ -115,7 +115,6 @@ disassemble (s,c)= str
 
 removeFromScope :: Compiler -> Compiler 
 removeFromScope c = Compiler{
-    constants = constants c,
     symbols = symbols c, 
     scopes = (scopes c) & element (scopeIndex c) .~ (removeFirstBS (scopes c!!scopeIndex c)),
     scopeIndex = scopeIndex c 
