@@ -87,7 +87,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =addOp (stack v),
+              stack =evalAddOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2,stack v)),
               outputs = outputs v
             })
     --Sub
@@ -97,7 +97,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =subOp (stack v),
+              stack =evalSubOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)) ,
               outputs = outputs v
             })
     --Mul
@@ -107,7 +107,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =mulOp (stack v),
+              stack =evalMulOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)) ,
               outputs = outputs v
             })
     --Div
@@ -117,7 +117,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =divOp (stack v),
+              stack =evalDivOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)),
               outputs = outputs v
             })
     --True
@@ -145,7 +145,7 @@ runVM v =
           frameIndex = frameIndex v,
           bpOffset = bpOffset v- 1,
           global = global v,
-          stack = gtOp (stack v),
+          stack = evalGTOp(Prelude.head (stack v), stack v !!1):(removeFirstN(2, stack v)),
           outputs = outputs v
         }
       ) 
@@ -156,7 +156,7 @@ runVM v =
           frameIndex = frameIndex v,
           bpOffset = bpOffset v- 1,
           global = global v, 
-          stack = neqOp (stack v),
+          stack = BoolObject{objectType = BOOL_OBJ, boolValue = Prelude.head (stack v) /= stack v !! 1}:(removeFirstN(2, stack v)),
           outputs = outputs v
         }) 
     --EQ
@@ -165,7 +165,7 @@ runVM v =
           frameIndex = frameIndex v,
           bpOffset = bpOffset v- 1,
           global = global v, 
-          stack = eqOp (stack v),
+          stack = BoolObject{objectType = BOOL_OBJ, boolValue = Prelude.head (stack v) == stack v !!1}:(removeFirstN(2, stack v)),
           outputs = outputs v
         }) 
     --MINUS
@@ -174,7 +174,7 @@ runVM v =
           frameIndex = frameIndex v,
           bpOffset = bpOffset v,
           global = global v, 
-          stack = minusOp (stack v),
+          stack = minusOp (Prelude.head (stack v)):removeFirst(stack v),
           outputs = outputs v
         }) 
     --BANG
@@ -183,10 +183,11 @@ runVM v =
           frameIndex = frameIndex v,
           bpOffset = bpOffset v,
           global = global v, 
-          stack = bangOp (stack v),
+          stack = bangOp (Prelude.head (stack v)):removeFirst(stack v),
           outputs = outputs v
         }) 
     -- JUMP
+    -- REWORK THIS 
     14 -> runVM(evalJump(v))
     -- JUMPNT
     15 -> runVM(evalJumpNT(v))
@@ -318,16 +319,6 @@ runVM v =
 
 getStart :: VM -> VM 
 getStart v =   
-  trace("getStart stack: " ++ concStack (stack (
-    runVM(VM{
-      frames = changeBP(1, frames v) ++ [(0,forStart(Prelude.head (stack v)))], 
-      frameIndex = frameIndex v + 1,
-      bpOffset = bpOffset v - 1, 
-      global = global v, 
-      stack = NullObject{objectType = NULL_OBJ}:stack v,
-      outputs = outputs v
-    })
-  )))
   runVM(VM{
     frames = changeBP(1, frames v) ++ [(0,forStart(Prelude.head (stack v)))], 
     frameIndex = frameIndex v + 1,
@@ -341,15 +332,6 @@ runFor :: VM -> VM
 runFor v = vm 
   where 
     vm
-      --for start 
-      -- initialize this var 
-      --for stop 
-      -- run this prior to running to see if you should run again
-      --for inc 
-      -- run this after every cycle 
-      --for bod 
-      -- run this :)
-        
       | Prelude.null (stack v) = error "null stack?"
       | objectType (Prelude.head (stack v)) /= FOR_OBJ = error ("not for :) " ++ concStack (stack v))
       -- | otherwise = error ("runFor " ++ concStack (stack (getStart v)))
@@ -361,7 +343,7 @@ runForEval v = b
   where 
     b 
       | boolValue (Prelude.head (stack (runVM(VM{
-          frames = frames v ++ [(0, forCon (stack v!!1))],
+          frames = Utils.append (frames v) (0, forCon (stack v!!1)),
           frameIndex = frameIndex v + 1,
           bpOffset = bpOffset v,
           global = global v,
@@ -371,14 +353,14 @@ runForEval v = b
           VM{
             frames = changeBP(-1, frames v),
             frameIndex = frameIndex v,
-            bpOffset = bpOffset v, -- WHAT SHOULD THIS BE?
+            bpOffset = bpOffset v,
             global = global v, 
             stack = removeFirstN(2, stack v),
             outputs = outputs v
           }  
       | otherwise =  
         runForEval(runInc(popLastFrame(runVM(VM{
-          frames = frames v ++ [(0, forBod(stack v !!1))],
+          frames = Utils.append (frames v) (0, forBod(stack v !!1)),
           frameIndex = frameIndex v + 1,
           bpOffset = bpOffset v,
           global = global v,
@@ -388,10 +370,8 @@ runForEval v = b
 
 runInc :: VM -> VM 
 runInc v = 
-  trace("runInc stack: " ++ concStack (stack v))
-  trace("runInc frames: " ++ show(frames v ++ [(0, forInc (stack v !! 1))]))
   popLastFrame(runVM(VM{
-    frames = frames v ++ [(0, forInc (stack v !! 1))],
+    frames = Utils.append (frames v) (0, forInc (stack v !! 1)),
     frameIndex = frameIndex v + 1,
     bpOffset = bpOffset v,
     global = global v,
@@ -465,6 +445,9 @@ concStack o = s
 
 setLocal :: VM -> VM 
 setLocal v = 
+  -- trace("setLocal: ")
+  -- trace("       stack prior: " ++ concStack(stack v))
+  -- trace("       stack after: " ++ concStack(removeFirst(stack v & element (getLocalEleIdx v) .~ stack v!!0)))
   VM{
     frames = removeFirstInstruction(removeFirstInstruction (frames v, frameIndex v), frameIndex v),
     frameIndex = frameIndex v,
@@ -486,6 +469,10 @@ getBasePointer v = fst(frames v !! frameIndex v)
 
 getLocalEleIdx :: VM -> Int 
 getLocalEleIdx v = 
+  -- trace("getLocalEleIdx: ")
+  -- trace("     getBasePointerIdx: " ++ show(getBasePointerIdx(getNInstruction(0,frames v, frameIndex v)-1, v) - 1 ))
+  -- trace("     bpOffset: " ++ show(bpOffset v))
+  -- trace("     getNInstruction: " ++ show(getNInstruction(1, frames v, frameIndex v)))
   getBasePointerIdx(getNInstruction(0,frames v, frameIndex v)-1, v) - 1 + 
   bpOffset v - 
   getNInstruction(1, frames v, frameIndex v) 
@@ -502,10 +489,15 @@ evalParams v = vm
   where 
     vm 
       | otherwise = 
+        -- trace("evalParams: ")
+        -- trace("     bpOffset: " ++ show(bpOffset v - numArgs(Prelude.head (stack v)) - 1))
+        -- trace("     newStack: " ++ show([NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v)))
+        -- trace("     frames: " ++ show(removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))]))
+        -- trace("     numLocals: " ++ show(numLocals (Prelude.head (stack v))))
         VM{ 
           frames = removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))], 
           frameIndex = frameIndex v + 1, 
-          bpOffset = bpOffset v - numArgs(Prelude.head (stack v)) - 1,
+          bpOffset = 0,
           global = global v,
           stack =[NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v),
           outputs = outputs v
@@ -519,6 +511,10 @@ evalCall v = vm
   where 
     vm 
       | otherwise = evalReturn(runVM(evalParams(v)))
+
+concGlobal :: [(Int, Object)] -> String 
+concGlobal o = concStack([snd x | x <- o])
+
 
 evalReturn :: VM -> VM 
 evalReturn v = vm 
@@ -534,12 +530,12 @@ evalReturn v = vm
           outputs = outputs v
         }
       | otherwise =
-        trace("evalReturn stack prior : " ++ concStack (stack v))
-        trace("evalReturn stack prior : " ++ show(stack v!!0))
-        trace("evalReturn getBPIDX: " ++ show(getBasePointerIdx(Prelude.length (frames v) -2, v)))
-        trace("evalReturn: " ++ concStack (stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
+        -- trace("evalReturn: ")
+        -- trace("       stack prior: " ++ concStack(stack v))
+        -- trace("       stack after: " ++ concStack(stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
+        -- trace("       globals: " ++ concGlobal(global v))
         VM{
-          frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, pop (frames v)),
+          frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v), pop (frames v)),
           frameIndex = frameIndex v - 1,
           bpOffset = 1,
           global = global v, 
@@ -660,8 +656,9 @@ evalSetGlobal v = vm
           outputs = outputs v
         } 
       | otherwise = 
-        trace("evalSetGlobal global: " ++ concStack ([snd x | x <- (getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)]]))
-        trace("evalSetGlobal stack: " ++ concStack(removeFirst(stack v))) 
+        -- trace("setGlobal: ")
+        -- trace("     stack prior: " ++ concStack (stack v))
+        -- trace("     global after: " ++ concGlobal((getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)]))
         VM{
           frames = removeFirstInstruction (frames v, frameIndex v), 
           frameIndex = frameIndex v,
@@ -709,91 +706,58 @@ evalJumpNT v = vm
           }
 
 
-bangOp :: [Object] -> [Object]
+bangOp :: Object -> Object
 bangOp s= o 
   where 
     o
-      | objectType (Prelude.head s) /= BOOL_OBJ = error ("can't have bang prefix on non bool: " ++ (inspectObject (Prelude.head s)))
-      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = not (boolValue (Prelude.head s))}:(removeFirst s)
+      | objectType s /= BOOL_OBJ = error ("can't have bang prefix on non bool: " ++ (inspectObject s))
+      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = not (boolValue s)}
 
-minusOp :: [Object] -> [Object]
-minusOp s= o 
+minusOp :: Object -> Object
+minusOp s = o 
   where 
     o
-      | objectType (Prelude.head s) /= INT_OBJ = error ("can't have minus prefix on non integer: " ++ (inspectObject (Prelude.head s)))
-      | otherwise = IntObject{objectType = INT_OBJ, intValue = -1 * intValue (Prelude.head s)}:(removeFirst s)
-
-eqOp :: [Object] -> [Object]
-eqOp o = BoolObject{objectType = BOOL_OBJ, boolValue = o!!0 == o!!1}:(removeFirst(removeFirst o))
-
-neqOp :: [Object] -> [Object]
-neqOp o = BoolObject{objectType = BOOL_OBJ, boolValue = o!!0 /= o!!1}:(removeFirst(removeFirst o))
-
-
-gtOp :: [Object] -> [Object]
-gtOp o =
-  evalGTOp(o!!0, o!!1):(removeFirst(removeFirst o))
+      | objectType s /= INT_OBJ = error ("can't have minus prefix on non integer: " ++ (inspectObject s))
+      | otherwise = IntObject{objectType = INT_OBJ, intValue = -1 * intValue s}
 
 evalGTOp :: (Object, Object) -> Object 
 evalGTOp (o1, o2) = o
   where 
     o
       | objectType o1 /= INT_OBJ || objectType o2 /= INT_OBJ = error ("can't do greater then operation on non ints: " ++ inspectObject(o1)++ " " ++ inspectObject(o2))
-      | otherwise = 
-        BoolObject{objectType = BOOL_OBJ, boolValue = intValue o1 < intValue o2}
-
-addOp :: [Object] -> [Object]
-addOp o =
-  evalAddOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
+      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = intValue o1 < intValue o2}
 
 evalAddOp:: (Object, Object) -> Object 
 evalAddOp(o1, o2) = o 
   where 
     o
-      | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o2 + intValue o1}
+      | objectType o1 == INT_OBJ && objectType o2 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o2 + intValue o1}
       | objectType o1 == STRING_OBJ = StringObject{objectType = STRING_OBJ, stringValue = stringValue o2 ++ stringValue o1}
       | otherwise = error ("can't do operation with types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-
-subOp :: [Object] -> [Object]
-subOp o =evalSubOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
 
 evalSubOp :: (Object, Object) -> Object 
 evalSubOp (o1, o2) = o 
   where 
     o
-      | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 == INT_OBJ = IntObject{objectType = INT_OBJ, intValue = intValue o2 - intValue o1}
+      | objectType o1 == INT_OBJ && objectType o2 == INT_OBJ = 
+        -- trace("evalSubOp: ")
+        -- trace("     newVal: " ++ show(intValue o2 - intValue o1))
+        IntObject{objectType = INT_OBJ, intValue = intValue o2 - intValue o1}
       | otherwise = error ("can't sub with non int type: " ++ (show (objectType o1))) 
-
-divOp :: [Object] -> [Object]
-divOp o = evalDivOp(o!!0, o!!1):(removeFirst (removeFirst o))
 
 evalDivOp :: (Object, Object) -> Object 
 evalDivOp (o1, o2) = o 
   where 
     o
-      | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o2 `div` intValue o1}
+      | objectType o1 == INT_OBJ && objectType o2 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o2 `div` intValue o1}
       | otherwise = error ("can't div with non int type: " ++ (show (objectType o1)))  
-
-mulOp :: [Object] -> [Object]
-mulOp o =
-  trace("mulOp prior: " ++ concStack(
-    o
-  ))
-  trace("mulOp after: " ++ concStack(
-    evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
-  ))
-  evalMulOp(o!!0, o!!1):(removeFirst (removeFirst o)) 
 
 evalMulOp :: (Object, Object) -> Object 
 evalMulOp (o1, o2) = o 
   where 
     o
-      | objectType o1 /= objectType o2 = error ("can't do operation with different types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
-      | objectType o1 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o1 * intValue o2}
-      | otherwise = error ("can't mul with non int type: " ++ (show (objectType o1))) 
+      | objectType o1 == INT_OBJ && objectType o2 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o1 * intValue o2}
+      | otherwise = error ("can't mul with non int type: " ++ (show (objectType o1)) ++ " and " ++ (show (objectType o2))) 
 
 pushToStack :: VM -> VM 
 pushToStack v = vm

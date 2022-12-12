@@ -9,50 +9,18 @@ import Code
 import Object
 
 import Data.ByteString as BS
-
+import Data.ByteString.UTF8 as BSU
 
 
 main = do
-  -- let x = "let d = 0; fn power(a){return a * a; }; for(i = 3; i < 6; i = i + 2;){d = d + power(i);}; print(d);"
-  -- let x = "let d = 0; fn power(a){return a * a; }; fn add(){d = power(2);}; add(); print(d);"
-  let x = "let d = 5;"
-  let s = parseStringToStatements(x) 
-  -- print s
-  let c = statementsToString(s)
-  print c
-  let a = parseStatementToCompiled s 
-  -- print a
-  let k = idk([], a) 
-  let d = parseStatementToCompiler s 
-  -- print d
-  print (disassemble("", d))
-  -- let f = runVM(VM{
-  --         frames = [(0, a)],
-  --         frameIndex = 0,
-  --         bpOffset = 0, 
-  --         global = [],
-  --         stack = [],
-  --         outputs =[]})
-  -- print f
-  let r = run a
-  mapM_ print r
--- import System.Environment 
--- import Data.ByteString.UTF8 as BSU 
-  -- args <- getArgs 
-  -- -- print f 
-  -- x <- readFile (args!!0)
-  -- let s = parseStringToStatements(s)
-  -- -- print s
-  -- let dis = (args!!1) == "--dis" 
-  -- print c
+  -- let x = "let five = 5; fn add(a){return a + five;}; for(i = 0; i < 100000; i = i + 1;){five = add(i);}; print(five);" 
+  -- let s = parseStringToStatements(x) 
+  -- print (statementsToString s)
   -- let a = parseStatementToCompiled s 
-  -- writeFile "a.out" (BSU.toString(scopes a !! 0))
+  -- BS.writeFile "a.out" a
+  b <- BS.readFile "a.out"
+  -- let z = b == a 
+  -- print z
   -- print a
-  -- print ("Symbols: " ++ show(symbols a)) 
-  -- print (disassemble ("", a))
-  -- -- y <- readFile "a.out"
-  -- -- let r = run (BSU.fromString (scopes a !! 0)) 
-  -- let r = run (scopes a !! 0) 
-  -- mapM_ print r
-  -- mapM_ print r
-  -- putStrLn "" 
+  let r = run b 
+  mapM_ print r

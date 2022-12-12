@@ -1644,6 +1644,7 @@ addEleToArray e = ex
       | expressionType e == CALLEXP && checkNestedListCall e== False = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (callParams e) Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}} 
       | expressionType e == CALLEXP = CallExpression{closedExp = False, expLine = expLine e,expressionType = CALLEXP,  callIdent = callIdent e, callParams = append (pop (callParams e)) (addEleToArray(last (callParams e)))} 
       | expressionType e == BOOLEXP = BoolExpression{closedExp = False, expLine = expLine e, expressionType = BOOLEXP, leftBool = leftBool e, boolOperator = boolOperator e, rightBool = addEleToArray(rightBool e)}
+      | expressionType e == OPERATOREXP = OperatorExpression{closedExp = False, expLine = expLine e, expressionType = OPERATOREXP, leftOperator = leftOperator e, operator = operator e, rightOperator = addEleToArray(rightOperator e)}
       | otherwise = error ("addEleToArray " ++ expressionToString e)
 
 
