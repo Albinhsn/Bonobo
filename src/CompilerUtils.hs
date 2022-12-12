@@ -134,12 +134,6 @@ removeFirstBS b =
     1 -> BS.empty :: ByteString 
     _ -> pack(removeFirst(unpack b))
 
-removeNInstructions :: (Int, [(Int, ByteString)], Int) -> [(Int, ByteString)]
-removeNInstructions (i, b, idx) = bs 
-  where 
-    bs 
-      | i == 0 = b 
-      | otherwise = removeNInstructions(i-1, removeFirstInstruction (b, idx), idx)
 
 removeFirstInstruction :: ([(Int, ByteString)], Int)-> [(Int, ByteString)]
 removeFirstInstruction (b,i) = 
