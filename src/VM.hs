@@ -87,7 +87,7 @@ runVM v =
               frameIndex = frameIndex v,
               bpOffset = bpOffset v- 1,
               global = global v,
-              stack =evalAddOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2,stack v)),
+              stack =evalAddOp(Prelude.head (stack v), stack v!!1):removeFirstN(2, stack v),
               outputs = outputs v
             })
     --Sub
@@ -306,14 +306,14 @@ runVM v =
           outputs = outputs v
         }))
     30 -> 
-      runVM(runFor(VM{
+      runVM(runForEval(popLastFrame(getStart(VM{
           frames = removeFirstInstruction(frames v, frameIndex v), 
           frameIndex = frameIndex v, 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
           outputs = outputs v
-      }))
+      }))))
     _ -> error "run"
 
 
@@ -328,14 +328,6 @@ getStart v =
     outputs = outputs v
   })
 
-runFor :: VM -> VM 
-runFor v = vm 
-  where 
-    vm
-      | Prelude.null (stack v) = error "null stack?"
-      | objectType (Prelude.head (stack v)) /= FOR_OBJ = error ("not for :) " ++ concStack (stack v))
-      -- | otherwise = error ("runFor " ++ concStack (stack (getStart v)))
-      | otherwise = runForEval(popLastFrame(getStart v))
 
 
 runForEval :: VM -> VM 
@@ -343,9 +335,9 @@ runForEval v = b
   where 
     b 
       | boolValue (Prelude.head (stack (runVM(VM{
-          frames = Utils.append (frames v) (0, forCon (stack v!!1)),
-          frameIndex = frameIndex v + 1,
-          bpOffset = bpOffset v,
+          frames = [(0, forCon (stack v!!1))],
+          frameIndex = 0,
+          bpOffset = bpOffset v + 1,
           global = global v,
           stack = stack v,
           outputs = outputs v
@@ -725,15 +717,16 @@ evalGTOp (o1, o2) = o
   where 
     o
       | objectType o1 /= INT_OBJ || objectType o2 /= INT_OBJ = error ("can't do greater then operation on non ints: " ++ inspectObject(o1)++ " " ++ inspectObject(o2))
-      | otherwise = BoolObject{objectType = BOOL_OBJ, boolValue = intValue o1 < intValue o2}
+      | otherwise = 
+        -- trace("o1: " ++ show(intValue o1) ++ " o2:" ++ show(intValue o2))
+        BoolObject{objectType = BOOL_OBJ, boolValue = intValue o1 < intValue o2}
 
 evalAddOp:: (Object, Object) -> Object 
-evalAddOp(o1, o2) = o 
-  where 
-    o
-      | objectType o1 == INT_OBJ && objectType o2 == INT_OBJ =  IntObject{objectType = INT_OBJ, intValue = intValue o2 + intValue o1}
-      | objectType o1 == STRING_OBJ = StringObject{objectType = STRING_OBJ, stringValue = stringValue o2 ++ stringValue o1}
-      | otherwise = error ("can't do operation with types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
+evalAddOp(o1, o2) =   
+  case (objectType o1, objectType o2) of 
+    (INT_OBJ, INT_OBJ) ->IntObject{objectType = INT_OBJ, intValue = intValue o2 + intValue o1} 
+    (STRING_OBJ, STRING_OBJ ) -> StringObject{objectType = STRING_OBJ, stringValue = stringValue o2 ++ stringValue o1}
+    _ -> error ("can't do operation with types: " ++ inspectObject(o1) ++ " " ++ inspectObject(o2))
 
 evalSubOp :: (Object, Object) -> Object 
 evalSubOp (o1, o2) = o 
