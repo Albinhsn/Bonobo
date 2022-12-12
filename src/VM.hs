@@ -20,7 +20,6 @@ run b =
   outputs(runVM(
     VM{
         frames = [(0, b)],
-        frameIndex = 0,
         bpOffset = 0, 
         global = [],
         stack = [],
@@ -31,7 +30,6 @@ run b =
 runTest :: ByteString -> VM 
 runTest b = runVM(VM{
         frames = [(0, b)],
-        frameIndex = 0,
         bpOffset = 0, 
         global = [],
         stack = [],
@@ -41,7 +39,6 @@ runTest b = runVM(VM{
 
 data VM = VM{
     frames :: ![(Int,ByteString)],
-    frameIndex :: !Int, 
     bpOffset :: !Int, 
     global :: ![(Int, Object)],
     stack :: ![Object],
@@ -57,15 +54,14 @@ getFirstInstruction  f = i
 
 runVM :: VM -> VM
 runVM v = 
-  case getFirstInstruction(frames v !! frameIndex v) of 
+  case getFirstInstruction(Prelude.last (frames v)) of 
     -- NULL 
     -1 -> 
       v 
     --Constant
     0 -> 
       runVM(pushToStack(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v + 1,
           global = global v, 
           stack = stack v,
@@ -73,8 +69,7 @@ runVM v =
         }))
     --Pop
     1 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v - 1,
           global = global v, 
           stack = removeFirst (stack v),
@@ -83,8 +78,7 @@ runVM v =
     --ADD
     2 ->  
       runVM(VM{
-              frames = removeFirstInstruction (frames v, frameIndex v),
-              frameIndex = frameIndex v,
+              frames = removeFirstInstruction (frames v),
               bpOffset = bpOffset v- 1,
               global = global v,
               stack =evalAddOp(Prelude.head (stack v), stack v!!1):removeFirstN(2, stack v),
@@ -93,8 +87,7 @@ runVM v =
     --Sub
     3 ->  
         runVM(VM{
-              frames = removeFirstInstruction (frames v, frameIndex v),
-              frameIndex = frameIndex v,
+              frames = removeFirstInstruction (frames v),
               bpOffset = bpOffset v- 1,
               global = global v,
               stack =evalSubOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)) ,
@@ -103,8 +96,7 @@ runVM v =
     --Mul
     4 -> 
       runVM(VM{
-              frames = removeFirstInstruction (frames v, frameIndex v),
-              frameIndex = frameIndex v,
+              frames = removeFirstInstruction (frames v),
               bpOffset = bpOffset v- 1,
               global = global v,
               stack =evalMulOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)) ,
@@ -113,8 +105,7 @@ runVM v =
     --Div
     5 -> 
       runVM(VM{
-              frames = removeFirstInstruction (frames v, frameIndex v),
-              frameIndex = frameIndex v,
+              frames = removeFirstInstruction (frames v),
               bpOffset = bpOffset v- 1,
               global = global v,
               stack =evalDivOp(Prelude.head (stack v), stack v!!1):(removeFirstN(2, stack v)),
@@ -122,8 +113,7 @@ runVM v =
             })
     --True
     6 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v+ 1,
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = True}:(stack v),
@@ -132,8 +122,7 @@ runVM v =
       )
     --False 
     7 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v+ 1,
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = False}:(stack v),
@@ -141,8 +130,7 @@ runVM v =
         })
     --GT 
     8 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v- 1,
           global = global v,
           stack = evalGTOp(Prelude.head (stack v), stack v !!1):(removeFirstN(2, stack v)),
@@ -152,8 +140,7 @@ runVM v =
     --NEQ 
     10 -> 
       runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v- 1,
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = Prelude.head (stack v) /= stack v !! 1}:(removeFirstN(2, stack v)),
@@ -161,8 +148,7 @@ runVM v =
         }) 
     --EQ
     11 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v- 1,
           global = global v, 
           stack = BoolObject{objectType = BOOL_OBJ, boolValue = Prelude.head (stack v) == stack v !!1}:(removeFirstN(2, stack v)),
@@ -170,8 +156,7 @@ runVM v =
         }) 
     --MINUS
     12 -> runVM(VM{
-          frames = removeFirstInstruction (frames v,frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v, 
           stack = minusOp (Prelude.head (stack v)):removeFirst(stack v),
@@ -179,8 +164,7 @@ runVM v =
         }) 
     --BANG
     13 -> runVM(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v, 
           stack = bangOp (Prelude.head (stack v)):removeFirst(stack v),
@@ -194,8 +178,7 @@ runVM v =
     -- SETGLOBAL
     16 -> 
       runVM(evalSetGlobal(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -204,8 +187,7 @@ runVM v =
     -- GETGLOBAL
     17 -> 
       runVM(evalGetGlobal(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -213,16 +195,14 @@ runVM v =
         }))  
       -- ARRAY
     18 -> runVM(addArray (VM{
-            frames = removeFirstInstruction (frames v, frameIndex v),
-            frameIndex = frameIndex v,
+            frames = removeFirstInstruction (frames v),
             bpOffset = bpOffset v,
             global = global v,
             stack = stack v,
             outputs = outputs v
           }))  
     20 -> runVM(addMap (VM{
-          frames = removeFirstInstruction (frames v,frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -230,8 +210,7 @@ runVM v =
         })) 
     -- INDEX
     22 -> runVM(addIndexToStack(VM{
-          frames = removeFirstInstruction (frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -239,8 +218,7 @@ runVM v =
         }))
     -- SETINDEX
     23 -> runVM(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v - 2,
           global = global v,
           stack = evalAssignIndex(
@@ -253,8 +231,7 @@ runVM v =
     -- OPCALL 
     24 ->   
         runVM(evalCall(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -264,7 +241,6 @@ runVM v =
     25 -> 
          VM{
           frames = frames v, 
-          frameIndex = frameIndex v, 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -272,8 +248,7 @@ runVM v =
         }
     -- OPRETURN 
     26 -> VM{
-          frames = removeFirstInstruction(frames v,  frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = NullObject{objectType = NULL_OBJ}:stack v, 
@@ -281,8 +256,7 @@ runVM v =
         } 
     -- SETLOCAL
     27 -> runVM(setLocal(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
@@ -290,16 +264,14 @@ runVM v =
         })) 
     -- GETLOCAL
     28 -> runVM(getLocal(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
           outputs = outputs v
         }))
     29 -> runVM(runPrebuilt(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
@@ -307,8 +279,7 @@ runVM v =
         }))
     30 -> 
       runVM(runForEval(popLastFrame(getStart(VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
@@ -320,8 +291,7 @@ runVM v =
 getStart :: VM -> VM 
 getStart v =   
   runVM(VM{
-    frames = changeBP(1, frames v) ++ [(0,forStart(Prelude.head (stack v)))], 
-    frameIndex = frameIndex v + 1,
+    frames = Utils.append (changeBP(1, frames v)) (0,forStart(Prelude.head (stack v))), 
     bpOffset = bpOffset v - 1, 
     global = global v, 
     stack = NullObject{objectType = NULL_OBJ}:stack v,
@@ -335,16 +305,14 @@ runForEval v = b
   where 
     b 
       | boolValue (Prelude.head (stack (runVM(VM{
-          frames = [(0, forCon (stack v!!1))],
-          frameIndex = 0,
-          bpOffset = bpOffset v + 1,
+          frames = Utils.append (frames v) (0, forCon (stack v!!1)),
+          bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
           outputs = outputs v
         })))) == False = 
           VM{
             frames = changeBP(-1, frames v),
-            frameIndex = frameIndex v,
             bpOffset = bpOffset v,
             global = global v, 
             stack = removeFirstN(2, stack v),
@@ -353,7 +321,6 @@ runForEval v = b
       | otherwise =  
         runForEval(runInc(popLastFrame(runVM(VM{
           frames = Utils.append (frames v) (0, forBod(stack v !!1)),
-          frameIndex = frameIndex v + 1,
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v,
@@ -364,7 +331,6 @@ runInc :: VM -> VM
 runInc v = 
   popLastFrame(runVM(VM{
     frames = Utils.append (frames v) (0, forInc (stack v !! 1)),
-    frameIndex = frameIndex v + 1,
     bpOffset = bpOffset v,
     global = global v,
     stack = stack v,
@@ -375,7 +341,6 @@ popLastFrame :: VM -> VM
 popLastFrame v = 
   VM{
     frames = pop (frames v),
-    frameIndex = frameIndex v - 1,
     bpOffset = bpOffset v, 
     global = global v,
     stack = stack v, 
@@ -388,9 +353,8 @@ runPrebuilt v = vm
   where 
     vm 
     --len
-      | getFirstInstruction(frames v !! frameIndex v) == 0 = VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+      | getFirstInstruction(Prelude.last (frames v)) == 0 = VM{
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = IntObject{objectType = INT_OBJ, intValue = getObjectLen(Prelude.head (stack v))}:removeFirst(stack v),
@@ -398,30 +362,27 @@ runPrebuilt v = vm
 
         } 
       --print
-      | getFirstInstruction(frames v !! frameIndex v) == 1 = VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+      | getFirstInstruction(Prelude.last (frames v)) == 1 = VM{
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v - 1,
           global = global v,
           stack = removeFirst(stack v),
           outputs = outputs v ++ [inspectObject(Prelude.head (stack v))]
         } 
       -- append
-      | getFirstInstruction(frames v !! frameIndex v) == 2 = VM{
-          frames = removeFirstInstruction(frames v, frameIndex v), 
-          frameIndex = frameIndex v, 
+      | getFirstInstruction(Prelude.last (frames v)) == 2 = VM{
+          frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v - 1,
           global = global v,
           stack = ArrayObject{objectType = ARRAY_OBJ, arrValue = arrValue (stack v !!1)++ [Prelude.head (stack v)]}:removeFirstN(2, stack v),
           outputs = outputs v
         } 
-      | otherwise = error ("not implemented prebuilt" ++ show (getFirstInstruction(frames v !! frameIndex v)))
+      | otherwise = error ("not implemented prebuilt" ++ show (getFirstInstruction(Prelude.last (frames v))))
 
 getLocal :: VM -> VM 
 getLocal v =  
   VM{
-    frames = removeFirstInstruction(removeFirstInstruction (frames v, frameIndex v), frameIndex v),
-    frameIndex = frameIndex v,
+    frames = removeFirstInstruction(removeFirstInstruction (frames v)),
     bpOffset = bpOffset v+ 1,
     global = global v,
     stack = stack v!!(getLocalEleIdx v) :stack v,
@@ -441,36 +402,22 @@ setLocal v =
   -- trace("       stack prior: " ++ concStack(stack v))
   -- trace("       stack after: " ++ concStack(removeFirst(stack v & element (getLocalEleIdx v) .~ stack v!!0)))
   VM{
-    frames = removeFirstInstruction(removeFirstInstruction (frames v, frameIndex v), frameIndex v),
-    frameIndex = frameIndex v,
+    frames = removeFirstInstruction(removeFirstInstruction (frames v)),
     bpOffset = bpOffset v- 1,
     global = global v,
     stack = removeFirst(stack v & element (getLocalEleIdx v) .~ stack v!!0),
     outputs = outputs v
   }
 
-getNInstruction :: (Int, [(Int, ByteString)], Int) -> Int 
-getNInstruction (i, f, idx) = 
-  fromIntegral(BS.index(snd(f!!idx)) i)
-
-errorStack :: VM -> VM 
-errorStack v = error ("FirstInstruct: " ++ (show (getFirstInstruction (frames v !! frameIndex v))) ++  " Stack: " ++ Prelude.concat [inspectObject x ++  " " | x <- stack v])
-
-getBasePointer :: VM -> Int 
-getBasePointer v = fst(frames v !! frameIndex v)
+getNInstruction :: (Int, [(Int, ByteString)]) -> Int 
+getNInstruction (i, f) = 
+  fromIntegral(BS.index(snd(Prelude.last f)) i)
 
 getLocalEleIdx :: VM -> Int 
 getLocalEleIdx v = 
-  -- trace("getLocalEleIdx: ")
-  -- trace("     getBasePointerIdx: " ++ show(getBasePointerIdx(getNInstruction(0,frames v, frameIndex v)-1, v) - 1 ))
-  -- trace("     bpOffset: " ++ show(bpOffset v))
-  -- trace("     getNInstruction: " ++ show(getNInstruction(1, frames v, frameIndex v)))
-  getBasePointerIdx(getNInstruction(0,frames v, frameIndex v)-1, v) - 1 + 
+  getBasePointerIdx(getNInstruction(0,frames v)-1, v) - 1 + 
   bpOffset v - 
-  getNInstruction(1, frames v, frameIndex v) 
-
-getPrevBP :: VM -> Int 
-getPrevBP v = fst(frames v!!(frameIndex v - 1 )) 
+  getNInstruction(1, frames v) 
 
 
 getBasePointerIdx :: (Int,VM) -> Int 
@@ -481,14 +428,8 @@ evalParams v = vm
   where 
     vm 
       | otherwise = 
-        -- trace("evalParams: ")
-        -- trace("     bpOffset: " ++ show(bpOffset v - numArgs(Prelude.head (stack v)) - 1))
-        -- trace("     newStack: " ++ show([NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v)))
-        -- trace("     frames: " ++ show(removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))]))
-        -- trace("     numLocals: " ++ show(numLocals (Prelude.head (stack v))))
         VM{ 
-          frames = removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v), frameIndex v) ++ [(0,funcValue (Prelude.head (stack v)))], 
-          frameIndex = frameIndex v + 1, 
+          frames = removeFirstInstruction(changeBP(numLocals (Prelude.head (stack v)), frames v)) ++ [(0,funcValue (Prelude.head (stack v)))], 
           bpOffset = 0,
           global = global v,
           stack =[NullObject{objectType = NULL_OBJ} | x <- [1 .. (numLocals (Prelude.head (stack v)) - numArgs(Prelude.head (stack v)))]] ++ removeFirst(stack v),
@@ -515,7 +456,6 @@ evalReturn v = vm
       | objectType (Prelude.head (stack v)) == NULL_OBJ = 
         VM{
           frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v), pop (frames v)),
-          frameIndex = frameIndex v - 1,
           bpOffset = 0,
           global = global v, 
           stack = removeFirstN( 1 + getBasePointerIdx(Prelude.length (frames v) -2, v), stack v),
@@ -528,7 +468,6 @@ evalReturn v = vm
         -- trace("       globals: " ++ concGlobal(global v))
         VM{
           frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v), pop (frames v)),
-          frameIndex = frameIndex v - 1,
           bpOffset = 1,
           global = global v, 
           stack =stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v), 
@@ -555,7 +494,6 @@ addIndexToStack :: VM -> VM
 addIndexToStack v = 
       VM{
           frames = frames v, 
-          frameIndex = frameIndex v,
           bpOffset = bpOffset v - 1,
           global = global v, 
           stack = (evalIndex (stack v!!0, stack v!!1)):(removeFirst(removeFirst (stack v))),
@@ -602,11 +540,10 @@ evalArrayIndex (idx, arr) = val
 
 addMap :: VM -> VM 
 addMap v = VM{
-    frames = removeFirstInstruction(frames v, frameIndex v), 
-    frameIndex = frameIndex v,
-    bpOffset = bpOffset v - fromIntegral(BS.head (snd(frames v !! frameIndex v))) + 1,
+    frames = removeFirstInstruction(frames v), 
+    bpOffset = bpOffset v - fromIntegral(BS.head (snd(Prelude.last (frames v)))) + 1,
     global = global v,
-    stack = MapObject{objectType = MAP_OBJ, mapValue = generateMap(getFirstN(fromIntegral(BS.head(snd(frames v !!frameIndex v))),stack v, []))}:removeFirstN(fromIntegral (BS.head (snd(frames v !!frameIndex v))), stack v), 
+    stack = MapObject{objectType = MAP_OBJ, mapValue = generateMap(getFirstN(fromIntegral(BS.head(snd(Prelude.last (frames v)))),stack v, []))}:removeFirstN(fromIntegral (BS.head (snd(Prelude.last (frames v)))), stack v), 
     outputs = outputs v
   } 
 generateMap :: [Object] -> [(Object, Object)]
@@ -615,22 +552,20 @@ generateMap (k:v:t) = (k, v): generateMap t
 
 addArray :: VM -> VM 
 addArray v = VM{
-    frames = removeFirstInstruction(frames v, frameIndex v),
-    frameIndex = frameIndex v, 
-    bpOffset = bpOffset v - fromIntegral(BS.head (snd(frames v !! frameIndex v))) + 1,
+    frames = removeFirstInstruction(frames v),
+    bpOffset = bpOffset v - fromIntegral(BS.head (snd(Prelude.last (frames v)))) + 1,
     global = global v, 
-    stack = ArrayObject{objectType = ARRAY_OBJ, arrValue = getFirstN(fromIntegral(BS.head (snd(frames v !! frameIndex v))), stack v, [])}:removeFirstN(fromIntegral(BS.head (snd(frames v !!frameIndex v))),stack v),
+    stack = ArrayObject{objectType = ARRAY_OBJ, arrValue = getFirstN(fromIntegral(BS.head (snd(Prelude.last (frames v)))), stack v, [])}:removeFirstN(fromIntegral(BS.head (snd(Prelude.last (frames v)))),stack v),
     outputs = outputs v
   } 
 
 evalGetGlobal :: VM ->  VM 
 evalGetGlobal v = 
   VM{
-    frames = removeFirstInstruction(frames v, frameIndex v),
-    frameIndex = frameIndex v,
+    frames = removeFirstInstruction(frames v),
     bpOffset = bpOffset v + 1,
     global = global v, 
-    stack = fromList (global v) ! (getFirstInstruction (frames v !! frameIndex v)):(stack v), 
+    stack = fromList (global v) ! (getFirstInstruction (Prelude.last (frames v))):(stack v), 
     outputs = outputs v
   }
 
@@ -639,23 +574,18 @@ evalSetGlobal v = vm
   where 
     vm 
       | Prelude.null (stack v) = error "can't set null"
-      | member (getFirstInstruction (frames v !! frameIndex v)) (fromList (global v)) == False = VM{
-          frames = removeFirstInstruction (frames v, frameIndex v), 
-          frameIndex = frameIndex v,
+      | member (getFirstInstruction (Prelude.last (frames v))) (fromList (global v)) == False = VM{
+          frames = removeFirstInstruction (frames v), 
           bpOffset = bpOffset v - 1,
-          global = global v ++ [(getFirstInstruction (frames v !!frameIndex v),(Prelude.head (stack v)))], 
+          global = global v ++ [(getFirstInstruction (Prelude.last (frames v)),(Prelude.head (stack v)))], 
           stack = removeFirst (stack v),
           outputs = outputs v
         } 
       | otherwise = 
-        -- trace("setGlobal: ")
-        -- trace("     stack prior: " ++ concStack (stack v))
-        -- trace("     global after: " ++ concGlobal((getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)]))
         VM{
-          frames = removeFirstInstruction (frames v, frameIndex v), 
-          frameIndex = frameIndex v,
+          frames = removeFirstInstruction (frames v), 
           bpOffset = bpOffset v - 1,
-          global = (getFirstInstruction(frames v !! frameIndex v), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(frames v !! frameIndex v)],
+          global = (getFirstInstruction(Prelude.last (frames v)), Prelude.head (stack v)):[x | x <- global v, fst x /= getFirstInstruction(Prelude.last (frames v))],
           stack = removeFirst (stack v),
           outputs = outputs v
         }
@@ -663,8 +593,7 @@ evalSetGlobal v = vm
 
 evalJump :: VM -> VM 
 evalJump v = VM{
-    frames = removeNInstructions (fromIntegral (toInteger (BS.index (snd (frames v !!frameIndex v)) 1)) :: Int, frames v, frameIndex v),
-    frameIndex = frameIndex v,
+    frames = removeNInstructions (fromIntegral (toInteger (BS.index (snd (Prelude.last (frames v))) 1)) :: Int, frames v),
     bpOffset = bpOffset v,
     global = global v,
     stack = stack v,
@@ -679,8 +608,7 @@ evalJumpNT v = vm
       | objectType (Prelude.head (stack v)) /= BOOL_OBJ = error ("jump not bool"++ Prelude.concat [inspectObject x ++ " "| x <- stack v]) 
       | boolValue (Prelude.head (stack v)) == True = 
         VM{
-            frames = removeNInstructions(2, frames v, frameIndex v),
-            frameIndex = frameIndex v,
+            frames = removeNInstructions(2, frames v),
             bpOffset = bpOffset v - 1,
             global = global v,
             stack = removeFirst (stack v),
@@ -689,8 +617,7 @@ evalJumpNT v = vm
       -- Should jump 
       | otherwise = 
         VM{
-            frames = removeNInstructions (fromIntegral (BS.index (snd (frames v !! frameIndex v)) 1), frames v, frameIndex v),
-            frameIndex = frameIndex v,
+            frames = removeNInstructions (fromIntegral (BS.index (snd (Prelude.last(frames v))) 1), frames v),
             bpOffset = bpOffset v - 1,
             global = global v,
             stack = removeFirst (stack v),
@@ -756,98 +683,94 @@ pushToStack :: VM -> VM
 pushToStack v = vm
   where 
     vm 
-      | getFirstInstruction(frames v !! frameIndex v) == 1 = 
+      | getFirstInstruction(Prelude.last (frames v)) == 1 = 
         VM{
-          frames = removeNInstructions(2 + (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1)), frames v, frameIndex v),
-          frameIndex = frameIndex v,
+          frames = removeNInstructions(2 + (fromIntegral(BS.index (snd(Prelude.last (frames v))) 1)), frames v),
           bpOffset = bpOffset v, 
           global = global v, 
           stack = parseInt(bsToInt(
           getFirstNInstructions(
-              fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1),
+              fromIntegral(BS.index (snd(Prelude.last (frames v))) 1),
               BS.empty :: ByteString,
-              (0,snd((removeNInstructions(2, frames v, frameIndex v)) !! frameIndex v)))))
+              (0,snd((removeNInstructions(2, frames v))!!(Prelude.length (frames v) - 1))))))
           :stack v,
           outputs = outputs v
         } 
-      | getFirstInstruction(frames v !! frameIndex v) == 0 = VM{
-          frames = removeNInstructions(2 + (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1)), frames v, frameIndex v),
-          frameIndex = frameIndex v,
+      | getFirstInstruction(Prelude.last (frames v)) == 0 = VM{
+          frames = removeNInstructions(2 + (fromIntegral(BS.index (snd(Prelude.last (frames v))) 1)), frames v),
           bpOffset = bpOffset v, 
           global = global v, 
           stack = VM.parseString(convertBytesToString(
           getFirstNInstructions(
-              fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1),
+              fromIntegral(BS.index (snd(Prelude.last (frames v))) 1),
               BS.empty :: ByteString,
-              (0,snd((removeNInstructions(2, frames v, frameIndex v)) !! frameIndex v)))))
+              (0,snd((removeNInstructions(2, frames v)) !!(Prelude.length (frames v ) - 1))))))
           :stack v,
           outputs = outputs v
         } 
-      | getFirstInstruction (frames v !! frameIndex v) == 2 = 
+      | getFirstInstruction (Prelude.last (frames v)) == 2 = 
         VM{
           frames = removeNInstructions(
             -- for + start + stop + inc + body 
             5 +  
             -- start
-            fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1) + 
+            fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + 
             -- stop
-            fromIntegral(BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))) +  
+            fromIntegral(BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))) +  
             -- inc 
-            fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))))) + 
+            fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))))) + 
             -- body
-            fromIntegral (BS.index (snd(frames v !! frameIndex v)) (4 + fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1) + fromIntegral(BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))) + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))))))))
-          , frames v, frameIndex v),
-          frameIndex = frameIndex v,
+            fromIntegral (BS.index (snd(Prelude.last (frames v))) (4 + fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + fromIntegral(BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last(frames v))) 1)))) + (fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))))))))
+          , frames v),
           bpOffset = bpOffset v,
           global = global v, 
           stack = ForObject{
             objectType = FOR_OBJ, 
             forStart = getFirstNInstructions(
-              fromIntegral(BS.index (snd (frames v !! frameIndex v )) 1),
+              fromIntegral(BS.index (snd (Prelude.last (frames v))) 1),
               BS.empty :: ByteString,
-              (0,snd((removeNInstructions(2, frames v, frameIndex v)) !! frameIndex v))
+              (0,snd((removeNInstructions(2, frames v)) !! (Prelude.length (frames v) - 1)))
             ),
             forCon = getFirstNInstructions(
-              fromIntegral(BS.index (snd(frames v !!frameIndex v)) (2 + fromIntegral(BS.index (snd (frames v !! frameIndex v)) 1))),
+              fromIntegral(BS.index (snd(Prelude.last (frames v))) (2 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1))),
               BS.empty :: ByteString,
-              (0,snd((removeNInstructions(3 + fromIntegral(BS.index (snd (frames v !! frameIndex v)) 1), frames v, frameIndex v)) !! frameIndex v))
+              (0,snd((removeNInstructions(3 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1), frames v)) !!(Prelude.length (frames v) - 1)))
             ), 
             forInc = getFirstNInstructions(
-              fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))))),
+              fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))))),
               BS.empty :: ByteString, 
-              (0,snd((removeNInstructions(4 + fromIntegral(BS.index (snd (frames v !! frameIndex v )) 1) + fromIntegral(BS.index (snd(frames v !!frameIndex v)) (2 + fromIntegral(BS.index (snd (frames v !! frameIndex v)) 1))), frames v, frameIndex v)) !! frameIndex v))
+              (0,snd((removeNInstructions(4 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1) + fromIntegral(BS.index (snd(Prelude.last (frames v))) (2 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1))), frames v)) !! (Prelude.length (frames v) - 1)))
             ), 
             forBod = getFirstNInstructions(
-            fromIntegral (BS.index (snd(frames v !! frameIndex v)) (4 + fromIntegral(BS.index (snd(frames v !! frameIndex v)) 1) + fromIntegral(BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))) + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1))))))))),
+            fromIntegral (BS.index (snd(Prelude.last (frames v))) (4 + fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + fromIntegral(BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))) + (fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1))))))))),
             BS.empty :: ByteString, 
               (0,snd((removeNInstructions(
                 5 + 
-                fromIntegral(BS.index (snd (frames v !! frameIndex v )) 1) + 
-                fromIntegral(BS.index (snd(frames v !!frameIndex v)) (2 + fromIntegral(BS.index (snd (frames v !! frameIndex v)) 1))) + 
-                fromIntegral (BS.index (snd(frames v !! frameIndex v)) ((3 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1)))  + fromIntegral (BS.index(snd(frames v !! frameIndex v)) (2 + (fromIntegral (BS.index (snd(frames v !! frameIndex v)) 1))))))
-                , frames v, frameIndex v)) !! frameIndex v))
+                fromIntegral(BS.index (snd (Prelude.last (frames v))) 1) + 
+                fromIntegral(BS.index (snd(Prelude.last (frames v))) (2 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1))) + 
+                fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1))))))
+                , frames v)) !! (Prelude.length (frames v ) - 1)))
 
               )
             }:stack v,
             outputs = outputs v
           }
-      | getFirstInstruction(frames v !! frameIndex v) == 3 = VM{
-                frames = removeNInstructions(4 + (fromIntegral(BS.index (snd(frames v !! frameIndex v)) 3)), frames v, frameIndex v),
-                frameIndex = frameIndex v,
+      | getFirstInstruction(Prelude.last (frames v)) == 3 = VM{
+                frames = removeNInstructions(4 + (fromIntegral(BS.index (snd(Prelude.last (frames v))) 3)), frames v),
                 bpOffset = bpOffset v, 
                 global = global v, 
                 stack = VM.parseFunc(
-                  fromIntegral(BS.index (snd(frames v !!frameIndex v)) 1),
-                  fromIntegral(BS.index (snd(frames v !!frameIndex v)) 2),
+                  fromIntegral(BS.index (snd(Prelude.last (frames v))) 1),
+                  fromIntegral(BS.index (snd(Prelude.last (frames v))) 2),
                   getFirstNInstructions(
-                    fromIntegral(BS.index (snd(frames v !!frameIndex v)) 3),
+                    fromIntegral(BS.index (snd(Prelude.last (frames v))) 3),
                     BS.empty :: ByteString, 
-                    (0,snd((removeNInstructions(4, frames v, frameIndex v)) !! frameIndex v))
+                    (0,snd((removeNInstructions(4, frames v)) !!(Prelude.length (frames v) - 1)))
                   )
                 ):stack v,
                 outputs = outputs v
               } 
-      | otherwise = error ("unknown const " ++ show(fromIntegral(getFirstInstruction (frames v !! frameIndex v))))
+      | otherwise = error ("unknown const " ++ show(fromIntegral(getFirstInstruction (Prelude.last (frames v)))))
 
 parseInt :: Int-> Object 
 parseInt i = IntObject{objectType = INT_OBJ, intValue =i }

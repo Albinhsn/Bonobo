@@ -134,26 +134,26 @@ removeFirstBS b =
     1 -> BS.empty :: ByteString 
     _ -> pack(removeFirst(unpack b))
 
-removeNInstructions :: (Int, [(Int, ByteString)], Int) -> [(Int, ByteString)]
-removeNInstructions (i, b, idx) = bs 
+removeNInstructions :: (Int, [(Int, ByteString)]) -> [(Int, ByteString)]
+removeNInstructions (i, b) = bs 
   where 
     bs 
       | i == 0 = b 
-      | otherwise = removeNInstructions(i-1, removeFirstInstruction (b, idx), idx)
+      | otherwise = removeNInstructions(i-1, removeFirstInstruction b)
 
-removeFirstInstruction :: ([(Int, ByteString)], Int)-> [(Int, ByteString)]
-removeFirstInstruction (b,i) = 
-  case BS.length (snd (b!!i)) of 
+removeFirstInstruction :: [(Int, ByteString)]-> [(Int, ByteString)]
+removeFirstInstruction b = 
+  case BS.length (snd (Prelude.last b)) of 
     0 -> error "can't remove instruction of length 0?"
-    1 -> b & element i .~ (fst (b!!i), BS.empty :: ByteString)
-    _ -> b & element i .~ (fst (b!!i), pack(removeFirst(unpack (snd (b!!i)))))
+    1 -> Utils.append (pop b) (fst(Prelude.last b), BS.empty :: ByteString)
+    _ -> Utils.append (pop b) (fst(Prelude.last b), pack(removeFirst(unpack (snd (Prelude.last b)))))
 
 getFirstNInstructions :: (Int, ByteString,(Int, ByteString)) -> ByteString 
 getFirstNInstructions (i,new, old) = bs 
   where   
     bs 
       | i == 0 = new 
-      | otherwise =getFirstNInstructions(i-1, new <> pack([BS.head (snd old)]), Prelude.head (removeFirstInstruction([old], 0)))
+      | otherwise =getFirstNInstructions(i-1, new <> pack([BS.head (snd old)]), Prelude.head (removeFirstInstruction([old])))
 
 mergeLists :: [a] -> [a] -> [a]
 mergeLists [] ys = ys 
