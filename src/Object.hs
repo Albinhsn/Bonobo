@@ -16,7 +16,7 @@ data Object
   | ArrayObject {objectType :: !ObjectType, arrValue :: ![Object]}
   | MapObject {objectType :: !ObjectType, mapValue :: ![(Object, Object)]}
   | FuncObject{objectType :: !ObjectType, numArgs :: !Int, numLocals :: !Int, funcValue :: !ByteString}
-  | ForObject{objectType :: !ObjectType, forStart :: !ByteString, forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString}
+  | ForObject{objectType :: !ObjectType, forLocals :: !Int, forStart :: !ByteString, forCon:: !ByteString, forInc:: !ByteString, forBod :: !ByteString}
   deriving(Eq, Show, Ord)
 
 inspectObject :: Object -> String 
@@ -103,8 +103,23 @@ disassembleConst (s, b) = str
               (fromIntegral 
                 (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2)))))
                 ))
-            ))
-        , removeFirstNInstructions2( 1 + 
+            )) 
+        ++ " LOCALS: " ++ show(
+            BS.index b (1 + 
+            fromIntegral (BS.index b 2)
+            + 
+            fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2))))
+            +
+            fromIntegral (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2))))))
+            +
+            fromIntegral (BS.index b (5 + fromIntegral(BS.index b 2) + 
+              fromIntegral(BS.index b (3 + (fromIntegral (BS.index b 2)))) + 
+              (fromIntegral 
+                (BS.index b ((4 + (fromIntegral (BS.index b 2)))  + fromIntegral (BS.index b (3 + (fromIntegral (BS.index b 2)))))
+                )))
+            )
+        ))
+        , removeFirstNInstructions2(2 + 
       fromIntegral((BS.index b) (5 + fromIntegral(BS.index b 2) + 
               fromIntegral(BS.index b (3 + (fromIntegral (BS.index b 2)))) + 
               (fromIntegral 

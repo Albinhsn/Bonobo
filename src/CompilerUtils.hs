@@ -59,6 +59,28 @@ disassembleConst (s, c) = str
                 (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
                 ))
             ))
+        ++ "LOCALS: " ++ show(
+            BS.index (scopes c !! scopeIndex c) 
+            
+            (1
+            +
+            fromIntegral(
+              BS.index (scopes c !! scopeIndex c) 2
+            )
+            +
+            fromIntegral(
+              BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))
+            )
+            +
+            fromIntegral (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2))))))
+            + 
+            fromIntegral (BS.index (scopes c !! scopeIndex c) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+              fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+              (fromIntegral 
+                (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                ))
+            ))
+        ))
         , removeNFromScope( 1 + 
       fromIntegral((BS.index (scopes c !! scopeIndex c)) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
               fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 

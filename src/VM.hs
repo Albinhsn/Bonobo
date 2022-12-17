@@ -278,19 +278,20 @@ runVM v =
           outputs = outputs v
         }))
     30 -> 
-      runVM(runForEval(popLastFrame(getStart(VM{
+      runVM(runForEval(getStart(VM{
           frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v,
           global = global v,
           stack = stack v, 
           outputs = outputs v
-      }))))
+      })))
     _ -> error "run"
 
 
 getStart :: VM -> VM 
 getStart v =   
   runVM(VM{
+    -- frames = Utils.append (changeBP(1, frames v)) (0,forStart(Prelude.head (stack v))), 
     frames = Utils.append (changeBP(1, frames v)) (0,forStart(Prelude.head (stack v))), 
     bpOffset = bpOffset v - 1, 
     global = global v, 
@@ -312,28 +313,32 @@ runForEval v = b
           outputs = outputs v
         })))) == False = 
           VM{
-            frames = changeBP(-1, frames v),
+            frames = changeBP(-1, pop(frames v)),
             bpOffset = bpOffset v,
             global = global v, 
             stack = removeFirstN(2, stack v),
             outputs = outputs v
           }  
       | otherwise =  
-        runForEval(runInc(popLastFrame(runVM(VM{
-          frames = Utils.append (frames v) (0, forBod(stack v !!1)),
+        -- trace("forEval: " ++ concStack ([NullObject{objectType = NULL_OBJ} | x <- [1..(forLocals (stack v !!1))]]++ stack v))
+        runForEval(runInc(forLocals (stack v !! 1), popLastFrame(runVM(VM{
+          frames = Utils.append  (changeBP(forLocals (stack v !! 1), frames v)) (0, forBod(stack v !!1)),
           bpOffset = bpOffset v,
           global = global v,
-          stack = stack v,
+          stack =[NullObject{objectType = NULL_OBJ} | x <- [1..(forLocals (stack v !!1))]]++ stack v,
           outputs = outputs v
         }))))
 
-runInc :: VM -> VM 
-runInc v = 
+runInc :: (Int, VM)-> VM 
+runInc (i,v) = 
+  -- trace("runInc:    ")
+  -- trace("     stack: " ++ concStack (stack v))
+  -- trace("     bp" ++ show (changeBP(-i, frames v)))
   popLastFrame(runVM(VM{
-    frames = Utils.append (frames v) (0, forInc (stack v !! 1)),
+    frames = Utils.append (changeBP(-i, frames v)) (0, forInc (stack v !!(i + 1))),
     bpOffset = bpOffset v,
     global = global v,
-    stack = stack v,
+    stack = removeFirstN(i, stack v),
     outputs = outputs v
   }))
 
@@ -362,7 +367,8 @@ runPrebuilt v = vm
 
         } 
       --print
-      | getFirstInstruction(Prelude.last (frames v)) == 1 = VM{
+      | getFirstInstruction(Prelude.last (frames v)) == 1 = 
+        VM{
           frames = removeFirstInstruction(frames v), 
           bpOffset = bpOffset v - 1,
           global = global v,
@@ -399,8 +405,14 @@ concStack o = s
 setLocal :: VM -> VM 
 setLocal v = 
   -- trace("setLocal: ")
+  -- trace("       getLocalEleIdx: " ++ show(getLocalEleIdx v))
+  -- trace("       bpIndex" ++ show([fst x | x <- frames v]))
+  -- trace("       bpOffset: " ++ show(bpOffset v))
+  -- trace("       getNInstruction: " ++ show(getNInstruction(1, frames v)))
+  -- trace("       getBPIdx: " ++ show(getBasePointerIdx(getNInstruction(0, frames v ) -1, v)))
   -- trace("       stack prior: " ++ concStack(stack v))
   -- trace("       stack after: " ++ concStack(removeFirst(stack v & element (getLocalEleIdx v) .~ stack v!!0)))
+  -- trace("       next 2 instruct: " ++ show(fromIntegral (BS.index (snd (Prelude.last (frames v))) 0 )) ++" "  ++ show (fromIntegral (BS.index (snd (Prelude.last (frames v))) 1))) 
   VM{
     frames = removeFirstInstruction(removeFirstInstruction (frames v)),
     bpOffset = bpOffset v- 1,
@@ -712,7 +724,7 @@ pushToStack v = vm
         VM{
           frames = removeNInstructions(
             -- for + start + stop + inc + body 
-            5 +  
+            6 +  
             -- start
             fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + 
             -- stop
@@ -750,8 +762,14 @@ pushToStack v = vm
                 fromIntegral(BS.index (snd(Prelude.last (frames v))) (2 + fromIntegral(BS.index (snd (Prelude.last (frames v))) 1))) + 
                 fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1))))))
                 , frames v)) !! (Prelude.length (frames v ) - 1)))
-
-              )
+              ),
+            forLocals = fromIntegral(BS.index (snd (Prelude.last (frames v))) (
+              1 
+              + 
+              4 + fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + fromIntegral(BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))) + (fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))))))
+              +
+              fromIntegral (BS.index (snd(Prelude.last (frames v))) (4 + fromIntegral(BS.index (snd(Prelude.last (frames v))) 1) + fromIntegral(BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))) + (fromIntegral (BS.index (snd(Prelude.last (frames v))) ((3 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))  + fromIntegral (BS.index(snd(Prelude.last (frames v))) (2 + (fromIntegral (BS.index (snd(Prelude.last (frames v))) 1)))))))))
+            ))
             }:stack v,
             outputs = outputs v
           }

@@ -1,18 +1,6 @@
 TODO:
-  get bytestring for start, stop, inc 
-
 
 
 
 git ls-files | grep '\.hs' | xargs wc -l
-
-forsta 
-bring start var as local 
-store instructions for stop 
-after loop run inc expression code 
-"return" after condition is True 
-Stack: 
-  START CODE  
-  CON CODE 
-   
 

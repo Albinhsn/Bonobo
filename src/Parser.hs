@@ -1458,6 +1458,20 @@ closeArray s = sta
           statementType = statementType s,
           expression = expression s 
         }
+      | statementType s == FORSTA && closedForCon (statementUni s) = Statement{
+          staLine =staLine s,
+          statementUni = ForStatement{
+              closedForBody = False, 
+              closedForCon = True, 
+              start = start (statementUni s),
+              stop = stop (statementUni s),
+              inc = inc (statementUni s),
+              forBody = append (pop (forBody (statementUni s))) (closeArray (last (forBody(statementUni s))))
+            },
+          closedSta = False, 
+          statementType = statementType s,
+          expression = expression s 
+        }
       | otherwise = error ("closeArray " ++ statementToString s) 
 
 

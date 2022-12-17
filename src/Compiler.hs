@@ -80,11 +80,11 @@ extractFor :: Compiler -> Compiler
 extractFor c = 
   addToScope(
   Compiler{
-      scopes = pop (pop(scopes c)),
+      scopes =pop (pop(scopes c)),
       scopeIndex = scopeIndex c - 2,
       symbols = pop(pop(symbols c))
     },
-  scopes c!!(Prelude.length (scopes c) -2 )  <> chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c!!(Prelude.length (scopes c) - 1) <> lookupOpCode OPFOR
+  scopes c!!(Prelude.length (scopes c) -2 )  <> chooseToUnroll(BS.length (scopes c !!scopeIndex c))<> scopes c!!(Prelude.length (scopes c) - 1) <> chooseToUnroll(Prelude.length (Prelude.last (symbols c)))<> lookupOpCode OPFOR
   )
 
 extractScope :: Compiler -> ByteString 
