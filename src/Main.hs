@@ -12,6 +12,7 @@ import Data.ByteString as BS
 import Data.ByteString.UTF8 as BSU
 
 
+
 main = do
   -- let x = "let five = 5; fn add(a){return a + five;}; for(i = 0; i < 100000; i = i + 1;){five = five + i;}; print(five);" 
   let s = parseStringToStatements("let five =[0,1,2,3,4]; for(i = 0; i < 5; i = i + 1;){print(five[i]);};") 
