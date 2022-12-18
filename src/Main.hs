@@ -10,18 +10,16 @@ import Object
 import Lexer
 import Data.ByteString as BS
 import Data.ByteString.UTF8 as BSU
-
-
+import System.Environment
 
 main = do
-  -- let x = "let five = 5; fn add(a){return a + five;}; for(i = 0; i < 100000; i = i + 1;){five = five + i;}; print(five);" 
-  let s = parseStringToStatements("let five =[0,1,2,3,4]; for(i = 0; i < 5; i = i + 1;){print(five[i]);};") 
-  -- print (statementsToString s)
-  let a = parseStatementToCompiled s 
-  -- let c = disassembleFunc("", a)
+  args <- getArgs
+  -- let k = parseStatementToCompiled(parseStringToStatements("let a = 5; for(i = 5; i < 10; i = i + 2;){a = a + i;}; print(a);"))
+  file <- Prelude.readFile (args!!0)
+  let a = parseStatementToCompiled(parseStringToStatements(file)) 
   -- print c
-  -- -- BS.writeFile "a.out" a
-  -- -- b <- BS.readFile "a.out"
+  BS.writeFile "dis.bo" a
+  -- b <- BS.readFile "a.out"
   -- -- let z = b == a 
   -- -- print z
   -- -- print a

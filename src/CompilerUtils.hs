@@ -48,6 +48,20 @@ disassembleConst (s, c) = str
         removeNFromScope(3 + (fromIntegral(BS.index (scopes c!!scopeIndex c) 2)),c))
       -- FOR 
       | BS.index (scopes c !! scopeIndex c) 1 == 2 = 
+      trace(show(1
+            +
+            5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+                          fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+                          (fromIntegral 
+                            (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                            ))
+            +
+            fromIntegral (BS.index (scopes c !! scopeIndex c) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+              fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+              (fromIntegral 
+                (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                ))
+            ))))
       (s ++ 
         " CONST FOR START: " ++ (show(BS.index (scopes c !! scopeIndex c) 2))  ++
         " STOP: " ++ show(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) ++ 
@@ -61,19 +75,14 @@ disassembleConst (s, c) = str
             ))
         ++ "LOCALS: " ++ show(
             BS.index (scopes c !! scopeIndex c) 
-            
             (1
             +
-            fromIntegral(
-              BS.index (scopes c !! scopeIndex c) 2
-            )
+            5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
+                          fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
+                          (fromIntegral 
+                            (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))))
+                            ))
             +
-            fromIntegral(
-              BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))
-            )
-            +
-            fromIntegral (BS.index (scopes c !!scopeIndex c) ((4 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))  + fromIntegral (BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2))))))
-            + 
             fromIntegral (BS.index (scopes c !! scopeIndex c) (5 + fromIntegral(BS.index (scopes c !! scopeIndex c) 2) + 
               fromIntegral(BS.index(scopes c !! scopeIndex c) (3 + (fromIntegral (BS.index (scopes c !!scopeIndex c) 2)))) + 
               (fromIntegral 
