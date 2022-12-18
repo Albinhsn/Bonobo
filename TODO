@@ -1,25 +1,6 @@
-TODO:   
-  for 
-  VALIDATION/ERROR HANDLING
-    check on semicolon valid statement
-    check at eof that last exp is valid
-  fucking test invalid code
+TODO:
 
-PRECOMPILER: 
-  Fix REPL/interpretor
 
-During Compiler: 
-  Prebuilt funcs:
-    print 
-
-After compiler:
-  Test line numbers etc
-  Fix README.md 
-  Do aoc examples
 
 git ls-files | grep '\.hs' | xargs wc -l
-
-launchMissiles `shouldReturn` Left "permission error"
-
-
 

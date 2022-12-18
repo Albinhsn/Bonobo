@@ -1,20 +1,11 @@
 module Main where
 
 import Test.Hspec 
-import TestDifficult
 import TestLexer
+import TestCode
+import TestBool 
+import TestVM
 import TestParser
-import TestPrecedence
-import TestBool
-import TestIf 
-import TestIdent
-import TestFunc
-import TestObject
-import TestEval
-import TestArray
-import TestMap
-import TestPrebuilt
--- import TestTFT
 
 main :: IO ()
 main = hspec $ do
@@ -28,297 +19,508 @@ main = hspec $ do
       do 
         testActual 
         `shouldBe`
-        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "'Hello World!'","for","EOF"]
-        
-  describe "Testing Parser" $ do
-    it "testing basic let" $ 
+        ["let", "five", "=", ";", "let", "ten", "=", ";", "let", "add", "=", "fn", "(", "x", ",", "y", ")", "{", "x", "+", "y", ";", "}", ";", "let", "result", "=", "add", "(", "five", ",", "ten", ")", ";", "Hello World!","for","EOF"]
+  describe "Testing bools" $ do
+    it "test vm bool 1" $ 
+      do
+        testVMBool1
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test vm bool 2" $ 
+      do
+        testVMBool2
+        `shouldBe`
+        "Stack:  Globals: 3 = False "
+    it "test vm bool 3" $ 
+      do
+        testVMBool3
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test vm bool 4" $ 
+      do
+        testVMBool4
+        `shouldBe`
+        "Stack:  Globals: 3 = False "
+    it "test vm bool 5" $ 
+      do
+        testVMBool5
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test vm bool 6" $ 
+      do
+        testVMBool6
+        `shouldBe`
+        "Stack:  Globals: 3 = False "
+    it "test vm bool 7" $ 
+      do
+        testVMBool7
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test vm bool 8" $ 
+      do
+        testVMBool8
+        `shouldBe`
+        "Stack:  Globals: 3 = False "
+    it "test vm bool book 1" $ 
+      do
+        testVMBoolBook1
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test vm bool book 2" $ 
+      do
+        testVMBoolBook2
+        `shouldBe`
+        "Stack:  Globals: 3 = False "
+    it "test vm bool book 3" $ 
+      do
+        testVMBoolBook3
+        `shouldBe`
+        "Stack:  Globals: 3 = True "
+    it "test code if" $
+      do 
+        testCodeIf
+        `shouldBe`
+        " TRUE JUMPNT 10 CONST INT LEN 1 5 SETGLOBAL 3 JUMP 2"
+    it "test code if else" $
+      do 
+        testCodeIfElse
+        `shouldBe`
+        " TRUE JUMPNT 10 CONST INT LEN 1 5 SETGLOBAL 3 JUMP 8 CONST INT LEN 1 10 SETGLOBAL 4"
+    it "test code let" $
+      do 
+        testCodeLet
+        `shouldBe`
+        " CONST INT LEN 1 5 SETGLOBAL 3"
+    it "test code array 3" $
+      do 
+        testCodeArray3
+        `shouldBe`
+        " ARRAY 0 CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 2 SETGLOBAL 3"
+    it "test code array 4" $
+      do 
+        testCodeArray4
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 1 ARRAY 1 SETGLOBAL 3"
+    it "test code array 5" $
+      do 
+        testCodeArray5
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 ARRAY 0 ARRAY 2 SETGLOBAL 3"
+    it "test code map 1" $
+      do 
+        testCodeMap1
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 1 CONST INT LEN 1 2 CONST INT LEN 1 2 CONST INT LEN 1 3 CONST INT LEN 1 3 CONST INT LEN 1 4 CONST INT LEN 1 4 HASH 4 SETGLOBAL 3"
+    it "test code index 1" $
+      do 
+        testCodeIndex1
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 GETGLOBAL 3 CONST INT LEN 1 0 INDEX CONST INT LEN 1 1 INDEX SETGLOBAL 4"
+    it "test code index 2" $
+      do 
+        testCodeIndex2
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 CONST INT LEN 1 1 CONST INT LEN 1 0 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
+    it "test code index 3" $
+      do 
+        testCodeIndex3
+        `shouldBe`
+        " CONST INT LEN 1 1 CONST INT LEN 1 2 ARRAY 2 CONST INT LEN 1 0 ARRAY 2 SETGLOBAL 3 CONST INT LEN 1 0 TRUE GETGLOBAL 3 SETINDEX SETGLOBAL 3"
+    it "test code fn" $
+      do 
+        testCodeFN
+        `shouldBe`
+        " CONST FUNC ARGS: 0 LOCALS: 0 LEN: 11 SETGLOBAL 3"
+    it "test code fn 2" $
+      do 
+        testCodeFN2
+        `shouldBe`
+        " CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 3 CONST INT LEN: 1 CONST INT LEN: 1 GETGLOBAL 3 OPCALL 3 SETGLOBAL 4"
+    it "test code for" $
+      do 
+        testCodeFor
+        `shouldBe`
+        " CONST FOR START: 7 STOP: 8 INC: 11 BODY: 7 LOCALS: 1 OPFOR "
+    it "test code for 2" $
+      do 
+        testCodeFor2
+        `shouldBe`
+        " CONST INT LEN: 1 SETGLOBAL 3 CONST FOR START: 7 STOP: 8 INC: 11 BODY: 8 LOCALS: 0 OPFOR "
+    it "test code for 3" $
+      do 
+        testCodeFor3
+        `shouldBe`
+        " CONST INT LEN: 1 SETGLOBAL 3 CONST INT LEN: 1 SETGLOBAL 4 CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 5 CONST FUNC ARGS: 2 LOCALS: 2 LEN: 9 SETGLOBAL 6 CONST FOR START: 5 STOP: 13 INC: 11 BODY: 8 LOCALS: 0 OPFOR "
+  describe "test vm" $ do
+    it "test vm op 1 " $
+      do 
+        testVMOp1
+        `shouldBe`
+        "Stack:  Globals: 3 = 2 "
+    it "test vm op 2" $
+      do 
+        testVMOp2
+        `shouldBe`
+        "Stack:  Globals: 3 = 5 "
+    it "test vm op 3" $
+      do 
+        testVMOp3
+        `shouldBe`
+        "Stack:  Globals: 3 = 10 "
+    it "test vm op 4" $
+      do 
+        testVMOp4
+        `shouldBe`
+        "Stack:  Globals: 3 = 11 "
+    it "test vm book 1" $
+      do 
+        testVMOpBook1
+        `shouldBe`
+        "Stack:  Globals: 3 = -1 "
+    it "test vm book 2" $
+      do 
+        testVMOpBook2
+        `shouldBe`
+        "Stack:  Globals: 3 = 2 "
+    it "test vm book 3" $
+      do 
+        testVMOpBook3
+        `shouldBe`
+        "Stack:  Globals: 3 = 2 "
+    it "test vm book 4" $
+      do 
+        testVMOpBook4
+        `shouldBe`
+        "Stack:  Globals: 3 = 55 "
+    it "test vm book 5" $
+      do 
+        testVMOpBook5
+        `shouldBe`
+        "Stack:  Globals: 3 = 10 "
+    it "test vm book 6" $
+      do 
+        testVMOpBook6
+        `shouldBe`
+        "Stack:  Globals: 3 = 32 "
+    it "test vm book 7" $
+      do 
+        testVMOpBook7
+        `shouldBe`
+        "Stack:  Globals: 3 = 20 "
+    it "test vm book 8" $
+      do 
+        testVMOpBook8
+        `shouldBe`
+        "Stack:  Globals: 3 = 25 "
+    it "test vm book 9" $
+      do 
+        testVMOpBook9
+        `shouldBe`
+        "Stack:  Globals: 3 = 60 "
+    it "test vm str book" $
+      do 
+        testVMStrBook
+        `shouldBe`
+        "Stack:  Globals: 3 = monkey "
+    it "test vm str op book 1" $
+      do 
+        testVMOpStrBook1
+        `shouldBe`
+        "Stack:  Globals: 3 = monkey "
+    it "test vm str op book 2" $
+      do 
+        testVMOpStrBook2
+        `shouldBe`
+        "Stack:  Globals: 3 = monkeybanana "
+    it "test vm op big" $
+      do 
+        testVMOpBig
+        `shouldBe`
+        "Stack:  Globals: 3 = 140000 "
+    it "test vm if" $
+      do 
+        testVMIf
+        `shouldBe`
+        "Stack:  Globals: 3 = 5 "
+    it "test vm else" $
+      do 
+        testVMElse
+        `shouldBe`
+        "Stack:  Globals: 4 = 10 "
+    it "test vm nested if" $
+      do 
+        testVMNestedIf
+        `shouldBe`
+        "Stack:  Globals: 3 = 3 "
+    it "test vm nested else" $
+      do 
+        testVMNestedElse
+        `shouldBe`
+        "Stack:  Globals: 3 = 5 "
+    it "test vm let book 1" $
+      do 
+        testVMLetBook1
+        `shouldBe`
+        "Stack:  Globals: 3 = 1 "
+    it "test vm let book 2" $
+      do 
+        testVMLetBook2
+        `shouldBe`
+        "Stack:  Globals: 3 = 1 4 = 2 5 = 3 "
+    it "test vm let book 2" $
+      do 
+        testVMLetBook3
+        `shouldBe`
+        "Stack:  Globals: 3 = 1 4 = 2 5 = 3 "
+    it "test vm array 1" $
+      do 
+        testVMArray1
+        `shouldBe`
+        "Stack:  Globals: 3 = [] "
+    it "test vm array 2" $
+      do 
+        testVMArray2
+        `shouldBe`
+        "Stack:  Globals: 3 = [1, hi, ] "
+    it "test vm array 3" $
+      do 
+        testVMArray3
+        `shouldBe`
+        "Stack:  Globals: 3 = [[], [1, 2, ], ] "
+    it "test vm array 4" $
+      do 
+        testVMArray4
+        `shouldBe`
+        "Stack:  Globals: 3 = [[[1, 2, ], ], ] "
+    it "test vm array 5" $
+      do 
+        testVMArray5
+        `shouldBe`
+        "Stack:  Globals: 3 = [[1, 2, ], [], ] "
+    it "test vm map 1" $
+      do 
+        testVMMap1
+        `shouldBe`
+        "Stack:  Globals: 3 = {1:1, 2:2, 3:3, 4:4, } "
+    it "test vm map 2" $
+      do 
+        testVMMap2
+        `shouldBe`
+        "Stack:  Globals: 3 = {1:{1:1, 2:2, }, } "
+    it "test vm array map 1" $
+      do 
+        testVMAM1
+        `shouldBe`
+        "Stack:  Globals: 3 = [{1:2, }, ] "
+    it "test vm array map 2" $
+      do 
+        testVMAM2
+        `shouldBe`
+        "Stack:  Globals: 3 = {1:[1, 2, ], } "
+    it "test vm index 1" $
+      do 
+        testVMIndex1
+        `shouldBe`
+        "Stack:  Globals: 3 = [[0, 1, ], 2, ] 4 = 1 "
+    it "test vm index 2" $
+      do 
+        testVMIndex2
+        `shouldBe`
+        "Stack:  Globals: 3 = {0:{1:2, }, } 4 = 2 "
+    it "test vm index 3" $
+      do 
+        testVMIndex3
+        `shouldBe`
+        "Stack:  Globals: 3 = [{1:True, }, ] 4 = True "
+    it "test vm index 4" $
+      do 
+        testVMIndex4
+        `shouldBe`
+        "Stack:  Globals: 3 = {0:[1, True, ], } 4 = True "
+    it "test vm index 5" $
+      do 
+        testVMIndex5
+        `shouldBe`
+        "Stack:  Globals: 3 = [{a:[0, {b:True, }, ], }, ] 4 = True "
+    it "test vm index 6" $
+      do 
+        testVMIndex6
+        `shouldBe`
+        "Stack:  Globals: 3 = [0, 1, True, ] 4 = True "
+    it "test vm index assign 1" $
+      do 
+        testVMIndexAssign1
+        `shouldBe`
+        "Stack:  Globals: 3 = [[0, True, ], 2, ] "
+    it "test vm index assign 2" $
+      do 
+        testVMIndexAssign2
+        `shouldBe`
+        "Stack:  Globals: 3 = {0:{1:True, }, } "
+    it "test vm index assign 3" $
+      do 
+        testVMIndexAssign3
+        `shouldBe`
+        "Stack:  Globals: 3 = {0:[False, {0:[0, True, ], }, ], } "
+    it "test vm fn 1" $
+      do 
+        testVMFN1
+        `shouldBe`
+        "15"
+    it "test vm fn 2" $
+      do 
+        testVMFN2
+        `shouldBe`
+        "15"
+    it "test vm fn 3" $
+      do 
+        testVMFN3
+        `shouldBe`
+        "2"
+    it "test vm fn 4" $
+      do 
+        testVMFN4
+        `shouldBe`
+        "5"
+    it "test vm fn 5" $
+      do 
+        testVMFN5
+        `shouldBe`
+        "5"
+    it "test vm fn 6" $
+      do 
+        testVMFN6
+        `shouldBe`
+        "5"
+    it "test vm fn 7" $
+      do 
+        testVMFN7
+        `shouldBe`
+        "5"
+    it "test vm fn 9" $
+      do 
+        testVMFN9
+        `shouldBe`
+        "5"
+    it "test vm fn 10" $
+      do 
+        testVMFN10
+        `shouldBe`
+        "2"
+    it "test vm fn 11" $
+      do 
+        testVMFN11
+        `shouldBe`
+        "2"
+    it "test vm fn 12" $
+      do 
+        testVMFN12
+        `shouldBe`
+        "True"
+    it "test vm fn 13" $
+      do 
+        testVMFN13
+        `shouldBe`
+        "True"
+    it "test vm fn 14" $
+      do 
+        testVMFN14
+        `shouldBe`
+        "False"
+    it "test vm fn 15" $
+      do 
+        testVMFN15
+        `shouldBe`
+        "2"
+    it "test vm fn 16" $
+      do 
+        testVMFN16
+        `shouldBe`
+        "5"
+    it "test vm fn 17" $
+      do 
+        testVMFN17
+        `shouldBe`
+        "42"
+    it "test vm fn 18" $
+      do 
+        testVMFN18
+        `shouldBe`
+        "30"
+    it "test vm fn book" $
+      do 
+        testVMFNBook
+        `shouldBe`
+        "97"
+  describe "test parser v2" $ do
+    it "test parser basic let" $
       do 
         testBasicLet
         `shouldBe`
-        "let five = 5; let five = 'five'; let five = ((5 + 5) + 5); let five = (5 / 5); let five = (5 * 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 - 5); let five = (-5);"
-    it "testing return" $ 
+        "let five = 5; let five = five; let five = (-5); let five = (5 + 5); let five = (5 + (5 * 5)); let five = ((5 * 5) + 5); let five = (5 + (-5)); let five = (((5 + 5)) * 5); let five = five; let five = True; let five = 5 == 5; let five = [1, 2, ]; let five = {1:1, hello:world, }; let five = (!two);"
+    it "test parser basic return" $
       do 
-        testReturnStatement
+        testBasicReturn
         `shouldBe`
-        "return 5; return (5 + 5);"
-      
-  describe "Testing precedence" $ do
-    it "testing plus minus" $ 
+        "return 5; return five; return (-5); return (5 + 5); return (5 + (5 * 5)); return ((5 * 5) + 5); return (5 + (-5)); return (((5 + 5)) * 5); return five; return True; return 5 == 5; return [1, 2, ]; return {1:1, hello:world, }; return (!five);"
+    it "test parser basic assign" $
       do 
-        testPlusMinus 
+        testBasicAssign
         `shouldBe`
-        False  
+        "five = 5; five = five; five = (-5); five = (5 + 5); five = (5 + (5 * 5)); five = ((5 * 5) + 5); five = (5 + (-5)); five = (((5 + 5)) * 5); five = five; five = True; five = 5 == 5; five = [1, 2, ]; five = {1:1, hello:world, }; five = (!five);"
+    it "test parser am" $
+      do 
+        testAM
+        `shouldBe`
+        "return [(!True), {1:(!True), 2:[True, {0:((2 + (-3))), }, ], }, ];"
+    it "test parser fn" $
+      do 
+        testFN
+        `shouldBe`
+        "fn add(){}; fn add(a){let five = 5;}; fn add(a,b){let c = (a + b); return c;}; fn a(a,b){fn b(a,b){return 5;}; b(1,2);}; fn a(){if(True){let five = 5; return 5;}; return 2;}; fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[], }, ], }, ], }, ];};};};};}; fn add(((2 + 3))){};"
+    it "test parser fnexp" $
+      do 
+        testFNExp
+        `shouldBe`
+        "fn add(a){let a = 5; let a = 5; let a = True; let a = a[0]; let a = {1:1, }; let a = [0, 1, 2, ]; add(2,3);};"
+    it "test parser index" $
+      do 
+        testIndex
+        `shouldBe`
+        "let a = b[0]; let a = b[c]; let a = b[c]; let a = b[(1 + 2)]; let a = b[((1 + (-5)))]; let a = b[0]; let a = b[0][0]; let a = b[b[b[b[0]]]]; let a = a[add(2,3)]; let a = b[b[0][0]][0];"
+    it "test parser call" $
+      do 
+        testCall
+        `shouldBe`
+        "add(); add(1); add(1,2); add(a,b); add(a); add((1 + 2)); add(((1 + (-5)))); add(sub()); add(a[0]);"
+    it "test parser if params" $
+      do 
+        testIfParams
+        `shouldBe`
+        "if(True){}; if(1 == 1){}; if(a > 1){}; if(add()){}; if(a == a){}; if(True == False){}; if(a[0]){};"
+    it "test parser if" $
+      do 
+        testIf
+        `shouldBe`
+        "if(True){let five = 5; return five;}; if(True){return a[0];}; if(True){return True;}; if(True){return hi;}; if(True){if(True){};};"
+    it "test parser if exp" $
+      do 
+        testIfExp
+        `shouldBe`
+        "if(True){let five = a[0]; let b = {1:1, }; add(2,3);};"
+    it "test parser else" $
+      do 
+        testElse
+        `shouldBe`
+        "if(True){}else{let five = 5;}; if(True){if(True){if(True){}else{return 5;};}else{return 5;};}else{if(True){if(True){}else{return 5;};}else{return 5;};};"
+    it "test parser diff" $
+      do 
+        testDiff
+        `shouldBe`
+        "fn a(){fn a(){fn a(){fn a(){fn a(a,b){let five = [{1:[{1:[{1:[], }, ], }, ], }, ]; if(True){if(True){if(True){}else{return 5;};}else{return 5;};}else{if(True){if(True){}else{return 5;};}else{return 5;};};};};};};};"
+    it "test parser for" $
+      do 
+        testFor
+        `shouldBe`
+        "for(i = 0; i < 5; i = (i + 1);){let five = 5;}; for(i = 0; i < 5; i = (i + 1);){add();}; for(i = 0; i < 5; i = (i + 1);){if(i == 2){add();};};"
 
-    it "testing call plus" $ 
-      do 
-        testCallPlus 
-        `shouldBe`
-        True
-    it "testing basic grouped" $
-      do 
-        testGroupedPrecedence
-        `shouldBe`
-        "let five = (((2 + 3)) * 5); let five = ((((2 + (-3))) * (-4)) + ((10 / 5))); let five = ((((-3) + 5)) + 2) == (8 / 5); let five = (((5 + 2)) * 5) > ((-4) / 1); let five = ((((2 + 2)) * ((5 * 2))) / (((-4) - (-4)))); return ((((((1 + 2)) + 3)) * ((4 * ((5 + 6))))) / ((((-7) - 8)))); return (((1 + 2))); let five = ((((3 * 4) + 1)) == ((-13)));"
-
-  describe "Testing bools" $ do
-    it "testing bools" $ 
-      do 
-        testBools
-        `shouldBe`
-        "let five = 5 == 5; let five = 5 == (5 + 5); let five = 5 == (5 + (5 * 5)); let five = 5 == (5 + (-5)); let five = 5 == (5 + ((-5) * (-5))); let five = 5 > (5 * 2) == (2 + ((-3) * 5)) > 1; let five = b[0] == b[0];"
-  describe "Testing if" $ do
-    it "testing empty if" $ 
-      do 
-        testIf 
-        `shouldBe`
-        "if( empty ){}; if( empty ){}; if( empty ){let five = 5;}; if( empty ){}else{let five = 5;}; if( empty ){let five = 5;let ten = (5 + 5);}; if( empty ){}else{let five = 5;let ten = (5 + 5);}; if( empty ){let five = 5;}else{let five = 5;}; if( empty ){let five = 5;let ten = 10;}else{let five = 5;let ten = 10;}; if(5 == 5){if(5 == 5){let five = 5;}else{five = 5;};}; if(5 == 5){return 5;};"
-  describe "Testing Ident" $ do
-    it "testing ident" $ 
-      do 
-        testIdent 
-        `shouldBe`
-        "five = 5; five = (5 * 5); five = 5 == 5; five = (-5); five = ((5 + 5)); let five = (2 + three); let five = three; let five = (-five); let five = ((three + two)); let five = three == 3;"
-  describe "Testing Func" $ do
-    it "testing empty func" $
-      do
-        testFunc 
-        `shouldBe`
-        "fn five(){}; fn five(a,b){}; fn five(){return 5;}; fn five(a,b){return 5;}; fn five(){let five = 5; return five;}; fn five(){let five = (2 + 3);}; fn five(){let five = ((2 + 3));}; fn five(){let five = (-5);}; fn five(){let five = 5 == 5;}; fn five(){if(5 == 5){let five = 5;}else{return 10;};}; fn five(){return five();}; add(5); add((5 + 5)); add((-5)); add((((5 + 3)) * 2)); let five = five(); return five(); let five = (2 + addThree()); let five = (-five()); let five = five() == five();"
-    it "testing grouped with func call" $
-      do 
-        testCall 
-        `shouldBe`
-        "let five = ((2 + addThree())); let five = addThree(a); let five = addThree(a,b);"
-  describe "Test difficult" $ do
-   it "Test diff func" $
-      do
-        testDiffFunc
-        `shouldBe`
-        "fn five(){if(5 == 5){let five = 5;five = (five - 2);return (five + 3);};};"
-   it "Test diff if" $
-      do
-        testDiffIf
-        `shouldBe`
-        "if( empty ){if( empty ){}else{if( empty ){};};}else{if( empty ){if( empty ){if( empty ){}else{five = 5;};};};};"
-
-   it "Test insane if" $
-      do
-        testInsaneIf
-        `shouldBe`
-        "if( empty ){if( empty ){if( empty ){five = 5;};}else{if( empty ){five = 5;}else{five = 5;};};}else{if( empty ){if( empty ){if( empty ){}else{five = 5;};}else{if( empty ){}else{if( empty ){}else{five = 5;};};};};};"
-   it "test nested array/map" $ 
-      do
-        testEvalMapArrayComb 
-        `shouldBe`
-        "- a = [{0:[{0:[True, ], }, ], }, 1, ]"
-  describe "test object" $ do
-    it "test string " $ 
-      do 
-        testObj
-        `shouldBe`
-        "- one = 'five' two = True three = False four = 5 five = False six = -5"
-    it "test op plus" $ 
-      do 
-        testObjOp
-        `shouldBe`
-        "- zero = 0 one = 10 two = 25 three = 1"
-    it "test op greater than" $ 
-      do 
-        testObjBoolOp
-        `shouldBe`
-        "- one = False two = True three = True four = False"
-    it "test obj func" $ 
-      do 
-        testObjFunc
-        `shouldBe`
-        "fn add(a,b){return (a + b);};"
-  describe "test eval" $ do
-    it "test func + call" $ 
-      do 
-        testEvalFuncCall
-        `shouldBe`
-        "fn add(a,b){return (a + b);}; - five = 5"
-    it "test mul func" $ 
-      do 
-        testEvalMulFunc
-        `shouldBe`
-        "fn add(a,b){return (a + b);}; fn divide(a,b){return (a / b);}; -"
-    it "test mul var" $ 
-      do 
-        testEvalMulVar
-        `shouldBe`
-        "- five = 5 ten = 10"
-    it "test eval context" $ 
-      do 
-        testEvalContext
-        `shouldBe`
-        "fn add(){let five = 5; return 3;}; - three = 3"
-    it "test eval overwrite var" $ 
-      do 
-        testEvalOverwriteVar
-        `shouldBe`
-        "- five = 5"
-
-    it "test eval nested if" $ 
-      do 
-        testEvalNestedIf
-        `shouldBe`
-        "- five = 5"
-    it "test eval nested if" $ 
-      do 
-        testEvalNestedElse
-        `shouldBe`
-        "- five = 5"
-    it "test eval string add" $ 
-      do 
-        testEvalStringAdd
-        `shouldBe`
-        "- hello = 'Hello' world = ' World!' add = 'Hello World!'"
-    it "test eval array" $ 
-      do 
-        testEvalArray
-        `shouldBe`
-        "fn add(a,b){return (a + b);}; - arr = [1, 'Hi', 5, 5, True, ]"
-    it "test eval array array" $ 
-      do 
-        testEvalArrayArray
-        `shouldBe`
-        "- a = [1, 2, 3, ] arr = [3, 1, ]"
-    it "test eval array idx op" $ 
-      do 
-        testEvalArrayIdxOp
-        `shouldBe`
-        "- a = [1, 2, 3, 4, 5, ] arr = 3"
-    it "test eval idx grouped op" $ 
-      do 
-        testEvalArrayIdxGroupedOp
-        `shouldBe`
-        "- a = [1, 2, 3, ] arr = 2"
-    it "test eval idx ident" $ 
-      do 
-        testEvalArrayIdxIdent
-        `shouldBe`
-        "- a = [1, 2, 3, ] b = 0 arr = 1"
-    it "test eval func if" $ 
-      do 
-        testEvalFuncIf
-        `shouldBe`
-        "fn add(a,b){if(a > b){return (a + b);}else{return (a - b);};}; - sum = -1"
-    it "test eval idx wierd" $ 
-      do 
-        testEvalArrayIdxWierd
-        `shouldBe`
-        "- c = [1, 2, 4, 1, ] b = 0 a = [False, True, False, ] arr = True"
-  describe "test array" $ do
-    it "test array" $ 
-      do
-        testArray
-        `shouldBe`
-        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, ];"
-    it "test array with other statement" $ 
-      do
-        testArrayLet
-        `shouldBe`
-        "let arr = [1, 'Hi', ((2 + 3)), add(2,3), True, (-1), 1 == 1, ];"
-    it "test array with indexing" $ 
-      do
-        testArrayIdxInArr
-        `shouldBe`
-        "let arr = [a[2], 1, ];"
-    it "test array operator exp" $ 
-      do
-        testArrayIdx
-        `shouldBe`
-        "let arr = (2 + a[2]);"
-    it "test array operation with index" $ 
-      do
-        testArrayIdxGrouped
-        `shouldBe`
-        "let arr = ((2 + a[2]));"
-    it "test array grouped operator" $ 
-      do
-        testArrayIdxGroupedOp
-        `shouldBe`
-        "let arr = a[((2 + 3))];"
-    it "test array idx operation" $ 
-      do
-        testArrayIdxOp
-        `shouldBe`
-        "let arr = a[(2 + 3)];"
-    it "test array idx ident" $ 
-      do
-        testArrayIdxIdent
-        `shouldBe`
-        "let arr = a[b];"
-    it "test array idx wierd" $ 
-      do
-        testArrayIdxWierd
-        `shouldBe`
-        "let arr = a[((((2 * b)) + c[3]))];"
-  describe  "test map" $ do
-    it "test map key val" $
-      do 
-        testMapIndexKeyVal 
-        `shouldBe`
-        "let a = {b[0]:b[0], b['k']:b['k'], b[a[0]]:b[a[0]], b[call()]:b[call()], };"
-    it "test map" $
-      do 
-        testMap 
-        `shouldBe`
-        "let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, b:{x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, }, };"
-    it "test map func" $
-      do 
-        testMapFunc 
-        `shouldBe`
-        "fn add(){let m = {x:x, 1:1, 'a':'a', (1 + 2):(1 + 2), ((1 / 2)):((1 / 2)), a:True, };};"
-    it "test eval map" $
-      do 
-        testEvalMap
-        `shouldBe`
-        "- x = 0 a = 1 m = {0:0, 1:1, 'a':'a', 3:3, 2:2, 1:True, }"
-    it "test eval map func" $
-      do 
-        testEvalMapFunc
-        `shouldBe`
-        "fn add(a,b){let c = {1:3, 2:4, }; return (c[a] + c[b]);}; - a = 7"
-    it "test eval map func if " $
-      do 
-        testEvalMapFuncIf
-        `shouldBe`
-        "fn a(b){if(b > 1){let c = {3:4, };return c[b];}else{let c = {0:5, };return c[b];};}; - d = 4"
-    it "test eval map func else" $
-      do 
-        testEvalMapFuncElse
-        `shouldBe`
-        "fn a(b){if(b > 1){let c = {3:4, };return c[b];}else{let c = {0:5, };return c[b];};}; - d = 5"
-    it "test eval map assign" $
-      do 
-        testEvalMapAssign
-        `shouldBe`
-        "- a = {1:10, 2:2, '3':'4', 4:{4:True, }, 'k':True, }"
-    it "test array eval assign" $ 
-      do
-        testEvalArrayAssign
-        `shouldBe`
-        "- a = [1, False, 3, [4, True, ], ]"
-  describe "test prebuilt funcs" $ do
-    it "test append" $
-      do
-        testEvalAppend 
-        `shouldBe`
-        "- a = [1, ]"
-    it "test len str" $
-      do
-        testEvalLenStr
-        `shouldBe`
-        "- s = 'hello world' l = 11"
-    it "test len array" $
-      do
-        testEvalLenArray
-        `shouldBe`
-        "- a = [1, 2, 3, 4, ] l = 4"
-    it "test len map" $
-      do
-        testEvalLenMap
-        `shouldBe`
-        "- a = {1:1, 2:2, 3:3, 4:4, } l = 4"

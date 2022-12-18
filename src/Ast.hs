@@ -54,20 +54,20 @@ data ExpressionType
   deriving (Eq, Show)
 
 data Expression
-  = OperatorExpression {expLine :: !Int, expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
-  | IntegerLiteralExpression {expLine :: !Int, expressionType :: !ExpressionType, integerLiteral :: !Token}
-  | ArrayExpression {expLine :: !Int, expressionType :: !ExpressionType, array :: ![Expression], closedArr :: !Bool}
-  | MapExpression {nextItem :: !MapType, closedMap :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, mapMap :: ([Expression], [Expression])}
-  | IndexExpression {closedIndex :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Expression, arrayIndex :: ![Expression]}
-  | StringExpression {expLine :: !Int, expressionType :: !ExpressionType, stringLiteral :: !Token}
-  | GroupedExpression {expLine :: !Int, expressionType :: !ExpressionType, groupedExpression :: !Expression, closed :: !Bool}
-  | PrefixExpression {expLine :: !Int, expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}
-  | BoolExpression {expLine :: !Int, expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
-  | TFExpression {expLine :: !Int, expressionType :: !ExpressionType, bool :: !TokenType}
-  | Expression {expLine :: !Int, expressionType :: !ExpressionType}
-  | IdentExpression {expLine :: !Int, expressionType :: !ExpressionType, ident :: !Token}
-  | AssignExpression {expLine :: !Int, expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
-  | CallExpression {expLine :: !Int, expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression, closedCall :: !Bool}
+  = OperatorExpression {closedExp :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, leftOperator :: !Expression, operator :: !Token, rightOperator :: !Expression}
+  | IntegerLiteralExpression {closedExp :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, integerLiteral :: !Token}
+  | ArrayExpression {closedExp :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, array :: ![Expression]} 
+  | MapExpression {closedExp :: !Bool, nextItem :: !MapType, expLine :: !Int, expressionType :: !ExpressionType, mapMap :: ([Expression], [Expression])}
+  | IndexExpression {closedExp :: !Bool, expLine :: !Int, expressionType :: !ExpressionType, arrayIdent :: !Expression, arrayIndex :: ![Expression]}
+  | StringExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, stringLiteral :: !Token}
+  | GroupedExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, groupedExpression :: !Expression}
+  | PrefixExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, prefixOperator :: !Token, prefixExpression :: !Expression}
+  | BoolExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, leftBool :: !Expression, boolOperator :: !Token, rightBool :: !Expression}
+  | TFExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, bool :: !TokenType}
+  | Expression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType}
+  | IdentExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, ident :: !Token}
+  | AssignExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, assignIdent :: !Expression, assignExpression :: !Expression}
+  | CallExpression {closedExp :: !Bool,expLine :: !Int, expressionType :: !ExpressionType, callParams :: ![Expression], callIdent :: !Expression}
   deriving (Eq, Show)
 
 
@@ -84,7 +84,7 @@ data Statement = Statement
     ( Eq,
       Show
     )
-data BlockType = CON | ALT | EXP | PAR | BOD deriving(Eq, Show) 
+data BlockType = CON | ALT | EXP | PAR | BOD | START | STOP | INC deriving(Eq, Show) 
 
 data StatementType = 
   NOSTA 
@@ -94,14 +94,15 @@ data StatementType =
   | FUNCSTA 
   | ASSIGNSTA 
   | CALLSTA
+  | FORSTA
   deriving (Eq, Show)
 
 data StatementUni
   = LetStatement {identifier :: !String}
   | ReturnStatement {}
   | IfStatement {closedCon :: !Bool, con :: ![Statement], alt :: ![Statement], closedAlt :: !Bool}
-  | FuncStatement {params :: ![Expression], body :: ![Statement]} 
-  | ForStatement{cond :: ![Statement], forBody :: ![Statement]}
+  | FuncStatement {closedParams :: !Bool, closedBody :: !Bool, params :: ![Expression], body :: ![Statement]} 
+  | ForStatement{closedForBody :: !Bool, closedForCon :: !Bool, start :: !Expression, stop ::  !Expression, inc :: !Expression ,forBody :: ![Statement]}
   | CallStatement {} 
   | AssignStatement{}
   | NoStatement {}
