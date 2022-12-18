@@ -98,10 +98,8 @@ idk (a,b) = c
       | otherwise = idk(a ++ [fromIntegral (BS.head b)], pack(removeFirst(unpack b)))
 
 
-extractFunc :: (Int,String,Compiler) -> Compiler
-extractFunc (n,s,c) = 
-  addToLastSymbol(
-  Symbol{symName = s, symIndex = Prelude.length (symbols c!!(Prelude.length (symbols c)-2)), symScope = getSymScope(scopeIndex c - 1)},
+extractFunc :: (Int,Compiler) -> Compiler
+extractFunc (n,c) = 
   addToScope(Compiler{
     scopes = pop (scopes c), 
     scopeIndex = scopeIndex c - 1,
@@ -115,7 +113,7 @@ extractFunc (n,s,c) =
     scopes c!!(Prelude.length (scopes c) - 1) <> -- FUNC  
     lookupOpCode OPRETURN <> -- FUNC 
     lookupLetScope (scopeIndex c - 1 ) <> -- SET 
-    chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2))))) -- SYMBOL KEY/NAME
+    chooseToUnroll(Prelude.length (symbols c !!(Prelude.length (symbols c) - 2)) - 1)) -- SYMBOL KEY/NAME
 
 addToLastSymbol :: (Symbol, Compiler) -> Compiler 
 addToLastSymbol (s, c) = 
@@ -132,16 +130,20 @@ compileFunc (s, c) = comp
       | otherwise =  
         extractFunc(
           Prelude.length (params (statementUni s)),
-          literal(ident (expression (s))), 
+          
           compile(body (statementUni s), enterScope(Compiler{
               scopes = scopes c,
               scopeIndex = scopeIndex c,
-              symbols = symbols c ++ [[
+              symbols = Utils.append (Utils.append (pop (symbols c)) (Utils.append (Prelude.last (symbols c)) (Symbol{
+                  symName = literal(ident (expression (s))), 
+                  symScope = getSymScope (scopeIndex c), 
+                  symIndex = Prelude.length (Prelude.last (symbols c)) 
+                }))) [
                 Symbol{
                     symName = literal (ident x), 
                     symIndex =i, 
                     symScope = LOCAL
-                  } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]]
+                  } | (x,i) <- Prelude.zip (params(statementUni s)) [0 ..] ]
           })))
 
 enterScope :: Compiler -> Compiler 
@@ -211,6 +213,7 @@ getScopeAndKey :: (String, Compiler) -> ByteString
 getScopeAndKey (s, c) = b 
   where   
     b 
+      | scopeIndex c == 0 && Prelude.null [x | x <- symbols c !! 0, symName x == s] = error "doesn't exist?"
       | scopeIndex c == 0 =lookupOpCode GETGLOBAL <> chooseToUnroll(symIndex (Prelude.head [x | x <- symbols c !! 0, symName x == s])) 
       | Prelude.null [x | x <- symbols c !! 0, symName x == s] = lookupOpCode GETLOCAL <> chooseToUnroll (getScopeFromKey(s,c))<> chooseToUnroll(getSymbolKey(symbols c, s)) 
       | otherwise = lookupOpCode GETGLOBAL <> chooseToUnroll(getSymbolKey(symbols c, s)) 
@@ -265,24 +268,25 @@ compileIf (bl, s, c) = comp
           expression = expression s
         }, 
         addJumpNT(compile(con (statementUni s), Compiler{
-            scopes = [BS.empty :: ByteString],
-            scopeIndex = 0,
+            scopes = scopes c ++ [BS.empty::ByteString],
+            scopeIndex = scopeIndex c + 1,
             symbols = symbols c
           }
       ), c))
       | bl == ALT = addJump(compile(alt (statementUni s), Compiler{
-          scopes = [BS.empty :: ByteString],
-          scopeIndex = 0,
+          scopes = scopes c ++ [BS.empty::ByteString],
+          scopeIndex = scopeIndex c + 1,
           symbols = symbols c
         }), c)
       | otherwise = error "compileIf"
 
 addJump :: (Compiler, Compiler) -> Compiler 
-addJump (c, old) = addToScope(
+addJump (c, old) = 
+  addToScope(
     Compiler{
       symbols = symbols c,
       scopes = scopes old, 
-      scopeIndex = scopeIndex old 
+      scopeIndex = scopeIndex old
     },
     lookupOpCode JUMP <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 2)  <>scopes c!!scopeIndex c
   )
@@ -293,7 +297,7 @@ addJumpNT (c, old) =
     Compiler{
       symbols = symbols c,
       scopes = scopes old, 
-      scopeIndex = scopeIndex old 
+      scopeIndex = scopeIndex old
     },
     lookupOpCode JUMPNT <>chooseToUnroll (BS.length (scopes c!!scopeIndex c) + 4)  <>scopes c!!scopeIndex c 
   )
