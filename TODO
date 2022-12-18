@@ -1,6 +1,0 @@
-TODO:
-
-
-
-git ls-files | grep '\.hs' | xargs wc -l
-
