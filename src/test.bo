@@ -1,1 +1,9 @@
-print("Hello World!");
+fn fibonacci(number){
+    if(number < 2){
+        return number;
+    }else{
+        return fibonacci(1);
+    };
+};
+let a = fibonacci(4);
+print(a);

@@ -483,6 +483,16 @@ addMapValToLastExp e = ex
       | expressionType e == MAPEXP = MapExpression{closedExp = False, nextItem = VAL, expLine = expLine e, expressionType = MAPEXP, mapMap =(fst(mapMap e), append (pop (snd (mapMap e))) (addMapValToLastExp(last (snd (mapMap e)))))}
       | otherwise = error ("addMapValToLastExp " ++ expressionToString e)
 
+hasNestedOperator :: Expression -> Bool 
+hasNestedOperator e = b 
+  where 
+    b 
+      | expressionType e == OPERATOREXP = hasNestedOperator(rightOperator e)
+      | expressionType e == BOOLEXP = hasNestedOperator(rightBool e)
+      | otherwise = closedExp e == False  
+      
+
+
 addOperatorToLastExp :: (Token, Expression) -> Expression 
 addOperatorToLastExp (t,e) = ex 
   where 
@@ -492,7 +502,7 @@ addOperatorToLastExp (t,e) = ex
       | expressionType e == GROUPEDEXP && closedExp e == False= GroupedExpression {closedExp = False, expLine = expLine e, expressionType = GROUPEDEXP, groupedExpression = addOperatorToLastExp(t, groupedExpression e)}
       | expressionType e == GROUPEDEXP = OperatorExpression{closedExp = False, expLine = expLine e, expressionType = OPERATOREXP, leftOperator = e, operator = t, rightOperator = Expression{expLine = -1, closedExp = False, expressionType = EMPTYEXP}}
       | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP && closedExp (rightOperator e) = OperatorExpression{expressionType = OPERATOREXP, closedExp = False, expLine = line t, leftOperator = e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}} 
-      | expressionType e == OPERATOREXP && expressionType (rightOperator e) == GROUPEDEXP = OperatorExpression{expressionType = OPERATOREXP, closedExp = False, expLine = line t, leftOperator = leftOperator e, operator = operator e, rightOperator = addOperatorToLastExp(t, rightOperator e)} 
+      | expressionType e == OPERATOREXP && (expressionType (rightOperator e) == GROUPEDEXP || hasNestedOperator(rightOperator e)) = OperatorExpression{expressionType = OPERATOREXP, closedExp = False, expLine = line t, leftOperator = leftOperator e, operator = operator e, rightOperator = addOperatorToLastExp(t, rightOperator e)} 
       | expressionType e == OPERATOREXP && checkPrecedence(t, e) = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = rightOperator e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}}
       | expressionType e == OPERATOREXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = e, operator = t, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}
       | expressionType e == ASSIGNEXP = AssignExpression {closedExp = False, expLine = expLine e,expressionType = ASSIGNEXP, assignIdent = assignIdent e, assignExpression = addOperatorToLastExp(t, assignExpression e)}
@@ -698,7 +708,7 @@ addIdentifier (t, s) = sta
           statementType = statementType (last s),
           statementUni = IfStatement{
               closedCon = True, 
-              con = [],
+              con = con (statementUni (last s)),
               closedAlt = False,
               alt = addIdentifier(t, alt (statementUni (last s))) 
             },
@@ -845,8 +855,10 @@ addMinusToLastExp e = ex
       | expressionType e == EMPTYEXP = PrefixExpression{closedExp = False, expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = Token{line = -1, typ = MINUS, literal = "-"}, prefixExpression = Expression {closedExp = False, expLine = expLine e, expressionType = EMPTYEXP}}
       | expressionType e == IDENTEXP || expressionType e == INTEXP || expressionType e == STRINGEXP = OperatorExpression{expressionType = OPERATOREXP, closedExp = False, expLine = expLine e, leftOperator = e, operator =  Token{line = -1, typ = MINUS, literal = "-"}, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}} 
       | expressionType e == OPERATOREXP && expressionType (rightOperator e) == EMPTYEXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = PrefixExpression{closedExp = False, expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = Token{line = -1, typ = MINUS, literal = "-"}, prefixExpression = Expression {closedExp = False, expLine = expLine e, expressionType = EMPTYEXP}}} 
+      | expressionType e == OPERATOREXP && hasNestedOperator(rightOperator e) = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = addMinusToLastExp(rightOperator e)}
       | expressionType e == OPERATOREXP && checkPrecedence(Token{literal = "-", typ = MINUS, line = -1}, e) && expressionType (leftOperator e) /= GROUPEDEXP  = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = leftOperator e, operator = operator e, rightOperator = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = rightOperator e, operator = Token{literal = "-", typ = MINUS, line = -1}, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}}
       | expressionType e == OPERATOREXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = e, operator = Token{line = -1, typ = MINUS, literal = "-"}, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}
+      | expressionType e == PREFIXEXP = OperatorExpression{expressionType = OPERATOREXP, expLine = expLine e, closedExp = False, leftOperator = e, operator = Token{line = -1, typ = MINUS, literal = "-"}, rightOperator = Expression{closedExp = False, expLine = -1, expressionType = EMPTYEXP}}
       | expressionType e == ARRAYEXP && null (array e)= ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = [PrefixExpression{closedExp = False, expLine = expLine e, expressionType = PREFIXEXP, prefixOperator = Token{line = -1, typ = MINUS, literal = "-"}, prefixExpression = Expression {closedExp = False, expLine = expLine e, expressionType = EMPTYEXP}}]} 
       | expressionType e == ARRAYEXP =ArrayExpression{closedExp = False, expLine = expLine e, expressionType = ARRAYEXP, array = append (pop (array e)) (addMinusToLastExp(last (array e)))} 
       | expressionType e == MAPEXP && nextItem e == KEY = MapExpression{closedExp = False, nextItem = KEY, expLine = expLine e, expressionType = MAPEXP, mapMap = (append (pop (fst( mapMap e))) (addMinusToLastExp(last (fst(mapMap e)))), snd(mapMap e))}

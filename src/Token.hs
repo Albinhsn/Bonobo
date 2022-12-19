@@ -35,6 +35,10 @@ data TokenType =
   LET -- 'let' the literal 'let' for defining a variable 
   deriving (Eq, Show)
 
-data Token = Token {line :: !Int, typ :: !TokenType, literal :: !String} deriving (Eq, Show)
+data Token = Token {
+  line :: !Int, 
+  typ :: !TokenType, 
+  literal :: !String
+  } deriving (Eq, Show)
 
 

@@ -86,6 +86,7 @@ runVM v =
             })
     --Sub
     3 ->  
+        trace("Sub: " ++ concStack (stack v))
         runVM(VM{
               frames = removeFirstInstruction (frames v),
               bpOffset = bpOffset v- 1,
@@ -129,7 +130,9 @@ runVM v =
           outputs = outputs v
         })
     --GT 
-    8 -> runVM(VM{
+    8 -> 
+      trace("GT: " ++ concStack (stack v))
+      runVM(VM{
           frames = removeFirstInstruction (frames v),
           bpOffset = bpOffset v- 1,
           global = global v,
@@ -474,10 +477,10 @@ evalReturn v = vm
           outputs = outputs v
         }
       | otherwise =
-        -- trace("evalReturn: ")
-        -- trace("       stack prior: " ++ concStack(stack v))
-        -- trace("       stack after: " ++ concStack(stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
-        -- trace("       globals: " ++ concGlobal(global v))
+        trace("evalReturn: ")
+        trace("       stack prior: " ++ concStack(stack v))
+        trace("       stack after: " ++ concStack(stack v !!0:removeFirstN(getBasePointerIdx(Prelude.length (frames v) -2, v) + 1, stack v)))
+        trace("       globals: " ++ concGlobal(global v))
         VM{
           frames =  changeBP(-1 * getBasePointerIdx(Prelude.length (frames v) -2, v), pop (frames v)),
           bpOffset = 1,
