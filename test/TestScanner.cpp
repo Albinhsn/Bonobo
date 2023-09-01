@@ -116,3 +116,51 @@ TEST(TestScanner, TestKeywords) {
   }
   EXPECT_EQ(scanner->current, scanner->source.size());
 }
+
+TEST(TestScanner, TestFibonnaci) {
+  std::string source = "fun fib(a){\n if(a <= 2){\n return 1;\n}\n return "
+                       "fib(a-1) + fib(a-2);\n}";
+  Scanner *scanner = initScanner(source);
+  std::vector<Token> tokens = {
+      (Token){"fun", 1, 0, TOKEN_FUN},
+      (Token){"fib", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 0, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 0, TOKEN_IDENTIFIER},
+      (Token){")", 1, 0, TOKEN_RIGHT_PAREN},
+      (Token){"{", 1, 0, TOKEN_LEFT_BRACE},
+      (Token){"if", 1, 0, TOKEN_IF},
+      (Token){"(", 1, 0, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"<=", 1, 0, TOKEN_LESS_EQUAL},
+      (Token){"2", 1, 0, TOKEN_NUMBER},
+      (Token){")", 1, 0, TOKEN_RIGHT_PAREN},
+      (Token){"{", 1, 0, TOKEN_LEFT_BRACE},
+      (Token){"return", 1, 0, TOKEN_RETURN},
+      (Token){"1", 1, 0, TOKEN_NUMBER},
+      (Token){";", 1, 0, TOKEN_SEMICOLON},
+      (Token){"}", 1, 0, TOKEN_RIGHT_BRACE},
+      (Token){"return", 1, 0, TOKEN_RETURN},
+      (Token){"fib", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 0, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"-", 1, 0, TOKEN_MINUS},
+      (Token){"1", 1, 0, TOKEN_NUMBER},
+      (Token){")", 1, 0, TOKEN_RIGHT_PAREN},
+      (Token){"+", 1, 0, TOKEN_PLUS},
+      (Token){"fib", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 0, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 0, TOKEN_IDENTIFIER},
+      (Token){"-", 1, 0, TOKEN_MINUS},
+      (Token){"2", 1, 0, TOKEN_NUMBER},
+      (Token){")", 1, 0, TOKEN_RIGHT_PAREN},
+      (Token){";", 1, 0, TOKEN_SEMICOLON},
+      (Token){"}", 1, 0, TOKEN_RIGHT_BRACE},
+      (Token){"EOF", 1, 0, TOKEN_EOF},
+  };
+  for (int i = 0; i < tokens.size(); i++) {
+    Token *scannedToken = scanToken(scanner);
+    EXPECT_EQ(scannedToken->type, tokens[i].type);
+    EXPECT_EQ(scannedToken->literal, tokens[i].literal);
+  }
+  EXPECT_EQ(scanner->current, scanner->source.size());
+}
