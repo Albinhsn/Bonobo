@@ -6,5 +6,7 @@
 
 void disassembleChunk(Chunk *chunk, std::string name);
 int disassembleInstruction(Chunk *chunk, int offset);
+std::string translateInstruction(Chunk *chunk);
+
 
 #endif
