@@ -925,7 +925,9 @@ static void statement(Compiler *compiler, Parser *parser, Scanner *scanner) {
     returnStatement(compiler, parser, scanner);
   } else if (match(parser, scanner, TOKEN_WHILE)) {
     whileStatement(compiler, parser, scanner);
-  } else {
+  } else if (match(parser, scanner, TOKEN_LEFT_BRACE)){
+    block(compiler, parser, scanner);
+  }else {
     expressionStatement(compiler, parser, scanner);
   }
 }
@@ -950,7 +952,6 @@ Compiler *compile(std::string source) {
   Scanner *scanner = initScanner(source);
   Parser *parser = initParser();
   Compiler *compiler = initCompiler(NULL, parser, TYPE_SCRIPT);
-
   advance(parser, scanner);
   while (!match(parser, scanner, TOKEN_EOF)) {
     declaration(compiler, parser, scanner);
