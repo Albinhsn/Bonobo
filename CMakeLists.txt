@@ -13,8 +13,8 @@ add_subdirectory(test)
 add_subdirectory(googletest)
 
 set(Sources
-  # ./src/scanner.cpp
-  # ./src/scanner.h
+  ./src/scanner.cpp
+  ./src/scanner.h
   ./src/debug.cpp
   ./src/debug.h
   ./src/chunk.cpp
@@ -26,10 +26,12 @@ set(Sources
   ./src/vm.cpp
   ./src/stack.h
   ./src/vm.h
-  # ./src/compiler.h
-  # ./src/compiler.cpp
+  ./src/compiler.h
+  ./src/compiler.cpp
   ./src/main.cpp
   ./src/common.h
+  ./src/object.h
+  ./src/object.cpp
   )
 add_executable(
   main ${Sources}

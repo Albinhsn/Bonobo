@@ -17,6 +17,7 @@ cf:
 bt:
 	cmake -S . -B build && cmake --build build
 	cd build/ && ctest --output-on-failure -V
+
 t:
 	cd build/ && ctest  --output-on-failure -V 
 
@@ -24,7 +25,7 @@ i:
 	cd src/ && ./main ../input
 
 br:
-	cmake -S . -B build && cmake --build build && cd build/ && ./main $(file)
+	cmake -S . -B build && cmake --build build && cd build/ && ./main ../input
 
 r:
 	cmake --build build && cd build/ && ./main $(file)
