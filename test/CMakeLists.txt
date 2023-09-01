@@ -3,7 +3,7 @@ set(This cpploxTests)
 
 set(test_SOURCES
   ./TestStack.cpp
-  ../src/stack.h
+  ./TestScanner.cpp
   )
 add_executable(${This} ${test_SOURCES})
 

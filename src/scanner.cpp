@@ -53,6 +53,16 @@ static bool match(Scanner *scanner, char needle) {
   }
   return false;
 }
+
+static bool matchNext(Scanner *scanner, char needle) {
+  if (scanner->source.size() > scanner->current + 1 &&
+      scanner->source[scanner->current + 1] == needle) {
+    advance(scanner);
+    return true;
+  }
+  return false;
+}
+
 static bool isDigit(char c) { return '0' <= c && '9' >= c; }
 
 static Token *parseNumber(Scanner *scanner) {
@@ -76,7 +86,8 @@ static TokenType isKeyword(std::string literal) {
       {"struct", TOKEN_STRUCT}, {"else", TOKEN_ELSE}, {"false", TOKEN_FALSE},
       {"for", TOKEN_FOR},       {"if", TOKEN_IF},     {"nil", TOKEN_NIL},
       {"return", TOKEN_RETURN}, {"true", TOKEN_TRUE}, {"while", TOKEN_WHILE},
-      {"print", TOKEN_PRINT},   {"var", TOKEN_VAR},   {"fun", TOKEN_FUN}};
+      {"print", TOKEN_PRINT},   {"var", TOKEN_VAR},   {"fun", TOKEN_FUN},
+      {"and", TOKEN_AND},       {"or", TOKEN_OR}};
   if (m.count(literal)) {
     return m[literal];
   }
@@ -123,7 +134,7 @@ void skipWhitespace(Scanner *scanner) {
     char c = getCurrent(scanner);
     switch (c) {
     case '/': {
-      if (match(scanner, '/')) {
+      if (matchNext(scanner, '/')) {
         while (!isAtEnd(scanner) and !match(scanner, '\n')) {
           advance(scanner);
         }
@@ -201,12 +212,12 @@ Token *scanToken(Scanner *scanner) {
   case '*': {
     return makeToken(scanner, "*", TOKEN_STAR);
   }
-    // case '?': {
-    //   return makeToken(scanner, "?", TOKEN_QUESTION);
-    // }
-    case ':': {
-      return makeToken(scanner, ":", TOKEN_COLON);
-    }
+  // case '?': {
+  //   return makeToken(scanner, "?", TOKEN_QUESTION);
+  // }
+  case ':': {
+    return makeToken(scanner, ":", TOKEN_COLON);
+  }
   case '!': {
     if (match(scanner, '=')) {
       return makeToken(scanner, "!=", TOKEN_BANG_EQUAL);

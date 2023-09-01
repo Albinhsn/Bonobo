@@ -43,8 +43,6 @@ typedef enum {
   // TOKEN_FLOAT, // int
   // TOKEN_STR,   // str
   // TOKEN_BOOL,  // bool
-  // TOKEN_LIST,  // []
-  // TOKEN_MAP,   // {}
 
   // Keywords.
   TOKEN_STRUCT,
