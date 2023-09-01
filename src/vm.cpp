@@ -28,17 +28,23 @@ void initVM() {
   vm->strings = std::map<std::string, Value>();
   vm->globals = std::map<std::string, Value>();
   vm->objects = std::vector<Obj *>();
+  vm->frames = new FrameStack();
+  vm->frames->init();
 
   defineNative("clock", clockNative);
 }
-static CallFrame *currentFrame() { return vm->frames[vm->frames.size() - 1]; }
+static CallFrame *currentFrame() { return vm->frames->peek(); }
 
-void freeVM() { vm->frames.clear(); }
+void freeVM() {
+  delete (vm->frames);
+  delete (vm->stack);
+}
 
 static void resetStack(VM *vm) {
   vm->stack = new Stack();
   vm->stack->init();
-  vm->frames = std::vector<CallFrame *>();
+  vm->frames = new FrameStack();
+  vm->frames->length = 0;
 }
 
 static void runtimeError(VM *vm, std::string format, ...) {
@@ -48,8 +54,8 @@ static void runtimeError(VM *vm, std::string format, ...) {
   va_end(args);
   fputs("\n", stderr);
 
-  for (int i = vm->frames.size() - 1; i >= 0; i--) {
-    CallFrame *frame = vm->frames[i];
+  while (vm->frames->length) {
+    CallFrame *frame = vm->frames->pop();
     ObjFunction *function = frame->function;
     size_t instruction = frame->instructions[frame->ip];
     fprintf(stderr, "[line %d] in ", function->chunk->lines[instruction]);
@@ -91,7 +97,7 @@ static bool call(ObjFunction *function, int argCount) {
                  argCount);
     return false;
   }
-  if (vm->frames.size() == FRAMES_MAX) {
+  if (vm->frames->length == FRAMES_MAX) {
     runtimeError(vm, "Stack overflow.");
     return false;
   }
@@ -100,7 +106,7 @@ static bool call(ObjFunction *function, int argCount) {
   frame->instructions = function->chunk->code;
   frame->ip = 0;
   frame->sp = vm->stack->length - argCount - 1;
-  vm->frames.push_back(frame);
+  vm->frames->push(frame);
   return true;
 }
 
@@ -426,7 +432,7 @@ InterpretResult run() {
       if (!callValue(peek(argCount), argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
-      frame = vm->frames[vm->frames.size() - 1];
+      frame = vm->frames->peek();
       break;
     }
     case OP_ARRAY: {
@@ -470,14 +476,15 @@ InterpretResult run() {
     case OP_RETURN: {
       Value result = vm->stack->pop();
       int sp = freeFrame(vm);
-      if (vm->frames.size() == 0) {
+      if (!vm->frames->length) {
         vm->stack->pop();
+
         return INTERPRET_OK;
       }
 
       vm->stack->remove(sp);
       vm->stack->push(result);
-      frame = vm->frames[vm->frames.size() - 1];
+      frame = vm->frames->peek();
       break;
     }
     }
@@ -499,7 +506,6 @@ InterpretResult interpret(std::string source) {
   call(function, 0);
 
   freeCompiler(compiler);
-  std::cout << "\n== Running in vm == \n";
   InterpretResult result = run();
   return result;
 }

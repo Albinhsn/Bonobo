@@ -42,15 +42,12 @@ void freeParser(Parser *parser) {
   delete (parser);
 };
 
-void freeScanner(Scanner * scanner){
-  delete(scanner);
-}
+void freeScanner(Scanner *scanner) { delete (scanner); }
 
 int freeFrame(VM *vm) {
-  int sp = vm->frames.back()->sp;
-  delete (vm->frames.back());
-  vm->frames.pop_back();
-
+  CallFrame *f2 = vm->frames->pop();
+  int sp = f2->sp;
+  delete (f2);
   return sp;
 };
 void freeCompiler(Compiler *compiler) { delete (compiler); }
