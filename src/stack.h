@@ -17,7 +17,11 @@ public:
   void remove(int sp) {
     Node *curr = head;
     while (length > sp) {
-      pop();
+      length--;
+      Node *oldHead = head;
+      head = head->next;
+      Value value = oldHead->value;
+      delete (oldHead);
     }
   }
 
@@ -30,8 +34,10 @@ public:
   }
   void update(int idx, Value value) {
     Node *curr = head;
-    for (int i = 0; i < idx; i++) {
-      curr = curr->next;
+    if (idx > 0) {
+      for (int i = 0; i < idx; i++) {
+        curr = curr->next;
+      }
     }
     curr->value = value;
   }
@@ -39,17 +45,9 @@ public:
     head = NULL;
     length = 0;
   }
-  Value peek() {
-    if (length == 0) {
-      throw std::invalid_argument("Can't peek with 0 length");
-    }
-    return head->value;
-  }
+  Value peek() { return head->value; }
 
   Value pop() {
-    if (length == 0) {
-      throw std::invalid_argument("Can't pop with 0 length");
-    }
     length--;
     Node *oldHead = head;
     head = head->next;
@@ -65,4 +63,5 @@ public:
     length++;
   }
 };
+
 #endif

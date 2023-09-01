@@ -10,8 +10,9 @@ ObjFunction *newFunction() {
   function->chunk = new Chunk();
   function->obj.type = OBJ_FUNCTION;
   initChunk(function->chunk);
-
-  vm->objects.push_back((Obj *)function);
+  if (vm) {
+    vm->objects.push_back((Obj *)function);
+  }
   return function;
 }
 ObjMap *newMap(std::vector<Value> values) {
@@ -120,7 +121,7 @@ void printObject(Value value) {
       i++;
     }
     std::cout << "}";
-      break;
+    break;
   }
   default: {
     std::cout << OBJ_TYPE(value) << " is unknown";

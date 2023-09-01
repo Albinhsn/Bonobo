@@ -66,22 +66,12 @@ static void runtimeError(VM *vm, std::string format, ...) {
 
 static void defineNative(std::string name, NativeFn function) {
   ObjString *string = copyString(name);
-  vm->objects.push_back((Obj *)string);
-  vm->stack->push(OBJ_VAL(string));
-
   ObjNative *native = newNative(function);
+
+  vm->objects.push_back((Obj *)string);
   vm->objects.push_back((Obj *)native);
-  vm->stack->push(OBJ_VAL(native));
 
-  vm->globals[AS_STRING(vm->stack->get(1))->chars] = vm->stack->get(0);
-
-  vm->stack->pop();
-  vm->stack->pop();
-}
-
-static uint8_t readByte() {
-  CallFrame *frame = currentFrame();
-  return frame->instructions[frame->ip++];
+  vm->globals[name] = OBJ_VAL((Obj *)native);
 }
 
 static bool matchByte(OpCode code) {
@@ -91,10 +81,6 @@ static bool matchByte(OpCode code) {
     return true;
   }
   return false;
-}
-
-static Value readConstant() {
-  return currentFrame()->function->chunk->constants[readByte()];
 }
 
 static Value peek(int distance) { return vm->stack->get(distance); }
@@ -217,11 +203,10 @@ static bool isFalsey(Value value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-static void concatenate() {
-  std::string a = AS_STRING(vm->stack->pop())->chars;
-  std::string b = AS_STRING(vm->stack->pop())->chars;
-  std::string c = b.append(a);
-  Value value = OBJ_VAL(copyString(c));
+static void concatenate(Value v1, Value v2) {
+  std::string a = AS_STRING(v1)->chars;
+  std::string b = AS_STRING(v2)->chars;
+  Value value = OBJ_VAL(copyString(a + b));
   vm->stack->push(value);
 }
 
@@ -230,16 +215,18 @@ InterpretResult run() {
 #define READ_SHORT()                                                           \
   (frame->ip += 2, (uint16_t)((frame->instructions[frame->ip - 2] << 8) |      \
                               frame->instructions[frame->ip - 1]))
-#define READ_STRING() AS_STRING(readConstant())
+#define READ_CONSTANT()                                                        \
+  (frame->function->chunk->constants[frame->instructions[frame->ip++]])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
-    if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                          \
+    if (!IS_NUMBER(vm->stack->peek()) || !IS_NUMBER(peek(1))) {                \
       runtimeError(vm, "Operands must be numbers.");                           \
       return INTERPRET_RUNTIME_ERROR;                                          \
     }                                                                          \
     double b = AS_NUMBER(vm->stack->pop());                                    \
-    double a = AS_NUMBER(vm->stack->pop());                                    \
-    vm->stack->push(valueType(a op b));                                        \
+    double a = AS_NUMBER(vm->stack->peek());                                   \
+    vm->stack->update(0, valueType(a op b));                                   \
   } while (false)
 
   for (;;) {
@@ -253,9 +240,10 @@ InterpretResult run() {
     std::cout << "\n";
     disassembleInstruction(frame->function->chunk, (int)frame->ip);
 #endif
-    switch (readByte()) {
+    uint8_t byte = frame->instructions[frame->ip++];
+    switch (byte) {
     case OP_CONSTANT: {
-      Value constant = readConstant();
+      Value constant = READ_CONSTANT();
       vm->stack->push(constant);
       break;
     }
@@ -276,14 +264,14 @@ InterpretResult run() {
       break;
     }
     case OP_GET_LOCAL: {
-      uint8_t slot = readByte();
+      uint8_t slot = frame->instructions[frame->ip++];
       vm->stack->push(
           vm->stack->get((vm->stack->length - 2 - frame->sp) - slot));
       break;
     }
     case OP_SET_LOCAL: {
-      uint8_t slot = readByte();
-      vm->stack->update(frame->sp + slot, peek(0));
+      uint8_t slot = frame->instructions[frame->ip++];
+      vm->stack->update(frame->sp + slot, vm->stack->peek());
       break;
     }
     case OP_GET_GLOBAL: {
@@ -298,8 +286,7 @@ InterpretResult run() {
     }
     case OP_DEFINE_GLOBAL: {
       std::string s = READ_STRING()->chars;
-      vm->globals[s] = peek(0);
-      vm->stack->pop();
+      vm->globals[s] = vm->stack->pop();
       break;
     }
     case OP_SET_GLOBAL: {
@@ -309,17 +296,17 @@ InterpretResult run() {
         runtimeError(vm, "Undefined variable '" + msg + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->globals[name] = peek(0);
+      vm->globals[name] = vm->stack->peek();
       break;
     }
     case OP_GET_PROPERTY: {
-      if (!IS_INSTANCE(peek(0))) {
+      if (!IS_INSTANCE(vm->stack->peek())) {
         runtimeError(vm, "Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
       // Get the instance from the top
-      ObjInstance *instance = AS_INSTANCE(peek(0));
-      std::string fieldName = AS_STRING(readConstant())->chars;
+      ObjInstance *instance = AS_INSTANCE(vm->stack->peek());
+      std::string fieldName = AS_STRING(READ_CONSTANT())->chars;
       std::vector<std::string> struktFields = instance->strukt->fields;
       int idx = -1;
       for (int i = 0; i < struktFields.size(); ++i) {
@@ -338,14 +325,16 @@ InterpretResult run() {
       break;
     }
     case OP_SET_PROPERTY: {
-      if (!IS_INSTANCE(peek(1))) {
-        std::cout << OBJ_TYPE(peek(1)) << "\n";
+      Value v1 = peek(1);
+      if (!IS_INSTANCE(v1)) {
+        std::cout << OBJ_TYPE(v1) << "\n";
         runtimeError(vm, "Only instances have fields.");
         return INTERPRET_RUNTIME_ERROR;
       }
 
-      ObjInstance *instance = AS_INSTANCE(peek(1));
-      instance->fields[(int)readByte()] = peek(0);
+      ObjInstance *instance = AS_INSTANCE(v1);
+      instance->fields[(int)frame->instructions[frame->ip++]] =
+          vm->stack->peek();
 
       Value value = vm->stack->pop();
       vm->stack->update(0, value);
@@ -353,8 +342,8 @@ InterpretResult run() {
     }
     case OP_EQUAL: {
       Value b = vm->stack->pop();
-      Value a = vm->stack->pop();
-      vm->stack->push(BOOL_VAL(valuesEqual(a, b)));
+      Value a = vm->stack->peek();
+      vm->stack->update(0, BOOL_VAL(valuesEqual(a, b)));
       break;
     }
     case OP_GREATER: {
@@ -366,12 +355,14 @@ InterpretResult run() {
       break;
     }
     case OP_ADD: {
-      if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
-        concatenate();
-      } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
-        double b = AS_NUMBER(vm->stack->pop());
-        double a = AS_NUMBER(vm->stack->pop());
-        vm->stack->push(NUMBER_VAL(a + b));
+      Value head = vm->stack->peek();
+      Value head2 = vm->stack->get(1);
+      if (IS_NUMBER(head) && IS_NUMBER(head2)) {
+        double b = AS_NUMBER(head2);
+        double a = AS_NUMBER(head);
+        vm->stack->update(0, NUMBER_VAL(a + b));
+      } else if (IS_STRING(head) && IS_STRING(head2)) {
+        concatenate(head, head2);
       } else {
         runtimeError(vm, "Operands must be two number or two strings");
         return INTERPRET_RUNTIME_ERROR;
@@ -391,15 +382,15 @@ InterpretResult run() {
       break;
     }
     case OP_NOT: {
-      vm->stack->push(BOOL_VAL(isFalsey(vm->stack->pop())));
+      vm->stack->update(0, BOOL_VAL(isFalsey(vm->stack->peek())));
       break;
     }
     case OP_NEGATE: {
-      if (!IS_NUMBER(peek(0))) {
+      if (!IS_NUMBER(vm->stack->peek())) {
         runtimeError(vm, "Operand must be a number.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->stack->push(NUMBER_VAL(-AS_NUMBER(vm->stack->pop())));
+      vm->stack->update(0, NUMBER_VAL(-AS_NUMBER(vm->stack->peek())));
       break;
     }
     case OP_PRINT: {
@@ -413,8 +404,8 @@ InterpretResult run() {
       break;
     }
     case OP_JUMP_IF_FALSE: {
-      uint16_t offset = READ_SHORT();
-      if (isFalsey(peek(0))) {
+      if (isFalsey(vm->stack->peek())) {
+        uint16_t offset = READ_SHORT();
         frame->ip += offset;
       }
       break;
@@ -431,7 +422,7 @@ InterpretResult run() {
       break;
     }
     case OP_CALL: {
-      int argCount = readByte();
+      int argCount = frame->instructions[frame->ip++];
       if (!callValue(peek(argCount), argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
@@ -439,7 +430,7 @@ InterpretResult run() {
       break;
     }
     case OP_ARRAY: {
-      int argCount = readByte();
+      int argCount = frame->instructions[frame->ip++];
       std::vector<Value> values = std::vector<Value>();
       for (int i = 0; i < argCount; i++) {
         values.push_back(vm->stack->pop());
@@ -449,7 +440,7 @@ InterpretResult run() {
       break;
     }
     case OP_MAP: {
-      int argCount = readByte();
+      int argCount = frame->instructions[frame->ip++];
       std::cout << argCount << "\n";
       std::vector<Value> values = std::vector<Value>();
       for (int i = 0; i < argCount; i++) {
@@ -460,7 +451,7 @@ InterpretResult run() {
       break;
     }
     case OP_STRUCT: {
-      ObjString *name = AS_STRING(readConstant());
+      ObjString *name = AS_STRING(READ_CONSTANT());
 
       // This should be handled in the compiler?
       if (vm->globals.count(name->chars)) {
@@ -468,9 +459,8 @@ InterpretResult run() {
         return INTERPRET_RUNTIME_ERROR;
       }
       ObjStruct *strukt = newStruct(name);
-      Value value;
       while (matchByte(OP_STRUCT_ARG)) {
-        strukt->fields.push_back(AS_STRING(readConstant())->chars);
+        strukt->fields.push_back(AS_STRING(READ_CONSTANT())->chars);
       }
       std::reverse(strukt->fields.begin(), strukt->fields.end());
 
