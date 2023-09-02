@@ -28,7 +28,7 @@ void initVM() {
   defineNative("clock", clockNative);
 }
 
-void pushStack(Value value) {
+void inline pushStack(Value value) {
   *vm->stackTop = value;
   vm->stackTop++;
 }
@@ -107,7 +107,8 @@ static bool callValue(Value callee, int argCount) {
       Value result = native(argCount, vm->stackTop[-1 - argCount]);
       // wtf is this xD
       vm->stackTop -= argCount + 1;
-      pushStack(result);
+      *vm->stackTop = result;
+      vm->stackTop++;
       return true;
     }
     case OBJ_FUNCTION: {
@@ -193,7 +194,7 @@ static bool index() {
   }
 }
 
-static bool isFalsey(Value value) {
+static inline bool isFalsey(Value value) {
   return (IS_BOOL(value) && !AS_BOOL(value)) || IS_NIL(value);
 }
 
@@ -211,12 +212,13 @@ InterpretResult run() {
       runtimeError("Operands must be numbers.");                               \
       return INTERPRET_RUNTIME_ERROR;                                          \
     }                                                                          \
-    double b = AS_NUMBER(popStack());                                          \
-    double a = AS_NUMBER(vm->stackTop[-1]);                                    \
-    vm->stackTop[-1] = valueType(a op b);                                      \
+    vm->stackTop[-2] =                                                         \
+        valueType(AS_NUMBER(vm->stackTop[-2]) op AS_NUMBER(vm->stackTop[-1])); \
+    vm->stackTop--;                                                            \
   } while (false)
 
   for (;;) {
+    uint8_t *instructions = frame->instructions;
 #ifdef DEBUG_TRACE_EXECUTION
     std::cout << "        ";
     for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
@@ -227,8 +229,7 @@ InterpretResult run() {
     std::cout << "\n";
     disassembleInstruction(frame->function->chunk, (int)frame->ip);
 #endif
-    uint8_t byte = frame->instructions[frame->ip++];
-    switch (byte) {
+    switch (instructions[frame->ip++]) {
     case OP_CONSTANT: {
       pushStack(READ_CONSTANT());
       break;
@@ -250,12 +251,12 @@ InterpretResult run() {
       break;
     }
     case OP_GET_LOCAL: {
-      uint8_t slot = frame->instructions[frame->ip++];
+      uint8_t slot = instructions[frame->ip++];
       pushStack(frame->sp[slot]);
       break;
     }
     case OP_SET_LOCAL: {
-      uint8_t slot = frame->instructions[frame->ip++];
+      uint8_t slot = instructions[frame->ip++];
       frame->sp[slot] = vm->stackTop[-1];
       break;
     }
@@ -272,8 +273,8 @@ InterpretResult run() {
         runtimeError("Undefined variable '" + name + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      Value value = vm->globalValues[i];
-      pushStack(vm->globalValues[i]);
+      *vm->stackTop = vm->globalValues[i];
+      vm->stackTop++;
       break;
     }
     case OP_DEFINE_GLOBAL: {
@@ -332,16 +333,19 @@ InterpretResult run() {
       }
 
       ObjInstance *instance = AS_INSTANCE(v1);
-      instance->fields[(int)frame->instructions[frame->ip++]] =
-          vm->stackTop[-1];
+      instance->fields[(int)instructions[frame->ip++]] = vm->stackTop[-1];
       // might need to cast here?
       vm->stackTop[-1] = v1;
       break;
     }
     case OP_EQUAL: {
-      Value b = popStack();
-      Value a = vm->stackTop[-1];
-      vm->stackTop[-1] = BOOL_VAL(valuesEqual(a, b));
+      vm->stackTop[-2] =
+          BOOL_VAL(valuesEqual(vm->stackTop[-1], vm->stackTop[-2]));
+      vm->stackTop--;
+      break;
+    }
+    case OP_GREATER_EQUAL: {
+      BINARY_OP(BOOL_VAL, >=);
       break;
     }
     case OP_GREATER: {
@@ -352,17 +356,18 @@ InterpretResult run() {
       BINARY_OP(BOOL_VAL, <);
       break;
     }
+    case OP_LESS_EQUAL: {
+      BINARY_OP(BOOL_VAL, <=);
+      break;
+    }
     case OP_ADD: {
-      Value head = popStack();
-      Value head2 = vm->stackTop[-1];
-      if (IS_NUMBER(head) && IS_NUMBER(head2)) {
-        double b = AS_NUMBER(head2);
-        double a = AS_NUMBER(head);
-        vm->stackTop[-1] = NUMBER_VAL(a + b);
-      } else if (IS_STRING(head) && IS_STRING(head2)) {
-        Value value = OBJ_VAL(
-            copyString(AS_STRING(head)->chars + AS_STRING(head2)->chars));
-        pushStack(value);
+      if (IS_NUMBER(vm->stackTop[-1]) && IS_NUMBER(vm->stackTop[-2])) {
+        vm->stackTop[-2] = NUMBER_VAL(AS_NUMBER(vm->stackTop[-2]) +
+                                      AS_NUMBER(vm->stackTop[-1]));
+        vm->stackTop--;
+      } else if (IS_STRING(vm->stackTop[-1]) && IS_STRING(vm->stackTop[-2])) {
+        vm->stackTop[-1] = OBJ_VAL(copyString(
+            AS_STRING(popStack())->chars + AS_STRING(vm->stackTop[-1])->chars));
       } else {
         runtimeError("Operands must be two number or two strings");
         return INTERPRET_RUNTIME_ERROR;
@@ -422,7 +427,7 @@ InterpretResult run() {
       break;
     }
     case OP_CALL: {
-      int argCount = frame->instructions[frame->ip++];
+      int argCount = instructions[frame->ip++];
       if (!callValue(vm->stackTop[-1 - argCount], argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
@@ -430,7 +435,7 @@ InterpretResult run() {
       break;
     }
     case OP_ARRAY: {
-      int argCount = frame->instructions[frame->ip++];
+      int argCount = instructions[frame->ip++];
       std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {
         values[i] = popStack();
@@ -439,7 +444,7 @@ InterpretResult run() {
       break;
     }
     case OP_MAP: {
-      int argCount = frame->instructions[frame->ip++];
+      int argCount = instructions[frame->ip++];
       // Rework this into stack function?
       std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {

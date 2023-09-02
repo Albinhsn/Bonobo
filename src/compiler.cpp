@@ -521,8 +521,8 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
     break;
   }
   case TOKEN_GREATER_EQUAL: {
-    writeChunks(compiler->function->chunk, OP_LESS, OP_NOT,
-                parser->previous->line);
+    writeChunk(compiler->function->chunk, OP_GREATER_EQUAL,
+               parser->previous->line);
     break;
   }
   case TOKEN_LESS: {
@@ -530,8 +530,8 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
     break;
   }
   case TOKEN_LESS_EQUAL: {
-    writeChunks(compiler->function->chunk, OP_GREATER, OP_NOT,
-                parser->previous->line);
+    writeChunk(compiler->function->chunk, OP_LESS_EQUAL,
+               parser->previous->line);
     break;
   }
   case TOKEN_PLUS: {
