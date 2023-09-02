@@ -5,7 +5,7 @@
 #include <iostream>
 
 void freeObjects(VM *vm) {
-  for (int i = 0; i < vm->objects.size(); i++) {
+  for (int i = 0; i < vm->op; i++) {
     if (vm->objects[i] == NULL) {
       std::cout << "ALREADY FREED\n";
       continue;
@@ -45,7 +45,8 @@ void freeParser(Parser *parser) {
 void freeScanner(Scanner *scanner) { delete (scanner); }
 
 Value *freeFrame(VM *vm) {
-  CallFrame *f2 = vm->frames->pop();
+  CallFrame *f2 = vm->frames[vm->fp - 1];
+  vm->fp--;
   Value *sp = f2->sp;
   delete (f2);
   return sp;

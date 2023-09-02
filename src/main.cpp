@@ -23,7 +23,6 @@ static void runFile(std::string path) {
   std::string source = readFile(path);
   InterpretResult result = interpret(source);
 
-  freeVM();
   if (result == INTERPRET_COMPILE_ERROR)
     exit(65);
   if (result == INTERPRET_RUNTIME_ERROR)
@@ -42,7 +41,6 @@ static void repl() {
 
     interpret(input);
   }
-  freeVM();
 }
 
 int main(int argc, const char *argv[]) {

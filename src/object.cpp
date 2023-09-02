@@ -10,7 +10,7 @@ ObjFunction *newFunction() {
   initChunk(function->chunk);
 
   if (vm) {
-    vm->objects.push_back((Obj *)function);
+    vm->objects[vm->op++] = (Obj *)function;
   }
   return function;
 }
@@ -25,7 +25,6 @@ ObjMap *newMap(std::vector<Value> values) {
 
 ObjArray *newArray(std::vector<Value> values) {
   ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), values);
-
   return array;
 }
 
@@ -33,7 +32,7 @@ ObjStruct *newStruct(ObjString *name) {
   ObjStruct *strukt =
       new ObjStruct(createObj(OBJ_STRUCT), name, std::vector<std::string>());
 
-  vm->objects.push_back((Obj *)strukt);
+  vm->objects[vm->op++] = (Obj *)strukt;
   return strukt;
 }
 
@@ -41,7 +40,7 @@ ObjInstance *newInstance(ObjStruct *strukt, std::vector<Value> fields) {
   ObjInstance *instance =
       new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fields);
 
-  vm->objects.push_back((Obj *)instance);
+  vm->objects[vm->op++] = (Obj *)instance;
   return instance;
 }
 
@@ -55,7 +54,7 @@ static void printFunction(ObjFunction *function) {
 
 ObjNative *newNative(NativeFn function) {
   ObjNative *native = new ObjNative(createObj(OBJ_NATIVE), function);
-  vm->objects.push_back((Obj *)function);
+  vm->objects[vm->op++] = (Obj *)function;
 
   return native;
 }
@@ -113,7 +112,7 @@ void printObject(Value value) {
 
 ObjString *copyString(std::string str) {
   ObjString *objString = new ObjString(createObj(OBJ_STRING), str);
-  vm->objects.push_back((Obj *)objString);
+  vm->objects[vm->op++] = (Obj *)objString;
 
   return objString;
 }

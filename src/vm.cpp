@@ -21,32 +21,24 @@ static Value clockNative(int argCount, Value args) {
 }
 
 void initVM() {
-  vm = new VM();
+  vm = new VM;
   vm->stackTop = vm->stack;
+  vm->op = vm->fp = vm->gp = 0;
+
   defineNative("clock", clockNative);
 }
 
-void push(Value value) {
+void pushStack(Value value) {
   *vm->stackTop = value;
   vm->stackTop++;
 }
 
-void remove(int sp) { vm->stackTop -= sp; }
-
-Value pop() {
+Value inline popStack() {
   vm->stackTop--;
   return *vm->stackTop;
 }
 
-Value get(int distance) { return vm->stackTop[-1 - distance]; }
-
-void freeVM() { delete (vm->frames); }
-
-static void resetStack() {
-  freeVM();
-  vm->stackTop = vm->stack;
-  vm->frames = new FrameStack;
-}
+static void resetStack() { vm->stackTop = vm->stack; }
 
 static void runtimeError(std::string format, ...) {
   va_list args;
@@ -54,9 +46,8 @@ static void runtimeError(std::string format, ...) {
   vfprintf(stderr, format.c_str(), args);
   va_end(args);
   fputs("\n", stderr);
-
-  while (vm->frames->length) {
-    CallFrame *frame = vm->frames->pop();
+  for (int i = 0; i < vm->fp; i++) {
+    CallFrame *frame = vm->frames[i];
     ObjFunction *function = frame->function;
     size_t instruction = frame->instructions[frame->ip];
     fprintf(stderr, "[line %d] in ", function->chunk->lines[instruction]);
@@ -67,7 +58,6 @@ static void runtimeError(std::string format, ...) {
       fprintf(stderr, "%s()\n", function->name->chars.c_str());
     }
   }
-
   resetStack();
 }
 
@@ -75,14 +65,14 @@ static void defineNative(std::string name, NativeFn function) {
   ObjString *string = copyString(name);
   ObjNative *native = newNative(function);
 
-  vm->objects.push_back((Obj *)string);
-  vm->objects.push_back((Obj *)native);
-
-  vm->globals[name] = OBJ_VAL((Obj *)native);
+  vm->objects[vm->op++] = (Obj *)string;
+  vm->objects[vm->op++] = (Obj *)native;
+  vm->globalKeys[vm->gp] = name;
+  vm->globalValues[vm->gp++] = OBJ_VAL((Obj *)native);
 }
 
 static bool matchByte(OpCode code) {
-  CallFrame *frame = vm->frames->peek();
+  CallFrame *frame = vm->frames[vm->fp - 1];
   if (frame->instructions[frame->ip] == code) {
     frame->ip++;
     return true;
@@ -95,11 +85,17 @@ static bool call(ObjFunction *function, int argCount) {
     runtimeError("Expected %d arguments but got %d", function->arity, argCount);
     return false;
   }
-  if (vm->frames->length == FRAMES_MAX) {
+  if (vm->fp == FRAMES_MAX) {
     runtimeError("Stack overflow.");
     return false;
   }
-  vm->frames->push(new CallFrame(function, vm->stackTop - argCount));
+  CallFrame *frame = new CallFrame;
+  frame->function = function;
+  frame->instructions = function->chunk->code;
+  frame->sp = vm->stackTop - argCount;
+  frame->ip = 0;
+  vm->frames[vm->fp++] = frame;
+
   return true;
 }
 
@@ -108,10 +104,10 @@ static bool callValue(Value callee, int argCount) {
     switch (OBJ_TYPE(callee)) {
     case OBJ_NATIVE: {
       NativeFn native = AS_NATIVE(callee);
-      Value result = native(argCount, get(argCount));
+      Value result = native(argCount, vm->stackTop[-1 - argCount]);
       // wtf is this xD
       vm->stackTop -= argCount + 1;
-      push(result);
+      pushStack(result);
       return true;
     }
     case OBJ_FUNCTION: {
@@ -127,7 +123,7 @@ static bool callValue(Value callee, int argCount) {
       std::vector<Value> fields;
       // Do another function for this
       for (int i = 0; i < argCount; ++i) {
-        fields.push_back(pop());
+        fields.push_back(popStack());
       }
       vm->stackTop[-1] = OBJ_VAL(newInstance(strukt, fields));
       return true;
@@ -154,7 +150,7 @@ static bool index() {
     ObjString *string = AS_STRING(key);
 
     if (mp->m.count(string->chars)) {
-      push(mp->m[string->chars]);
+      pushStack(mp->m[string->chars]);
       return true;
     }
     runtimeError("Trying to access map with unknown key %s",
@@ -173,7 +169,7 @@ static bool index() {
       return false;
     }
 
-    push(OBJ_VAL(copyString(string->chars.substr(k, 1))));
+    pushStack(OBJ_VAL(copyString(string->chars.substr(k, 1))));
     return true;
   }
   case OBJ_ARRAY: {
@@ -187,7 +183,7 @@ static bool index() {
       runtimeError("Trying to access outside of array %d", k);
       return false;
     }
-    push(array->values[k]);
+    pushStack(array->values[k]);
     return true;
   }
   default: {
@@ -202,7 +198,7 @@ static bool isFalsey(Value value) {
 }
 
 InterpretResult run() {
-  CallFrame *frame = vm->frames->peek();
+  CallFrame *frame = vm->frames[vm->fp - 1];
 #define READ_SHORT()                                                           \
   (frame->ip += 2, (uint16_t)((frame->instructions[frame->ip - 2] << 8) |      \
                               frame->instructions[frame->ip - 1]))
@@ -215,7 +211,7 @@ InterpretResult run() {
       runtimeError("Operands must be numbers.");                               \
       return INTERPRET_RUNTIME_ERROR;                                          \
     }                                                                          \
-    double b = AS_NUMBER(pop());                                               \
+    double b = AS_NUMBER(popStack());                                          \
     double a = AS_NUMBER(vm->stackTop[-1]);                                    \
     vm->stackTop[-1] = valueType(a op b);                                      \
   } while (false)
@@ -234,28 +230,28 @@ InterpretResult run() {
     uint8_t byte = frame->instructions[frame->ip++];
     switch (byte) {
     case OP_CONSTANT: {
-      push(READ_CONSTANT());
+      pushStack(READ_CONSTANT());
       break;
     }
     case OP_NIL: {
-      push(NIL_VAL);
+      pushStack(NIL_VAL);
       break;
     }
     case OP_TRUE: {
-      push(BOOL_VAL(true));
+      pushStack(BOOL_VAL(true));
       break;
     }
     case OP_FALSE: {
-      push(BOOL_VAL(false));
+      pushStack(BOOL_VAL(false));
       break;
     }
     case OP_POP: {
-      pop();
+      popStack();
       break;
     }
     case OP_GET_LOCAL: {
       uint8_t slot = frame->instructions[frame->ip++];
-      push(frame->sp[slot]);
+      pushStack(frame->sp[slot]);
       break;
     }
     case OP_SET_LOCAL: {
@@ -265,26 +261,41 @@ InterpretResult run() {
     }
     case OP_GET_GLOBAL: {
       std::string name = READ_STRING()->chars;
-      if (!vm->globals.count(name)) {
+      int i = 0;
+      while (i < vm->gp) {
+        if (vm->globalKeys[i] == name) {
+          break;
+        }
+        i++;
+      }
+      if (i == vm->gp) {
         runtimeError("Undefined variable '" + name + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      Value value = vm->globals[name];
-      push(value);
+      Value value = vm->globalValues[i];
+      pushStack(vm->globalValues[i]);
       break;
     }
     case OP_DEFINE_GLOBAL: {
-      vm->globals[READ_STRING()->chars] = pop();
+      vm->globalKeys[vm->gp] = READ_STRING()->chars;
+      vm->globalValues[vm->gp] = popStack();
+      vm->gp++;
       break;
     }
     case OP_SET_GLOBAL: {
       std::string name = READ_STRING()->chars;
-      if (!vm->globals.count(name)) {
-        std::string msg = name;
-        runtimeError("Undefined variable '" + msg + "'.");
+      int i = 0;
+      while (i < vm->gp) {
+        if (vm->globalKeys[i] == name) {
+          break;
+        }
+        i++;
+      }
+      if (i == vm->gp) {
+        runtimeError("Undefined variable '" + name + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->globals[name] = vm->stackTop[-1];
+      vm->globalValues[i] = vm->stackTop[-1];
       break;
     }
     case OP_GET_PROPERTY: {
@@ -328,7 +339,7 @@ InterpretResult run() {
       break;
     }
     case OP_EQUAL: {
-      Value b = pop();
+      Value b = popStack();
       Value a = vm->stackTop[-1];
       vm->stackTop[-1] = BOOL_VAL(valuesEqual(a, b));
       break;
@@ -342,7 +353,7 @@ InterpretResult run() {
       break;
     }
     case OP_ADD: {
-      Value head = pop();
+      Value head = popStack();
       Value head2 = vm->stackTop[-1];
       if (IS_NUMBER(head) && IS_NUMBER(head2)) {
         double b = AS_NUMBER(head2);
@@ -351,7 +362,7 @@ InterpretResult run() {
       } else if (IS_STRING(head) && IS_STRING(head2)) {
         Value value = OBJ_VAL(
             copyString(AS_STRING(head)->chars + AS_STRING(head2)->chars));
-        push(value);
+        pushStack(value);
       } else {
         runtimeError("Operands must be two number or two strings");
         return INTERPRET_RUNTIME_ERROR;
@@ -383,7 +394,7 @@ InterpretResult run() {
       break;
     }
     case OP_PRINT: {
-      printValue(pop());
+      printValue(popStack());
       std::cout << "\n";
       break;
     }
@@ -412,19 +423,19 @@ InterpretResult run() {
     }
     case OP_CALL: {
       int argCount = frame->instructions[frame->ip++];
-      if (!callValue(get(argCount), argCount)) {
+      if (!callValue(vm->stackTop[-1 - argCount], argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
-      frame = vm->frames->peek();
+      frame = vm->frames[vm->fp - 1];
       break;
     }
     case OP_ARRAY: {
       int argCount = frame->instructions[frame->ip++];
       std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {
-        values[i] = pop();
+        values[i] = popStack();
       }
-      push(OBJ_VAL(newArray(values)));
+      pushStack(OBJ_VAL(newArray(values)));
       break;
     }
     case OP_MAP: {
@@ -432,41 +443,44 @@ InterpretResult run() {
       // Rework this into stack function?
       std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {
-        values[i] = pop();
+        values[i] = popStack();
       }
-      push(OBJ_VAL(newMap(values)));
+      pushStack(OBJ_VAL(newMap(values)));
       break;
     }
     case OP_STRUCT: {
       ObjString *name = AS_STRING(READ_CONSTANT());
 
       // This should be handled in the compiler?
-      if (vm->globals.count(name->chars)) {
-        runtimeError("Can't redeclare a struct '" + name->chars + "'.");
-        return INTERPRET_RUNTIME_ERROR;
-      }
+      // if (vm->globals.count(name->chars)) {
+      //   runtimeError("Can't redeclare a struct '" + name->chars + "'.");
+      //   return INTERPRET_RUNTIME_ERROR;
+      // }
       ObjStruct *strukt = newStruct(name);
       while (matchByte(OP_STRUCT_ARG)) {
         strukt->fields.push_back(AS_STRING(READ_CONSTANT())->chars);
       }
       std::reverse(strukt->fields.begin(), strukt->fields.end());
-
-      vm->globals[name->chars] = OBJ_VAL(strukt);
+      vm->globalKeys[vm->gp] = name->chars;
+      vm->globalValues[vm->gp] = OBJ_VAL(strukt);
+      vm->gp++;
       break;
     }
     case OP_RETURN: {
-      Value result = pop();
+      Value result = popStack();
       vm->stackTop = freeFrame(vm);
-      if (!vm->frames->length) {
-        pop();
+      if (vm->fp == 0) {
+        popStack();
         return INTERPRET_OK;
       }
       vm->stackTop[-1] = result;
-      frame = vm->frames->peek();
+      frame = vm->frames[vm->fp - 1];
       break;
     }
     }
   }
+
+#undef READ_CONSTANT
 #undef READ_STRING
 #undef READ_SHORT
 #undef BINARY_OP
@@ -480,7 +494,7 @@ InterpretResult interpret(std::string source) {
   }
 
   ObjFunction *function = compiler->function;
-  push(OBJ_VAL(function));
+  pushStack(OBJ_VAL(function));
   call(function, 0);
 
   freeCompiler(compiler);
