@@ -187,14 +187,10 @@ static uint8_t identifierConstant(Compiler *compiler, Parser *parser) {
                       OBJ_VAL(copyString(parser->previous->literal)));
 }
 
-static bool identifiersEqual(Token *a, Token *b) {
-  return a->literal == b->literal;
-}
-
 static int resolveLocal(Compiler *compiler, Parser *parser) {
   for (int i = compiler->locals.size() - 1; i >= 0; i--) {
     Local local = compiler->locals[i];
-    if (identifiersEqual(&local.name, parser->previous)) {
+    if (local.name.literal == parser->previous->literal) {
       if (local.depth == -1) {
         errorAt(parser, "Can't read local variable in its own initializer.");
       }
@@ -209,18 +205,17 @@ static void declareVariable(Compiler *compiler, Parser *parser) {
     return;
   }
 
-  Token *name = parser->previous;
   for (int i = compiler->locals.size() - 1; i >= 0; i--) {
     Local local = compiler->locals[i];
     if (local.depth != -1 && local.depth < compiler->scopeDepth) {
       break;
     }
 
-    if (identifiersEqual(name, &local.name)) {
+    if (parser->previous->literal == local.name.literal) {
       errorAt(parser, "Already a variable with this name in this scope.");
     }
   }
-  compiler->locals.push_back(Local(*name, -1));
+  compiler->locals.push_back(Local(*parser->previous, -1));
 }
 
 static uint8_t parseVariable(Compiler *compiler, Parser *parser,
