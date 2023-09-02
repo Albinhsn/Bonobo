@@ -50,7 +50,7 @@ static void runtimeError(std::string format, ...) {
     CallFrame *frame = vm->frames[i];
     ObjFunction *function = frame->function;
     size_t instruction = frame->instructions[frame->ip];
-    fprintf(stderr, "[line %d] in ", function->chunk->lines[instruction]);
+    fprintf(stderr, "[line %d] in ", function->lines[instruction]);
 
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
@@ -91,7 +91,7 @@ static bool call(ObjFunction *function, int argCount) {
   }
   CallFrame *frame = new CallFrame;
   frame->function = function;
-  frame->instructions = &function->chunk->code[0];
+  frame->instructions = &function->code[0];
   frame->sp = vm->stackTop - argCount;
   frame->ip = 0;
   vm->frames[vm->fp++] = frame;
@@ -204,7 +204,7 @@ InterpretResult run() {
   (frame->ip += 2, (uint16_t)((frame->instructions[frame->ip - 2] << 8) |      \
                               frame->instructions[frame->ip - 1]))
 #define READ_CONSTANT()                                                        \
-  (frame->function->chunk->constants[frame->instructions[frame->ip++]])
+  (frame->function->constants[frame->instructions[frame->ip++]])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \

@@ -1,7 +1,7 @@
-#include "chunk.h"
 #include "common.h"
 #include "coz.h"
 #include "debug.h"
+#include "opcode.h"
 #include "vm.h"
 #include <cstdio>
 #include <fstream>
@@ -10,7 +10,7 @@
 static std::string readFile(std::string path) {
   std::ifstream t(path);
   std::stringstream buffer;
-  if(t.fail()){
+  if (t.fail()) {
     std::cout << "file doesn't exist\n";
     exit(1);
   }

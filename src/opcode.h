@@ -1,12 +1,6 @@
 #ifndef cpplox_chunk_h
 #define cpplox_chunk_h
 
-#include "common.h"
-#include "value.h"
-
-#define CODE_MAX 500
-#define CONST_MAX  100
-
 typedef enum {
   OP_CONSTANT,
   OP_PRINT,
@@ -44,19 +38,5 @@ typedef enum {
   OP_RETURN,
 } OpCode;
 
-typedef struct {
-  uint8_t code[CODE_MAX];
-  int lines[CODE_MAX];
-  int cp;
-  int constP;
-  Value constants[CONST_MAX];
-} Chunk;
-
-void freeChunk(Chunk *chunk);
-void initChunk(Chunk *chunk);
-void writeChunk(Chunk *chunk, uint8_t byte, int line);
-void writeChunks(Chunk *chunk, uint8_t byte1, uint8_t byte2, int line);
-
-int addConstant(Chunk *chunk, Value value);
 
 #endif

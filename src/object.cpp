@@ -3,11 +3,29 @@
 #include "value.h"
 #include "vm.h"
 
-ObjFunction *newFunction() {
-  ObjFunction *function =
-      new ObjFunction(createObj(OBJ_FUNCTION), 0, new Chunk(), NULL);
+void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2,
+                 int line) {
+  function->code[function->cp] = byte1;
+  function->lines[function->cp] = line;
+  function->cp++;
 
-  initChunk(function->chunk);
+  function->code[function->cp] = byte2;
+  function->lines[function->cp] = line;
+  function->cp++;
+}
+
+void writeChunk(ObjFunction *function, uint8_t byte, int line) {
+  function->code[function->cp] = byte;
+  function->lines[function->cp++] = line;
+}
+
+int addConstant(ObjFunction *function, Value value) {
+  function->constants[function->constP++] = value;
+  return function->constP - 1;
+}
+
+ObjFunction *newFunction() {
+  ObjFunction *function = new ObjFunction(createObj(OBJ_FUNCTION), 0, NULL);
 
   if (vm) {
     vm->objects[vm->op++] = (Obj *)function;

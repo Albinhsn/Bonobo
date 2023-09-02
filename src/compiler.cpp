@@ -1,7 +1,6 @@
 
-
 #include "compiler.h"
-#include "chunk.h"
+#include "opcode.h"
 #include "common.h"
 #include "memory.h"
 #include "object.h"
@@ -77,26 +76,26 @@ static bool match(Parser *parser, Scanner *scanner, TokenType type) {
 }
 
 static void emitLoop(Compiler *compiler, Parser *parser, int loopStart) {
-  writeChunk(compiler->function->chunk, OP_LOOP, parser->previous->line);
+  writeChunk(compiler->function, OP_LOOP, parser->previous->line);
 
-  int offset = compiler->function->chunk->cp - loopStart + 2;
+  int offset = compiler->function->cp - loopStart + 2;
   if (offset > UINT16_MAX) {
     errorAt(parser, "Loop body too large.");
   }
 
-  writeChunks(compiler->function->chunk, (offset >> 8 & 0xff), (offset & 0xff),
+  writeChunks(compiler->function, (offset >> 8 & 0xff), (offset & 0xff),
               parser->previous->line);
 }
 
 static int emitJump(Compiler *compiler, Parser *parser, uint8_t instruction) {
-  writeChunk(compiler->function->chunk, instruction, parser->previous->line);
-  writeChunks(compiler->function->chunk, 0xff, 0xff, parser->previous->line);
+  writeChunk(compiler->function, instruction, parser->previous->line);
+  writeChunks(compiler->function, 0xff, 0xff, parser->previous->line);
 
-  return compiler->function->chunk->cp - 2;
+  return compiler->function->cp - 2;
 }
 
 static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
-  int constant = addConstant(compiler->function->chunk, value);
+  int constant = addConstant(compiler->function, value);
 
   if (constant > UINT8_MAX) {
     errorAt(parser, "Too many constants in one chunk.");
@@ -108,13 +107,13 @@ static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
 static ObjFunction *endCompiler(Compiler *compiler, Parser *parser) {
 #ifdef DEBUG_PRINT_CODE
   if (!parser->hadError) {
-    disassembleChunk(compiler->function->chunk,
+    disassembleChunk(compiler->function,
                      compiler->function->name != NULL
                          ? compiler->function->name->chars
                          : "<script>");
   }
 #endif
-  writeChunks(compiler->function->chunk, OP_NIL, OP_RETURN,
+  writeChunks(compiler->function, OP_NIL, OP_RETURN,
               parser->previous->line);
   return compiler->function;
 }
@@ -216,13 +215,12 @@ static uint8_t parseVariable(Compiler *compiler, Parser *parser,
 
 static void patchJump(Compiler *compiler, Parser *parser, int offset) {
   // -2 to adjust for the bytecode for the jump offset itself.
-  Chunk *chunk = compiler->function->chunk;
-  int jump = chunk->cp - offset - 2;
+  int jump = compiler->function->cp - offset - 2;
   if (jump > UINT16_MAX) {
     errorAt(parser, "Too much code to jump over.");
   }
-  chunk->code[offset] = (jump >> 8) & 0xff;
-  chunk->code[offset + 1] = jump & 0xff;
+  compiler->function->code[offset] = (jump >> 8) & 0xff;
+  compiler->function->code[offset + 1] = jump & 0xff;
 }
 static void expression(Compiler *compiler, Parser *parser, Scanner *scanner) {
   parsePrecedence(compiler, parser, scanner, PREC_ASSIGNMENT);
@@ -241,7 +239,7 @@ static void defineVariable(Compiler *compiler, Parser *parser, uint8_t global) {
     return;
   }
 
-  writeChunks(compiler->function->chunk, OP_DEFINE_GLOBAL, global,
+  writeChunks(compiler->function, OP_DEFINE_GLOBAL, global,
               parser->previous->line);
 }
 
@@ -265,7 +263,7 @@ static void and_(Compiler *compiler, Parser *parser, Scanner *scanner,
                  bool canAssign) {
   int endJump = emitJump(compiler, parser, OP_JUMP_IF_FALSE);
 
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
   parsePrecedence(compiler, parser, scanner, PREC_AND);
 
   patchJump(compiler, parser, endJump);
@@ -277,7 +275,7 @@ static void or_(Compiler *compiler, Parser *parser, Scanner *scanner,
   int endJump = emitJump(compiler, parser, OP_JUMP);
 
   patchJump(compiler, parser, elseJump);
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
 
   parsePrecedence(compiler, parser, scanner, PREC_OR);
   patchJump(compiler, parser, endJump);
@@ -296,7 +294,7 @@ static void arrayDeclaration(Compiler *compiler, Parser *parser,
     } while (match(parser, scanner, TOKEN_COMMA));
   }
   consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ')' after arguments.");
-  writeChunks(compiler->function->chunk, OP_ARRAY, items,
+  writeChunks(compiler->function, OP_ARRAY, items,
               parser->previous->line);
 }
 
@@ -307,7 +305,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
 
     do {
       consume(parser, scanner, TOKEN_STRING, "Expect strings as keys");
-      writeChunks(compiler->function->chunk, OP_CONSTANT,
+      writeChunks(compiler->function, OP_CONSTANT,
                   makeConstant(compiler, parser,
                                OBJ_VAL(copyString(parser->previous->literal))),
                   parser->previous->line);
@@ -325,7 +323,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
   }
 
   consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expect '}' after map items.");
-  writeChunks(compiler->function->chunk, OP_MAP, items, parser->previous->line);
+  writeChunks(compiler->function, OP_MAP, items, parser->previous->line);
 }
 
 static void varDeclaration(Compiler *compiler, Parser *parser,
@@ -342,7 +340,7 @@ static void varDeclaration(Compiler *compiler, Parser *parser,
       expression(compiler, parser, scanner);
     }
   } else {
-    writeChunk(compiler->function->chunk, OP_NIL, parser->previous->line);
+    writeChunk(compiler->function, OP_NIL, parser->previous->line);
   }
   consume(parser, scanner, TOKEN_SEMICOLON,
           "Expect ';' after variable declaration");
@@ -354,7 +352,7 @@ static void expressionStatement(Compiler *compiler, Parser *parser,
                                 Scanner *scanner) {
   expression(compiler, parser, scanner);
   consume(parser, scanner, TOKEN_SEMICOLON, "Expect ';' after expression.");
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
 }
 
 static void beginScope(Compiler *compiler) { compiler->scopeDepth++; }
@@ -363,7 +361,7 @@ static void endScope(Compiler *compiler, Parser *parser) {
   while (compiler->locals.size() > 0 &&
          compiler->locals[compiler->locals.size() - 1].depth >
              compiler->scopeDepth) {
-    writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+    writeChunk(compiler->function, OP_POP, parser->previous->line);
     compiler->locals.pop_back();
   }
 }
@@ -379,7 +377,7 @@ static void forStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
     expressionStatement(compiler, parser, scanner);
   }
 
-  int loopStart = compiler->function->chunk->cp;
+  int loopStart = compiler->function->cp;
   int exitJump = -1;
   if (!match(parser, scanner, TOKEN_SEMICOLON)) {
     expression(compiler, parser, scanner);
@@ -387,15 +385,15 @@ static void forStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
             "Expect ';' after loop condition");
 
     exitJump = emitJump(compiler, parser, OP_JUMP_IF_FALSE);
-    writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+    writeChunk(compiler->function, OP_POP, parser->previous->line);
   }
 
   if (!match(parser, scanner, TOKEN_RIGHT_PAREN)) {
     int bodyJump = emitJump(compiler, parser, OP_JUMP);
-    int incrementStart = compiler->function->chunk->cp;
+    int incrementStart = compiler->function->cp;
 
     expression(compiler, parser, scanner);
-    writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+    writeChunk(compiler->function, OP_POP, parser->previous->line);
     consume(parser, scanner, TOKEN_RIGHT_PAREN,
             "Expect ')' after for clauses.");
 
@@ -409,7 +407,7 @@ static void forStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
   if (exitJump != -1) {
     patchJump(compiler, parser, exitJump);
-    writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+    writeChunk(compiler->function, OP_POP, parser->previous->line);
   }
 
   endScope(compiler, parser);
@@ -421,13 +419,13 @@ static void ifStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
   consume(parser, scanner, TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   int thenJump = emitJump(compiler, parser, OP_JUMP_IF_FALSE);
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
   statement(compiler, parser, scanner);
 
   int elseJump = emitJump(compiler, parser, OP_JUMP);
 
   patchJump(compiler, parser, thenJump);
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
 
   if (match(parser, scanner, TOKEN_ELSE)) {
     statement(compiler, parser, scanner);
@@ -439,7 +437,7 @@ static void printStatement(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
   expression(compiler, parser, scanner);
   consume(parser, scanner, TOKEN_SEMICOLON, "Expect ';' after value.");
-  writeChunk(compiler->function->chunk, OP_PRINT, parser->previous->line);
+  writeChunk(compiler->function, OP_PRINT, parser->previous->line);
 }
 
 static void returnStatement(Compiler *compiler, Parser *parser,
@@ -449,29 +447,29 @@ static void returnStatement(Compiler *compiler, Parser *parser,
   }
 
   if (match(parser, scanner, TOKEN_SEMICOLON)) {
-    writeChunks(compiler->function->chunk, OP_NIL, OP_RETURN,
+    writeChunks(compiler->function, OP_NIL, OP_RETURN,
                 parser->previous->line);
   } else {
     expression(compiler, parser, scanner);
     consume(parser, scanner, TOKEN_SEMICOLON, "Expect ';' after return value");
-    writeChunk(compiler->function->chunk, OP_RETURN, parser->previous->line);
+    writeChunk(compiler->function, OP_RETURN, parser->previous->line);
   }
 }
 
 static void whileStatement(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
-  int loopStart = compiler->function->chunk->cp;
+  int loopStart = compiler->function->cp;
   consume(parser, scanner, TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
   expression(compiler, parser, scanner);
   consume(parser, scanner, TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   int exitJump = emitJump(compiler, parser, OP_JUMP_IF_FALSE);
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
   statement(compiler, parser, scanner);
   emitLoop(compiler, parser, loopStart);
 
   patchJump(compiler, parser, exitJump);
-  writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
+  writeChunk(compiler->function, OP_POP, parser->previous->line);
 }
 
 static void synchronize(Parser *parser, Scanner *scanner) {
@@ -508,46 +506,46 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
   switch (operatorType) {
   case TOKEN_BANG_EQUAL: {
-    writeChunks(compiler->function->chunk, OP_EQUAL, OP_NOT,
+    writeChunks(compiler->function, OP_EQUAL, OP_NOT,
                 parser->previous->line);
     break;
   }
   case TOKEN_EQUAL_EQUAL: {
-    writeChunk(compiler->function->chunk, OP_EQUAL, parser->previous->line);
+    writeChunk(compiler->function, OP_EQUAL, parser->previous->line);
     break;
   }
   case TOKEN_GREATER: {
-    writeChunk(compiler->function->chunk, OP_GREATER, parser->previous->line);
+    writeChunk(compiler->function, OP_GREATER, parser->previous->line);
     break;
   }
   case TOKEN_GREATER_EQUAL: {
-    writeChunk(compiler->function->chunk, OP_GREATER_EQUAL,
+    writeChunk(compiler->function, OP_GREATER_EQUAL,
                parser->previous->line);
     break;
   }
   case TOKEN_LESS: {
-    writeChunk(compiler->function->chunk, OP_LESS, parser->previous->line);
+    writeChunk(compiler->function, OP_LESS, parser->previous->line);
     break;
   }
   case TOKEN_LESS_EQUAL: {
-    writeChunk(compiler->function->chunk, OP_LESS_EQUAL,
+    writeChunk(compiler->function, OP_LESS_EQUAL,
                parser->previous->line);
     break;
   }
   case TOKEN_PLUS: {
-    writeChunk(compiler->function->chunk, OP_ADD, parser->previous->line);
+    writeChunk(compiler->function, OP_ADD, parser->previous->line);
     break;
   }
   case TOKEN_MINUS: {
-    writeChunk(compiler->function->chunk, OP_SUBTRACT, parser->previous->line);
+    writeChunk(compiler->function, OP_SUBTRACT, parser->previous->line);
     break;
   }
   case TOKEN_STAR: {
-    writeChunk(compiler->function->chunk, OP_MULTIPLY, parser->previous->line);
+    writeChunk(compiler->function, OP_MULTIPLY, parser->previous->line);
     break;
   }
   case TOKEN_SLASH: {
-    writeChunk(compiler->function->chunk, OP_DIVIDE, parser->previous->line);
+    writeChunk(compiler->function, OP_DIVIDE, parser->previous->line);
     break;
   }
   default: {
@@ -558,7 +556,7 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
 static void index(Compiler *compiler, Parser *parser, Scanner *scanner) {
   expression(compiler, parser, scanner);
-  writeChunk(compiler->function->chunk, OP_INDEX, parser->previous->line);
+  writeChunk(compiler->function, OP_INDEX, parser->previous->line);
   consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
 }
 
@@ -570,10 +568,10 @@ static void dot(Compiler *compiler, Parser *parser, Scanner *scanner,
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
-    writeChunks(compiler->function->chunk, OP_SET_PROPERTY, name,
+    writeChunks(compiler->function, OP_SET_PROPERTY, name,
                 parser->previous->line);
   } else {
-    writeChunks(compiler->function->chunk, OP_GET_PROPERTY, name,
+    writeChunks(compiler->function, OP_GET_PROPERTY, name,
                 parser->previous->line);
   }
 }
@@ -589,11 +587,11 @@ static void unary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
   switch (operatorType) {
   case TOKEN_MINUS: {
-    writeChunk(compiler->function->chunk, OP_NEGATE, parser->previous->line);
+    writeChunk(compiler->function, OP_NEGATE, parser->previous->line);
     break;
   }
   case TOKEN_BANG: {
-    writeChunk(compiler->function->chunk, OP_NOT, parser->previous->line);
+    writeChunk(compiler->function, OP_NOT, parser->previous->line);
     break;
   }
   default: {
@@ -604,7 +602,7 @@ static void unary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
 static void number(Compiler *compiler, Parser *parser, Scanner *scanner) {
   double value = std::stod(parser->previous->literal);
-  writeChunks(compiler->function->chunk, OP_CONSTANT,
+  writeChunks(compiler->function, OP_CONSTANT,
               makeConstant(compiler, parser, NUMBER_VAL(value)),
               parser->previous->line);
 }
@@ -626,10 +624,10 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
-    writeChunks(compiler->function->chunk, setOp, (uint8_t)arg,
+    writeChunks(compiler->function, setOp, (uint8_t)arg,
                 parser->previous->line);
   } else {
-    writeChunks(compiler->function->chunk, getOp, (uint8_t)arg,
+    writeChunks(compiler->function, getOp, (uint8_t)arg,
                 parser->previous->line);
   }
 }
@@ -637,15 +635,15 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
 static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
   switch (parser->previous->type) {
   case TOKEN_FALSE: {
-    writeChunk(compiler->function->chunk, OP_FALSE, parser->previous->line);
+    writeChunk(compiler->function, OP_FALSE, parser->previous->line);
     break;
   }
   case TOKEN_NIL: {
-    writeChunk(compiler->function->chunk, OP_NIL, parser->previous->line);
+    writeChunk(compiler->function, OP_NIL, parser->previous->line);
     break;
   }
   case TOKEN_TRUE: {
-    writeChunk(compiler->function->chunk, OP_TRUE, parser->previous->line);
+    writeChunk(compiler->function, OP_TRUE, parser->previous->line);
     break;
   }
   }
@@ -663,7 +661,7 @@ static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
     break;
   }
   case TOKEN_STRING: {
-    writeChunks(compiler->function->chunk, OP_CONSTANT,
+    writeChunks(compiler->function, OP_CONSTANT,
                 makeConstant(compiler, parser,
                              OBJ_VAL(copyString(parser->previous->literal))),
                 parser->previous->line);
@@ -706,7 +704,7 @@ static void infixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
     break;
   }
   case TOKEN_LEFT_PAREN: {
-    writeChunks(compiler->function->chunk, OP_CALL,
+    writeChunks(compiler->function, OP_CALL,
                 argumentList(compiler, parser, scanner),
                 parser->previous->line);
     break;
@@ -799,7 +797,7 @@ static void function(Compiler *current, Parser *parser, Scanner *scanner,
 
   ObjFunction *function = endCompiler(compiler, parser);
   freeCompiler(compiler);
-  writeChunks(current->function->chunk, OP_CONSTANT,
+  writeChunks(current->function, OP_CONSTANT,
               makeConstant(current, parser, OBJ_VAL(function)),
               parser->previous->line);
 }
@@ -808,7 +806,7 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
   while (parser->current->type != TOKEN_RIGHT_BRACE) {
     consume(parser, scanner, TOKEN_IDENTIFIER,
             "Expect field identifier in struct");
-    writeChunks(compiler->function->chunk, OP_STRUCT_ARG,
+    writeChunks(compiler->function, OP_STRUCT_ARG,
                 makeConstant(compiler, parser,
                              OBJ_VAL(copyString(parser->previous->literal))),
                 parser->previous->line);
@@ -824,7 +822,7 @@ static void structDeclaration(Compiler *compiler, Parser *parser,
       compiler, parser, OBJ_VAL(copyString(parser->previous->literal)));
   declareVariable(compiler, parser);
 
-  writeChunks(compiler->function->chunk, OP_STRUCT, nameConstant,
+  writeChunks(compiler->function, OP_STRUCT, nameConstant,
               parser->previous->line);
   consume(parser, scanner, TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
   structArgs(compiler, parser, scanner);

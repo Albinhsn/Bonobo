@@ -1,7 +1,7 @@
 #ifndef cpplox_vm_h
 #define cpplox_vm_h
 
-#include "chunk.h"
+#include "opcode.h"
 #include "object.h"
 #include <map>
 #include <stdexcept>

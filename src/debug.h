@@ -1,12 +1,13 @@
 #ifndef cpplox_debug_h
 #define cpplox_debug_h
 
-#include "chunk.h"
+#include "opcode.h"
+#include "object.h"
 #include <string>
 
-void disassembleChunk(Chunk *chunk, std::string name);
-int disassembleInstruction(Chunk *chunk, int offset);
-std::string translateInstruction(Chunk *chunk);
+void disassembleChunk(ObjFunction *function, std::string name);
+int disassembleInstruction(ObjFunction*function, int offset);
+std::string translateInstruction(ObjFunction*function);
 
 
 #endif

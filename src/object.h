@@ -1,10 +1,13 @@
 #ifndef cpplox_object_h
 #define cpplox_object_h
 
-#include "chunk.h"
 #include "common.h"
 #include "value.h"
 #include <map>
+
+#define CODE_MAX 500
+#define CONST_MAX  100
+
 
 typedef enum {
   OBJ_MAP,
@@ -23,10 +26,14 @@ struct Obj {
 typedef struct ObjFunction {
   Obj obj;
   int arity;
-  Chunk *chunk;
   ObjString *name;
-  ObjFunction(Obj o, int a, Chunk *c, ObjString *n)
-      : obj(o), arity(a), chunk(c), name(n){};
+  uint8_t code[CODE_MAX];
+  int lines[CODE_MAX];
+  int cp;
+  int constP;
+  Value constants[CONST_MAX];
+  ObjFunction(Obj o, int a, ObjString *n)
+      : obj(o), cp(0), constP(0), arity(a), name(n){};
 } ObjFunction;
 
 typedef Value (*NativeFn)(int argCount, Value args);
@@ -90,6 +97,12 @@ typedef struct ObjString {
 #define AS_NATIVE(value) (((ObjNative *)AS_OBJ(value))->function)
 #define AS_STRING(value) ((ObjString *)AS_OBJ(value))
 
+void freeChunk(ObjFunction *function);
+void initChunk(ObjFunction *function);
+void writeChunk(ObjFunction*function, uint8_t byte, int line);
+void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2, int line);
+
+int addConstant(ObjFunction*function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
