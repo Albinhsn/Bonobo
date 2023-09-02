@@ -36,3 +36,4 @@ build/
 googletest/
 input
 "'"
+log.txt
