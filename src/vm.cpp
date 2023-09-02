@@ -404,8 +404,8 @@ InterpretResult run() {
       break;
     }
     case OP_JUMP_IF_FALSE: {
+      uint16_t offset = READ_SHORT();
       if (isFalsey(vm->stackTop[-1])) {
-        uint16_t offset = READ_SHORT();
         frame->ip += offset;
       }
       break;

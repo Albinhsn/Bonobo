@@ -79,7 +79,7 @@ static bool match(Parser *parser, Scanner *scanner, TokenType type) {
 static void emitLoop(Compiler *compiler, Parser *parser, int loopStart) {
   writeChunk(compiler->function->chunk, OP_LOOP, parser->previous->line);
 
-  int offset = compiler->function->chunk->code.size() - loopStart + 2;
+  int offset = compiler->function->chunk->cp - loopStart + 2;
   if (offset > UINT16_MAX) {
     errorAt(parser, "Loop body too large.");
   }
@@ -92,7 +92,7 @@ static int emitJump(Compiler *compiler, Parser *parser, uint8_t instruction) {
   writeChunk(compiler->function->chunk, instruction, parser->previous->line);
   writeChunks(compiler->function->chunk, 0xff, 0xff, parser->previous->line);
 
-  return compiler->function->chunk->code.size() - 2;
+  return compiler->function->chunk->cp - 2;
 }
 
 static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
@@ -217,7 +217,7 @@ static uint8_t parseVariable(Compiler *compiler, Parser *parser,
 static void patchJump(Compiler *compiler, Parser *parser, int offset) {
   // -2 to adjust for the bytecode for the jump offset itself.
   Chunk *chunk = compiler->function->chunk;
-  int jump = chunk->code.size() - offset - 2;
+  int jump = chunk->cp - offset - 2;
   if (jump > UINT16_MAX) {
     errorAt(parser, "Too much code to jump over.");
   }
@@ -379,7 +379,7 @@ static void forStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
     expressionStatement(compiler, parser, scanner);
   }
 
-  int loopStart = compiler->function->chunk->code.size();
+  int loopStart = compiler->function->chunk->cp;
   int exitJump = -1;
   if (!match(parser, scanner, TOKEN_SEMICOLON)) {
     expression(compiler, parser, scanner);
@@ -392,7 +392,7 @@ static void forStatement(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
   if (!match(parser, scanner, TOKEN_RIGHT_PAREN)) {
     int bodyJump = emitJump(compiler, parser, OP_JUMP);
-    int incrementStart = compiler->function->chunk->code.size();
+    int incrementStart = compiler->function->chunk->cp;
 
     expression(compiler, parser, scanner);
     writeChunk(compiler->function->chunk, OP_POP, parser->previous->line);
@@ -460,7 +460,7 @@ static void returnStatement(Compiler *compiler, Parser *parser,
 
 static void whileStatement(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
-  int loopStart = compiler->function->chunk->code.size();
+  int loopStart = compiler->function->chunk->cp;
   consume(parser, scanner, TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
   expression(compiler, parser, scanner);
   consume(parser, scanner, TOKEN_RIGHT_PAREN, "Expect ')' after condition.");

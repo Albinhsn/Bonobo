@@ -2,27 +2,27 @@
 #include <cstdlib>
 
 void initChunk(Chunk *chunk) {
-  chunk->code = std::vector<uint8_t>();
+  chunk->cp = 0;
   chunk->constants = std::vector<Value>();
-  chunk->lines = std::vector<int>();
 }
 
-void writeChunks(Chunk * chunk, uint8_t byte1, uint8_t byte2, int line){
-  chunk->code.push_back(byte1);
-  chunk->code.push_back(byte2);
-  chunk->lines.push_back(line);
-  chunk->lines.push_back(line);
+void writeChunks(Chunk *chunk, uint8_t byte1, uint8_t byte2, int line) {
+  chunk->code[chunk->cp] = byte1;
+  chunk->lines[chunk->cp] = line;
+  chunk->cp++;
+
+  chunk->code[chunk->cp] = byte2;
+  chunk->lines[chunk->cp] = line;
+  chunk->cp++;
 }
 
 void writeChunk(Chunk *chunk, uint8_t byte, int line) {
-  chunk->code.push_back(byte);
-  chunk->lines.push_back(line);
+  chunk->code[chunk->cp] = byte;
+  chunk->lines[chunk->cp++] = line;
 }
 
 void freeChunk(Chunk *chunk) {
-  chunk->code.clear();
   chunk->constants.clear();
-  chunk->lines.clear();
   initChunk(chunk);
 }
 

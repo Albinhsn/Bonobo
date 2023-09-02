@@ -7,7 +7,7 @@
 void disassembleChunk(Chunk *chunk, std::string name) {
   std::cout << "== " << name << " ==\n";
 
-  for (int offset = 0; offset < chunk->code.size();) {
+  for (int offset = 0; offset < chunk->cp;) {
     offset = disassembleInstruction(chunk, offset);
   }
 }
