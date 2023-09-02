@@ -24,7 +24,6 @@ set(Sources
   ./src/value.cpp
   ./src/value.h
   ./src/vm.cpp
-  ./src/stack.h
   ./src/vm.h
   ./src/compiler.h
   ./src/compiler.cpp

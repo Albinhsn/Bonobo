@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.14)
 set(This cpploxTests)
 
 set(test_SOURCES
-  ./TestStack.cpp
   ./TestScanner.cpp
+  ./TestLogical.cpp
+  ./TestVM.cpp
   ./TestCompiler.cpp
   )
 add_executable(${This} ${test_SOURCES})

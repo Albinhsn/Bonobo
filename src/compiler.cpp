@@ -651,7 +651,6 @@ static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
   }
 }
 
-
 static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
                        TokenType type, bool canAssign) {
   switch (type) {
@@ -827,11 +826,11 @@ static void structDeclaration(Compiler *compiler, Parser *parser,
 
   writeChunks(compiler->function->chunk, OP_STRUCT, nameConstant,
               parser->previous->line);
-  defineVariable(compiler, parser, nameConstant);
-
-  consume(parser, scanner, TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+  consume(parser, scanner, TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
   structArgs(compiler, parser, scanner);
-  consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+  consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expect '}' after struct body.");
+  consume(parser, scanner, TOKEN_SEMICOLON, "Expect ';' after struct end.");
+  defineVariable(compiler, parser, nameConstant);
 }
 
 static void funDeclaration(Compiler *compiler, Parser *parser,
