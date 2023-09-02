@@ -16,14 +16,6 @@
 #include "debug.h"
 #endif
 
-static void statement(Compiler *compiler, Parser *parser, Scanner *scanner);
-static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner);
-
-static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
-                       TokenType type, bool canAssign);
-static void infixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
-                      TokenType type, bool canAssign);
-
 static Compiler *initCompiler(Compiler *current, Parser *parser,
                               FunctionType type) {
   Compiler *compiler = new Compiler(current, newFunction(), type);
@@ -178,11 +170,6 @@ static void parsePrecedence(Compiler *compiler, Parser *parser,
   }
 }
 
-static uint8_t identifierConstant(Compiler *compiler, Parser *parser) {
-  return makeConstant(compiler, parser,
-                      OBJ_VAL(copyString(parser->previous->literal)));
-}
-
 static int resolveLocal(Compiler *compiler, Parser *parser) {
   for (int i = compiler->locals.size() - 1; i >= 0; i--) {
     Local local = compiler->locals[i];
@@ -309,7 +296,8 @@ static void arrayDeclaration(Compiler *compiler, Parser *parser,
     } while (match(parser, scanner, TOKEN_COMMA));
   }
   consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ')' after arguments.");
-  writeChunks(compiler->function->chunk, OP_ARRAY, items, parser->previous->line);
+  writeChunks(compiler->function->chunk, OP_ARRAY, items,
+              parser->previous->line);
 }
 
 static void mapDeclaration(Compiler *compiler, Parser *parser,
@@ -630,7 +618,8 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
   } else {
-    arg = identifierConstant(compiler, parser);
+    arg = makeConstant(compiler, parser,
+                       OBJ_VAL(copyString(parser->previous->literal)));
     getOp = OP_GET_GLOBAL;
     setOp = OP_SET_GLOBAL;
   }
@@ -661,6 +650,7 @@ static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
   }
   }
 }
+
 
 static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
                        TokenType type, bool canAssign) {
@@ -783,7 +773,6 @@ static void block(Compiler *compiler, Parser *parser, Scanner *scanner) {
          parser->current->type != TOKEN_EOF) {
     declaration(compiler, parser, scanner);
   }
-
   consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
@@ -832,7 +821,8 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void structDeclaration(Compiler *compiler, Parser *parser,
                               Scanner *scanner) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect struct name");
-  uint8_t nameConstant = identifierConstant(compiler, parser);
+  uint8_t nameConstant = makeConstant(
+      compiler, parser, OBJ_VAL(copyString(parser->previous->literal)));
   declareVariable(compiler, parser);
 
   writeChunks(compiler->function->chunk, OP_STRUCT, nameConstant,

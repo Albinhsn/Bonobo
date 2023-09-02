@@ -41,10 +41,12 @@ typedef enum {
 
 typedef void (*ParseFn)(Parser *parser, Scanner *scanner);
 
-typedef struct {
+typedef struct ParseRule {
   ParseFn *prefix;
   ParseFn *infix;
   Precedence precedence;
+  ParseRule(ParseFn *p, ParseFn *i, Precedence pr)
+      : prefix(p), infix(i), precedence(pr){};
 } ParseRule;
 
 typedef struct Local {
@@ -67,5 +69,13 @@ typedef struct Compiler {
 } Compiler;
 
 Compiler *compile(std::string source);
+
+static void statement(Compiler *compiler, Parser *parser, Scanner *scanner);
+static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner);
+
+static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
+                       TokenType type, bool canAssign);
+static void infixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
+                      TokenType type, bool canAssign);
 
 #endif
