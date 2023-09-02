@@ -3,7 +3,9 @@
 
 #include "common.h"
 #include "value.h"
+
 #define CODE_MAX 500
+#define CONST_MAX  100
 
 typedef enum {
   OP_CONSTANT,
@@ -46,7 +48,8 @@ typedef struct {
   uint8_t code[CODE_MAX];
   int lines[CODE_MAX];
   int cp;
-  std::vector<Value> constants;
+  int constP;
+  Value constants[CONST_MAX];
 } Chunk;
 
 void freeChunk(Chunk *chunk);

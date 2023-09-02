@@ -3,7 +3,7 @@
 
 void initChunk(Chunk *chunk) {
   chunk->cp = 0;
-  chunk->constants = std::vector<Value>();
+  chunk->constP = 0;
 }
 
 void writeChunks(Chunk *chunk, uint8_t byte1, uint8_t byte2, int line) {
@@ -21,12 +21,9 @@ void writeChunk(Chunk *chunk, uint8_t byte, int line) {
   chunk->lines[chunk->cp++] = line;
 }
 
-void freeChunk(Chunk *chunk) {
-  chunk->constants.clear();
-  initChunk(chunk);
-}
+void freeChunk(Chunk *chunk) { initChunk(chunk); }
 
 int addConstant(Chunk *chunk, Value value) {
-  chunk->constants.push_back(value);
-  return chunk->constants.size() - 1;
+  chunk->constants[chunk->constP++] = value;
+  return chunk->constP - 1;
 }
