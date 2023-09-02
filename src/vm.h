@@ -31,6 +31,7 @@ InterpretResult interpret(std::string source);
 typedef struct FrameNode {
   CallFrame *frame;
   FrameNode *next;
+  FrameNode(CallFrame *f, FrameNode *n) : frame(f), next(n){};
 } FrameNode;
 
 class FrameStack {
@@ -38,7 +39,7 @@ class FrameStack {
 
 public:
   int length;
-  void init() {
+  FrameStack() {
     head = NULL;
     length = 0;
   }
@@ -49,25 +50,26 @@ public:
     FrameNode *oldHead = head;
     CallFrame *frame = oldHead->frame;
     head = head->next;
-    delete(oldHead);
+    delete (oldHead);
 
     return frame;
   }
   void push(CallFrame *value) {
-    FrameNode *node = new FrameNode();
-    node->frame = value;
-    node->next = head;
-    head = node;
+    head = new FrameNode(value, head);
     length++;
   }
 };
 
-typedef struct {
+typedef struct VM {
   FrameStack *frames;
   std::map<std::string, Value> strings;
   std::map<std::string, Value> globals;
   std::vector<Obj *> objects;
   Stack *stack;
+  VM()
+      : frames(new FrameStack), strings(std::map<std::string, Value>()),
+        globals(std::map<std::string, Value>()), objects(std::vector<Obj *>()),
+        stack(new Stack){};
 } VM;
 
 extern VM *vm;

@@ -1,3 +1,14 @@
+
+// static void emitByte(Compiler *compiler, Parser *parser, uint8_t byte) {
+//   writeChunk(currentChunk(compiler), byte, parser->previous->line);
+// }
+//
+// static void emitBytes(Compiler *compiler, Parser *parser, uint8_t byte1,
+//                       uint8_t byte2) {
+//   emitByte(compiler, parser, byte1);
+//   emitByte(compiler, parser, byte2);
+// }
+
 #ifndef cpplox_compiler_h
 #define cpplox_compiler_h
 
@@ -6,11 +17,12 @@
 #include "scanner.h"
 #include "vm.h"
 
-typedef struct {
+typedef struct Parser {
   Token *current;
   bool hadError;
   bool panicMode;
   Token *previous;
+  Parser() : current(NULL), hadError(false), panicMode(false), previous(NULL){};
 } Parser;
 
 typedef enum {
@@ -35,9 +47,10 @@ typedef struct {
   Precedence precedence;
 } ParseRule;
 
-typedef struct {
+typedef struct Local {
   Token name;
   int depth;
+  Local(Token n, int d) : name(n), depth(d){};
 } Local;
 
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
@@ -48,8 +61,11 @@ typedef struct Compiler {
   FunctionType type;
   std::vector<Local> locals;
   int scopeDepth;
+  Compiler(Compiler *e, ObjFunction *f, FunctionType t)
+      : enclosing(e), function(f), type(t), locals(std::vector<Local>()),
+        scopeDepth(0){};
 } Compiler;
 
-Compiler * compile(std::string source);
+Compiler *compile(std::string source);
 
 #endif

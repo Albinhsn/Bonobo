@@ -4,25 +4,19 @@
 #include "vm.h"
 
 ObjFunction *newFunction() {
-  ObjFunction *function = new ObjFunction();
-  function->arity = 0;
-  function->name = NULL;
-  function->chunk = new Chunk();
-  function->obj.type = OBJ_FUNCTION;
+  ObjFunction *function =
+      new ObjFunction(createObj(OBJ_FUNCTION), 0, new Chunk(), NULL);
+
   initChunk(function->chunk);
+
   if (vm) {
     vm->objects.push_back((Obj *)function);
   }
   return function;
 }
 ObjMap *newMap(std::vector<Value> values) {
-  ObjMap *mp = new ObjMap();
+  ObjMap *mp = new ObjMap(createObj(OBJ_MAP), std::map<std::string, Value>());
 
-  Obj obj;
-  obj.type = OBJ_MAP;
-  mp->obj = obj;
-
-  mp->m = std::map<std::string, Value>();
   for (int i = 0; i < values.size(); i += 2) {
     mp->m[AS_STRING(values[i + 1])->chars] = values[i];
   }
@@ -30,32 +24,22 @@ ObjMap *newMap(std::vector<Value> values) {
 }
 
 ObjArray *newArray(std::vector<Value> values) {
-  ObjArray *array = new ObjArray();
-  array->values = values;
-
-  Obj obj;
-  obj.type = OBJ_ARRAY;
-  array->obj = obj;
+  ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), values);
 
   return array;
 }
 
 ObjStruct *newStruct(ObjString *name) {
-  ObjStruct *strukt = new ObjStruct();
-  strukt->obj.type = OBJ_STRUCT;
-  strukt->fields = std::vector<std::string>();
-  strukt->name = name;
+  ObjStruct *strukt =
+      new ObjStruct(createObj(OBJ_STRUCT), name, std::vector<std::string>());
 
   vm->objects.push_back((Obj *)strukt);
   return strukt;
 }
 
 ObjInstance *newInstance(ObjStruct *strukt, std::vector<Value> fields) {
-  ObjInstance *instance = new ObjInstance();
-  instance->name = strukt->name;
-  instance->fields = fields;
-  instance->strukt = strukt;
-  instance->obj.type = OBJ_INSTANCE;
+  ObjInstance *instance =
+      new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fields);
 
   vm->objects.push_back((Obj *)instance);
   return instance;
@@ -70,9 +54,7 @@ static void printFunction(ObjFunction *function) {
 }
 
 ObjNative *newNative(NativeFn function) {
-  ObjNative *native = new ObjNative();
-  native->function = function;
-
+  ObjNative *native = new ObjNative(createObj(OBJ_NATIVE), function);
   vm->objects.push_back((Obj *)function);
 
   return native;
@@ -130,15 +112,8 @@ void printObject(Value value) {
 }
 
 ObjString *copyString(std::string str) {
-  ObjString *objString = new ObjString();
-
-  Obj *obj = new Obj();
-  obj->type = OBJ_STRING;
-  objString->obj = *obj;
-  objString->chars = str;
-
+  ObjString *objString = new ObjString(createObj(OBJ_STRING), str);
   vm->objects.push_back((Obj *)objString);
-  vm->objects.push_back((Obj *)obj);
 
   return objString;
 }

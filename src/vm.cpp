@@ -23,13 +23,6 @@ static Value clockNative(int argCount, Value args) {
 
 void initVM() {
   vm = new VM();
-  vm->stack = new Stack();
-  vm->stack->init();
-  vm->strings = std::map<std::string, Value>();
-  vm->globals = std::map<std::string, Value>();
-  vm->objects = std::vector<Obj *>();
-  vm->frames = new FrameStack();
-  vm->frames->init();
 
   defineNative("clock", clockNative);
 }
@@ -40,14 +33,13 @@ void freeVM() {
   delete (vm->stack);
 }
 
-static void resetStack(VM *vm) {
-  vm->stack = new Stack();
-  vm->stack->init();
-  vm->frames = new FrameStack();
-  vm->frames->length = 0;
+static void resetStack() {
+  freeVM();
+  vm->stack = new Stack;
+  vm->frames = new FrameStack;
 }
 
-static void runtimeError(VM *vm, std::string format, ...) {
+static void runtimeError(std::string format, ...) {
   va_list args;
   va_start(args, format);
   vfprintf(stderr, format.c_str(), args);
@@ -67,7 +59,7 @@ static void runtimeError(VM *vm, std::string format, ...) {
     }
   }
 
-  resetStack(vm);
+  resetStack();
 }
 
 static void defineNative(std::string name, NativeFn function) {
@@ -89,19 +81,17 @@ static bool matchByte(OpCode code) {
   return false;
 }
 
-static Value peek(int distance) { return vm->stack->get(distance); }
-
 static bool call(ObjFunction *function, int argCount) {
   if (argCount != function->arity) {
-    runtimeError(vm, "Expected %d arguments but got %d", function->arity,
+    runtimeError("Expected %d arguments but got %d", function->arity,
                  argCount);
     return false;
   }
   if (vm->frames->length == FRAMES_MAX) {
-    runtimeError(vm, "Stack overflow.");
+    runtimeError("Stack overflow.");
     return false;
   }
-  CallFrame *frame = new CallFrame();
+  CallFrame *frame = new CallFrame;
   frame->function = function;
   frame->instructions = function->chunk->code;
   frame->ip = 0;
@@ -127,7 +117,7 @@ static bool callValue(Value callee, int argCount) {
     case OBJ_STRUCT: {
       ObjStruct *strukt = AS_STRUCT(callee);
       if (strukt->fields.size() != argCount) {
-        runtimeError(vm, "Expected %d argument for struct but got %d",
+        runtimeError("Expected %d argument for struct but got %d",
                      strukt->fields.size(), argCount);
         return false;
       }
@@ -142,7 +132,7 @@ static bool callValue(Value callee, int argCount) {
       break;
     }
   }
-  runtimeError(vm, "Can only call functions and classes.");
+  runtimeError("Can only call functions and classes.");
   return false;
 }
 
@@ -150,7 +140,7 @@ static bool index() {
   Value key = vm->stack->pop();
   Value item = vm->stack->pop();
   if (item.type != VAL_OBJ) {
-    runtimeError(vm, "Can't only index array, map and string");
+    runtimeError("Can't only index array, map and string");
     return false;
   }
   switch (OBJ_TYPE(item)) {
@@ -162,19 +152,19 @@ static bool index() {
       vm->stack->push(mp->m[string->chars]);
       return true;
     }
-    runtimeError(vm, "Trying to access map with unknown key %s",
+    runtimeError("Trying to access map with unknown key %s",
                  string->chars.c_str());
     return false;
   }
   case OBJ_STRING: {
     if (key.type != VAL_NUMBER) {
-      runtimeError(vm, "Can only index string with number");
+      runtimeError("Can only index string with number");
       return false;
     }
     ObjString *string = AS_STRING(item);
     int k = (int)key.as.number;
     if (string->chars.size() <= k || k < 0) {
-      runtimeError(vm, "Trying to access outside of array %d", k);
+      runtimeError("Trying to access outside of array %d", k);
       return false;
     }
 
@@ -186,20 +176,20 @@ static bool index() {
   }
   case OBJ_ARRAY: {
     if (key.type != VAL_NUMBER) {
-      runtimeError(vm, "Can only index array with number");
+      runtimeError("Can only index array with number");
       return false;
     }
     int k = (int)key.as.number;
     ObjArray *array = AS_ARRAY(item);
     if (array->values.size() <= k || k < 0) {
-      runtimeError(vm, "Trying to access outside of array %d", k);
+      runtimeError("Trying to access outside of array %d", k);
       return false;
     }
     vm->stack->push(array->values[k]);
     return true;
   }
   default: {
-    runtimeError(vm, "Can't only index array, map and string");
+    runtimeError("Can't only index array, map and string");
     return false;
   }
   }
@@ -226,8 +216,8 @@ InterpretResult run() {
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
-    if (!IS_NUMBER(vm->stack->peek()) || !IS_NUMBER(peek(1))) {                \
-      runtimeError(vm, "Operands must be numbers.");                           \
+    if (!IS_NUMBER(vm->stack->peek()) || !IS_NUMBER(vm->stack->get(1))) {      \
+      runtimeError("Operands must be numbers.");                           \
       return INTERPRET_RUNTIME_ERROR;                                          \
     }                                                                          \
     double b = AS_NUMBER(vm->stack->pop());                                    \
@@ -283,7 +273,7 @@ InterpretResult run() {
     case OP_GET_GLOBAL: {
       std::string name = READ_STRING()->chars;
       if (!vm->globals.count(name)) {
-        runtimeError(vm, "Undefined variable '" + name + "'.");
+        runtimeError("Undefined variable '" + name + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
       Value value = vm->globals[name];
@@ -299,7 +289,7 @@ InterpretResult run() {
       std::string name = READ_STRING()->chars;
       if (!vm->globals.count(name)) {
         std::string msg = name;
-        runtimeError(vm, "Undefined variable '" + msg + "'.");
+        runtimeError("Undefined variable '" + msg + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
       vm->globals[name] = vm->stack->peek();
@@ -307,7 +297,7 @@ InterpretResult run() {
     }
     case OP_GET_PROPERTY: {
       if (!IS_INSTANCE(vm->stack->peek())) {
-        runtimeError(vm, "Only instances have properties.");
+        runtimeError("Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
       // Get the instance from the top
@@ -322,7 +312,7 @@ InterpretResult run() {
         }
       }
       if (idx == -1) {
-        runtimeError(vm, "Couldn't find field?");
+        runtimeError("Couldn't find field?");
         return INTERPRET_RUNTIME_ERROR;
       }
 
@@ -331,10 +321,10 @@ InterpretResult run() {
       break;
     }
     case OP_SET_PROPERTY: {
-      Value v1 = peek(1);
+      Value v1 = vm->stack->get(1);
       if (!IS_INSTANCE(v1)) {
         std::cout << OBJ_TYPE(v1) << "\n";
-        runtimeError(vm, "Only instances have fields.");
+        runtimeError("Only instances have fields.");
         return INTERPRET_RUNTIME_ERROR;
       }
 
@@ -370,7 +360,7 @@ InterpretResult run() {
       } else if (IS_STRING(head) && IS_STRING(head2)) {
         concatenate(head, head2);
       } else {
-        runtimeError(vm, "Operands must be two number or two strings");
+        runtimeError("Operands must be two number or two strings");
         return INTERPRET_RUNTIME_ERROR;
       }
       break;
@@ -393,7 +383,7 @@ InterpretResult run() {
     }
     case OP_NEGATE: {
       if (!IS_NUMBER(vm->stack->peek())) {
-        runtimeError(vm, "Operand must be a number.");
+        runtimeError("Operand must be a number.");
         return INTERPRET_RUNTIME_ERROR;
       }
       vm->stack->update(0, NUMBER_VAL(-AS_NUMBER(vm->stack->peek())));
@@ -429,7 +419,7 @@ InterpretResult run() {
     }
     case OP_CALL: {
       int argCount = frame->instructions[frame->ip++];
-      if (!callValue(peek(argCount), argCount)) {
+      if (!callValue(vm->stack->get(argCount), argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
       frame = vm->frames->peek();
@@ -437,9 +427,9 @@ InterpretResult run() {
     }
     case OP_ARRAY: {
       int argCount = frame->instructions[frame->ip++];
-      std::vector<Value> values = std::vector<Value>();
+      std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {
-        values.push_back(vm->stack->pop());
+        values[i] = vm->stack->pop();
       }
       ObjArray *array = newArray(values);
       vm->stack->push(OBJ_VAL(array));
@@ -447,10 +437,10 @@ InterpretResult run() {
     }
     case OP_MAP: {
       int argCount = frame->instructions[frame->ip++];
-      std::cout << argCount << "\n";
-      std::vector<Value> values = std::vector<Value>();
+      // Rework this into stack function?
+      std::vector<Value> values = std::vector<Value>(argCount);
       for (int i = 0; i < argCount; i++) {
-        values.push_back(vm->stack->pop());
+        values[i] = vm->stack->pop();
       }
       ObjMap *map = newMap(values);
       vm->stack->push(OBJ_VAL(map));
@@ -461,7 +451,7 @@ InterpretResult run() {
 
       // This should be handled in the compiler?
       if (vm->globals.count(name->chars)) {
-        runtimeError(vm, "Can't redeclare a struct '" + name->chars + "'.");
+        runtimeError("Can't redeclare a struct '" + name->chars + "'.");
         return INTERPRET_RUNTIME_ERROR;
       }
       ObjStruct *strukt = newStruct(name);
@@ -481,9 +471,9 @@ InterpretResult run() {
 
         return INTERPRET_OK;
       }
-
+      sp++;
       vm->stack->remove(sp);
-      vm->stack->push(result);
+      vm->stack->update(0, result);
       frame = vm->frames->peek();
       break;
     }

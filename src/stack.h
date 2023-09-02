@@ -7,12 +7,17 @@
 typedef struct Node {
   Value value;
   Node *next;
+  Node(Value v, Node *n) : value(v), next(n){};
 } Node;
 
 class Stack {
   Node *head;
 
 public:
+  Stack() {
+    head = NULL;
+    length = 0;
+  }
   int length;
   void remove(int sp) {
     Node *curr = head;
@@ -20,7 +25,6 @@ public:
       length--;
       Node *oldHead = head;
       head = head->next;
-      Value value = oldHead->value;
       delete (oldHead);
     }
   }
@@ -41,10 +45,6 @@ public:
     }
     curr->value = value;
   }
-  void init() {
-    head = NULL;
-    length = 0;
-  }
   Value peek() { return head->value; }
 
   Value pop() {
@@ -56,9 +56,7 @@ public:
     return value;
   }
   void push(Value value) {
-    Node *node = new Node();
-    node->value = value;
-    node->next = head;
+    Node *node = new Node(value, head);
     head = node;
     length++;
   }

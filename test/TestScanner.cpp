@@ -5,19 +5,10 @@
 #include <string>
 #include <vector>
 
-Token createToken(std::string literal, TokenType type, int line, int indent) {
-  Token token;
-  token.literal = literal;
-  token.type = type;
-  token.line = line;
-  token.indent = indent;
-
-  return token;
-}
 
 TEST(TestScanner, TestSingleCharTokens) {
   std::string source = "!<>(){}[],.-+;*/:=";
-  Scanner *scanner = initScanner(source);
+  Scanner *scanner = new Scanner(source);
   std::vector<Token> tokens = {
       (Token){"!", 1, 0, TOKEN_BANG},
       (Token){"<", 1, 0, TOKEN_LESS},
@@ -49,7 +40,7 @@ TEST(TestScanner, TestSingleCharTokens) {
 
 TEST(TestScanner, TestDoubleCharTokens) {
   std::string source = "!=<=>=->";
-  Scanner *scanner = initScanner(source);
+  Scanner *scanner = new Scanner(source);
   std::vector<Token> tokens = {
       (Token){"!=", 1, 0, TOKEN_BANG_EQUAL},
       (Token){"<=", 1, 0, TOKEN_LESS_EQUAL},
@@ -67,7 +58,7 @@ TEST(TestScanner, TestDoubleCharTokens) {
 
 TEST(TestScanner, TestLiterals) {
   std::string source = "arla haren \"Hello,\" \" Sailor!\" 1.0 2 20.45 123";
-  Scanner *scanner = initScanner(source);
+  Scanner *scanner = new Scanner(source);
   std::vector<Token> tokens = {
       (Token){"arla", 1, 0, TOKEN_IDENTIFIER},
       (Token){"haren", 1, 0, TOKEN_IDENTIFIER},
@@ -91,7 +82,7 @@ TEST(TestScanner, TestLiterals) {
 TEST(TestScanner, TestKeywords) {
   std::string source =
       "struct print else false for fun if nil return true while and or var";
-  Scanner *scanner = initScanner(source);
+  Scanner *scanner = new Scanner(source);
   std::vector<Token> tokens = {
       (Token){"struct", 1, 0, TOKEN_STRUCT},
       (Token){"print", 1, 0, TOKEN_PRINT},
@@ -120,7 +111,7 @@ TEST(TestScanner, TestKeywords) {
 TEST(TestScanner, TestFibonnaci) {
   std::string source = "fun fib(a){\n if(a <= 2){\n return 1;\n}\n return "
                        "fib(a-1) + fib(a-2);\n}";
-  Scanner *scanner = initScanner(source);
+  Scanner *scanner = new Scanner(source);
   std::vector<Token> tokens = {
       (Token){"fun", 1, 0, TOKEN_FUN},
       (Token){"fib", 1, 0, TOKEN_IDENTIFIER},

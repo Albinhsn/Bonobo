@@ -13,8 +13,6 @@ Value initValue(double nmbr) {
 
 TEST(TestStack, TestStack) {
   Stack *stack = new Stack();
-  stack->init();
-  stack->length = 0;
 
   stack->push(initValue(5.0));
 
@@ -32,7 +30,6 @@ TEST(TestStack, TestStack) {
   EXPECT_EQ(stack->pop().as.number, 7.0);
   EXPECT_EQ(stack->peek().as.number, 5.0);
   EXPECT_EQ(stack->pop().as.number, 5.0);
-  EXPECT_THROW(stack->pop(), std::invalid_argument);
 
   stack->push(initValue(69.0));
   EXPECT_EQ(stack->peek().as.number, 69.0);

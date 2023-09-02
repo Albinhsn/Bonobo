@@ -43,8 +43,8 @@ void printValue(Value value) {
     printObject(value);
     break;
   }
-  default:{
-      std::cout << "undefined value"; 
-    }
+  default: {
+    std::cout << "undefined value";
+  }
   }
 }

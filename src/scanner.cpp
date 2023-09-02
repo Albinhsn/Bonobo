@@ -1,19 +1,10 @@
 #include "scanner.h"
 #include "debug.h"
 
+#include <cctype>
 #include <iostream>
 #include <map>
 #include <stdexcept>
-
-Scanner *initScanner(std::string source) {
-  Scanner *scanner = new Scanner();
-  scanner->source = source;
-  scanner->current = 0;
-  scanner->line = 1;
-  scanner->indent = 0;
-
-  return scanner;
-}
 
 void resetScanner(Scanner *scanner) {
   scanner->current = 0;
@@ -22,64 +13,31 @@ void resetScanner(Scanner *scanner) {
   scanner->source = "";
 }
 
-static char getCurrent(Scanner *scanner) {
-  return scanner->source[scanner->current];
-}
-static char getPrevious(Scanner *scanner) {
-  return scanner->source[scanner->current - 1];
-}
-
-static Token *makeToken(Scanner *scanner, std::string literal, TokenType type) {
-  Token *token = new Token();
-  token->literal = literal;
-  token->type = type;
-  token->line = scanner->line;
-  token->indent = scanner->indent;
-#ifdef PRINT_TOKENS
-  debugToken(token);
-#endif
-  return token;
-}
 static bool isAtEnd(Scanner *scanner) {
   return scanner->source[scanner->current] == '\0';
 }
 
-static void advance(Scanner *scanner) { scanner->current++; }
-
 static bool match(Scanner *scanner, char needle) {
   if (!isAtEnd(scanner) && scanner->source[scanner->current] == needle) {
-    advance(scanner);
+    scanner->current++;
     return true;
   }
   return false;
 }
-
-static bool matchNext(Scanner *scanner, char needle) {
-  if (scanner->source.size() > scanner->current + 1 &&
-      scanner->source[scanner->current + 1] == needle) {
-    advance(scanner);
-    return true;
-  }
-  return false;
-}
-
-static bool isDigit(char c) { return '0' <= c && '9' >= c; }
 
 static Token *parseNumber(Scanner *scanner) {
   int current = scanner->current - 1;
-  while (!isAtEnd(scanner) && isDigit(getCurrent(scanner))) {
-    advance(scanner);
+  while (!isAtEnd(scanner) && isdigit(scanner->source[scanner->current])) {
+    scanner->current++;
   }
-  if (getCurrent(scanner) == '.') {
-    advance(scanner);
+  if (scanner->source[scanner->current] == '.') {
+    scanner->current++;
   }
-  while (!isAtEnd(scanner) && isDigit(getCurrent(scanner))) {
-    advance(scanner);
+  while (!isAtEnd(scanner) && isdigit(scanner->source[scanner->current])) {
+    scanner->current++;
   }
-  std::string literal =
-      scanner->source.substr(current, scanner->current - current);
-  TokenType type = TOKEN_NUMBER;
-  return makeToken(scanner, literal, type);
+  return new Token(scanner->source.substr(current, scanner->current - current),
+                   scanner->line, scanner->indent, TOKEN_NUMBER);
 }
 static TokenType isKeyword(std::string literal) {
   std::map<std::string, TokenType> m{
@@ -88,10 +46,7 @@ static TokenType isKeyword(std::string literal) {
       {"return", TOKEN_RETURN}, {"true", TOKEN_TRUE}, {"while", TOKEN_WHILE},
       {"print", TOKEN_PRINT},   {"var", TOKEN_VAR},   {"fun", TOKEN_FUN},
       {"and", TOKEN_AND},       {"or", TOKEN_OR}};
-  if (m.count(literal)) {
-    return m[literal];
-  }
-  return TOKEN_IDENTIFIER;
+  return m.count(literal) ? m[literal] : TOKEN_IDENTIFIER;
 }
 
 static bool isAlpha(char c) {
@@ -100,30 +55,29 @@ static bool isAlpha(char c) {
 
 static Token *parseIdentifier(Scanner *scanner) {
   int current = scanner->current - 1;
-  while (!isAtEnd(scanner) && isAlpha(getCurrent(scanner))) {
-    advance(scanner);
+  while (!isAtEnd(scanner) && isAlpha(scanner->source[scanner->current])) {
+    scanner->current++;
   }
   std::string literal =
       scanner->source.substr(current, scanner->current - current);
-  TokenType type = isKeyword(literal);
-  return makeToken(scanner, literal, type);
+  return new Token(literal, scanner->line, scanner->indent, isKeyword(literal));
 }
 
 static Token *parseString(Scanner *scanner) {
   int current = scanner->current;
-  while (!isAtEnd(scanner) && getCurrent(scanner) != '"' &&
-         getCurrent(scanner) != '\n') {
-    advance(scanner);
+  while (!isAtEnd(scanner) && scanner->source[scanner->current] != '"' &&
+         scanner->source[scanner->current] != '\n') {
+    scanner->current++;
   }
 
   if (isAtEnd(scanner)) {
     throw std::invalid_argument("Hit eof with unterminated string.");
   }
-  std::string literal =
-      scanner->source.substr(current, scanner->current - current);
-  TokenType type = TOKEN_STRING;
+
   scanner->current++;
-  return makeToken(scanner, literal, type);
+  return new Token(
+      scanner->source.substr(current, scanner->current - current - 1),
+      scanner->line, scanner->indent, TOKEN_STRING);
 }
 
 void skipWhitespace(Scanner *scanner) {
@@ -131,15 +85,17 @@ void skipWhitespace(Scanner *scanner) {
     if (isAtEnd(scanner)) {
       return;
     }
-    char c = getCurrent(scanner);
-    switch (c) {
+    switch (scanner->source[scanner->current]) {
     case '/': {
-      if (matchNext(scanner, '/')) {
+      scanner->current++;
+      if (match(scanner, '/')) {
         while (!isAtEnd(scanner) and !match(scanner, '\n')) {
-          advance(scanner);
+          scanner->current++;
         }
         scanner->line++;
+        return;
       }
+      scanner->current--;
       return;
     }
     case ' ': {
@@ -165,11 +121,11 @@ void skipWhitespace(Scanner *scanner) {
 Token *scanToken(Scanner *scanner) {
   skipWhitespace(scanner);
   if (isAtEnd(scanner)) {
-    return makeToken(scanner, "EOF", TOKEN_EOF);
+    return new Token("EOF", scanner->line, scanner->indent, TOKEN_EOF);
   }
   scanner->current++;
-  char c = getPrevious(scanner);
-  if (isDigit(c)) {
+  char c = scanner->source[scanner->current - 1];
+  if (isdigit(c)) {
     return parseNumber(scanner);
   }
   if (isAlpha(c)) {
@@ -180,81 +136,78 @@ Token *scanToken(Scanner *scanner) {
     return parseString(scanner);
   }
   case '(': {
-    return makeToken(scanner, "(", TOKEN_LEFT_PAREN);
+    return new Token("(", scanner->line, scanner->indent, TOKEN_LEFT_PAREN);
   }
   case ')': {
-    return makeToken(scanner, ")", TOKEN_RIGHT_PAREN);
+    return new Token(")", scanner->line, scanner->indent, TOKEN_RIGHT_PAREN);
   }
   case '{': {
-    return makeToken(scanner, "{", TOKEN_LEFT_BRACE);
+    return new Token("{", scanner->line, scanner->indent, TOKEN_LEFT_BRACE);
   }
   case '}': {
-    return makeToken(scanner, "}", TOKEN_RIGHT_BRACE);
+    return new Token("}", scanner->line, scanner->indent, TOKEN_RIGHT_BRACE);
   }
   case '[': {
-    return makeToken(scanner, "[", TOKEN_LEFT_BRACKET);
+    return new Token("[", scanner->line, scanner->indent, TOKEN_LEFT_BRACKET);
   }
   case ']': {
-    return makeToken(scanner, "]", TOKEN_RIGHT_BRACKET);
+    return new Token("]", scanner->line, scanner->indent, TOKEN_RIGHT_BRACKET);
   }
   case ';': {
-    return makeToken(scanner, ";", TOKEN_SEMICOLON);
+    return new Token(";", scanner->line, scanner->indent, TOKEN_SEMICOLON);
   }
   case ',': {
-    return makeToken(scanner, ",", TOKEN_COMMA);
+    return new Token(",", scanner->line, scanner->indent, TOKEN_COMMA);
   }
   case '.': {
-    return makeToken(scanner, ".", TOKEN_DOT);
+    return new Token(".", scanner->line, scanner->indent, TOKEN_DOT);
   }
   case '+': {
-    return makeToken(scanner, "+", TOKEN_PLUS);
+    return new Token("+", scanner->line, scanner->indent, TOKEN_PLUS);
   }
   case '*': {
-    return makeToken(scanner, "*", TOKEN_STAR);
+    return new Token("*", scanner->line, scanner->indent, TOKEN_STAR);
   }
-  // case '?': {
-  //   return makeToken(scanner, "?", TOKEN_QUESTION);
-  // }
   case ':': {
-    return makeToken(scanner, ":", TOKEN_COLON);
+    return new Token(":", scanner->line, scanner->indent, TOKEN_COLON);
   }
   case '!': {
     if (match(scanner, '=')) {
-      return makeToken(scanner, "!=", TOKEN_BANG_EQUAL);
+      return new Token("!=", scanner->line, scanner->indent, TOKEN_BANG_EQUAL);
     }
-    return makeToken(scanner, "!", TOKEN_BANG);
+    return new Token("!", scanner->line, scanner->indent, TOKEN_BANG);
   }
   case '=': {
     if (match(scanner, '=')) {
-      return makeToken(scanner, "==", TOKEN_EQUAL_EQUAL);
+      return new Token("==", scanner->line, scanner->indent, TOKEN_EQUAL_EQUAL);
     }
-    return makeToken(scanner, "=", TOKEN_EQUAL);
+    return new Token("=", scanner->line, scanner->indent, TOKEN_EQUAL);
   }
   case '<': {
     if (match(scanner, '=')) {
-      return makeToken(scanner, "<=", TOKEN_LESS_EQUAL);
+      return new Token("<=", scanner->line, scanner->indent, TOKEN_LESS_EQUAL);
     }
-    return makeToken(scanner, "<", TOKEN_LESS);
+    return new Token("<", scanner->line, scanner->indent, TOKEN_LESS);
   }
   case '>': {
     if (match(scanner, '=')) {
-      return makeToken(scanner, ">=", TOKEN_GREATER_EQUAL);
+      return new Token(">=", scanner->line, scanner->indent,
+                       TOKEN_GREATER_EQUAL);
     }
-    return makeToken(scanner, ">", TOKEN_GREATER);
+    return new Token(">", scanner->line, scanner->indent, TOKEN_GREATER);
   }
   case '-': {
     if (match(scanner, '>')) {
-      return makeToken(scanner, "->", TOKEN_ARROW);
+      return new Token("->", scanner->line, scanner->indent, TOKEN_ARROW);
     }
-    return makeToken(scanner, "-", TOKEN_MINUS);
+    return new Token("-", scanner->line, scanner->indent, TOKEN_MINUS);
   }
   case '/': {
-    return makeToken(scanner, "/", TOKEN_SLASH);
+    return new Token("/", scanner->line, scanner->indent, TOKEN_SLASH);
   }
   default:
-    std::string exception = "Unknown characther '";
+    std::string exception = "Unknown characther ";
     exception.push_back(c);
-    exception.append("'.");
     throw std::invalid_argument(exception);
   }
 }

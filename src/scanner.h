@@ -19,7 +19,7 @@ typedef enum {
   TOKEN_SEMICOLON,
   TOKEN_SLASH,
   TOKEN_STAR,
-  TOKEN_COLON,    // :
+  TOKEN_COLON, // :
   // TOKEN_QUESTION, // ?
 
   // One or two character tokens.
@@ -64,21 +64,23 @@ typedef enum {
   TOKEN_EOF
 } TokenType;
 
-typedef struct {
+typedef struct Token {
   std::string literal;
   int line;
   int indent;
   TokenType type;
+  Token(std::string l, int li, int i, TokenType t)
+      : literal(l), line(li), indent(i), type(t){};
 } Token;
 
-typedef struct {
+typedef struct Scanner {
   std::string source;
   int current;
   int line;
   int indent;
+  Scanner(std::string s) : source(s), current(0), line(1), indent(0){};
 } Scanner;
 
 void resetScanner(Scanner *scanner);
-Scanner *initScanner(std::string source);
 Token *scanToken(Scanner *scanner);
 #endif
