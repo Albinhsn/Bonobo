@@ -9,13 +9,14 @@
 #include <vector>
 
 #define FRAMES_MAX 90
-#define STACK_MAX 255 
-#define GLOBAL_MAX 120 
+#define STACK_MAX 255
+#define GLOBAL_MAX 120
 #define OBJECT_MAX 150
 
 typedef struct CallFrame {
   ObjFunction *function;
-  std::vector<uint8_t> instructions;
+  uint8_t *instructions;
+  // std::vector<uint8_t> instructions;
   int ip;
   Value *sp; // Stack pointer
 } CallFrame;

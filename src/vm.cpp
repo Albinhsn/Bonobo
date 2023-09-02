@@ -91,7 +91,7 @@ static bool call(ObjFunction *function, int argCount) {
   }
   CallFrame *frame = new CallFrame;
   frame->function = function;
-  frame->instructions = function->chunk->code;
+  frame->instructions = &function->chunk->code[0];
   frame->sp = vm->stackTop - argCount;
   frame->ip = 0;
   vm->frames[vm->fp++] = frame;
