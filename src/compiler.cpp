@@ -96,22 +96,15 @@ static void emitLoop(Compiler *compiler, Parser *parser, int loopStart) {
     errorAt(parser, "Loop body too large.");
   }
 
-  writeChunk(currentChunk(compiler), (offset >> 8 & 0xff),
-             parser->previous->line);
-  writeChunk(currentChunk(compiler), (offset & 0xff), parser->previous->line);
+  writeChunks(currentChunk(compiler), (offset >> 8 & 0xff), (offset & 0xff),
+              parser->previous->line);
 }
 
 static int emitJump(Compiler *compiler, Parser *parser, uint8_t instruction) {
   writeChunk(currentChunk(compiler), instruction, parser->previous->line);
-  writeChunk(currentChunk(compiler), 0xff, parser->previous->line);
-  writeChunk(currentChunk(compiler), 0xff, parser->previous->line);
+  writeChunks(currentChunk(compiler), 0xff, 0xff, parser->previous->line);
 
   return currentChunk(compiler)->code.size() - 2;
-}
-
-static void emitReturn(Compiler *compiler, Parser *parser) {
-  writeChunk(currentChunk(compiler), OP_NIL, parser->previous->line);
-  writeChunk(currentChunk(compiler), OP_RETURN, parser->previous->line);
 }
 
 static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
@@ -133,7 +126,8 @@ static ObjFunction *endCompiler(Compiler *compiler, Parser *parser) {
                          : "<script>");
   }
 #endif
-  emitReturn(compiler, parser);
+  writeChunks(currentChunk(compiler), OP_NIL, OP_RETURN,
+              parser->previous->line);
   return compiler->function;
 }
 
@@ -268,8 +262,8 @@ static void defineVariable(Compiler *compiler, Parser *parser, uint8_t global) {
     return;
   }
 
-  writeChunk(currentChunk(compiler), OP_DEFINE_GLOBAL, parser->previous->line);
-  writeChunk(currentChunk(compiler), global, parser->previous->line);
+  writeChunks(currentChunk(compiler), OP_DEFINE_GLOBAL, global,
+              parser->previous->line);
 }
 
 static uint8_t argumentList(Compiler *compiler, Parser *parser,
@@ -323,8 +317,7 @@ static void arrayDeclaration(Compiler *compiler, Parser *parser,
     } while (match(parser, scanner, TOKEN_COMMA));
   }
   consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ')' after arguments.");
-  writeChunk(currentChunk(compiler), OP_ARRAY, parser->previous->line);
-  writeChunk(currentChunk(compiler), items, parser->previous->line);
+  writeChunks(currentChunk(compiler), OP_ARRAY, items, parser->previous->line);
 }
 
 static void mapDeclaration(Compiler *compiler, Parser *parser,
@@ -335,8 +328,8 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
     do {
       consume(parser, scanner, TOKEN_STRING, "Expect strings as keys");
       uint8_t constant = identifierConstant(compiler, parser);
-      writeChunk(currentChunk(compiler), OP_CONSTANT, parser->previous->line);
-      writeChunk(currentChunk(compiler), constant, parser->previous->line);
+      writeChunks(currentChunk(compiler), OP_CONSTANT, constant,
+                  parser->previous->line);
 
       consume(parser, scanner, TOKEN_COLON,
               "Expect colon between key and value");
@@ -351,8 +344,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
   }
 
   consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expect '}' after map items.");
-  writeChunk(currentChunk(compiler), OP_MAP, parser->previous->line);
-  writeChunk(currentChunk(compiler), items, parser->previous->line);
+  writeChunks(currentChunk(compiler), OP_MAP, items, parser->previous->line);
 }
 
 static void varDeclaration(Compiler *compiler, Parser *parser,
@@ -476,7 +468,8 @@ static void returnStatement(Compiler *compiler, Parser *parser,
   }
 
   if (match(parser, scanner, TOKEN_SEMICOLON)) {
-    emitReturn(compiler, parser);
+    writeChunks(currentChunk(compiler), OP_NIL, OP_RETURN,
+                parser->previous->line);
   } else {
     expression(compiler, parser, scanner);
     consume(parser, scanner, TOKEN_SEMICOLON, "Expect ';' after return value");
@@ -534,8 +527,8 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
   switch (operatorType) {
   case TOKEN_BANG_EQUAL: {
-    writeChunk(currentChunk(compiler), OP_EQUAL, parser->previous->line);
-    writeChunk(currentChunk(compiler), OP_NOT, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_EQUAL, OP_NOT,
+                parser->previous->line);
     break;
   }
   case TOKEN_EQUAL_EQUAL: {
@@ -547,8 +540,8 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
     break;
   }
   case TOKEN_GREATER_EQUAL: {
-    writeChunk(currentChunk(compiler), OP_LESS, parser->previous->line);
-    writeChunk(currentChunk(compiler), OP_NOT, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_LESS, OP_NOT,
+                parser->previous->line);
     break;
   }
   case TOKEN_LESS: {
@@ -556,8 +549,8 @@ static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
     break;
   }
   case TOKEN_LESS_EQUAL: {
-    writeChunk(currentChunk(compiler), OP_GREATER, parser->previous->line);
-    writeChunk(currentChunk(compiler), OP_NOT, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_GREATER, OP_NOT,
+                parser->previous->line);
     break;
   }
   case TOKEN_PLUS: {
@@ -595,11 +588,12 @@ static void dot(Compiler *compiler, Parser *parser, Scanner *scanner,
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
-    writeChunk(currentChunk(compiler), OP_SET_PROPERTY, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_SET_PROPERTY, name,
+                parser->previous->line);
   } else {
-    writeChunk(currentChunk(compiler), OP_GET_PROPERTY, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_GET_PROPERTY, name,
+                parser->previous->line);
   }
-  writeChunk(currentChunk(compiler), name, parser->previous->line);
 }
 
 static void grouping(Compiler *compiler, Parser *parser, Scanner *scanner) {
@@ -628,10 +622,9 @@ static void unary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
 static void number(Compiler *compiler, Parser *parser, Scanner *scanner) {
   double value = std::stod(parser->previous->literal);
-  writeChunk(currentChunk(compiler), OP_CONSTANT, parser->previous->line);
-  writeChunk(currentChunk(compiler),
-             makeConstant(compiler, parser, NUMBER_VAL(value)),
-             parser->previous->line);
+  writeChunks(currentChunk(compiler), OP_CONSTANT,
+              makeConstant(compiler, parser, NUMBER_VAL(value)),
+              parser->previous->line);
 }
 
 static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
@@ -650,11 +643,12 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
-    writeChunk(currentChunk(compiler), setOp, parser->previous->line);
+    writeChunks(currentChunk(compiler), setOp, (uint8_t)arg,
+                parser->previous->line);
   } else {
-    writeChunk(currentChunk(compiler), getOp, parser->previous->line);
+    writeChunks(currentChunk(compiler), getOp, (uint8_t)arg,
+                parser->previous->line);
   }
-  writeChunk(currentChunk(compiler), (uint8_t)arg, parser->previous->line);
 }
 
 static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
@@ -686,11 +680,10 @@ static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
     break;
   }
   case TOKEN_STRING: {
-    writeChunk(currentChunk(compiler), OP_CONSTANT, parser->previous->line);
-    writeChunk(currentChunk(compiler),
-               makeConstant(compiler, parser,
-                            OBJ_VAL(copyString(parser->previous->literal))),
-               parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_CONSTANT,
+                makeConstant(compiler, parser,
+                             OBJ_VAL(copyString(parser->previous->literal))),
+                parser->previous->line);
     break;
   }
   case TOKEN_NUMBER: {
@@ -730,9 +723,9 @@ static void infixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
     break;
   }
   case TOKEN_LEFT_PAREN: {
-    uint8_t argCount = argumentList(compiler, parser, scanner);
-    writeChunk(currentChunk(compiler), OP_CALL, parser->previous->line);
-    writeChunk(currentChunk(compiler), argCount, parser->previous->line);
+    writeChunks(currentChunk(compiler), OP_CALL,
+                argumentList(compiler, parser, scanner),
+                parser->previous->line);
     break;
   }
   case TOKEN_DOT: {
@@ -824,21 +817,19 @@ static void function(Compiler *current, Parser *parser, Scanner *scanner,
 
   ObjFunction *function = endCompiler(compiler, parser);
   freeCompiler(compiler);
-  writeChunk(currentChunk(current), OP_CONSTANT, parser->previous->line);
-  writeChunk(currentChunk(current),
-             makeConstant(current, parser, OBJ_VAL(function)),
-             parser->previous->line);
+  writeChunks(currentChunk(current), OP_CONSTANT,
+              makeConstant(current, parser, OBJ_VAL(function)),
+              parser->previous->line);
 }
 
 static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
   while (parser->current->type != TOKEN_RIGHT_BRACE) {
     consume(parser, scanner, TOKEN_IDENTIFIER,
             "Expect field identifier in struct");
-
-    writeChunk(currentChunk(compiler), OP_STRUCT_ARG, parser->previous->line);
-    uint8_t arg = identifierConstant(compiler, parser);
-    writeChunk(currentChunk(compiler), arg, parser->previous->line);
-
+    writeChunks(currentChunk(compiler), OP_STRUCT_ARG,
+                makeConstant(compiler, parser,
+                             OBJ_VAL(copyString(parser->previous->literal))),
+                parser->previous->line);
     consume(parser, scanner, TOKEN_SEMICOLON,
             "Expect semicolon after struct field identifier");
   }
@@ -850,8 +841,8 @@ static void structDeclaration(Compiler *compiler, Parser *parser,
   uint8_t nameConstant = identifierConstant(compiler, parser);
   declareVariable(compiler, parser);
 
-  writeChunk(currentChunk(compiler), OP_STRUCT, parser->previous->line);
-  writeChunk(currentChunk(compiler), nameConstant, parser->previous->line);
+  writeChunks(currentChunk(compiler), OP_STRUCT, nameConstant,
+              parser->previous->line);
   defineVariable(compiler, parser, nameConstant);
 
   consume(parser, scanner, TOKEN_LEFT_BRACE, "Expect '{' before class body.");

@@ -50,6 +50,7 @@ typedef struct {
 void freeChunk(Chunk *chunk);
 void initChunk(Chunk *chunk);
 void writeChunk(Chunk *chunk, uint8_t byte, int line);
+void writeChunks(Chunk *chunk, uint8_t byte1, uint8_t byte2, int line);
 
 int addConstant(Chunk *chunk, Value value);
 
