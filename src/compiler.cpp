@@ -232,7 +232,8 @@ static uint8_t parseVariable(Compiler *compiler, Parser *parser,
     return 0;
   }
 
-  return identifierConstant(compiler, parser);
+  return makeConstant(compiler, parser,
+                      OBJ_VAL(copyString(parser->previous->literal)));
 }
 
 static void patchJump(Compiler *compiler, Parser *parser, int offset) {
@@ -327,8 +328,9 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
 
     do {
       consume(parser, scanner, TOKEN_STRING, "Expect strings as keys");
-      uint8_t constant = identifierConstant(compiler, parser);
-      writeChunks(currentChunk(compiler), OP_CONSTANT, constant,
+      writeChunks(currentChunk(compiler), OP_CONSTANT,
+                  makeConstant(compiler, parser,
+                               OBJ_VAL(copyString(parser->previous->literal))),
                   parser->previous->line);
 
       consume(parser, scanner, TOKEN_COLON,
@@ -584,7 +586,8 @@ static void index(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void dot(Compiler *compiler, Parser *parser, Scanner *scanner,
                 bool canAssign) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect property name after '.'.");
-  uint8_t name = identifierConstant(compiler, parser);
+  uint8_t name = makeConstant(compiler, parser,
+                              OBJ_VAL(copyString(parser->previous->literal)));
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
