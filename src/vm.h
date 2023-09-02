@@ -3,19 +3,21 @@
 
 #include "chunk.h"
 #include "object.h"
-#include "stack.h"
 #include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #define FRAMES_MAX 90
+#define STACK_MAX 255
 
-typedef struct {
+typedef struct CallFrame {
   ObjFunction *function;
   std::vector<uint8_t> instructions;
   int ip;
-  int sp; // Stack pointer
+  Value *sp; // Stack pointer
+  CallFrame(ObjFunction *f, Value *s)
+      : function(f), instructions(f->chunk->code), ip(0), sp(s){};
 } CallFrame;
 
 typedef enum {
@@ -62,14 +64,15 @@ public:
 
 typedef struct VM {
   FrameStack *frames;
+  Value *stackTop;
+  Value stack[STACK_MAX];
   std::map<std::string, Value> strings;
   std::map<std::string, Value> globals;
   std::vector<Obj *> objects;
-  Stack *stack;
   VM()
       : frames(new FrameStack), strings(std::map<std::string, Value>()),
-        globals(std::map<std::string, Value>()), objects(std::vector<Obj *>()),
-        stack(new Stack){};
+        globals(std::map<std::string, Value>()),
+        objects(std::vector<Obj *>()){};
 } VM;
 
 extern VM *vm;

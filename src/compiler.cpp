@@ -108,7 +108,7 @@ static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
 static ObjFunction *endCompiler(Compiler *compiler, Parser *parser) {
 #ifdef DEBUG_PRINT_CODE
   if (!parser->hadError) {
-    disassembleChunk(currentChunk(compiler),
+    disassembleChunk(compiler->function->chunk,
                      compiler->function->name != NULL
                          ? compiler->function->name->chars
                          : "<script>");

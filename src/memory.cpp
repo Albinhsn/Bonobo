@@ -44,9 +44,9 @@ void freeParser(Parser *parser) {
 
 void freeScanner(Scanner *scanner) { delete (scanner); }
 
-int freeFrame(VM *vm) {
+Value *freeFrame(VM *vm) {
   CallFrame *f2 = vm->frames->pop();
-  int sp = f2->sp;
+  Value *sp = f2->sp;
   delete (f2);
   return sp;
 };
