@@ -32,31 +32,32 @@ ObjFunction *newFunction() {
   }
   return function;
 }
-ObjMap *newMap(std::vector<Value> values) {
-  ObjMap *mp = new ObjMap(createObj(OBJ_MAP), std::map<String, Value>());
+ObjMap *newMap(Value values[], int len) {
+  ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
 
-  for (int i = 0; i < values.size(); i += 2) {
-    // mp->m[AS_STRING(values[i + 1])->string] = values[i];
+  for (int i = 0; i < len; i += 2) {
+    mp->keys[i] = AS_STRING(values[i + 1])->string;
+    mp->values[i] = values[i];
   }
+  mp->mp = len;
   return mp;
 }
 
-ObjArray *newArray(std::vector<Value> values) {
-  ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), values);
+ObjArray *newArray(Value values[], int len) {
+  ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), len);
   return array;
 }
 
 ObjStruct *newStruct(ObjString *name) {
-  ObjStruct *strukt =
-      new ObjStruct(createObj(OBJ_STRUCT), name, std::vector<String>());
+  ObjStruct *strukt = new ObjStruct(createObj(OBJ_STRUCT), name);
 
   vm->objects[vm->op++] = (Obj *)strukt;
   return strukt;
 }
 
-ObjInstance *newInstance(ObjStruct *strukt, std::vector<Value> fields) {
+ObjInstance *newInstance(ObjStruct *strukt, Value fields[], int fieldLen) {
   ObjInstance *instance =
-      new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fields);
+      new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fieldLen);
 
   vm->objects[vm->op++] = (Obj *)instance;
   return instance;
@@ -105,29 +106,28 @@ void printObject(Value value) {
   }
   case OBJ_ARRAY: {
     ObjArray *array = AS_ARRAY(value);
-    std::cout << "[";
-    for (int i = 0; i < array->values.size(); i++) {
-      printValue(array->values[i]);
-      std::cout << (i < array->values.size() - 1 ? "," : "");
+    printf("[");
+    for (int i = 0; i < array->arrLen; i++) {
+      printValue(array->arr[i]);
+      printf("%c", (i < array->arrLen - 1 ? ',' : '\0'));
     }
-    std::cout << "]";
+    printf("]");
     break;
   }
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(value);
-    std::cout << "{";
+    printf("{");
     int i = 0;
-    for (const auto &[key, value] : mp->m) {
-      printf("'%.*s': ", key.length, key.literal);
-      printValue(value);
-      std::cout << (i < mp->m.size() - 1 ? "," : "");
-      i++;
+    for (int i = 0; i < mp->mp; i++) {
+      printf("'%.*s': ", mp->keys[i].length, mp->keys[i].literal);
+      printValue(mp->values[i]);
+      printf("%c", (i < mp->mp - 1 ? ',' : '\0'));
     }
-    std::cout << "}";
+    printf("}");
     break;
   }
   default: {
-    std::cout << OBJ_TYPE(value) << " is unknown";
+    printf("%d is unknown", OBJ_TYPE(value));
   }
   }
 }

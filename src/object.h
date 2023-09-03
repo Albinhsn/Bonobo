@@ -8,6 +8,7 @@
 
 #define CODE_MAX 500
 #define CONST_MAX 100
+#define MAP_MAXSIZE 500
 
 typedef enum {
   OBJ_MAP,
@@ -47,30 +48,34 @@ typedef struct ObjNative {
 typedef struct ObjStruct {
   Obj obj;
   ObjString *name;
-  std::vector<String> fields;
-  ObjStruct(Obj o, ObjString *n, std::vector<String> f)
-      : obj(o), name(n), fields(f){};
+  String fields[50];
+  int fieldLen;
+  ObjStruct(Obj o, ObjString *n) : obj(o), name(n), fieldLen(0){};
 } ObjStruct;
 
 typedef struct ObjArray {
   Obj obj;
-  std::vector<Value> values;
-  ObjArray(Obj o, std::vector<Value> v) : obj(o), values(v){};
+  Value arr[500];
+  int arrLen;
+  ObjArray(Obj o, int a) : obj(o), arrLen(a){};
 } ObjArray;
 
 typedef struct ObjInstance {
   Obj obj;
   ObjString *name;
   ObjStruct *strukt;
-  std::vector<Value> fields;
-  ObjInstance(Obj o, ObjString *n, ObjStruct *s, std::vector<Value> f)
-      : obj(o), name(n), strukt(s), fields(f){};
+  int fieldLen;
+  Value fields[50];
+  ObjInstance(Obj o, ObjString *n, ObjStruct *s, int f)
+      : obj(o), name(n), strukt(s), fieldLen(f){};
 } ObjInstance;
 
 typedef struct ObjMap {
   Obj obj;
-  std::map<String, Value> m;
-  ObjMap(Obj o, std::map<String, Value> M) : obj(o), m(M){};
+  String keys[MAP_MAXSIZE];
+  Value values[MAP_MAXSIZE];
+  int mp;
+  ObjMap(Obj o) : obj(o), mp(0){};
 } ObjMap;
 
 typedef struct ObjString {
@@ -106,12 +111,12 @@ int addConstant(ObjFunction *function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
-ObjMap *newMap(std::vector<Value>);
-ObjArray *newArray(std::vector<Value>);
+ObjMap *newMap(Value values[], int len);
+ObjArray *newArray(Value values[], int len);
 ObjNative *newNative(NativeFn function);
 ObjString *copyString(String string);
 ObjStruct *newStruct(ObjString *name);
-ObjInstance *newInstance(ObjStruct *strukt, std::vector<Value> fields);
+ObjInstance *newInstance(ObjStruct *strukt, Value fields[], int len);
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }

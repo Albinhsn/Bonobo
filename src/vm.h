@@ -17,9 +17,8 @@
 typedef struct CallFrame {
   ObjFunction *function;
   uint8_t *instructions;
-  // std::vector<uint8_t> instructions;
   int ip;
-  Value *sp; // Stack pointer
+  Value *sp;
 } CallFrame;
 
 typedef enum {

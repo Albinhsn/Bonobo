@@ -17,8 +17,7 @@ set(Sources
   ./src/scanner.h
   ./src/debug.cpp
   ./src/debug.h
-  ./src/chunk.cpp
-  ./src/chunk.h
+  ./src/opcode.h
   ./src/memory.cpp
   ./src/memory.h
   ./src/value.cpp

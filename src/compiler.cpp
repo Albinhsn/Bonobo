@@ -34,14 +34,14 @@ static void errorAt(Parser *parser, const char *message) {
   parser->panicMode = true;
 
   Token *token = parser->current;
-  std::fprintf(stderr, "[line %d] Error", token->line);
+  fprintf(stderr, "[line %d] Error", token->line);
 
   if (token->type == TOKEN_EOF) {
-    std::fprintf(stderr, " at end");
+    fprintf(stderr, " at end");
   } else if (token->type == TOKEN_ERROR) {
     //
   } else {
-    std::fprintf(stderr, " at '%d'", token->line);
+    fprintf(stderr, " at '%d'", token->line);
   }
 
   fprintf(stderr, ": %s\n", message);

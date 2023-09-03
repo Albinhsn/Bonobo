@@ -118,17 +118,17 @@ static bool callValue(Value callee, int argCount) {
     }
     case OBJ_STRUCT: {
       ObjStruct *strukt = AS_STRUCT(callee);
-      if (strukt->fields.size() != argCount) {
+      if (strukt->fieldLen != argCount) {
         runtimeError("Expected %d argument for struct but got %d",
-                     strukt->fields.size(), argCount);
+                     strukt->fieldLen, argCount);
         return false;
       }
-      std::vector<Value> fields;
+      Value fields[argCount];
       // Do another function for this
       for (int i = 0; i < argCount; ++i) {
-        fields.push_back(popStack());
+        fields[i] = popStack();
       }
-      vm->stackTop[-1] = OBJ_VAL(newInstance(strukt, fields));
+      vm->stackTop[-1] = OBJ_VAL(newInstance(strukt, fields, argCount));
       return true;
     }
     default:
@@ -151,11 +151,16 @@ static bool index() {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
     ObjString *string = AS_STRING(key);
-
-    // if (mp->m.count(string->string)) {
-    //   pushStack(mp->m[string->string]);
-    //   return true;
-    // }
+    int i = 0;
+    for (; i < mp->mp; i++) {
+      if (cmpString(mp->keys[i], string->string)) {
+        break;
+      }
+    }
+    if (i == mp->mp - 1) {
+      pushStack(mp->values[i]);
+      return true;
+    }
     runtimeError("Trying to access map with unknown key %.*s",
                  string->string.length, string->string.literal);
     return false;
@@ -182,11 +187,11 @@ static bool index() {
     }
     int k = (int)key.as.number;
     ObjArray *array = AS_ARRAY(item);
-    if (array->values.size() <= k || k < 0) {
+    if (array->arrLen <= k || k < 0) {
       runtimeError("Trying to access outside of array %d", k);
       return false;
     }
-    pushStack(array->values[k]);
+    pushStack(array->arr[k]);
     return true;
   }
   default: {
@@ -222,13 +227,13 @@ InterpretResult run() {
   for (;;) {
     uint8_t *instructions = frame->instructions;
 #ifdef DEBUG_TRACE_EXECUTION
-    std::cout << "        ";
+    printf("        ");
     for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
-      std::cout << "[ ";
+      printf("[ ");
       printValue(*slot);
-      std::cout << " ]";
+      printf(" ]");
     }
-    std::cout << "\n";
+    printf("\n");
     disassembleInstruction(frame->function->chunk, (int)frame->ip);
 #endif
     switch (instructions[frame->ip++]) {
@@ -312,10 +317,9 @@ InterpretResult run() {
       // Get the instance from the top
       ObjInstance *instance = AS_INSTANCE(vm->stackTop[-1]);
       String fieldName = AS_STRING(READ_CONSTANT())->string;
-      std::vector<String> struktFields = instance->strukt->fields;
       int idx = -1;
-      for (int i = 0; i < struktFields.size(); ++i) {
-        if (cmpString(struktFields[i], fieldName)) {
+      for (int i = 0; i < instance->strukt->fieldLen; ++i) {
+        if (cmpString(instance->strukt->fields[i], fieldName)) {
           idx = i;
           break;
         }
@@ -332,7 +336,6 @@ InterpretResult run() {
     case OP_SET_PROPERTY: {
       Value v1 = vm->stackTop[-2];
       if (!IS_INSTANCE(v1)) {
-        std::cout << OBJ_TYPE(v1) << "\n";
         runtimeError("Only instances have fields.");
         return INTERPRET_RUNTIME_ERROR;
       }
@@ -412,7 +415,7 @@ InterpretResult run() {
     }
     case OP_PRINT: {
       printValue(popStack());
-      std::cout << "\n";
+      printf("\n");
       break;
     }
     case OP_JUMP: {
@@ -448,21 +451,20 @@ InterpretResult run() {
     }
     case OP_ARRAY: {
       int argCount = instructions[frame->ip++];
-      std::vector<Value> values = std::vector<Value>(argCount);
+      Value values[argCount];
       for (int i = 0; i < argCount; i++) {
         values[i] = popStack();
       }
-      pushStack(OBJ_VAL(newArray(values)));
+      pushStack(OBJ_VAL(newArray(values, argCount)));
       break;
     }
     case OP_MAP: {
       int argCount = instructions[frame->ip++];
-      // Rework this into stack function?
-      std::vector<Value> values = std::vector<Value>(argCount);
+      Value values[argCount];
       for (int i = 0; i < argCount; i++) {
         values[i] = popStack();
       }
-      pushStack(OBJ_VAL(newMap(values)));
+      pushStack(OBJ_VAL(newMap(values, argCount)));
       break;
     }
     case OP_STRUCT: {
@@ -474,10 +476,11 @@ InterpretResult run() {
       //   return INTERPRET_RUNTIME_ERROR;
       // }
       ObjStruct *strukt = newStruct(name);
+      int i = strukt->fieldLen - 1;
       while (matchByte(OP_STRUCT_ARG)) {
-        strukt->fields.push_back(AS_STRING(READ_CONSTANT())->string);
+        strukt->fields[i] = AS_STRING(READ_CONSTANT())->string;
+        i--;
       }
-      std::reverse(strukt->fields.begin(), strukt->fields.end());
       vm->globalKeys[vm->gp] = name->string;
       vm->globalValues[vm->gp] = OBJ_VAL(strukt);
       vm->gp++;

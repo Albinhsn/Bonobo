@@ -28,15 +28,15 @@ bool valuesEqual(Value a, Value b) {
 void printValue(Value value) {
   switch (value.type) {
   case VAL_BOOL: {
-    std::cout << (AS_BOOL(value) ? "true" : "false");
+    printf("%s", (AS_BOOL(value) ? "true" : "false"));
     break;
   }
   case VAL_NIL: {
-    std::cout << "nil";
+    printf("nil");
     break;
   }
   case VAL_NUMBER: {
-    std::cout << AS_NUMBER(value);
+    printf("%.0lf", AS_NUMBER(value));
     break;
   }
   case VAL_OBJ: {
@@ -44,7 +44,7 @@ void printValue(Value value) {
     break;
   }
   default: {
-    std::cout << "undefined value";
+    printf("undefined value");
   }
   }
 }

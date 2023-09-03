@@ -5,7 +5,7 @@
 #include "value.h"
 
 void disassembleChunk(ObjFunction *function, const char * name) {
-  std::cout << "== " << name << " ==\n";
+  printf("== %s ==\n", name);
 
   for (int offset = 0; offset < function->cp;) {
     offset = disassembleInstruction(function, offset);
@@ -13,7 +13,7 @@ void disassembleChunk(ObjFunction *function, const char * name) {
 }
 
 static int simpleInstruction(const char* name, int offset) {
-  std::cout << name << "\n";
+  printf("name\n");
   return offset + 1;
 }
 
@@ -35,17 +35,19 @@ static int jumpInstruction(const char *name, int sign, ObjFunction *function,
 static int constantInstruction(const char* name, ObjFunction *function,
                                int offset) {
   uint8_t constant = function->code[offset + 1];
-  std::cout << name << " " << (int)constant << " '";
+  printf("%s %d ", name, (int)constant);
   printValue(function->constants[constant]);
-  std::cout << "'\n";
+  printf("'\n");
   return offset + 2;
 }
 
 static int structArgInstruction(const char* name, ObjFunction *function,
                                 int offset) {
   uint8_t constant = function->code[offset + 1];
-  std::cout << name << " " << (int)constant << " '";
-  std::cout << "'\n";
+
+  printf("%s %d ", name, (int)constant);
+  // TODO something here?
+  printf("'\n");
   return offset + 2;
 }
 
@@ -191,14 +193,14 @@ std::string translateInstructions(std::vector<uint8_t> instructions) {
 }
 
 int disassembleInstruction(ObjFunction *function, int offset) {
-  std::cout << offset << " ";
+  printf("%d ", offset);
   if (offset > 0 && function->lines[offset] == function->lines[offset - 1]) {
-    std::cout << "  |   ";
+    printf("  |   ");
   } else {
-    std::cout << function->lines[offset] << "   ";
+    printf(" %d   ", function->lines[offset]);
   }
   uint8_t instruction = function->code[offset];
-  std::cout << (int)instruction << "\n";
+  printf("%d\n", (int)instruction);
   switch (instruction) {
   case OP_CALL: {
     return byteInstruction("OP_CALL", function, offset);
@@ -297,7 +299,7 @@ int disassembleInstruction(ObjFunction *function, int offset) {
     return simpleInstruction("OP_NEGATE", offset);
   }
   default: {
-    std::cout << "Unknown opcode" << (int)instruction << "\n";
+    printf("Unknown opcode %d\n", (int) instruction);
     return offset + 1;
   }
   }

@@ -14,6 +14,16 @@ void resetScanner(Scanner *scanner) {
   scanner->source = "";
 }
 
+Token *newToken(const char *l, int len, int li, int i, TokenType t) {
+  Token *token = new Token;
+  token->type = t;
+  token->string = newString(l, len);
+  token->line = li;
+  token->indent = i;
+
+  return token;
+}
+
 String newString(const char *l, int len) {
   String string;
   string.literal = l;
@@ -22,7 +32,8 @@ String newString(const char *l, int len) {
 }
 
 bool cmpString(String s1, String s2) {
-  return (s1.length == s2.length && memcmp(s1.literal, s2.literal, s1.length) == 0);
+  return (s1.length == s2.length &&
+          memcmp(s1.literal, s2.literal, s1.length) == 0);
 }
 
 static bool isAtEnd(Scanner *scanner) {
@@ -48,7 +59,7 @@ static Token *parseNumber(Scanner *scanner) {
   while (!isAtEnd(scanner) && isdigit(scanner->source[scanner->current])) {
     scanner->current++;
   }
-  return new Token(current, (int)(&scanner->source[scanner->current] - current),
+  return newToken(current, (int)(&scanner->source[scanner->current] - current),
                    scanner->line, scanner->indent, TOKEN_NUMBER);
 }
 
@@ -125,7 +136,7 @@ static Token *parseIdentifier(Scanner *scanner) {
     scanner->current++;
   }
   int len = (int)(&scanner->source[scanner->current] - current);
-  return new Token(current, len, scanner->line, scanner->indent,
+  return newToken(current, len, scanner->line, scanner->indent,
                    isKeyword(current, len));
 }
 
@@ -141,7 +152,7 @@ static Token *parseString(Scanner *scanner) {
   }
 
   scanner->current++;
-  return new Token(current,
+  return newToken(current,
                    (int)(&scanner->source[scanner->current] - current) - 1,
                    scanner->line, scanner->indent, TOKEN_STRING);
 }
@@ -187,7 +198,7 @@ void skipWhitespace(Scanner *scanner) {
 Token *scanToken(Scanner *scanner) {
   skipWhitespace(scanner);
   if (isAtEnd(scanner)) {
-    return new Token("EOF", 3, scanner->line, scanner->indent, TOKEN_EOF);
+    return newToken("EOF", 3, scanner->line, scanner->indent, TOKEN_EOF);
   }
   scanner->current++;
   char c = scanner->source[scanner->current - 1];
@@ -202,79 +213,79 @@ Token *scanToken(Scanner *scanner) {
     return parseString(scanner);
   }
   case '(': {
-    return new Token("(", 1, scanner->line, scanner->indent, TOKEN_LEFT_PAREN);
+    return newToken("(", 1, scanner->line, scanner->indent, TOKEN_LEFT_PAREN);
   }
   case ')': {
-    return new Token(")", 1, scanner->line, scanner->indent, TOKEN_RIGHT_PAREN);
+    return newToken(")", 1, scanner->line, scanner->indent, TOKEN_RIGHT_PAREN);
   }
   case '{': {
-    return new Token("{", 1, scanner->line, scanner->indent, TOKEN_LEFT_BRACE);
+    return newToken("{", 1, scanner->line, scanner->indent, TOKEN_LEFT_BRACE);
   }
   case '}': {
-    return new Token("}", 1, scanner->line, scanner->indent, TOKEN_RIGHT_BRACE);
+    return newToken("}", 1, scanner->line, scanner->indent, TOKEN_RIGHT_BRACE);
   }
   case '[': {
-    return new Token("[", 1, scanner->line, scanner->indent,
+    return newToken("[", 1, scanner->line, scanner->indent,
                      TOKEN_LEFT_BRACKET);
   }
   case ']': {
-    return new Token("]", 1, scanner->line, scanner->indent,
+    return newToken("]", 1, scanner->line, scanner->indent,
                      TOKEN_RIGHT_BRACKET);
   }
   case ';': {
-    return new Token(";", 1, scanner->line, scanner->indent, TOKEN_SEMICOLON);
+    return newToken(";", 1, scanner->line, scanner->indent, TOKEN_SEMICOLON);
   }
   case ',': {
-    return new Token(",", 1, scanner->line, scanner->indent, TOKEN_COMMA);
+    return newToken(",", 1, scanner->line, scanner->indent, TOKEN_COMMA);
   }
   case '.': {
-    return new Token(".", 1, scanner->line, scanner->indent, TOKEN_DOT);
+    return newToken(".", 1, scanner->line, scanner->indent, TOKEN_DOT);
   }
   case '+': {
-    return new Token("+", 1, scanner->line, scanner->indent, TOKEN_PLUS);
+    return newToken("+", 1, scanner->line, scanner->indent, TOKEN_PLUS);
   }
   case '*': {
-    return new Token("*", 1, scanner->line, scanner->indent, TOKEN_STAR);
+    return newToken("*", 1, scanner->line, scanner->indent, TOKEN_STAR);
   }
   case ':': {
-    return new Token(":", 1, scanner->line, scanner->indent, TOKEN_COLON);
+    return newToken(":", 1, scanner->line, scanner->indent, TOKEN_COLON);
   }
   case '!': {
     if (match(scanner, '=')) {
-      return new Token("!=", 2, scanner->line, scanner->indent,
+      return newToken("!=", 2, scanner->line, scanner->indent,
                        TOKEN_BANG_EQUAL);
     }
-    return new Token("!", 1, scanner->line, scanner->indent, TOKEN_BANG);
+    return newToken("!", 1, scanner->line, scanner->indent, TOKEN_BANG);
   }
   case '=': {
     if (match(scanner, '=')) {
-      return new Token("==", 2, scanner->line, scanner->indent,
+      return newToken("==", 2, scanner->line, scanner->indent,
                        TOKEN_EQUAL_EQUAL);
     }
-    return new Token("=", 1, scanner->line, scanner->indent, TOKEN_EQUAL);
+    return newToken("=", 1, scanner->line, scanner->indent, TOKEN_EQUAL);
   }
   case '<': {
     if (match(scanner, '=')) {
-      return new Token("<=", 2, scanner->line, scanner->indent,
+      return newToken("<=", 2, scanner->line, scanner->indent,
                        TOKEN_LESS_EQUAL);
     }
-    return new Token("<", 1, scanner->line, scanner->indent, TOKEN_LESS);
+    return newToken("<", 1, scanner->line, scanner->indent, TOKEN_LESS);
   }
   case '>': {
     if (match(scanner, '=')) {
-      return new Token(">=", 2, scanner->line, scanner->indent,
+      return newToken(">=", 2, scanner->line, scanner->indent,
                        TOKEN_GREATER_EQUAL);
     }
-    return new Token(">", 1, scanner->line, scanner->indent, TOKEN_GREATER);
+    return newToken(">", 1, scanner->line, scanner->indent, TOKEN_GREATER);
   }
   case '-': {
     if (match(scanner, '>')) {
-      return new Token("->", 2, scanner->line, scanner->indent, TOKEN_ARROW);
+      return newToken("->", 2, scanner->line, scanner->indent, TOKEN_ARROW);
     }
-    return new Token("-", 1, scanner->line, scanner->indent, TOKEN_MINUS);
+    return newToken("-", 1, scanner->line, scanner->indent, TOKEN_MINUS);
   }
   case '/': {
-    return new Token("/", 1, scanner->line, scanner->indent, TOKEN_SLASH);
+    return newToken("/", 1, scanner->line, scanner->indent, TOKEN_SLASH);
   }
   default:
     std::string exception = "Unknown characther ";

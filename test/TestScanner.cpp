@@ -33,13 +33,7 @@ TEST(TestScanner, TestSingleCharTokens) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->length, tokens[i].length);
-    char s[scannedToken->length + 1];
-    s[scannedToken->length] = '\0';
-    for (int j = 0; j < scannedToken->length; j++) {
-      s[j] = scannedToken->literal[j];
-    }
-    EXPECT_TRUE(strcmp(tokens[i].literal, s) == 0);
+    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -57,13 +51,13 @@ TEST(TestScanner, TestDoubleCharTokens) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->length, tokens[i].length);
-    char s[scannedToken->length + 1];
-    s[scannedToken->length] = '\0';
-    for (int j = 0; j < scannedToken->length; j++) {
-      s[j] = scannedToken->literal[j];
+    EXPECT_EQ(scannedToken->string.length, tokens[i].string.length);
+    char s[scannedToken->string.length + 1];
+    s[scannedToken->string.length] = '\0';
+    for (int j = 0; j < scannedToken->string.length; j++) {
+      s[j] = scannedToken->string.literal[j];
     }
-    EXPECT_TRUE(strcmp(tokens[i].literal, s) == 0);
+    EXPECT_TRUE(strcmp(tokens[i].string.literal, s) == 0);
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -86,13 +80,7 @@ TEST(TestScanner, TestLiterals) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->length, tokens[i].length);
-    char s[scannedToken->length + 1];
-    s[scannedToken->length] = '\0';
-    for (int j = 0; j < scannedToken->length; j++) {
-      s[j] = scannedToken->literal[j];
-    }
-    EXPECT_TRUE(strcmp(tokens[i].literal, s) == 0);
+    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -121,20 +109,14 @@ TEST(TestScanner, TestKeywords) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->length, tokens[i].length);
-    char s[scannedToken->length + 1];
-    s[scannedToken->length] = '\0';
-    for (int j = 0; j < scannedToken->length; j++) {
-      s[j] = scannedToken->literal[j];
-    }
-    EXPECT_TRUE(strcmp(tokens[i].literal, s) == 0);
+    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
 
 TEST(TestScanner, TestFibonnaci) {
   std::string source = "fun fib(a){\n if(a <= 2){\n return 1;\n}\n return "
-                       "fib(a-1) + fib(a-2);\n}";
+                       "fib(a-1) + fib(a-2);\n} fib(35);";
   Scanner *scanner = new Scanner(source.c_str());
   std::vector<Token> tokens = {
       (Token){"fun", 3, 1, 0, TOKEN_FUN},
@@ -153,14 +135,14 @@ TEST(TestScanner, TestFibonnaci) {
       (Token){"return", 6, 1, 0, TOKEN_RETURN},
       (Token){"1", 1, 1, 0, TOKEN_NUMBER},
       (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){"}",1,  1, 0, TOKEN_RIGHT_BRACE},
+      (Token){"}", 1, 1, 0, TOKEN_RIGHT_BRACE},
       (Token){"return", 6, 1, 0, TOKEN_RETURN},
       (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
       (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
       (Token){"a", 1, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"-",1,  1, 0, TOKEN_MINUS},
+      (Token){"-", 1, 1, 0, TOKEN_MINUS},
       (Token){"1", 1, 1, 0, TOKEN_NUMBER},
-      (Token){")",1,  1, 0, TOKEN_RIGHT_PAREN},
+      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
       (Token){"+", 1, 1, 0, TOKEN_PLUS},
       (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
       (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
@@ -170,18 +152,17 @@ TEST(TestScanner, TestFibonnaci) {
       (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
       (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
       (Token){"}", 1, 1, 0, TOKEN_RIGHT_BRACE},
+      (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
+      (Token){"35", 2, 1, 0, TOKEN_NUMBER},
+      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
+      (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
       (Token){"EOF", 3, 1, 0, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->length, tokens[i].length);
-    char s[scannedToken->length + 1];
-    s[scannedToken->length] = '\0';
-    for (int j = 0; j < scannedToken->length; j++) {
-      s[j] = scannedToken->literal[j];
-    }
-    EXPECT_TRUE(strcmp(tokens[i].literal, s) == 0);
+    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
