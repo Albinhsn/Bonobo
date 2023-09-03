@@ -247,12 +247,11 @@ InterpretResult run() {
       break;
     }
     case OP_POP: {
-      popStack();
+      vm->stackTop--;
       break;
     }
     case OP_GET_LOCAL: {
-      uint8_t slot = instructions[frame->ip++];
-      pushStack(frame->sp[slot]);
+      pushStack(frame->sp[instructions[frame->ip++]]);
       break;
     }
     case OP_SET_LOCAL: {
