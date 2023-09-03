@@ -1,8 +1,9 @@
 #ifndef cpplox_vm_h
 #define cpplox_vm_h
 
-#include "opcode.h"
 #include "object.h"
+#include "opcode.h"
+#include "scanner.h"
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -29,18 +30,19 @@ typedef enum {
 
 void initVM();
 void freeVM();
-InterpretResult interpret(std::string source);
+InterpretResult interpret(const char *source);
 
 typedef struct VM {
   int fp;
   CallFrame *frames[FRAMES_MAX];
   Value *stackTop;
   Value stack[STACK_MAX];
-  std::string globalKeys[GLOBAL_MAX];
+  String globalKeys[GLOBAL_MAX];
   Value globalValues[GLOBAL_MAX];
   int gp;
   Obj *objects[OBJECT_MAX];
   int op;
+  VM() : fp(0), op(0), gp(0){};
 } VM;
 
 extern VM *vm;

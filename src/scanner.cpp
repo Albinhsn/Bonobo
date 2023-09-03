@@ -14,6 +14,17 @@ void resetScanner(Scanner *scanner) {
   scanner->source = "";
 }
 
+String newString(const char *l, int len) {
+  String string;
+  string.literal = l;
+  string.length = len;
+  return string;
+}
+
+bool cmpString(String s1, String s2) {
+  return (s1.length == s2.length && memcmp(s1.literal, s2.literal, s1.length) == 0);
+}
+
 static bool isAtEnd(Scanner *scanner) {
   return scanner->source[scanner->current] == '\0';
 }
@@ -65,7 +76,7 @@ static TokenType isKeyword(const char *current, int len) {
       return checkKeyword(current, "fun", 3, len, TOKEN_FUN);
     }
     default:
-        return TOKEN_IDENTIFIER;
+      return TOKEN_IDENTIFIER;
     }
   }
   case 'e': {

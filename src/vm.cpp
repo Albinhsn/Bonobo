@@ -14,18 +14,18 @@
 
 VM *vm;
 
-static void defineNative(std::string name, NativeFn function);
+static void defineNative(const char *name, int len, NativeFn function);
 
 static Value clockNative(int argCount, Value args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
 void initVM() {
-  vm = new VM;
+  vm = new VM();
   vm->stackTop = vm->stack;
   vm->op = vm->fp = vm->gp = 0;
 
-  defineNative("clock", clockNative);
+  defineNative("clock", 5, clockNative);
 }
 
 void inline pushStack(Value value) {
@@ -40,10 +40,10 @@ Value inline popStack() {
 
 static void resetStack() { vm->stackTop = vm->stack; }
 
-static void runtimeError(std::string format, ...) {
+static void runtimeError(const char *format, ...) {
   va_list args;
   va_start(args, format);
-  vfprintf(stderr, format.c_str(), args);
+  vfprintf(stderr, format, args);
   va_end(args);
   fputs("\n", stderr);
   for (int i = 0; i < vm->fp; i++) {
@@ -55,19 +55,21 @@ static void runtimeError(std::string format, ...) {
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
-      fprintf(stderr, "%s()\n", function->name->chars.c_str());
+      fprintf(stderr, "%.*s()\n", function->name->string.length,
+              function->name->string.literal);
     }
   }
   resetStack();
 }
 
-static void defineNative(std::string name, NativeFn function) {
-  ObjString *string = copyString(name);
+static void defineNative(const char *name, int len, NativeFn function) {
+  String s = newString(name, len);
+  ObjString *string = copyString(s);
   ObjNative *native = newNative(function);
 
   vm->objects[vm->op++] = (Obj *)string;
   vm->objects[vm->op++] = (Obj *)native;
-  vm->globalKeys[vm->gp] = name;
+  vm->globalKeys[vm->gp] = s;
   vm->globalValues[vm->gp++] = OBJ_VAL((Obj *)native);
 }
 
@@ -150,12 +152,12 @@ static bool index() {
     ObjMap *mp = AS_MAP(item);
     ObjString *string = AS_STRING(key);
 
-    if (mp->m.count(string->chars)) {
-      pushStack(mp->m[string->chars]);
-      return true;
-    }
-    runtimeError("Trying to access map with unknown key %s",
-                 string->chars.c_str());
+    // if (mp->m.count(string->string)) {
+    //   pushStack(mp->m[string->string]);
+    //   return true;
+    // }
+    runtimeError("Trying to access map with unknown key %.*s",
+                 string->string.length, string->string.literal);
     return false;
   }
   case OBJ_STRING: {
@@ -165,12 +167,12 @@ static bool index() {
     }
     ObjString *string = AS_STRING(item);
     int k = (int)key.as.number;
-    if (string->chars.size() <= k || k < 0) {
-      runtimeError("Trying to access outside of array %d", k);
-      return false;
-    }
+    // if (string->chars <= k || k < 0) {
+    //   runtimeError("Trying to access outside of array %d", k);
+    //   return false;
+    // }
 
-    pushStack(OBJ_VAL(copyString(string->chars.substr(k, 1))));
+    // pushStack(OBJ_VAL(copyString(string->chars.substr(k, 1))));
     return true;
   }
   case OBJ_ARRAY: {
@@ -260,16 +262,18 @@ InterpretResult run() {
       break;
     }
     case OP_GET_GLOBAL: {
-      std::string name = READ_STRING()->chars;
+      ObjString *string = READ_STRING();
+      String s = string->string;
       int i = 0;
       while (i < vm->gp) {
-        if (vm->globalKeys[i] == name) {
+        if (s.length == vm->globalKeys[i].length &&
+            memcmp(s.literal, vm->globalKeys[i].literal, s.length) == 0) {
           break;
         }
         i++;
       }
       if (i == vm->gp) {
-        runtimeError("Undefined variable '" + name + "'.");
+        runtimeError("Undefined variable '%.*s'.", s.length, s.literal);
         return INTERPRET_RUNTIME_ERROR;
       }
       *vm->stackTop = vm->globalValues[i];
@@ -277,22 +281,24 @@ InterpretResult run() {
       break;
     }
     case OP_DEFINE_GLOBAL: {
-      vm->globalKeys[vm->gp] = READ_STRING()->chars;
+      String s = READ_STRING()->string;
+      vm->globalKeys[vm->gp] = s;
       vm->globalValues[vm->gp] = popStack();
       vm->gp++;
       break;
     }
     case OP_SET_GLOBAL: {
-      std::string name = READ_STRING()->chars;
+      ObjString *string = READ_STRING();
+      String s = string->string;
       int i = 0;
       while (i < vm->gp) {
-        if (vm->globalKeys[i] == name) {
+        if (cmpString(string->string, vm->globalKeys[i])) {
           break;
         }
         i++;
       }
       if (i == vm->gp) {
-        runtimeError("Undefined variable '" + name + "'.");
+        runtimeError("Undefined variable '%.*s'.", s.length, s.literal);
         return INTERPRET_RUNTIME_ERROR;
       }
       vm->globalValues[i] = vm->stackTop[-1];
@@ -305,11 +311,11 @@ InterpretResult run() {
       }
       // Get the instance from the top
       ObjInstance *instance = AS_INSTANCE(vm->stackTop[-1]);
-      std::string fieldName = AS_STRING(READ_CONSTANT())->chars;
-      std::vector<std::string> struktFields = instance->strukt->fields;
+      String fieldName = AS_STRING(READ_CONSTANT())->string;
+      std::vector<String> struktFields = instance->strukt->fields;
       int idx = -1;
       for (int i = 0; i < struktFields.size(); ++i) {
-        if (struktFields[i] == fieldName) {
+        if (cmpString(struktFields[i], fieldName)) {
           idx = i;
           break;
         }
@@ -365,8 +371,15 @@ InterpretResult run() {
                                       AS_NUMBER(vm->stackTop[-1]));
         vm->stackTop--;
       } else if (IS_STRING(vm->stackTop[-1]) && IS_STRING(vm->stackTop[-2])) {
-        vm->stackTop[-1] = OBJ_VAL(copyString(
-            AS_STRING(popStack())->chars + AS_STRING(vm->stackTop[-1])->chars));
+        String s1 = AS_STRING(popStack())->string;
+        String s2 = AS_STRING(vm->stackTop[-2])->string;
+
+        char s[s1.length + s2.length];
+        strcpy(s, s1.literal);
+        strcat(s, s2.literal);
+        vm->stackTop[-1] =
+            OBJ_VAL(copyString(newString(s, s1.length + s2.length)));
+
       } else {
         runtimeError("Operands must be two number or two strings");
         return INTERPRET_RUNTIME_ERROR;
@@ -462,10 +475,10 @@ InterpretResult run() {
       // }
       ObjStruct *strukt = newStruct(name);
       while (matchByte(OP_STRUCT_ARG)) {
-        strukt->fields.push_back(AS_STRING(READ_CONSTANT())->chars);
+        strukt->fields.push_back(AS_STRING(READ_CONSTANT())->string);
       }
       std::reverse(strukt->fields.begin(), strukt->fields.end());
-      vm->globalKeys[vm->gp] = name->chars;
+      vm->globalKeys[vm->gp] = name->string;
       vm->globalValues[vm->gp] = OBJ_VAL(strukt);
       vm->gp++;
       break;
@@ -490,7 +503,7 @@ InterpretResult run() {
 #undef BINARY_OP
 }
 
-InterpretResult interpret(std::string source) {
+InterpretResult interpret(const char *source) {
   initVM();
   Compiler *compiler = compile(source);
   if (compiler == NULL) {

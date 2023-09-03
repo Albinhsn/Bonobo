@@ -5,7 +5,7 @@
 #include "object.h"
 #include <string>
 
-void disassembleChunk(ObjFunction *function, std::string name);
+void disassembleChunk(ObjFunction *function, const char * name);
 int disassembleInstruction(ObjFunction*function, int offset);
 std::string translateInstruction(ObjFunction*function);
 

@@ -4,7 +4,7 @@
 #include "common.h"
 #include "value.h"
 
-void disassembleChunk(ObjFunction *function, std::string name) {
+void disassembleChunk(ObjFunction *function, const char * name) {
   std::cout << "== " << name << " ==\n";
 
   for (int offset = 0; offset < function->cp;) {
@@ -12,7 +12,7 @@ void disassembleChunk(ObjFunction *function, std::string name) {
   }
 }
 
-static int simpleInstruction(std::string name, int offset) {
+static int simpleInstruction(const char* name, int offset) {
   std::cout << name << "\n";
   return offset + 1;
 }
@@ -32,7 +32,7 @@ static int jumpInstruction(const char *name, int sign, ObjFunction *function,
   return offset + 3;
 }
 
-static int constantInstruction(std::string name, ObjFunction *function,
+static int constantInstruction(const char* name, ObjFunction *function,
                                int offset) {
   uint8_t constant = function->code[offset + 1];
   std::cout << name << " " << (int)constant << " '";
@@ -41,7 +41,7 @@ static int constantInstruction(std::string name, ObjFunction *function,
   return offset + 2;
 }
 
-static int structArgInstruction(std::string name, ObjFunction *function,
+static int structArgInstruction(const char* name, ObjFunction *function,
                                 int offset) {
   uint8_t constant = function->code[offset + 1];
   std::cout << name << " " << (int)constant << " '";

@@ -68,7 +68,7 @@ typedef struct Compiler {
         scopeDepth(0){};
 } Compiler;
 
-Compiler *compile(std::string source);
+Compiler *compile(const char *);
 
 static void statement(Compiler *compiler, Parser *parser, Scanner *scanner);
 static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner);

@@ -2,12 +2,12 @@
 #define cpplox_object_h
 
 #include "common.h"
+#include "scanner.h"
 #include "value.h"
 #include <map>
 
 #define CODE_MAX 500
-#define CONST_MAX  100
-
+#define CONST_MAX 100
 
 typedef enum {
   OBJ_MAP,
@@ -47,8 +47,8 @@ typedef struct ObjNative {
 typedef struct ObjStruct {
   Obj obj;
   ObjString *name;
-  std::vector<std::string> fields;
-  ObjStruct(Obj o, ObjString *n, std::vector<std::string> f)
+  std::vector<String> fields;
+  ObjStruct(Obj o, ObjString *n, std::vector<String> f)
       : obj(o), name(n), fields(f){};
 } ObjStruct;
 
@@ -69,14 +69,14 @@ typedef struct ObjInstance {
 
 typedef struct ObjMap {
   Obj obj;
-  std::map<std::string, Value> m;
-  ObjMap(Obj o, std::map<std::string, Value> M) : obj(o), m(M){};
+  std::map<String, Value> m;
+  ObjMap(Obj o, std::map<String, Value> M) : obj(o), m(M){};
 } ObjMap;
 
 typedef struct ObjString {
   Obj obj;
-  std::string chars;
-  ObjString(Obj o, std::string c) : obj(o), chars(c){};
+  String string;
+  ObjString(Obj o, String s) : obj(o), string(s){};
 } ObjString;
 
 #define IS_STRUCT(value) isObjType(value, OBJ_STRUCT)
@@ -99,17 +99,17 @@ typedef struct ObjString {
 
 void freeChunk(ObjFunction *function);
 void initChunk(ObjFunction *function);
-void writeChunk(ObjFunction*function, uint8_t byte, int line);
+void writeChunk(ObjFunction *function, uint8_t byte, int line);
 void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2, int line);
 
-int addConstant(ObjFunction*function, Value value);
+int addConstant(ObjFunction *function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
 ObjMap *newMap(std::vector<Value>);
 ObjArray *newArray(std::vector<Value>);
 ObjNative *newNative(NativeFn function);
-ObjString *copyString(std::string str);
+ObjString *copyString(String string);
 ObjStruct *newStruct(ObjString *name);
 ObjInstance *newInstance(ObjStruct *strukt, std::vector<Value> fields);
 static inline bool isObjType(Value value, ObjType type) {

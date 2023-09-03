@@ -21,7 +21,7 @@ static std::string readFile(std::string path) {
 
 static void runFile(std::string path) {
   std::string source = readFile(path);
-  InterpretResult result = interpret(source);
+  InterpretResult result = interpret(source.c_str());
 
   if (result == INTERPRET_COMPILE_ERROR)
     exit(65);
@@ -39,7 +39,7 @@ static void repl() {
       break;
     }
 
-    interpret(input);
+    interpret(input.c_str());
   }
 }
 
