@@ -65,20 +65,21 @@ typedef enum {
 } TokenType;
 
 typedef struct Token {
-  std::string literal;
+  const char *literal;
+  int length;
   int line;
   int indent;
   TokenType type;
-  Token(std::string l, int li, int i, TokenType t)
-      : literal(l), line(li), indent(i), type(t){};
+  Token(const char *l, int len, int li, int i, TokenType t)
+      : literal(l), length(len), line(li), indent(i), type(t){};
 } Token;
 
 typedef struct Scanner {
-  std::string source;
+  const char *source;
   int current;
   int line;
   int indent;
-  Scanner(std::string s) : source(s), current(0), line(1), indent(0){};
+  Scanner(const char *s) : source(s), current(0), line(1), indent(0){};
 } Scanner;
 
 void resetScanner(Scanner *scanner);
