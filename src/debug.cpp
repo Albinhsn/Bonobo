@@ -4,7 +4,7 @@
 #include "common.h"
 #include "value.h"
 
-void disassembleChunk(ObjFunction *function, const char * name) {
+void disassembleChunk(ObjFunction *function, const char *name) {
   printf("== %s ==\n", name);
 
   for (int offset = 0; offset < function->cp;) {
@@ -12,8 +12,8 @@ void disassembleChunk(ObjFunction *function, const char * name) {
   }
 }
 
-static int simpleInstruction(const char* name, int offset) {
-  printf("name\n");
+static int simpleInstruction(const char *name, int offset) {
+  printf("%s\n", name);
   return offset + 1;
 }
 
@@ -32,7 +32,7 @@ static int jumpInstruction(const char *name, int sign, ObjFunction *function,
   return offset + 3;
 }
 
-static int constantInstruction(const char* name, ObjFunction *function,
+static int constantInstruction(const char *name, ObjFunction *function,
                                int offset) {
   uint8_t constant = function->code[offset + 1];
   printf("%s %d ", name, (int)constant);
@@ -41,7 +41,7 @@ static int constantInstruction(const char* name, ObjFunction *function,
   return offset + 2;
 }
 
-static int structArgInstruction(const char* name, ObjFunction *function,
+static int structArgInstruction(const char *name, ObjFunction *function,
                                 int offset) {
   uint8_t constant = function->code[offset + 1];
 
@@ -299,7 +299,7 @@ int disassembleInstruction(ObjFunction *function, int offset) {
     return simpleInstruction("OP_NEGATE", offset);
   }
   default: {
-    printf("Unknown opcode %d\n", (int) instruction);
+    printf("Unknown opcode %d\n", (int)instruction);
     return offset + 1;
   }
   }

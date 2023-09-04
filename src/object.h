@@ -111,7 +111,7 @@ int addConstant(ObjFunction *function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
-ObjMap *newMap(Value values[], int len);
+ObjMap *newMap(String keys[], Value values[], int len);
 ObjArray *newArray(Value values[], int len);
 ObjNative *newNative(NativeFn function);
 ObjString *copyString(String string);

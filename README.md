@@ -13,6 +13,7 @@ Toy implementation of a simple language in order to learn C++, memory management
 * figure out if you need everthing through every path etc
 * minimize chains of pointers if possible
 * change OP_STRUCT_ARG in compiler
+* dynamic array sizes rather then fixed
 
 
 ### Features to fix

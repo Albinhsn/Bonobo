@@ -32,14 +32,14 @@ ObjFunction *newFunction() {
   }
   return function;
 }
-ObjMap *newMap(Value values[], int len) {
+ObjMap *newMap(String keys[], Value values[], int len) {
   ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
-
-  for (int i = 0; i < len; i += 2) {
-    mp->keys[i] = AS_STRING(values[i + 1])->string;
+  for (int i = 0; i < len; ++i) {
+    mp->keys[i] = keys[i];
     mp->values[i] = values[i];
   }
   mp->mp = len;
+  vm->objects[vm->op++] = (Obj *)mp;
   return mp;
 }
 
@@ -58,8 +58,10 @@ ObjStruct *newStruct(ObjString *name) {
 ObjInstance *newInstance(ObjStruct *strukt, Value fields[], int fieldLen) {
   ObjInstance *instance =
       new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fieldLen);
-
-  vm->objects[vm->op++] = (Obj *)instance;
+  for (int i = 0; i < instance->fieldLen; i++) {
+    instance->fields[i] = fields[i];
+  }
+  vm->objects[vm->op] = (Obj *)instance;
   return instance;
 }
 
@@ -117,11 +119,12 @@ void printObject(Value value) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(value);
     printf("{");
-    int i = 0;
     for (int i = 0; i < mp->mp; i++) {
-      printf("'%.*s': ", mp->keys[i].length, mp->keys[i].literal);
+      printf("'%.*s':", mp->keys[i].length, mp->keys[i].literal);
       printValue(mp->values[i]);
-      printf("%c", (i < mp->mp - 1 ? ',' : '\0'));
+      if (i < mp->mp - 1) {
+        printf(",");
+      } 
     }
     printf("}");
     break;

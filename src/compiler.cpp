@@ -316,7 +316,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
       if (items == 255) {
         errorAt(parser, "Can't have more than 255 arguments.");
       }
-      items += 2;
+      items++;
 
     } while (match(parser, scanner, TOKEN_COMMA));
   }

@@ -125,7 +125,7 @@ static bool callValue(Value callee, int argCount) {
       }
       Value fields[argCount];
       // Do another function for this
-      for (int i = 0; i < argCount; ++i) {
+      for (int i = argCount - 1; i >= 0; --i) {
         fields[i] = popStack();
       }
       vm->stackTop[-1] = OBJ_VAL(newInstance(strukt, fields, argCount));
@@ -150,19 +150,19 @@ static bool index() {
   switch (OBJ_TYPE(item)) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
-    ObjString *string = AS_STRING(key);
+    String string = AS_STRING(key)->string;
     int i = 0;
     for (; i < mp->mp; i++) {
-      if (cmpString(mp->keys[i], string->string)) {
+      if (cmpString(mp->keys[i], string)) {
         break;
       }
     }
-    if (i == mp->mp - 1) {
+    if (i <= mp->mp - 1) {
       pushStack(mp->values[i]);
       return true;
     }
     runtimeError("Trying to access map with unknown key %.*s",
-                 string->string.length, string->string.literal);
+                 string.length, string.literal);
     return false;
   }
   case OBJ_STRING: {
@@ -170,14 +170,13 @@ static bool index() {
       runtimeError("Can only index string with number");
       return false;
     }
-    ObjString *string = AS_STRING(item);
+    String string = AS_STRING(item)->string;
     int k = (int)key.as.number;
-    // if (string->chars <= k || k < 0) {
-    //   runtimeError("Trying to access outside of array %d", k);
-    //   return false;
-    // }
-
-    // pushStack(OBJ_VAL(copyString(string->chars.substr(k, 1))));
+    if (string.length <= k || k < 0) {
+      runtimeError("Trying to access outside of array %d", k);
+      return false;
+    }
+    pushStack(OBJ_VAL(copyString(newString(&string.literal[k], 1))));
     return true;
   }
   case OBJ_ARRAY: {
@@ -234,7 +233,7 @@ InterpretResult run() {
       printf(" ]");
     }
     printf("\n");
-    disassembleInstruction(frame->function->chunk, (int)frame->ip);
+    disassembleInstruction(frame->function, (int)frame->ip);
 #endif
     switch (instructions[frame->ip++]) {
     case OP_CONSTANT: {
@@ -461,10 +460,13 @@ InterpretResult run() {
     case OP_MAP: {
       int argCount = instructions[frame->ip++];
       Value values[argCount];
-      for (int i = 0; i < argCount; i++) {
+      String keys[argCount];
+      for (int i = argCount - 1; i >=0; i--) {
         values[i] = popStack();
+        keys[i] = AS_STRING(popStack())->string;
       }
-      pushStack(OBJ_VAL(newMap(values, argCount)));
+
+      pushStack(OBJ_VAL(newMap(keys, values, argCount)));
       break;
     }
     case OP_STRUCT: {
@@ -476,14 +478,14 @@ InterpretResult run() {
       //   return INTERPRET_RUNTIME_ERROR;
       // }
       ObjStruct *strukt = newStruct(name);
-      int i = strukt->fieldLen - 1;
+      int i = 0;
+
       while (matchByte(OP_STRUCT_ARG)) {
         strukt->fields[i] = AS_STRING(READ_CONSTANT())->string;
-        i--;
+        i++;
       }
-      vm->globalKeys[vm->gp] = name->string;
-      vm->globalValues[vm->gp] = OBJ_VAL(strukt);
-      vm->gp++;
+      strukt->fieldLen = i;
+      pushStack(OBJ_VAL(strukt));
       break;
     }
     case OP_RETURN: {
