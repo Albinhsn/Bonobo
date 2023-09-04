@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 static std::string readFile(std::string path) {
   std::ifstream t(path);

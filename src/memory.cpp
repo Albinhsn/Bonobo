@@ -2,12 +2,11 @@
 
 #include "memory.h"
 #include <cstdlib>
-#include <iostream>
 
 void freeObjects(VM *vm) {
   for (int i = 0; i < vm->op; i++) {
     if (vm->objects[i] == NULL) {
-      std::cout << "ALREADY FREED\n";
+      printf("ALREADY FREED\n");
       continue;
     }
     switch (vm->objects[i]->type) {
@@ -25,6 +24,10 @@ void freeObjects(VM *vm) {
       ObjFunction *fn = (ObjFunction *)vm->objects[i];
       delete (fn);
       break;
+    }
+    default: {
+      printf("Don't know how to free %d\n", (int)vm->objects[i]->type);
+      exit(1);
     }
     }
   }

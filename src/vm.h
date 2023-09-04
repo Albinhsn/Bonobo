@@ -4,7 +4,6 @@
 #include "object.h"
 #include "opcode.h"
 #include "scanner.h"
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>

@@ -2,9 +2,6 @@
 #define cpplox_common_h
 
 #include <cstdint>
-#include <iostream>
-#include <string>
-#include <vector>
 
 typedef struct {
   char *chars;

@@ -5,7 +5,6 @@
 #include "object.h"
 #include "scanner.h"
 #include "vm.h"
-#include <cstddef>
 
 void freeParser(Parser *parser);
 void freeScanner(Scanner *scanner);

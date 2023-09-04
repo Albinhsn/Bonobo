@@ -4,7 +4,6 @@
 #include "common.h"
 #include "scanner.h"
 #include "value.h"
-#include <map>
 
 #define CODE_MAX 500
 #define CONST_MAX 100

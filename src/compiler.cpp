@@ -5,12 +5,6 @@
 #include "object.h"
 #include "opcode.h"
 #include "scanner.h"
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <map>
-#include <stdexcept>
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -107,10 +101,17 @@ static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
 
 static ObjFunction *endCompiler(Compiler *compiler, Parser *parser) {
 #ifdef DEBUG_PRINT_CODE
+  std::string funcName;
+  char *str;
+  if (compiler->function->name != NULL) {
+    sprintf(str, "%.*s", compiler->function->name->string.length,
+            compiler->function->name->string.literal);
+    funcName = str;
+  } else {
+    funcName = "<script>";
+  }
   if (!parser->hadError) {
-    disassembleChunk(compiler->function, compiler->function->name != NULL
-                                             ? compiler->function->name->chars
-                                             : "<script>");
+    disassembleChunk(compiler->function, funcName.c_str());
   }
 #endif
   writeChunks(compiler->function, OP_NIL, OP_RETURN, parser->previous->line);
@@ -469,7 +470,6 @@ static void whileStatement(Compiler *compiler, Parser *parser,
   writeChunk(compiler->function, OP_POP, parser->previous->line);
 }
 
-
 static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
   TokenType operatorType = parser->previous->type;
 
@@ -614,7 +614,10 @@ static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
   case TOKEN_TRUE: {
     writeChunk(compiler->function, OP_TRUE, parser->previous->line);
     break;
-  }
+  }default:{
+      printf("Unknown literal token %d\n", (int)parser->previous->type);
+      exit(1);
+    }
   }
 }
 

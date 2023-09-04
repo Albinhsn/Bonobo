@@ -1,10 +1,7 @@
 #include "scanner.h"
 #include "debug.h"
 
-#include <cctype>
 #include <cstring>
-#include <iostream>
-#include <map>
 #include <stdexcept>
 
 void resetScanner(Scanner *scanner) {

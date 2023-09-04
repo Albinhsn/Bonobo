@@ -6,13 +6,11 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 [ ] Make sure you free on interpreter error
 
-### Aggressively refactor to minimize code 
-* if error just kick em out
-* create an array type?
-* figure out how to remove std::vector locals
-* figure out if you need everthing through every path etc
-* minimize chains of pointers if possible
 * change OP_STRUCT_ARG in compiler
+* figure out if you need everthing through every path etc
+
+### Aggressively refactor to minimize code 
+* figure out how to remove std::vector locals
 * dynamic array sizes rather then fixed
 
 
@@ -25,6 +23,8 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 
 * Builtins:
-    
-    len/size
+    * io  
+    * len/size
+    * ? : 
+    * iterate over array/map
 

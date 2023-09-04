@@ -6,11 +6,8 @@
 #include "memory.h"
 #include "object.h"
 #include "value.h"
-#include <algorithm>
 #include <cstdarg>
 #include <cstring>
-#include <map>
-#include <time.h>
 
 VM *vm;
 
