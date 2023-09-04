@@ -158,8 +158,8 @@ static bool index() {
       pushStack(mp->values[i]);
       return true;
     }
-    runtimeError("Trying to access map with unknown key %.*s",
-                 string.length, string.literal);
+    runtimeError("Trying to access map with unknown key %.*s", string.length,
+                 string.literal);
     return false;
   }
   case OBJ_STRING: {
@@ -267,8 +267,7 @@ InterpretResult run() {
       String s = string->string;
       int i = 0;
       while (i < vm->gp) {
-        if (s.length == vm->globalKeys[i].length &&
-            memcmp(s.literal, vm->globalKeys[i].literal, s.length) == 0) {
+        if (cmpString(s, vm->globalKeys[i])) {
           break;
         }
         i++;
@@ -458,7 +457,7 @@ InterpretResult run() {
       int argCount = instructions[frame->ip++];
       Value values[argCount];
       String keys[argCount];
-      for (int i = argCount - 1; i >=0; i--) {
+      for (int i = argCount - 1; i >= 0; i--) {
         values[i] = popStack();
         keys[i] = AS_STRING(popStack())->string;
       }

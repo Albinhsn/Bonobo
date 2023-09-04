@@ -99,6 +99,11 @@ static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
   return (uint8_t)constant;
 }
 
+static inline uint8_t stringConstant(Compiler *compiler, Parser *parser) {
+  return makeConstant(compiler, parser,
+                      OBJ_VAL(copyString(parser->previous->string)));
+}
+
 static ObjFunction *endCompiler(Compiler *compiler, Parser *parser) {
 #ifdef DEBUG_PRINT_CODE
   std::string funcName;
@@ -209,8 +214,7 @@ static uint8_t parseVariable(Compiler *compiler, Parser *parser,
     return 0;
   }
 
-  return makeConstant(compiler, parser,
-                      OBJ_VAL(copyString(parser->previous->string)));
+  return stringConstant(compiler, parser);
 }
 
 static void patchJump(Compiler *compiler, Parser *parser, int offset) {
@@ -305,9 +309,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
     do {
       consume(parser, scanner, TOKEN_STRING, "Expect strings as keys");
       writeChunks(compiler->function, OP_CONSTANT,
-                  makeConstant(compiler, parser,
-                               OBJ_VAL(copyString(parser->previous->string))),
-                  parser->previous->line);
+                  stringConstant(compiler, parser), parser->previous->line);
 
       consume(parser, scanner, TOKEN_COLON,
               "Expect colon between key and value");
@@ -532,9 +534,7 @@ static void index(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void dot(Compiler *compiler, Parser *parser, Scanner *scanner,
                 bool canAssign) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect property name after '.'.");
-  uint8_t name = makeConstant(compiler, parser,
-                              OBJ_VAL(copyString(parser->previous->string)));
-
+  uint8_t name = stringConstant(compiler, parser);
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
     writeChunks(compiler->function, OP_SET_PROPERTY, name,
@@ -585,8 +585,7 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
   } else {
-    arg = makeConstant(compiler, parser,
-                       OBJ_VAL(copyString(parser->previous->string)));
+    arg = stringConstant(compiler, parser);
     getOp = OP_GET_GLOBAL;
     setOp = OP_SET_GLOBAL;
   }
@@ -614,10 +613,11 @@ static void literal(Compiler *compiler, Parser *parser, Scanner *scanner) {
   case TOKEN_TRUE: {
     writeChunk(compiler->function, OP_TRUE, parser->previous->line);
     break;
-  }default:{
-      printf("Unknown literal token %d\n", (int)parser->previous->type);
-      exit(1);
-    }
+  }
+  default: {
+    printf("Unknown literal token %d\n", (int)parser->previous->type);
+    exit(1);
+  }
   }
 }
 
@@ -634,8 +634,7 @@ static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
   }
   case TOKEN_STRING: {
     writeChunks(compiler->function, OP_CONSTANT,
-                makeConstant(compiler, parser,
-                             OBJ_VAL(copyString(parser->previous->string))),
+                stringConstant(compiler, parser),
                 parser->previous->line);
     break;
   }
@@ -779,8 +778,7 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
     consume(parser, scanner, TOKEN_IDENTIFIER,
             "Expect field identifier in struct");
     writeChunks(compiler->function, OP_STRUCT_ARG,
-                makeConstant(compiler, parser,
-                             OBJ_VAL(copyString(parser->previous->string))),
+                stringConstant(compiler, parser),
                 parser->previous->line);
     consume(parser, scanner, TOKEN_SEMICOLON,
             "Expect semicolon after struct field identifier");
@@ -790,8 +788,7 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void structDeclaration(Compiler *compiler, Parser *parser,
                               Scanner *scanner) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect struct name");
-  uint8_t nameConstant = makeConstant(
-      compiler, parser, OBJ_VAL(copyString(parser->previous->string)));
+  uint8_t nameConstant = stringConstant(compiler, parser);
   declareVariable(compiler, parser);
 
   writeChunks(compiler->function, OP_STRUCT, nameConstant,
