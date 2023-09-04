@@ -198,7 +198,7 @@ static void declareVariable(Compiler *compiler, Parser *parser) {
       break;
     }
 
-    if (parser->previous->string.literal == local.name.string.literal) {
+    if (cmpString(parser->previous->string, local.name.string)) {
       errorAt(parser, "Already a variable with this name in this scope.");
     }
   }
@@ -634,8 +634,7 @@ static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
   }
   case TOKEN_STRING: {
     writeChunks(compiler->function, OP_CONSTANT,
-                stringConstant(compiler, parser),
-                parser->previous->line);
+                stringConstant(compiler, parser), parser->previous->line);
     break;
   }
   case TOKEN_NUMBER: {
@@ -778,8 +777,7 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
     consume(parser, scanner, TOKEN_IDENTIFIER,
             "Expect field identifier in struct");
     writeChunks(compiler->function, OP_STRUCT_ARG,
-                stringConstant(compiler, parser),
-                parser->previous->line);
+                stringConstant(compiler, parser), parser->previous->line);
     consume(parser, scanner, TOKEN_SEMICOLON,
             "Expect semicolon after struct field identifier");
   }
