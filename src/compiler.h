@@ -1,14 +1,3 @@
-
-// static void emitByte(Compiler *compiler, Parser *parser, uint8_t byte) {
-//   writeChunk(currentChunk(compiler), byte, parser->previous->line);
-// }
-//
-// static void emitBytes(Compiler *compiler, Parser *parser, uint8_t byte1,
-//                       uint8_t byte2) {
-//   emitByte(compiler, parser, byte1);
-//   emitByte(compiler, parser, byte2);
-// }
-
 #ifndef cpplox_compiler_h
 #define cpplox_compiler_h
 
@@ -20,9 +9,8 @@
 typedef struct Parser {
   Token *current;
   bool hadError;
-  bool panicMode;
   Token *previous;
-  Parser() : current(NULL), hadError(false), panicMode(false), previous(NULL){};
+  Parser() : current(NULL), hadError(false),  previous(NULL){};
 } Parser;
 
 typedef enum {

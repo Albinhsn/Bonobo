@@ -28,10 +28,9 @@ static Compiler *initCompiler(Compiler *current, Parser *parser,
 }
 
 static void errorAt(Parser *parser, const char *message) {
-  if (parser->panicMode) {
+  if (parser->hadError) {
     return;
   }
-  parser->panicMode = true;
 
   Token *token = parser->current;
   fprintf(stderr, "[line %d] Error", token->line);
@@ -470,31 +469,6 @@ static void whileStatement(Compiler *compiler, Parser *parser,
   writeChunk(compiler->function, OP_POP, parser->previous->line);
 }
 
-static void synchronize(Parser *parser, Scanner *scanner) {
-  parser->panicMode = false;
-
-  while (parser->current->type != TOKEN_EOF) {
-    if (parser->previous->type == TOKEN_SEMICOLON) {
-      return;
-    }
-    switch (parser->current->type) {
-    case TOKEN_STRUCT:
-    case TOKEN_FUN:
-    case TOKEN_VAR:
-    case TOKEN_FOR:
-    case TOKEN_IF:
-    case TOKEN_WHILE:
-    case TOKEN_PRINT:
-    case TOKEN_RETURN:
-      return;
-    default: {
-      // Do nothing.
-    }
-    }
-
-    advance(parser, scanner);
-  }
-}
 
 static void binary(Compiler *compiler, Parser *parser, Scanner *scanner) {
   TokenType operatorType = parser->previous->type;
@@ -862,10 +836,6 @@ static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner) {
     structDeclaration(compiler, parser, scanner);
   } else {
     statement(compiler, parser, scanner);
-  }
-
-  if (parser->panicMode) {
-    synchronize(parser, scanner);
   }
 }
 
