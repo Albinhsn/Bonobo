@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "memory.h"
 #include "object.h"
+#include "scanner.h"
 #include "value.h"
 #include <cstdarg>
 #include <cstring>
@@ -57,6 +58,15 @@ static void runtimeError(const char *format, ...) {
     }
   }
   resetStack();
+}
+
+static inline int matchKey(String needle, String arr[], int arrLen) {
+  for (int i = 0; i < arrLen; i++) {
+    if (cmpString(needle, arr[i])) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 static void defineNative(const char *name, int len, NativeFn function) {
@@ -120,6 +130,7 @@ static bool callValue(Value callee, int argCount) {
                      strukt->fieldLen, argCount);
         return false;
       }
+
       ObjInstance *instance = newInstance(strukt, argCount);
       for (int i = argCount - 1; i >= 0; --i) {
         instance->fields[i] = popStack();
@@ -265,45 +276,32 @@ InterpretResult run() {
       break;
     }
     case OP_GET_GLOBAL: {
-      ObjString *string = READ_STRING();
-      String s = string->string;
-      int i = 0;
-      while (i < vm->gp) {
-        if (cmpString(s, vm->globalKeys[i])) {
-          break;
-        }
-        i++;
-      }
-      if (i == vm->gp) {
-        runtimeError("Undefined variable '%.*s'.", s.length, s.literal);
+      String string = READ_STRING()->string;
+      int idx = matchKey(string, vm->globalKeys, vm->gp);
+      if (idx == -1) {
+        runtimeError("Undefined variable '%.*s'.", string.length,
+                     string.literal);
         return INTERPRET_RUNTIME_ERROR;
       }
-      *vm->stackTop = vm->globalValues[i];
+      *vm->stackTop = vm->globalValues[idx];
       vm->stackTop++;
       break;
     }
     case OP_DEFINE_GLOBAL: {
-      String s = READ_STRING()->string;
-      vm->globalKeys[vm->gp] = s;
-      vm->globalValues[vm->gp] = popStack();
-      vm->gp++;
+      vm->globalKeys[vm->gp] = READ_STRING()->string;
+      vm->globalValues[vm->gp++] = popStack();
       break;
     }
     case OP_SET_GLOBAL: {
-      ObjString *string = READ_STRING();
-      String s = string->string;
-      int i = 0;
-      while (i < vm->gp) {
-        if (cmpString(string->string, vm->globalKeys[i])) {
-          break;
-        }
-        i++;
-      }
-      if (i == vm->gp) {
-        runtimeError("Undefined variable '%.*s'.", s.length, s.literal);
+      String string = READ_STRING()->string;
+
+      int idx = matchKey(string, vm->globalKeys, vm->gp);
+      if (idx == vm->gp) {
+        runtimeError("Undefined variable '%.*s'.", string.length,
+                     string.literal);
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->globalValues[i] = vm->stackTop[-1];
+      vm->globalValues[idx] = vm->stackTop[-1];
       break;
     }
     case OP_GET_PROPERTY: {
@@ -311,22 +309,17 @@ InterpretResult run() {
         runtimeError("Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      // Get the instance from the top
+
       ObjInstance *instance = AS_INSTANCE(vm->stackTop[-1]);
       String fieldName = AS_STRING(READ_CONSTANT())->string;
-      int idx = -1;
-      for (int i = 0; i < instance->strukt->fieldLen; ++i) {
-        if (cmpString(instance->strukt->fields[i], fieldName)) {
-          idx = i;
-          break;
-        }
-      }
+
+      int idx = matchKey(fieldName, instance->strukt->fields,
+                         instance->strukt->fieldLen);
       if (idx == -1) {
         runtimeError("Couldn't find field?");
         return INTERPRET_RUNTIME_ERROR;
       }
 
-      // Update aka remove the instance and replace it with the field
       vm->stackTop[-1] = instance->fields[idx];
       break;
     }
