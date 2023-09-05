@@ -3,21 +3,17 @@
 Toy implementation of a simple language in order to learn C++, memory management, x86_64 assembly and language design
 
 
+## TODO before reworking compiler/scanner
 
-## TODO
-
-* figure out how to remove std::vector locals
-
-* HashTable for keys
-
-* NaN boxing
-
-* Be able to change array/mp by index
-
+* Rethink strings
 
 * dynamic array sizes rather then fixed
 
-* change OP_STRUCT_ARG in compiler // will change when rewriting scanner/compiler anyway
+* Be able to change array/mp by index
+
+* Fix ci 
+
+* Cleanup Makefile 
 
 
 ### Features to fix
