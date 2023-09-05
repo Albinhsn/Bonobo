@@ -32,18 +32,14 @@ ObjFunction *newFunction() {
   }
   return function;
 }
-ObjMap *newMap(String keys[], Value values[], int len) {
+ObjMap *newMap(int len) {
   ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
-  for (int i = 0; i < len; ++i) {
-    mp->keys[i] = keys[i];
-    mp->values[i] = values[i];
-  }
   mp->mp = len;
   vm->objects[vm->op++] = (Obj *)mp;
   return mp;
 }
 
-ObjArray *newArray(Value values[], int len) {
+ObjArray *newArray(int len) {
   ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), len);
   return array;
 }
@@ -55,12 +51,9 @@ ObjStruct *newStruct(ObjString *name) {
   return strukt;
 }
 
-ObjInstance *newInstance(ObjStruct *strukt, Value fields[], int fieldLen) {
+ObjInstance *newInstance(ObjStruct *strukt, int fieldLen) {
   ObjInstance *instance =
       new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fieldLen);
-  for (int i = 0; i < instance->fieldLen; i++) {
-    instance->fields[i] = fields[i];
-  }
   vm->objects[vm->op] = (Obj *)instance;
   return instance;
 }

@@ -120,12 +120,11 @@ static bool callValue(Value callee, int argCount) {
                      strukt->fieldLen, argCount);
         return false;
       }
-      Value fields[argCount];
-      // Do another function for this
+      ObjInstance *instance = newInstance(strukt, argCount);
       for (int i = argCount - 1; i >= 0; --i) {
-        fields[i] = popStack();
+        instance->fields[i] = popStack();
       }
-      vm->stackTop[-1] = OBJ_VAL(newInstance(strukt, fields, argCount));
+      vm->stackTop[-1] = OBJ_VAL(instance);
       return true;
     }
     default:
@@ -137,13 +136,16 @@ static bool callValue(Value callee, int argCount) {
 }
 
 static bool index() {
+
   Value key = vm->stackTop[-1];
   Value item = vm->stackTop[-2];
   vm->stackTop -= 2;
+
   if (item.type != VAL_OBJ) {
     runtimeError("Can't only index array, map and string");
     return false;
   }
+
   switch (OBJ_TYPE(item)) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
@@ -446,23 +448,21 @@ InterpretResult run() {
     }
     case OP_ARRAY: {
       int argCount = instructions[frame->ip++];
-      Value values[argCount];
+      ObjArray *array = newArray(argCount);
       for (int i = 0; i < argCount; i++) {
-        values[i] = popStack();
+        array->arr[i] = popStack();
       }
-      pushStack(OBJ_VAL(newArray(values, argCount)));
+      pushStack(OBJ_VAL(array));
       break;
     }
     case OP_MAP: {
       int argCount = instructions[frame->ip++];
-      Value values[argCount];
-      String keys[argCount];
+      ObjMap *mp = newMap(argCount);
       for (int i = argCount - 1; i >= 0; i--) {
-        values[i] = popStack();
-        keys[i] = AS_STRING(popStack())->string;
+        mp->values[i] = popStack();
+        mp->keys[i] = AS_STRING(popStack())->string;
       }
-
-      pushStack(OBJ_VAL(newMap(keys, values, argCount)));
+      pushStack(OBJ_VAL(mp));
       break;
     }
     case OP_STRUCT: {

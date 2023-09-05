@@ -110,12 +110,12 @@ int addConstant(ObjFunction *function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
-ObjMap *newMap(String keys[], Value values[], int len);
-ObjArray *newArray(Value values[], int len);
+ObjMap *newMap(int len);
+ObjArray *newArray(int len);
 ObjNative *newNative(NativeFn function);
 ObjString *copyString(String string);
 ObjStruct *newStruct(ObjString *name);
-ObjInstance *newInstance(ObjStruct *strukt, Value fields[], int len);
+ObjInstance *newInstance(ObjStruct *strukt, int len);
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
