@@ -36,13 +36,13 @@ void freeObjects(VM *vm) {
 void freeParser(Parser *parser) {
   if (parser->current) {
 
-    delete (parser->current);
+    free(parser->current);
   }
   if (parser->previous) {
-    delete (parser->previous);
+    free(parser->previous);
   }
 
-  delete (parser);
+  free(parser);
 };
 
 void freeScanner(Scanner *scanner) { delete (scanner); }
@@ -51,7 +51,7 @@ Value *freeFrame(VM *vm) {
   CallFrame *f2 = vm->frames[vm->fp - 1];
   vm->fp--;
   Value *sp = f2->sp;
-  delete (f2);
+  free(f2);
   return sp;
 };
 void freeCompiler(Compiler *compiler) { delete (compiler); }

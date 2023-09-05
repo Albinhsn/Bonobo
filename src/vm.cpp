@@ -8,6 +8,7 @@
 #include "scanner.h"
 #include "value.h"
 #include <cstdarg>
+#include <cstdlib>
 #include <cstring>
 
 VM *vm;
@@ -98,7 +99,8 @@ static bool call(ObjFunction *function, int argCount) {
     runtimeError("Stack overflow.");
     return false;
   }
-  CallFrame *frame = new CallFrame;
+  CallFrame *frame = NULL;
+  frame = (CallFrame *)(malloc(sizeof(CallFrame)));
   frame->function = function;
   frame->instructions = &function->code[0];
   frame->sp = vm->stackTop - argCount;
@@ -211,7 +213,14 @@ static bool index() {
 }
 
 static inline bool isFalsey(Value value) {
-  return (IS_BOOL(value) && !AS_BOOL(value)) || IS_NIL(value);
+  switch (value.type) {
+  case VAL_BOOL:
+    return !AS_BOOL(value);
+  case VAL_NIL:
+    return IS_NIL(value);
+  default:
+    return false;
+  }
 }
 
 InterpretResult run() {

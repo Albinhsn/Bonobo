@@ -7,12 +7,15 @@ cfd:
 	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
 c:
-	cd src/ && g++ -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
+	cd src/ && g++ -O3 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
 cr:
 	cd src/ && g++  -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main
 
 cf: 
 	cd src/ && g++ -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
+
+ct: 
+	cd src/ && g++ -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../test$(file)
 
 p: 
 	cd src/ && g++ -pg -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > log.txt
@@ -37,3 +40,5 @@ br:
 r:
 	cmake --build build && cd build/ && ./main $(file)
 
+vg:
+	cd src/ &&  g++ -g  -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind ./main ../input

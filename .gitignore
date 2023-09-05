@@ -37,3 +37,6 @@ googletest/
 input
 "'"
 log.txt
+'
+callgrind.*
+test*
