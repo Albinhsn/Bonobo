@@ -10,6 +10,8 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#define TWO63 0x8000000000000000u
+#define TWO64f (TWO63 * 2.0)
 
 VM *vm;
 
@@ -20,7 +22,7 @@ static Value clockNative(int argCount, Value args) {
 }
 
 void initVM() {
-  vm = new VM();
+  vm = new VM;
   vm->stackTop = vm->stack;
   vm->op = vm->fp = vm->gp = 0;
 
@@ -154,7 +156,7 @@ static bool index() {
   Value item = vm->stackTop[-2];
   vm->stackTop -= 2;
 
-  if (item.type != VAL_OBJ) {
+  if (!IS_OBJ(item)) {
     runtimeError("Can't only index array, map and string");
     return false;
   }
@@ -178,12 +180,12 @@ static bool index() {
     return false;
   }
   case OBJ_STRING: {
-    if (key.type != VAL_NUMBER) {
+    if (IS_NUMBER(key)) {
       runtimeError("Can only index string with number");
       return false;
     }
     String string = AS_STRING(item)->string;
-    int k = (int)key.as.number;
+    int k = (int)AS_NUMBER(key);
     if (string.length <= k || k < 0) {
       runtimeError("Trying to access outside of array %d", k);
       return false;
@@ -192,11 +194,11 @@ static bool index() {
     return true;
   }
   case OBJ_ARRAY: {
-    if (key.type != VAL_NUMBER) {
+    if (IS_NUMBER(key)) {
       runtimeError("Can only index array with number");
       return false;
     }
-    int k = (int)key.as.number;
+    int k = (int)AS_NUMBER(key);
     ObjArray *array = AS_ARRAY(item);
     if (array->arrLen <= k || k < 0) {
       runtimeError("Trying to access outside of array %d", k);
@@ -213,14 +215,7 @@ static bool index() {
 }
 
 static inline bool isFalsey(Value value) {
-  switch (value.type) {
-  case VAL_BOOL:
-    return !AS_BOOL(value);
-  case VAL_NIL:
-    return IS_NIL(value);
-  default:
-    return false;
-  }
+  return (IS_BOOL(value) && !AS_BOOL(value)) || IS_NIL(value);
 }
 
 InterpretResult run() {
@@ -230,6 +225,7 @@ InterpretResult run() {
                               frame->instructions[frame->ip - 1]))
 #define READ_CONSTANT()                                                        \
   (frame->function->constants[frame->instructions[frame->ip++]])
+#define MAP_DOUBLE(u) (((double)u) / TWO64f)
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
@@ -488,7 +484,12 @@ InterpretResult run() {
     }
     case OP_RETURN: {
       Value result = popStack();
-      vm->stackTop = freeFrame(vm);
+
+      // free frame
+      vm->fp--;
+      vm->stackTop = frame->sp;
+      free(frame);
+
       if (vm->fp == 0) {
         popStack();
         return INTERPRET_OK;
