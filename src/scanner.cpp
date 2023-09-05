@@ -37,27 +37,35 @@ static bool isAtEnd(Scanner *scanner) {
   return scanner->source[scanner->current] == '\0';
 }
 
+static inline char currentChar(Scanner *scanner) {
+  return scanner->source[scanner->current];
+}
+
 static bool match(Scanner *scanner, char needle) {
-  if (!isAtEnd(scanner) && scanner->source[scanner->current] == needle) {
+  if (!isAtEnd(scanner) && currentChar(scanner) == needle) {
     scanner->current++;
     return true;
   }
   return false;
 }
 
+static inline int getLength(Scanner *scanner, const char *current) {
+  return (int)(&scanner->source[scanner->current] - current);
+}
+
 static Token *parseNumber(Scanner *scanner) {
   const char *current = &scanner->source[scanner->current - 1];
-  while (!isAtEnd(scanner) && isdigit(scanner->source[scanner->current])) {
+  while (!isAtEnd(scanner) && isdigit(currentChar(scanner))) {
     scanner->current++;
   }
-  if (scanner->source[scanner->current] == '.') {
+  if (currentChar(scanner) == '.') {
     scanner->current++;
   }
-  while (!isAtEnd(scanner) && isdigit(scanner->source[scanner->current])) {
+  while (!isAtEnd(scanner) && isdigit(currentChar(scanner))) {
     scanner->current++;
   }
-  return newToken(current, (int)(&scanner->source[scanner->current] - current),
-                   scanner->line, scanner->indent, TOKEN_NUMBER);
+  return newToken(current, getLength(scanner, current), scanner->line,
+                  scanner->indent, TOKEN_NUMBER);
 }
 
 static inline TokenType checkKeyword(const char *current, const char *keyword,
@@ -123,24 +131,25 @@ static TokenType isKeyword(const char *current, int len) {
   }
 }
 
-static bool isAlpha(char c) {
+static inline bool isAlpha(char c) {
   return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
 static Token *parseIdentifier(Scanner *scanner) {
   const char *current = &scanner->source[scanner->current - 1];
-  while (!isAtEnd(scanner) && isAlpha(scanner->source[scanner->current])) {
+  while (!isAtEnd(scanner) && isAlpha(currentChar(scanner))) {
     scanner->current++;
   }
-  int len = (int)(&scanner->source[scanner->current] - current);
+
+  int len = getLength(scanner, current);
   return newToken(current, len, scanner->line, scanner->indent,
-                   isKeyword(current, len));
+                  isKeyword(current, len));
 }
 
 static Token *parseString(Scanner *scanner) {
   const char *current = &scanner->source[scanner->current];
-  while (!isAtEnd(scanner) && scanner->source[scanner->current] != '"' &&
-         scanner->source[scanner->current] != '\n') {
+  while (!isAtEnd(scanner) && currentChar(scanner) != '"' &&
+         currentChar(scanner) != '\n') {
     scanner->current++;
   }
 
@@ -149,9 +158,8 @@ static Token *parseString(Scanner *scanner) {
   }
 
   scanner->current++;
-  return newToken(current,
-                   (int)(&scanner->source[scanner->current] - current) - 1,
-                   scanner->line, scanner->indent, TOKEN_STRING);
+  return newToken(current, getLength(scanner, current) - 1, scanner->line,
+                  scanner->indent, TOKEN_STRING);
 }
 
 void skipWhitespace(Scanner *scanner) {
@@ -159,7 +167,7 @@ void skipWhitespace(Scanner *scanner) {
     if (isAtEnd(scanner)) {
       return;
     }
-    switch (scanner->source[scanner->current]) {
+    switch (currentChar(scanner)) {
     case '/': {
       scanner->current++;
       if (match(scanner, '/')) {
@@ -222,12 +230,11 @@ Token *scanToken(Scanner *scanner) {
     return newToken("}", 1, scanner->line, scanner->indent, TOKEN_RIGHT_BRACE);
   }
   case '[': {
-    return newToken("[", 1, scanner->line, scanner->indent,
-                     TOKEN_LEFT_BRACKET);
+    return newToken("[", 1, scanner->line, scanner->indent, TOKEN_LEFT_BRACKET);
   }
   case ']': {
     return newToken("]", 1, scanner->line, scanner->indent,
-                     TOKEN_RIGHT_BRACKET);
+                    TOKEN_RIGHT_BRACKET);
   }
   case ';': {
     return newToken(";", 1, scanner->line, scanner->indent, TOKEN_SEMICOLON);
@@ -250,28 +257,28 @@ Token *scanToken(Scanner *scanner) {
   case '!': {
     if (match(scanner, '=')) {
       return newToken("!=", 2, scanner->line, scanner->indent,
-                       TOKEN_BANG_EQUAL);
+                      TOKEN_BANG_EQUAL);
     }
     return newToken("!", 1, scanner->line, scanner->indent, TOKEN_BANG);
   }
   case '=': {
     if (match(scanner, '=')) {
       return newToken("==", 2, scanner->line, scanner->indent,
-                       TOKEN_EQUAL_EQUAL);
+                      TOKEN_EQUAL_EQUAL);
     }
     return newToken("=", 1, scanner->line, scanner->indent, TOKEN_EQUAL);
   }
   case '<': {
     if (match(scanner, '=')) {
       return newToken("<=", 2, scanner->line, scanner->indent,
-                       TOKEN_LESS_EQUAL);
+                      TOKEN_LESS_EQUAL);
     }
     return newToken("<", 1, scanner->line, scanner->indent, TOKEN_LESS);
   }
   case '>': {
     if (match(scanner, '=')) {
       return newToken(">=", 2, scanner->line, scanner->indent,
-                       TOKEN_GREATER_EQUAL);
+                      TOKEN_GREATER_EQUAL);
     }
     return newToken(">", 1, scanner->line, scanner->indent, TOKEN_GREATER);
   }
