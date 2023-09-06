@@ -18,4 +18,4 @@ jobs:
     - name: make
       run: cd build && make
     - name: Run Test
-      run: /home/runner/work/bonobo/bonobo/build/test/bonobo.test
+      run: /home/runner/work/bonobo/build/test/bonobo.test
