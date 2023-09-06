@@ -1,5 +1,4 @@
 #include "common.h"
-#include "coz.h"
 #include "debug.h"
 #include "opcode.h"
 #include "vm.h"
