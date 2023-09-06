@@ -71,7 +71,7 @@ typedef struct ObjInstance {
 
 typedef struct ObjMap {
   Obj obj;
-  String keys[MAP_MAXSIZE];
+  Value keys[MAP_MAXSIZE];
   Value values[MAP_MAXSIZE];
   int mp;
   ObjMap(Obj o) : obj(o), mp(0){};
