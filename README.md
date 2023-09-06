@@ -5,9 +5,7 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 ## TODO before reworking compiler/scanner
 
-* Timed CI tests
-
-* Cleanup Makefile 
+* Timed tests
 
 * Access map with number
 
