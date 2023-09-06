@@ -9,6 +9,15 @@ void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2,
   writeChunk(function, byte1, line);
   writeChunk(function, byte2, line);
 }
+void addObject(Obj *obj) {
+
+  if (vm->objCap < vm->objLen + 1) {
+    int oldCapacity = vm->objCap;
+    vm->objCap = GROW_CAPACITY(oldCapacity);
+    vm->objects = GROW_ARRAY(Obj *, vm->objects, oldCapacity, vm->objCap);
+  }
+  vm->objects[vm->objLen++] = obj;
+}
 
 void writeChunk(ObjFunction *function, uint8_t byte, int line) {
   if (function->codeCap < function->cp + 1) {
@@ -39,7 +48,7 @@ ObjFunction *newFunction() {
   ObjFunction *function = new ObjFunction(createObj(OBJ_FUNCTION), 0, NULL);
 
   if (vm) {
-    vm->objects[vm->op++] = (Obj *)function;
+    addObject((Obj *)function);
   }
   return function;
 }
@@ -47,7 +56,7 @@ ObjFunction *newFunction() {
 ObjMap *newMap(int len) {
   ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
   mp->mapLen = len;
-  vm->objects[vm->op++] = (Obj *)mp;
+  addObject((Obj *)mp);
   return mp;
 }
 
@@ -59,7 +68,7 @@ ObjArray *newArray(int len) {
 ObjStruct *newStruct(ObjString *name) {
   ObjStruct *strukt = new ObjStruct(createObj(OBJ_STRUCT), name);
 
-  vm->objects[vm->op++] = (Obj *)strukt;
+  addObject((Obj *)strukt);
   return strukt;
 }
 
@@ -68,7 +77,7 @@ ObjInstance *newInstance(ObjStruct *strukt) {
   instance->fieldCap = strukt->fieldCap;
   instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
 
-  vm->objects[vm->op] = (Obj *)instance;
+  addObject((Obj *)instance);
   return instance;
 }
 
@@ -83,7 +92,7 @@ static void printFunction(ObjFunction *function) {
 
 ObjNative *newNative(NativeFn function) {
   ObjNative *native = new ObjNative(createObj(OBJ_NATIVE), function);
-  vm->objects[vm->op++] = (Obj *)function;
+  addObject((Obj *)native);
 
   return native;
 }
@@ -156,7 +165,8 @@ void printObject(Value value) {
 
 ObjString *copyString(String string) {
   ObjString *objString = new ObjString(createObj(OBJ_STRING), string);
-  vm->objects[vm->op++] = (Obj *)objString;
+
+  addObject((Obj *)objString);
 
   return objString;
 }

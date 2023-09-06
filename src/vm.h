@@ -10,8 +10,6 @@
 
 #define FRAMES_MAX 90
 #define STACK_MAX 255
-#define GLOBAL_MAX 120
-#define OBJECT_MAX 150
 
 typedef struct CallFrame {
   ObjFunction *function;
@@ -39,9 +37,10 @@ typedef struct VM {
   Value *globalValues;
   int globalLen;
   int globalCap;
-  Obj *objects[OBJECT_MAX];
-  int op;
-  VM() : fp(0), op(0), globalCap(0), globalLen(0){};
+  Obj **objects;
+  int objCap;
+  int objLen;
+  VM() : fp(0), objLen(0), objCap(0), globalCap(0), globalLen(0){};
 } VM;
 
 extern VM *vm;

@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 void freeObjects(VM *vm) {
-  for (int i = 0; i < vm->op; i++) {
+  for (int i = 0; i < vm->objLen; i++) {
     if (vm->objects[i] == NULL) {
       printf("ALREADY FREED\n");
       continue;

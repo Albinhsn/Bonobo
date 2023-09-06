@@ -113,6 +113,7 @@ void freeChunk(ObjFunction *function);
 void initChunk(ObjFunction *function);
 void writeChunk(ObjFunction *function, uint8_t byte, int line);
 void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2, int line);
+void addObject(Obj* obj);
 
 int addConstant(ObjFunction *function, Value value);
 Obj inline createObj(ObjType type) { return (Obj){type}; }

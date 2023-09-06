@@ -24,7 +24,7 @@ static Value clockNative(int argCount, Value args) {
 void initVM() {
   vm = new VM;
   vm->stackTop = vm->stack;
-  vm->op = vm->fp = vm->globalLen = 0;
+  vm->objLen = vm->objCap = vm->fp = vm->globalCap = vm->globalLen = 0;
 
   defineNative("clock", 5, clockNative);
 }
@@ -77,8 +77,8 @@ static void defineNative(const char *name, int len, NativeFn function) {
   ObjString *string = copyString(s);
   ObjNative *native = newNative(function);
 
-  vm->objects[vm->op++] = (Obj *)string;
-  vm->objects[vm->op++] = (Obj *)native;
+  addObject((Obj *)string);
+  addObject((Obj *)native);
 
   if (vm->globalCap < vm->globalLen + 1) {
     int oldCapacity = vm->globalCap;
