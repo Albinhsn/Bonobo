@@ -20,7 +20,10 @@
 #define FREE_ARRAY(type, pointer, oldCount)                                    \
   reallocate(pointer, sizeof(type) * (oldCount), 0)
 
+void markValue(Value value);
+void markObject(Obj* object);
 void *reallocate(void * pointer, size_t oldSize, size_t newSize);
+void collectGarbage();
 void freeParser(Parser *parser);
 void freeScanner(Scanner *scanner);
 void freeCompiler(Compiler *compiler);

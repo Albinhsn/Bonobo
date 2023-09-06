@@ -4,19 +4,29 @@
 #include "value.h"
 #include "vm.h"
 
+#define ALLOCATE_OBJ(type, objectType)                                         \
+  (type *)allocateObject(sizeof(type), objectType)
+
 void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2,
                  int line) {
   writeChunk(function, byte1, line);
   writeChunk(function, byte2, line);
 }
-void addObject(Obj *obj) {
 
-  if (vm->objCap < vm->objLen + 1) {
-    int oldCapacity = vm->objCap;
-    vm->objCap = GROW_CAPACITY(oldCapacity);
-    vm->objects = GROW_ARRAY(Obj *, vm->objects, oldCapacity, vm->objCap);
-  }
-  vm->objects[vm->objLen++] = obj;
+static Obj *allocateObject(size_t size, ObjType type) {
+  Obj *object = (Obj *)reallocate(NULL, 0, size);
+  object->type = type;
+  // object->isMarked = false;
+  object->next = vm->objects;
+  object->isMarked = false;
+
+  vm->objects = object;
+
+#ifdef DEBUG_LOG_GC
+  printf("%p allocate %zu for %d\n", (void *)object, size, type);
+#endif
+
+  return object;
 }
 
 void writeChunk(ObjFunction *function, uint16_t byte, int line) {
@@ -33,6 +43,7 @@ void writeChunk(ObjFunction *function, uint16_t byte, int line) {
 }
 
 int addConstant(ObjFunction *function, Value value) {
+  pushStack(value);
   if (function->constCap < function->constP + 1) {
     int oldCapacity = function->constCap;
     function->constCap = GROW_CAPACITY(oldCapacity);
@@ -41,70 +52,56 @@ int addConstant(ObjFunction *function, Value value) {
   }
 
   function->constants[function->constP++] = value;
+  popStack();
   return function->constP - 1;
 }
 
 ObjFunction *newFunction() {
-  ObjFunction *function = NULL;
-  function = (ObjFunction *)malloc(sizeof(ObjFunction));
+  ObjFunction *function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
   function->arity = function->constP = function->constCap = function->cp = 0;
-  function->obj = createObj(OBJ_FUNCTION);
   function->code = NULL;
   function->lines = NULL;
   function->constants = NULL;
 
-  if (vm) {
-    addObject((Obj *)function);
-  }
   return function;
 }
 
 ObjMap *newMap(int len) {
-  ObjMap *mp = NULL;
-  mp = (ObjMap *)malloc(sizeof(ObjMap));
-  mp->obj = createObj(OBJ_MAP);
+  ObjMap *mp = ALLOCATE_OBJ(ObjMap, OBJ_MAP);
   mp->mapLen = len;
   mp->keys = NULL;
   mp->values = NULL;
   mp->mapCap = 0;
   mp->mapLen = len;
 
-  addObject((Obj *)mp);
   return mp;
 }
 
 ObjArray *newArray(int len) {
-  ObjArray *array = NULL;
-  array = (ObjArray *)malloc(sizeof(ObjArray *));
-  array->obj = createObj(OBJ_ARRAY);
+  ObjArray *array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
   array->arrLen = len;
 
   return array;
 }
 
 ObjStruct *newStruct(ObjString *name) {
-  ObjStruct *strukt = NULL;
-  strukt = (ObjStruct *)malloc(sizeof(ObjStruct));
-  strukt->obj = createObj(OBJ_STRUCT);
+  ObjStruct *strukt = ALLOCATE_OBJ(ObjStruct, OBJ_STRUCT);
   strukt->name = name;
   strukt->fieldCap = 0;
   strukt->fields = NULL;
   strukt->fieldLen = 0;
 
-  addObject((Obj *)strukt);
   return strukt;
 }
 
 ObjInstance *newInstance(ObjStruct *strukt) {
-  ObjInstance *instance = NULL;
-  instance->obj = createObj(OBJ_STRUCT);
+  ObjInstance *instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
   instance->fieldLen = 0;
   instance->fieldCap = strukt->fieldCap;
   instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
   instance->name = strukt->name;
   instance->strukt = strukt;
 
-  addObject((Obj *)instance);
   return instance;
 }
 
@@ -118,12 +115,8 @@ static void printFunction(ObjFunction *function) {
 }
 
 ObjNative *newNative(NativeFn function) {
-  ObjNative *native = NULL;
-  native = (ObjNative *)malloc(sizeof(ObjNative));
-  native->obj = createObj(OBJ_NATIVE);
+  ObjNative *native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
   native->function = function;
-
-  addObject((Obj *)native);
 
   return native;
 }
@@ -195,12 +188,8 @@ void printObject(Value value) {
 }
 
 ObjString *copyString(String string) {
-  ObjString *objString = NULL;
-  objString = (ObjString *)malloc(sizeof(ObjString));
+  ObjString *objString = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   objString->string = string;
-  objString->obj = createObj(OBJ_STRING);
-
-  addObject((Obj *)objString);
 
   return objString;
 }

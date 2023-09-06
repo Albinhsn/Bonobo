@@ -37,11 +37,17 @@ typedef struct VM {
   Value *globalValues;
   int globalLen;
   int globalCap;
-  Obj **objects;
-  int objCap;
-  int objLen;
+  Obj *objects;
+  int grayCount;
+  int grayCapacity;
+  Obj** grayStack;
+  size_t bytesAllocated;
+  size_t nextGC;
 } VM;
 
 extern VM *vm;
+
+Value popStack();
+void pushStack(Value value);
 
 #endif

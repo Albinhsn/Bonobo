@@ -21,25 +21,29 @@ static Value clockNative(int argCount, Value args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
-void freeVM() { 
-  freeObjects(vm); 
+void freeVM() {
+  freeObjects(vm);
   free(vm);
 }
 void initVM() {
   vm = NULL;
-  vm = (VM*) malloc(sizeof(VM));
-  vm->fp = vm->objLen = vm->objCap = vm->globalCap = vm->globalLen = 0;
+  vm = (VM *)malloc(sizeof(VM));
+  vm->bytesAllocated = vm->fp = vm->globalCap = vm->globalLen = vm->grayCount =
+      vm->grayCapacity = 0;
   vm->stackTop = vm->stack;
+  vm->objects = NULL;
+  vm->grayStack = NULL;
+  vm->nextGC = 1024 * 1024;
 
   defineNative("clock", 5, clockNative);
 }
 
-void inline pushStack(Value value) {
+void pushStack(Value value) {
   *vm->stackTop = value;
   vm->stackTop++;
 }
 
-Value inline popStack() {
+Value popStack() {
   vm->stackTop--;
   return *vm->stackTop;
 }
@@ -81,7 +85,6 @@ static void defineNative(const char *name, int len, NativeFn function) {
   String s = newString(name, len);
   ObjString *string = copyString(s);
   ObjNative *native = newNative(function);
-
   if (vm->globalCap < vm->globalLen + 1) {
     int oldCapacity = vm->globalCap;
     vm->globalCap = GROW_CAPACITY(oldCapacity);
@@ -531,6 +534,12 @@ InterpretResult run() {
       int argCount = instructions[frame->ip++];
       ObjArray *array = newArray(argCount);
       for (int i = argCount - 1; i >= 0; i--) {
+        if (array->arrCap < array->arrLen + 1) {
+          int oldCapacity = array->arrCap;
+          array->arrCap = GROW_CAPACITY(oldCapacity);
+          array->arr =
+              GROW_ARRAY(Value, array->arr, oldCapacity, array->arrCap);
+        }
         array->arr[i] = popStack();
       }
       pushStack(OBJ_VAL(array));

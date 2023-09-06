@@ -21,6 +21,8 @@ typedef enum {
 
 struct Obj {
   ObjType type;
+  bool isMarked;
+  struct Obj *next;
 };
 
 typedef struct ObjFunction {
@@ -53,8 +55,9 @@ typedef struct ObjStruct {
 
 typedef struct ObjArray {
   Obj obj;
-  Value arr[500];
+  Value * arr;
   int arrLen;
+  int arrCap;
 } ObjArray;
 
 typedef struct ObjInstance {
@@ -100,11 +103,9 @@ typedef struct ObjString {
 void freeChunk(ObjFunction *function);
 void initChunk(ObjFunction *function);
 void writeChunk(ObjFunction *function, uint16_t byte, int line);
-void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2, int line);
-void addObject(Obj* obj);
-
+void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2,
+                 int line);
 int addConstant(ObjFunction *function, Value value);
-Obj inline createObj(ObjType type) { return (Obj){type}; }
 void printObject(Value value);
 ObjFunction *newFunction();
 ObjMap *newMap(int len);
