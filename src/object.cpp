@@ -46,7 +46,7 @@ ObjFunction *newFunction() {
 
 ObjMap *newMap(int len) {
   ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
-  mp->mp = len;
+  mp->mapLen = len;
   vm->objects[vm->op++] = (Obj *)mp;
   return mp;
 }
@@ -128,19 +128,19 @@ void printObject(Value value) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(value);
     printf("{");
-    for (int i = 0; i < mp->mp; i++) {
+    for (int i = 0; i < mp->mapLen; i++) {
       if (IS_STRING(mp->keys[i])) {
         ObjString *string = AS_STRING(mp->keys[i]);
         printf("'%.*s':", string->string.length, string->string.literal);
         printValue(mp->values[i]);
-        if (i < mp->mp - 1) {
+        if (i < mp->mapLen - 1) {
           printf(",");
         }
       }
       if (IS_NUMBER(mp->keys[i])) {
         printf("%.0lf:", AS_NUMBER(mp->keys[i]));
         printValue(mp->values[i]);
-        if (i < mp->mp - 1) {
+        if (i < mp->mapLen - 1) {
           printf(",");
         }
       }

@@ -70,17 +70,19 @@ typedef struct ObjInstance {
   ObjStruct *strukt;
   int fieldLen;
   int fieldCap;
-  Value * fields;
+  Value *fields;
   ObjInstance(Obj o, ObjStruct *s)
-      : obj(o), name(s->name), strukt(s), fieldLen(s->fieldLen), fields(NULL), fieldCap(0){};
+      : obj(o), name(s->name), strukt(s), fieldLen(s->fieldLen), fields(NULL),
+        fieldCap(0){};
 } ObjInstance;
 
 typedef struct ObjMap {
   Obj obj;
-  Value keys[MAP_MAXSIZE];
-  Value values[MAP_MAXSIZE];
-  int mp;
-  ObjMap(Obj o) : obj(o), mp(0){};
+  Value *keys;
+  Value *values;
+  int mapCap;
+  int mapLen;
+  ObjMap(Obj o) : obj(o), mapLen(0), keys(NULL), values(NULL), mapCap(0){};
 } ObjMap;
 
 typedef struct ObjString {

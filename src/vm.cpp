@@ -181,8 +181,14 @@ static bool setIndex() {
     ObjString *string = AS_STRING(key);
     int idx = matchKey(string->string, vm->globalKeys, vm->gp);
     if (idx == -1) {
-      mp->keys[mp->mp] = OBJ_VAL(string);
-      mp->values[mp->mp++] = item;
+      if (mp->mapCap < mp->mapLen + 1) {
+        int oldCapacity = mp->mapCap;
+        mp->mapCap = GROW_CAPACITY(oldCapacity);
+        mp->values = GROW_ARRAY(Value, mp->values, oldCapacity, mp->mapCap);
+        mp->keys = GROW_ARRAY(Value, mp->keys, oldCapacity, mp->mapCap);
+      }
+      mp->keys[mp->mapLen] = OBJ_VAL(string);
+      mp->values[mp->mapLen++] = item;
     } else {
       mp->values[idx] = item;
     }
@@ -211,7 +217,7 @@ static bool index() {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
     int i = 0;
-    for (; i < mp->mp; i++) {
+    for (; i < mp->mapLen; i++) {
       if (IS_STRING(key) && IS_STRING(mp->keys[i]) &&
           cmpString(AS_STRING(key)->string, AS_STRING(mp->keys[i])->string)) {
         break;
@@ -220,7 +226,7 @@ static bool index() {
         break;
       }
     }
-    if (i <= mp->mp - 1) {
+    if (i <= mp->mapLen - 1) {
       pushStack(mp->values[i]);
       return true;
     }
@@ -515,6 +521,12 @@ InterpretResult run() {
       int argCount = instructions[frame->ip++];
       ObjMap *mp = newMap(argCount);
       for (int i = argCount - 1; i >= 0; i--) {
+        if (mp->mapCap < mp->mapLen + 1) {
+          int oldCapacity = mp->mapCap;
+          mp->mapCap = GROW_CAPACITY(oldCapacity);
+          mp->values = GROW_ARRAY(Value, mp->values, oldCapacity, mp->mapCap);
+          mp->keys = GROW_ARRAY(Value, mp->keys, oldCapacity, mp->mapCap);
+        }
         mp->values[i] = popStack();
         mp->keys[i] = popStack();
       }
