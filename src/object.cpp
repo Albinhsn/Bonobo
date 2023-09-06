@@ -24,6 +24,13 @@ void writeChunk(ObjFunction *function, uint8_t byte, int line) {
 }
 
 int addConstant(ObjFunction *function, Value value) {
+  if (function->constCap < function->constP + 1) {
+    int oldCapacity = function->constCap;
+    function->constCap = GROW_CAPACITY(oldCapacity);
+    function->constants = GROW_ARRAY(Value, function->constants, oldCapacity,
+                                     function->constCap);
+  }
+
   function->constants[function->constP++] = value;
   return function->constP - 1;
 }

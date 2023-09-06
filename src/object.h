@@ -32,10 +32,11 @@ typedef struct ObjFunction {
   int codeCap;
   int cp;
   int constP;
-  Value constants[CONST_MAX];
+  Value *constants;
+  int constCap;
   ObjFunction(Obj o, int a, ObjString *n)
-      : obj(o), cp(0), constP(0), arity(a), name(n), codeCap(0), code(NULL),
-        lines(NULL){};
+      : obj(o), cp(0), constP(0), arity(a), name(n), codeCap(0), constCap(0),
+        code(NULL), lines(NULL), constants(NULL){};
 } ObjFunction;
 
 typedef Value (*NativeFn)(int argCount, Value args);
