@@ -24,7 +24,7 @@ static Value clockNative(int argCount, Value args) {
 void initVM() {
   vm = new VM;
   vm->stackTop = vm->stack;
-  vm->op = vm->fp = vm->gp = 0;
+  vm->op = vm->fp = vm->globalLen = 0;
 
   defineNative("clock", 5, clockNative);
 }
@@ -79,8 +79,17 @@ static void defineNative(const char *name, int len, NativeFn function) {
 
   vm->objects[vm->op++] = (Obj *)string;
   vm->objects[vm->op++] = (Obj *)native;
-  vm->globalKeys[vm->gp] = s;
-  vm->globalValues[vm->gp++] = OBJ_VAL((Obj *)native);
+
+  if (vm->globalCap < vm->globalLen + 1) {
+    int oldCapacity = vm->globalCap;
+    vm->globalCap = GROW_CAPACITY(oldCapacity);
+    vm->globalValues =
+        GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
+    vm->globalKeys =
+        GROW_ARRAY(String, vm->globalKeys, oldCapacity, vm->globalCap);
+  }
+  vm->globalKeys[vm->globalLen] = s;
+  vm->globalValues[vm->globalLen++] = OBJ_VAL((Obj *)native);
 }
 
 static bool matchByte(OpCode code) {
@@ -179,7 +188,7 @@ static bool setIndex() {
       return false;
     }
     ObjString *string = AS_STRING(key);
-    int idx = matchKey(string->string, vm->globalKeys, vm->gp);
+    int idx = matchKey(string->string, vm->globalKeys, vm->globalLen);
     if (idx == -1) {
       if (mp->mapCap < mp->mapLen + 1) {
         int oldCapacity = mp->mapCap;
@@ -336,7 +345,7 @@ InterpretResult run() {
     }
     case OP_GET_GLOBAL: {
       String string = READ_STRING()->string;
-      int idx = matchKey(string, vm->globalKeys, vm->gp);
+      int idx = matchKey(string, vm->globalKeys, vm->globalLen);
       if (idx == -1) {
         runtimeError("Undefined variable '%.*s'.", string.length,
                      string.literal);
@@ -347,15 +356,23 @@ InterpretResult run() {
       break;
     }
     case OP_DEFINE_GLOBAL: {
-      vm->globalKeys[vm->gp] = READ_STRING()->string;
-      vm->globalValues[vm->gp++] = popStack();
+      if (vm->globalCap < vm->globalLen + 1) {
+        int oldCapacity = vm->globalCap;
+        vm->globalCap = GROW_CAPACITY(oldCapacity);
+        vm->globalValues =
+            GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
+        vm->globalKeys =
+            GROW_ARRAY(String, vm->globalKeys, oldCapacity, vm->globalCap);
+      }
+      vm->globalKeys[vm->globalLen] = READ_STRING()->string;
+      vm->globalValues[vm->globalLen++] = popStack();
       break;
     }
     case OP_SET_GLOBAL: {
       String string = READ_STRING()->string;
 
-      int idx = matchKey(string, vm->globalKeys, vm->gp);
-      if (idx == vm->gp) {
+      int idx = matchKey(string, vm->globalKeys, vm->globalLen);
+      if (idx == vm->globalLen) {
         runtimeError("Undefined variable '%.*s'.", string.length,
                      string.literal);
         return INTERPRET_RUNTIME_ERROR;

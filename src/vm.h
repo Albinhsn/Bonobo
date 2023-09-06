@@ -35,12 +35,13 @@ typedef struct VM {
   CallFrame *frames[FRAMES_MAX];
   Value *stackTop;
   Value stack[STACK_MAX];
-  String globalKeys[GLOBAL_MAX];
-  Value globalValues[GLOBAL_MAX];
-  int gp;
+  String *globalKeys;
+  Value *globalValues;
+  int globalLen;
+  int globalCap;
   Obj *objects[OBJECT_MAX];
   int op;
-  VM() : fp(0), op(0), gp(0){};
+  VM() : fp(0), op(0), globalCap(0), globalLen(0){};
 } VM;
 
 extern VM *vm;
