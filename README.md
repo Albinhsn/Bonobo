@@ -1,13 +1,11 @@
 # Bonobo
 
-Toy implementation of a simple language in order to learn C++, memory management, x86_64 assembly and language design
+Toy implementation of a simple language in order to learn C++, memory management, LLVM, x86_64 assembly and language design
 
 
 ## TODO before reworking compiler/scanner
 
-* Timed tests
-
-* Access map with number
+* GC
 
 
 ### Features to fix

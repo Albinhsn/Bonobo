@@ -87,7 +87,6 @@ typedef struct Scanner {
   int current;
   int line;
   int indent;
-  Scanner(const char *s) : source(s), current(0), line(1), indent(0){};
 } Scanner;
 
 const char *copyStr(String string);

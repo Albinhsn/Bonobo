@@ -20,7 +20,7 @@ static int simpleInstruction(const char *name, int offset) {
 
 static int byteInstruction(const char *name, ObjFunction *function,
                            int offset) {
-  uint8_t slot = function->code[offset + 1];
+  uint16_t slot = function->code[offset + 1];
   printf("%-16s %4d\n", name, slot);
   return offset + 2;
 }
@@ -35,7 +35,7 @@ static int jumpInstruction(const char *name, int sign, ObjFunction *function,
 
 static int constantInstruction(const char *name, ObjFunction *function,
                                int offset) {
-  uint8_t constant = function->code[offset + 1];
+  uint16_t constant = function->code[offset + 1];
   printf("%s %d ", name, (int)constant);
   printValue(function->constants[constant]);
   printf("'\n");
@@ -44,7 +44,7 @@ static int constantInstruction(const char *name, ObjFunction *function,
 
 static int structArgInstruction(const char *name, ObjFunction *function,
                                 int offset) {
-  uint8_t constant = function->code[offset + 1];
+  uint16_t constant = function->code[offset + 1];
 
   printf("%s %d ", name, (int)constant);
   // TODO something here?
@@ -59,7 +59,7 @@ int disassembleInstruction(ObjFunction *function, int offset) {
   } else {
     printf(" %d   ", function->lines[offset]);
   }
-  uint8_t instruction = function->code[offset];
+  uint16_t instruction = function->code[offset];
   printf("%d\n", (int)instruction);
   switch (instruction) {
   case OP_CALL: {

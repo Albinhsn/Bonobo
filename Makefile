@@ -29,7 +29,7 @@ vg:
 	cd src/ &&  g++ -g  -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind --callgrind-out-file=../profile/callgrind.out.123 ./main ../input
 
 time:
-	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
+	cd src/ && g++ -O2 -g -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
 	echo "Recursive fib(40):";\
 	./src/main ./benchmark/fib; \
 	echo "Struct property:";\

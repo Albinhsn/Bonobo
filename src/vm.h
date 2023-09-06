@@ -13,7 +13,7 @@
 
 typedef struct CallFrame {
   ObjFunction *function;
-  uint8_t *instructions;
+  uint16_t *instructions;
   int ip;
   Value *sp;
 } CallFrame;
@@ -40,7 +40,6 @@ typedef struct VM {
   Obj **objects;
   int objCap;
   int objLen;
-  VM() : fp(0), objLen(0), objCap(0), globalCap(0), globalLen(0){};
 } VM;
 
 extern VM *vm;

@@ -1,6 +1,8 @@
 
 
 #include "memory.h"
+#include "object.h"
+#include "value.h"
 #include <cstdlib>
 
 void freeObjects(VM *vm) {
@@ -12,17 +14,20 @@ void freeObjects(VM *vm) {
     switch (vm->objects[i]->type) {
     case OBJ_STRING: {
       ObjString *string = (ObjString *)vm->objects[i];
-      delete (string);
+      free(string);
       break;
     }
     case OBJ_NATIVE: {
       ObjNative *native = (ObjNative *)vm->objects[i];
-      delete (native);
+      free(native);
       break;
     }
     case OBJ_FUNCTION: {
       ObjFunction *fn = (ObjFunction *)vm->objects[i];
-      delete (fn);
+      free(fn->constants);
+      free(fn->lines);
+      free(fn->code);
+      free(fn);
       break;
     }
     default: {
@@ -31,6 +36,9 @@ void freeObjects(VM *vm) {
     }
     }
   }
+  free(vm->objects);
+  free(vm->globalKeys);
+  free(vm->globalValues);
 }
 
 void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
@@ -48,22 +56,26 @@ void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
 void freeParser(Parser *parser) {
   if (parser->current) {
 
-    delete (parser->current);
+    free(parser->current);
   }
   if (parser->previous) {
-    delete (parser->previous);
+    free(parser->previous);
   }
 
-  delete (parser);
+  free(parser);
 };
 
-void freeScanner(Scanner *scanner) { delete (scanner); }
+void freeScanner(Scanner *scanner) { free(scanner); }
 
 Value *freeFrame(VM *vm) {
   CallFrame *f2 = vm->frames[vm->fp - 1];
   vm->fp--;
   Value *sp = f2->sp;
+  free(f2->sp);
   free(f2);
   return sp;
 };
-void freeCompiler(Compiler *compiler) { delete (compiler); }
+void freeCompiler(Compiler *compiler) {
+  free(compiler->locals);
+  free(compiler); 
+}

@@ -4,7 +4,7 @@
 #include "value.h"
 #include "vm.h"
 
-void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2,
+void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2,
                  int line) {
   writeChunk(function, byte1, line);
   writeChunk(function, byte2, line);
@@ -19,12 +19,12 @@ void addObject(Obj *obj) {
   vm->objects[vm->objLen++] = obj;
 }
 
-void writeChunk(ObjFunction *function, uint8_t byte, int line) {
+void writeChunk(ObjFunction *function, uint16_t byte, int line) {
   if (function->codeCap < function->cp + 1) {
     int oldCapacity = function->codeCap;
     function->codeCap = GROW_CAPACITY(oldCapacity);
     function->code =
-        GROW_ARRAY(uint8_t, function->code, oldCapacity, function->codeCap);
+        GROW_ARRAY(uint16_t, function->code, oldCapacity, function->codeCap);
     function->lines =
         GROW_ARRAY(int, function->lines, oldCapacity, function->codeCap);
   }
@@ -45,7 +45,13 @@ int addConstant(ObjFunction *function, Value value) {
 }
 
 ObjFunction *newFunction() {
-  ObjFunction *function = new ObjFunction(createObj(OBJ_FUNCTION), 0, NULL);
+  ObjFunction *function = NULL;
+  function = (ObjFunction *)malloc(sizeof(ObjFunction));
+  function->arity = function->constP = function->constCap = function->cp = 0;
+  function->obj = createObj(OBJ_FUNCTION);
+  function->code = NULL;
+  function->lines = NULL;
+  function->constants = NULL;
 
   if (vm) {
     addObject((Obj *)function);
@@ -54,28 +60,49 @@ ObjFunction *newFunction() {
 }
 
 ObjMap *newMap(int len) {
-  ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
+  ObjMap *mp = NULL;
+  mp = (ObjMap *)malloc(sizeof(ObjMap));
+  mp->obj = createObj(OBJ_MAP);
   mp->mapLen = len;
+  mp->keys = NULL;
+  mp->values = NULL;
+  mp->mapCap = 0;
+  mp->mapLen = len;
+
   addObject((Obj *)mp);
   return mp;
 }
 
 ObjArray *newArray(int len) {
-  ObjArray *array = new ObjArray(createObj(OBJ_ARRAY), len);
+  ObjArray *array = NULL;
+  array = (ObjArray *)malloc(sizeof(ObjArray *));
+  array->obj = createObj(OBJ_ARRAY);
+  array->arrLen = len;
+
   return array;
 }
 
 ObjStruct *newStruct(ObjString *name) {
-  ObjStruct *strukt = new ObjStruct(createObj(OBJ_STRUCT), name);
+  ObjStruct *strukt = NULL;
+  strukt = (ObjStruct *)malloc(sizeof(ObjStruct));
+  strukt->obj = createObj(OBJ_STRUCT);
+  strukt->name = name;
+  strukt->fieldCap = 0;
+  strukt->fields = NULL;
+  strukt->fieldLen = 0;
 
   addObject((Obj *)strukt);
   return strukt;
 }
 
 ObjInstance *newInstance(ObjStruct *strukt) {
-  ObjInstance *instance = new ObjInstance(createObj(OBJ_INSTANCE), strukt);
+  ObjInstance *instance = NULL;
+  instance->obj = createObj(OBJ_STRUCT);
+  instance->fieldLen = 0;
   instance->fieldCap = strukt->fieldCap;
   instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
+  instance->name = strukt->name;
+  instance->strukt = strukt;
 
   addObject((Obj *)instance);
   return instance;
@@ -91,7 +118,11 @@ static void printFunction(ObjFunction *function) {
 }
 
 ObjNative *newNative(NativeFn function) {
-  ObjNative *native = new ObjNative(createObj(OBJ_NATIVE), function);
+  ObjNative *native = NULL;
+  native = (ObjNative *)malloc(sizeof(ObjNative));
+  native->obj = createObj(OBJ_NATIVE);
+  native->function = function;
+
   addObject((Obj *)native);
 
   return native;
@@ -164,7 +195,10 @@ void printObject(Value value) {
 }
 
 ObjString *copyString(String string) {
-  ObjString *objString = new ObjString(createObj(OBJ_STRING), string);
+  ObjString *objString = NULL;
+  objString = (ObjString *)malloc(sizeof(ObjString));
+  objString->string = string;
+  objString->obj = createObj(OBJ_STRING);
 
   addObject((Obj *)objString);
 

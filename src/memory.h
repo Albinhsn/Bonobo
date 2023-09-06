@@ -24,7 +24,7 @@ void *reallocate(void * pointer, size_t oldSize, size_t newSize);
 void freeParser(Parser *parser);
 void freeScanner(Scanner *scanner);
 void freeCompiler(Compiler *compiler);
-void freeObjects();
+void freeObjects(VM * vm);
 Value *freeFrame(VM *vm);
 
 #endif

@@ -21,10 +21,15 @@ static Value clockNative(int argCount, Value args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+void freeVM() { 
+  freeObjects(vm); 
+  free(vm);
+}
 void initVM() {
-  vm = new VM;
+  vm = NULL;
+  vm = (VM*) malloc(sizeof(VM));
+  vm->fp = vm->objLen = vm->objCap = vm->globalCap = vm->globalLen = 0;
   vm->stackTop = vm->stack;
-  vm->objLen = vm->objCap = vm->fp = vm->globalCap = vm->globalLen = 0;
 
   defineNative("clock", 5, clockNative);
 }
@@ -76,9 +81,6 @@ static void defineNative(const char *name, int len, NativeFn function) {
   String s = newString(name, len);
   ObjString *string = copyString(s);
   ObjNative *native = newNative(function);
-
-  addObject((Obj *)string);
-  addObject((Obj *)native);
 
   if (vm->globalCap < vm->globalLen + 1) {
     int oldCapacity = vm->globalCap;
@@ -302,7 +304,7 @@ InterpretResult run() {
   } while (false)
 
   for (;;) {
-    uint8_t *instructions = frame->instructions;
+    uint16_t *instructions = frame->instructions;
 #ifdef DEBUG_TRACE_EXECUTION
     printf("        ");
     for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
@@ -339,7 +341,7 @@ InterpretResult run() {
       break;
     }
     case OP_SET_LOCAL: {
-      uint8_t slot = instructions[frame->ip++];
+      uint16_t slot = instructions[frame->ip++];
       frame->sp[slot] = vm->stackTop[-1];
       break;
     }
@@ -605,12 +607,12 @@ InterpretResult interpret(const char *source) {
   if (compiler == NULL) {
     return INTERPRET_COMPILE_ERROR;
   }
-
   ObjFunction *function = compiler->function;
   pushStack(OBJ_VAL(function));
   call(function, 0);
 
   freeCompiler(compiler);
   InterpretResult result = run();
+  freeVM();
   return result;
 }

@@ -10,7 +10,7 @@ typedef struct Parser {
   Token *current;
   bool hadError;
   Token *previous;
-  Parser() : current(NULL), hadError(false),  previous(NULL){};
+  Parser() : current(NULL), hadError(false), previous(NULL){};
 } Parser;
 
 typedef enum {
@@ -27,20 +27,9 @@ typedef enum {
   PREC_PRIMARY
 } Precedence;
 
-typedef void (*ParseFn)(Parser *parser, Scanner *scanner);
-
-typedef struct ParseRule {
-  ParseFn *prefix;
-  ParseFn *infix;
-  Precedence precedence;
-  ParseRule(ParseFn *p, ParseFn *i, Precedence pr)
-      : prefix(p), infix(i), precedence(pr){};
-} ParseRule;
-
 typedef struct Local {
   Token name;
   int depth;
-  Local(Token n, int d) : name(n), depth(d){};
 } Local;
 
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
@@ -49,11 +38,10 @@ typedef struct Compiler {
   struct Compiler *enclosing;
   ObjFunction *function;
   FunctionType type;
-  std::vector<Local> locals;
+  Local *locals;
+  int localCap;
+  int localLen;
   int scopeDepth;
-  Compiler(Compiler *e, ObjFunction *f, FunctionType t)
-      : enclosing(e), function(f), type(t), locals(std::vector<Local>()),
-        scopeDepth(0){};
 } Compiler;
 
 Compiler *compile(const char *);

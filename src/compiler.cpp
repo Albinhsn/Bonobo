@@ -12,11 +12,20 @@
 
 static Compiler *initCompiler(Compiler *current, Parser *parser,
                               FunctionType type) {
-  Compiler *compiler = new Compiler(current, newFunction(), type);
+  Compiler *compiler = NULL;
+  compiler = (Compiler *)malloc(sizeof(Compiler));
+  compiler->enclosing = current;
+  compiler->function = newFunction();
+  compiler->type = type;
+  compiler->locals = NULL;
+  compiler->localCap = 0;
+  compiler->localLen = 0;
+  compiler->scopeDepth = 0;
+
   if (type != TYPE_SCRIPT) {
-    compiler->function->name = new ObjString(
-        createObj(OBJ_STRING), newString(parser->previous->string.literal,
-                                         parser->previous->string.length));
+
+    compiler->function->name = copyString(newString(
+        parser->previous->string.literal, parser->previous->string.length));
   }
   return compiler;
 }
@@ -42,7 +51,7 @@ static void errorAt(Parser *parser, const char *message) {
 }
 
 static void advance(Parser *parser, Scanner *scanner) {
-  delete (parser->previous);
+  free(parser->previous);
   parser->previous = parser->current;
   for (;;) {
     parser->current = scanToken(scanner);
@@ -82,24 +91,24 @@ static void emitLoop(Compiler *compiler, Parser *parser, int loopStart) {
               parser->previous->line);
 }
 
-static int emitJump(Compiler *compiler, Parser *parser, uint8_t instruction) {
+static int emitJump(Compiler *compiler, Parser *parser, uint16_t instruction) {
   writeChunk(compiler->function, instruction, parser->previous->line);
   writeChunks(compiler->function, 0xff, 0xff, parser->previous->line);
 
   return compiler->function->cp - 2;
 }
 
-static uint8_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
+static uint16_t makeConstant(Compiler *compiler, Parser *parser, Value value) {
   int constant = addConstant(compiler->function, value);
 
-  if (constant > UINT8_MAX) {
+  if (constant > UINT16_MAX) {
     errorAt(parser, "Too many constants in one chunk.");
     return 0;
   }
-  return (uint8_t)constant;
+  return (uint16_t)constant;
 }
 
-static inline uint8_t stringConstant(Compiler *compiler, Parser *parser) {
+static inline uint16_t stringConstant(Compiler *compiler, Parser *parser) {
   return makeConstant(compiler, parser,
                       OBJ_VAL(copyString(parser->previous->string)));
 }
@@ -175,7 +184,7 @@ static void parsePrecedence(Compiler *compiler, Parser *parser,
 }
 
 static int resolveLocal(Compiler *compiler, Parser *parser) {
-  for (int i = compiler->locals.size() - 1; i >= 0; i--) {
+  for (int i = compiler->localLen - 1; i >= 0; i--) {
     Local local = compiler->locals[i];
     if (cmpString(local.name.string, parser->previous->string)) {
       if (local.depth == -1) {
@@ -192,7 +201,7 @@ static void declareVariable(Compiler *compiler, Parser *parser) {
     return;
   }
 
-  for (int i = compiler->locals.size() - 1; i >= 0; i--) {
+  for (int i = compiler->localLen - 1; i >= 0; i--) {
     Local local = compiler->locals[i];
     if (local.depth != -1 && local.depth < compiler->scopeDepth) {
       break;
@@ -202,11 +211,21 @@ static void declareVariable(Compiler *compiler, Parser *parser) {
       errorAt(parser, "Already a variable with this name in this scope.");
     }
   }
-  compiler->locals.push_back(Local(*parser->previous, -1));
+
+  if (compiler->localCap < compiler->localLen + 1) {
+    int oldCapacity = compiler->localCap;
+    compiler->localCap = GROW_CAPACITY(oldCapacity);
+    compiler->locals =
+        GROW_ARRAY(Local, compiler->locals, oldCapacity, compiler->localCap);
+  }
+  Local local;
+  local.name = *parser->previous;
+  local.depth = -1;
+  compiler->locals[compiler->localLen++] = local;
 }
 
-static uint8_t parseVariable(Compiler *compiler, Parser *parser,
-                             Scanner *scanner, const char *errorMessage) {
+static uint16_t parseVariable(Compiler *compiler, Parser *parser,
+                              Scanner *scanner, const char *errorMessage) {
   consume(parser, scanner, TOKEN_IDENTIFIER, errorMessage);
 
   declareVariable(compiler, parser);
@@ -235,10 +254,11 @@ static void markInitialized(Compiler *compiler) {
   if (compiler->scopeDepth == 0) {
     return;
   }
-  compiler->locals[compiler->locals.size() - 1].depth = compiler->scopeDepth;
+  compiler->locals[compiler->localLen - 1].depth = compiler->scopeDepth;
 }
 
-static void defineVariable(Compiler *compiler, Parser *parser, uint8_t global) {
+static void defineVariable(Compiler *compiler, Parser *parser,
+                           uint16_t global) {
   if (compiler->scopeDepth > 0) {
     markInitialized(compiler);
     return;
@@ -248,9 +268,9 @@ static void defineVariable(Compiler *compiler, Parser *parser, uint8_t global) {
               parser->previous->line);
 }
 
-static uint8_t argumentList(Compiler *compiler, Parser *parser,
-                            Scanner *scanner) {
-  uint8_t argCount = 0;
+static uint16_t argumentList(Compiler *compiler, Parser *parser,
+                             Scanner *scanner) {
+  uint16_t argCount = 0;
   if (!(parser->current->type == TOKEN_RIGHT_PAREN)) {
     do {
       expression(compiler, parser, scanner);
@@ -288,7 +308,7 @@ static void or_(Compiler *compiler, Parser *parser, Scanner *scanner,
 
 static void arrayDeclaration(Compiler *compiler, Parser *parser,
                              Scanner *scanner) {
-  uint8_t items = 0;
+  uint16_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACKET) {
     do {
       expression(compiler, parser, scanner);
@@ -311,7 +331,7 @@ static void number(Compiler *compiler, Parser *parser, Scanner *scanner) {
 
 static void mapDeclaration(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
-  uint8_t items = 0;
+  uint16_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACE) {
 
     do {
@@ -343,7 +363,7 @@ static void mapDeclaration(Compiler *compiler, Parser *parser,
 
 static void varDeclaration(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
-  uint8_t global =
+  uint16_t global =
       parseVariable(compiler, parser, scanner, "Expect variable name.");
 
   if (match(parser, scanner, TOKEN_EQUAL)) {
@@ -373,11 +393,11 @@ static void expressionStatement(Compiler *compiler, Parser *parser,
 static void beginScope(Compiler *compiler) { compiler->scopeDepth++; }
 static void endScope(Compiler *compiler, Parser *parser) {
   compiler->scopeDepth--;
-  while (compiler->locals.size() > 0 &&
-         compiler->locals[compiler->locals.size() - 1].depth >
+  while (compiler->localLen > 0 &&
+         compiler->locals[compiler->localLen - 1].depth >
              compiler->scopeDepth) {
     writeChunk(compiler->function, OP_POP, parser->previous->line);
-    compiler->locals.pop_back();
+    compiler->localLen--;
   }
 }
 
@@ -548,7 +568,7 @@ static void index(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void dot(Compiler *compiler, Parser *parser, Scanner *scanner,
                 bool canAssign) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect property name after '.'.");
-  uint8_t name = stringConstant(compiler, parser);
+  uint16_t name = stringConstant(compiler, parser);
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
     writeChunks(compiler->function, OP_SET_PROPERTY, name,
@@ -586,7 +606,7 @@ static void unary(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
                           bool canAssign) {
 
-  uint8_t getOp, setOp;
+  uint16_t getOp, setOp;
   int arg = resolveLocal(compiler, parser);
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
@@ -599,10 +619,10 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
 
   if (canAssign && match(parser, scanner, TOKEN_EQUAL)) {
     expression(compiler, parser, scanner);
-    writeChunks(compiler->function, setOp, (uint8_t)arg,
+    writeChunks(compiler->function, setOp, (uint16_t)arg,
                 parser->previous->line);
   } else if (canAssign && match(parser, scanner, TOKEN_LEFT_BRACKET)) {
-    writeChunks(compiler->function, getOp, (uint8_t)arg,
+    writeChunks(compiler->function, getOp, (uint16_t)arg,
                 parser->previous->line);
     expression(compiler, parser, scanner);
     consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
@@ -613,7 +633,7 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
       writeChunk(compiler->function, OP_INDEX, parser->previous->line);
     }
   } else {
-    writeChunks(compiler->function, getOp, (uint8_t)arg,
+    writeChunks(compiler->function, getOp, (uint16_t)arg,
                 parser->previous->line);
   }
 }
@@ -772,7 +792,7 @@ static void function(Compiler *current, Parser *parser, Scanner *scanner,
       if (compiler->function->arity > 255) {
         errorAt(parser, "Can't at have more than 255 parameters.");
       }
-      uint8_t constant =
+      uint16_t constant =
           parseVariable(compiler, parser, scanner, "Expect parameter name.");
       defineVariable(compiler, parser, constant);
     } while (match(parser, scanner, TOKEN_COMMA));
@@ -804,7 +824,7 @@ static void structArgs(Compiler *compiler, Parser *parser, Scanner *scanner) {
 static void structDeclaration(Compiler *compiler, Parser *parser,
                               Scanner *scanner) {
   consume(parser, scanner, TOKEN_IDENTIFIER, "Expect struct name");
-  uint8_t nameConstant = stringConstant(compiler, parser);
+  uint16_t nameConstant = stringConstant(compiler, parser);
   declareVariable(compiler, parser);
 
   writeChunks(compiler->function, OP_STRUCT, nameConstant,
@@ -818,7 +838,7 @@ static void structDeclaration(Compiler *compiler, Parser *parser,
 
 static void funDeclaration(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
-  uint8_t global =
+  uint16_t global =
       parseVariable(compiler, parser, scanner, "Expect function name");
   markInitialized(compiler);
   function(compiler, parser, scanner, TYPE_FUNCTION);
@@ -856,9 +876,20 @@ static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner) {
 }
 
 Compiler *compile(const char *source) {
-  Scanner *scanner = new Scanner(source);
-  Parser *parser = new Parser;
+  Scanner *scanner = NULL;
+  scanner = (Scanner *)malloc(sizeof(Scanner));
+  scanner->source = source;
+  scanner->current = scanner->indent = 0;
+  scanner->line = 1;
+
+  Parser *parser = NULL;
+  parser = (Parser *)malloc(sizeof(Parser));
+  parser->current = NULL;
+  parser->previous = NULL;
+  parser->hadError = false;
+
   Compiler *compiler = initCompiler(NULL, parser, TYPE_SCRIPT);
+
   advance(parser, scanner);
   while (!match(parser, scanner, TOKEN_EOF)) {
     declaration(compiler, parser, scanner);

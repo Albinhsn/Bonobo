@@ -12,7 +12,8 @@ void resetScanner(Scanner *scanner) {
 }
 
 Token *newToken(const char *l, int len, int li, int i, TokenType t) {
-  Token *token = new Token;
+  Token *token = NULL;
+  token = (Token *)malloc(sizeof(Token));
   token->type = t;
   token->string = newString(l, len);
   token->line = li;
@@ -137,7 +138,8 @@ static inline bool isAlpha(char c) {
 
 static Token *parseIdentifier(Scanner *scanner) {
   const char *current = &scanner->source[scanner->current - 1];
-  while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) || isdigit(currentChar(scanner))) {
+  while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) ||
+         isdigit(currentChar(scanner))) {
     scanner->current++;
   }
 

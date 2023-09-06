@@ -54,7 +54,7 @@ void printValue(Value value) {
     break;
   }
   case VAL_NUMBER: {
-    printf("%.0lf", AS_NUMBER(value));
+    printf("%.3lf", AS_NUMBER(value));
     break;
   }
   case VAL_OBJ: {

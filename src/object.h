@@ -27,16 +27,13 @@ typedef struct ObjFunction {
   Obj obj;
   int arity;
   ObjString *name;
-  uint8_t *code;
+  uint16_t *code;
   int *lines;
   int codeCap;
   int cp;
   int constP;
   Value *constants;
   int constCap;
-  ObjFunction(Obj o, int a, ObjString *n)
-      : obj(o), cp(0), constP(0), arity(a), name(n), codeCap(0), constCap(0),
-        code(NULL), lines(NULL), constants(NULL){};
 } ObjFunction;
 
 typedef Value (*NativeFn)(int argCount, Value args);
@@ -44,7 +41,6 @@ typedef Value (*NativeFn)(int argCount, Value args);
 typedef struct ObjNative {
   Obj obj;
   NativeFn function;
-  ObjNative(Obj o, NativeFn fn) : obj(o), function(fn){};
 } ObjNative;
 
 typedef struct ObjStruct {
@@ -53,15 +49,12 @@ typedef struct ObjStruct {
   String *fields;
   int fieldLen;
   int fieldCap;
-  ObjStruct(Obj o, ObjString *n)
-      : obj(o), name(n), fieldLen(0), fieldCap(0), fields(NULL){};
 } ObjStruct;
 
 typedef struct ObjArray {
   Obj obj;
   Value arr[500];
   int arrLen;
-  ObjArray(Obj o, int a) : obj(o), arrLen(a){};
 } ObjArray;
 
 typedef struct ObjInstance {
@@ -71,9 +64,6 @@ typedef struct ObjInstance {
   int fieldLen;
   int fieldCap;
   Value *fields;
-  ObjInstance(Obj o, ObjStruct *s)
-      : obj(o), name(s->name), strukt(s), fieldLen(s->fieldLen), fields(NULL),
-        fieldCap(0){};
 } ObjInstance;
 
 typedef struct ObjMap {
@@ -82,13 +72,11 @@ typedef struct ObjMap {
   Value *values;
   int mapCap;
   int mapLen;
-  ObjMap(Obj o) : obj(o), mapLen(0), keys(NULL), values(NULL), mapCap(0){};
 } ObjMap;
 
 typedef struct ObjString {
   Obj obj;
   String string;
-  ObjString(Obj o, String s) : obj(o), string(s){};
 } ObjString;
 
 #define IS_STRUCT(value) isObjType(value, OBJ_STRUCT)
@@ -111,8 +99,8 @@ typedef struct ObjString {
 
 void freeChunk(ObjFunction *function);
 void initChunk(ObjFunction *function);
-void writeChunk(ObjFunction *function, uint8_t byte, int line);
-void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2, int line);
+void writeChunk(ObjFunction *function, uint16_t byte, int line);
+void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2, int line);
 void addObject(Obj* obj);
 
 int addConstant(ObjFunction *function, Value value);

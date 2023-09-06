@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(TestVM, TestFalse) {
+TEST(TestLogical, TestFalse) {
   std::string source = "print false;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -10,7 +10,7 @@ TEST(TestVM, TestFalse) {
   EXPECT_EQ(output, "false\n");
 }
 
-TEST(TestVM, TestLess) {
+TEST(TestLogical, TestLess) {
   std::string source = "print 5 < 3;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -18,7 +18,7 @@ TEST(TestVM, TestLess) {
   EXPECT_EQ(output, "false\n");
 }
 
-TEST(TestVM, TestLessEqual) {
+TEST(TestLogical, TestLessEqual) {
   std::string source = "print 5 <= 3;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -26,7 +26,7 @@ TEST(TestVM, TestLessEqual) {
   EXPECT_EQ(output, "false\n");
 }
 
-TEST(TestVM, TestEqual) {
+TEST(TestLogical, TestEqual) {
   std::string source = "print 5 == 3;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -34,7 +34,7 @@ TEST(TestVM, TestEqual) {
   EXPECT_EQ(output, "false\n");
 }
 
-TEST(TestVM, TestGreater) {
+TEST(TestLogical, TestGreater) {
   std::string source = "print 5 > 3;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -42,7 +42,7 @@ TEST(TestVM, TestGreater) {
   EXPECT_EQ(output, "true\n");
 }
 
-TEST(TestVM, TestGreaterEqual) {
+TEST(TestLogical, TestGreaterEqual) {
   std::string source = "print 5 >= 3;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -50,7 +50,7 @@ TEST(TestVM, TestGreaterEqual) {
   EXPECT_EQ(output, "true\n");
 }
 
-TEST(TestVM, TestBang) {
+TEST(TestLogical, TestBang) {
   std::string source = "print !nil;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -58,7 +58,7 @@ TEST(TestVM, TestBang) {
   EXPECT_EQ(output, "true\n");
 }
 
-TEST(TestVM, TestBangEqual) {
+TEST(TestLogical, TestBangEqual) {
   std::string source = "print nil != nil;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -66,7 +66,7 @@ TEST(TestVM, TestBangEqual) {
   EXPECT_EQ(output, "false\n");
 }
 
-TEST(TestVM, TestLogicalBinary) {
+TEST(TestLogical, TestLogicalBinary) {
   std::string source = "print 5 * 2 < 3 * 5;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
@@ -74,7 +74,7 @@ TEST(TestVM, TestLogicalBinary) {
   EXPECT_EQ(output, "true\n");
 }
 
-TEST(TestVM, TestLogicalBinary2) {
+TEST(TestLogical, TestLogicalBinary2) {
   std::string source = "print 5 + 5 * 2 < 3 * 5;";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
