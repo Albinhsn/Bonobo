@@ -5,8 +5,6 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 ## TODO before reworking compiler/scanner
 
-* Fix ci 
-
 * Timed CI tests
 
 * Cleanup Makefile 
@@ -27,9 +25,3 @@ Toy implementation of a simple language in order to learn C++, memory management
     * len/size
     * ? : 
     * iterate over array/map
-
-OP_SET_INDEX 
-5
-a -> 
-"s"
-

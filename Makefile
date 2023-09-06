@@ -1,25 +1,14 @@
-cd:
-	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
-crd:
-	cd src/ && g++  -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main
-
 cfd: 
 	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
 c:
 	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
-cr:
-	cd src/ && g++  -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main
 
 cf: 
 	cd src/ && g++ -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
-ct: 
-	cd src/ && g++ -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../test$(file)
-
 p: 
 	cd src/ && g++ -O3 -pg -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > log.txt
-
 
 b:
 	cmake -S . -B build && cmake --build build
@@ -33,12 +22,6 @@ t:
 
 i:
 	cd src/ && ./main ../input
-
-br:
-	cmake -S . -B build && cmake --build build && cd build/ && ./main ../input 
-
-r:
-	cmake --build build && cd build/ && ./main $(file)
 
 vg:
 	cd src/ &&  g++ -g  -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind ./main ../input
