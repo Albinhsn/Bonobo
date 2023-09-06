@@ -36,13 +36,13 @@ void freeObjects(VM *vm) {
 void freeParser(Parser *parser) {
   if (parser->current) {
 
-    free(parser->current);
+    delete(parser->current);
   }
   if (parser->previous) {
-    free(parser->previous);
+    delete(parser->previous);
   }
 
-  free(parser);
+  delete(parser);
 };
 
 void freeScanner(Scanner *scanner) { delete (scanner); }
