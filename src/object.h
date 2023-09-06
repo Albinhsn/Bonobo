@@ -69,9 +69,10 @@ typedef struct ObjInstance {
   ObjString *name;
   ObjStruct *strukt;
   int fieldLen;
-  Value fields[50];
-  ObjInstance(Obj o, ObjString *n, ObjStruct *s, int f)
-      : obj(o), name(n), strukt(s), fieldLen(f){};
+  int fieldCap;
+  Value * fields;
+  ObjInstance(Obj o, ObjStruct *s)
+      : obj(o), name(s->name), strukt(s), fieldLen(s->fieldLen), fields(NULL), fieldCap(0){};
 } ObjInstance;
 
 typedef struct ObjMap {
@@ -120,7 +121,7 @@ ObjArray *newArray(int len);
 ObjNative *newNative(NativeFn function);
 ObjString *copyString(String string);
 ObjStruct *newStruct(ObjString *name);
-ObjInstance *newInstance(ObjStruct *strukt, int len);
+ObjInstance *newInstance(ObjStruct *strukt);
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }

@@ -27,8 +27,8 @@ int addConstant(ObjFunction *function, Value value) {
   if (function->constCap < function->constP + 1) {
     int oldCapacity = function->constCap;
     function->constCap = GROW_CAPACITY(oldCapacity);
-    function->constants = GROW_ARRAY(Value, function->constants, oldCapacity,
-                                     function->constCap);
+    function->constants =
+        GROW_ARRAY(Value, function->constants, oldCapacity, function->constCap);
   }
 
   function->constants[function->constP++] = value;
@@ -63,9 +63,11 @@ ObjStruct *newStruct(ObjString *name) {
   return strukt;
 }
 
-ObjInstance *newInstance(ObjStruct *strukt, int fieldLen) {
-  ObjInstance *instance =
-      new ObjInstance(createObj(OBJ_INSTANCE), strukt->name, strukt, fieldLen);
+ObjInstance *newInstance(ObjStruct *strukt) {
+  ObjInstance *instance = new ObjInstance(createObj(OBJ_INSTANCE), strukt);
+  instance->fieldCap = strukt->fieldCap;
+  instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
+
   vm->objects[vm->op] = (Obj *)instance;
   return instance;
 }

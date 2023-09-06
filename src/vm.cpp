@@ -135,7 +135,8 @@ static bool callValue(Value callee, int argCount) {
         return false;
       }
 
-      ObjInstance *instance = newInstance(strukt, argCount);
+      ObjInstance *instance = newInstance(strukt);
+
       for (int i = argCount - 1; i >= 0; --i) {
         instance->fields[i] = popStack();
       }
