@@ -1,6 +1,8 @@
 cfd: 
 	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
+cd: 
+	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
 c:
 	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
 
@@ -25,3 +27,16 @@ i:
 
 vg:
 	cd src/ &&  g++ -g  -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind --callgrind-out-file=../profile/callgrind.out.123 ./main ../input
+
+time:
+	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
+	echo "Recursive fib(40):";\
+	./src/main ./benchmark/fib; \
+	echo "Struct property:";\
+	./src/main ./benchmark/struct; \
+	echo "equality:";\
+	./src/main ./benchmark/equality; \
+	echo "struct instantiation:";\
+	./src/main ./benchmark/instantiation; \
+	echo "string equality:";\
+	./src/main ./benchmark/string_equality; \

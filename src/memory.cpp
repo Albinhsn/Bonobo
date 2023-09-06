@@ -33,16 +33,28 @@ void freeObjects(VM *vm) {
   }
 }
 
+void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
+  if (newSize == 0) {
+    free(pointer);
+    return NULL;
+  }
+
+  void *result = realloc(pointer, newSize);
+  if (result == NULL)
+    exit(1);
+  return result;
+}
+
 void freeParser(Parser *parser) {
   if (parser->current) {
 
-    delete(parser->current);
+    delete (parser->current);
   }
   if (parser->previous) {
-    delete(parser->previous);
+    delete (parser->previous);
   }
 
-  delete(parser);
+  delete (parser);
 };
 
 void freeScanner(Scanner *scanner) { delete (scanner); }

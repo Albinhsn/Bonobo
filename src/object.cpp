@@ -1,20 +1,24 @@
 
 #include "object.h"
+#include "memory.h"
 #include "value.h"
 #include "vm.h"
 
 void writeChunks(ObjFunction *function, uint8_t byte1, uint8_t byte2,
                  int line) {
-  function->code[function->cp] = byte1;
-  function->lines[function->cp] = line;
-  function->cp++;
-
-  function->code[function->cp] = byte2;
-  function->lines[function->cp] = line;
-  function->cp++;
+  writeChunk(function, byte1, line);
+  writeChunk(function, byte2, line);
 }
 
 void writeChunk(ObjFunction *function, uint8_t byte, int line) {
+  if (function->codeCap < function->cp + 1) {
+    int oldCapacity = function->codeCap;
+    function->codeCap = GROW_CAPACITY(oldCapacity);
+    function->code =
+        GROW_ARRAY(uint8_t, function->code, oldCapacity, function->codeCap);
+    function->lines =
+        GROW_ARRAY(int, function->lines, oldCapacity, function->codeCap);
+  }
   function->code[function->cp] = byte;
   function->lines[function->cp++] = line;
 }
@@ -32,6 +36,7 @@ ObjFunction *newFunction() {
   }
   return function;
 }
+
 ObjMap *newMap(int len) {
   ObjMap *mp = new ObjMap(createObj(OBJ_MAP));
   mp->mp = len;

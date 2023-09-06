@@ -1,0 +1,9 @@
+fun fib(b){
+  if(b <= 2){
+    return 1;
+  }
+  return fib(b-1) + fib(b-2); 
+}
+var c = clock();
+print fib(35);
+print clock() - c;
