@@ -14,8 +14,6 @@ jobs:
       with:
         submodules: recursive
     - name: configure
-      run: make bt
-    - name: make
-      run: cd build && make
+      run: make b
     - name: Run Test
-      run: /home/runner/work/bonobo/build/test/bonobo.test
+      run: make t 
