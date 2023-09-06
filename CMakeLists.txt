@@ -10,7 +10,7 @@ enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(googletest)
+# add_subdirectory(googletest)
 
 set(Sources
   ./src/scanner.cpp
