@@ -13,6 +13,6 @@ TEST(TestCompiler, TestEmpty) {
   EXPECT_EQ(compiler->locals.size(), 0);
   EXPECT_EQ(compiler->scopeDepth, 0);
   EXPECT_EQ(compiler->function->cp, 2);
-  EXPECT_EQ(compiler->function->code[0], (uint8_t)11);
-  EXPECT_EQ(compiler->function->code[1], (uint8_t)33);
+  EXPECT_EQ(compiler->function->code[0], (uint8_t)12);
+  EXPECT_EQ(compiler->function->code[1], (uint8_t)34);
 }

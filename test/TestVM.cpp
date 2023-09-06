@@ -56,9 +56,17 @@ TEST(TestVM, TestStruct) {
 }
 
 TEST(TestVM, TestMap) {
-  std::string source = "var m = {\"a\":1, \"b\": 2}; print m; print m[\"a\"];";
+  std::string source = "var m = {\"a\":1, \"b\": 2}; print m; print m[\"a\"]; m[\"c\"] = 5; print m[\"c\"];";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
   std::string output = testing::internal::GetCapturedStdout();
-  EXPECT_EQ(output, "{'a':1,'b':2}\n1\n");
+  EXPECT_EQ(output, "{'a':1,'b':2}\n1\n5\n");
+}
+
+TEST(TestVM, TestArray) {
+  std::string source = "var m = [1,2,3]; print m; m[1] = 5; print m[1];";
+  testing::internal::CaptureStdout();
+  interpret(source.c_str());
+  std::string output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(output, "[1,2,3]\n5\n");
 }

@@ -52,7 +52,6 @@ static int structArgInstruction(const char *name, ObjFunction *function,
   return offset + 2;
 }
 
-
 int disassembleInstruction(ObjFunction *function, int offset) {
   printf("%d ", offset);
   if (offset > 0 && function->lines[offset] == function->lines[offset - 1]) {
@@ -65,6 +64,9 @@ int disassembleInstruction(ObjFunction *function, int offset) {
   switch (instruction) {
   case OP_CALL: {
     return byteInstruction("OP_CALL", function, offset);
+  }
+  case OP_SET_INDEX: {
+    return simpleInstruction("OP_SET_INDEX", offset);
   }
   case OP_INDEX: {
     return byteInstruction("OP_INDEX", function, offset);

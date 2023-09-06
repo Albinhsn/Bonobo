@@ -149,6 +149,51 @@ static bool callValue(Value callee, int argCount) {
   runtimeError("Can only call functions and classes.");
   return false;
 }
+static bool setIndex() {
+  Value item = vm->stackTop[-1];
+  Value key = vm->stackTop[-2];
+  Value seq = vm->stackTop[-3];
+  vm->stackTop -= 3;
+  switch (OBJ_TYPE(seq)) {
+  case OBJ_ARRAY: {
+    ObjArray *array = AS_ARRAY(seq);
+    if (!IS_NUMBER(key)) {
+      runtimeError("Can only index array with numbers");
+      return false;
+    }
+    int k = (int)AS_NUMBER(key);
+    if (k >= array->arrLen && k < 0) {
+      runtimeError("Trying to access outside of array %d of size %d\n", k,
+                   array->arrLen);
+      return false;
+    }
+    array->arr[k] = item;
+    pushStack(OBJ_VAL(array));
+    return true;
+  }
+  case OBJ_MAP: {
+    ObjMap *mp = AS_MAP(seq);
+    if (!IS_STRING(key)) {
+      runtimeError("Cant only access map with string");
+      return false;
+    }
+    ObjString *string = AS_STRING(key);
+    int idx = matchKey(string->string, vm->globalKeys, vm->gp);
+    if (idx == -1) {
+      mp->keys[mp->mp] = string->string;
+      mp->values[mp->mp++] = item;
+    } else {
+      mp->values[idx] = item;
+    }
+    pushStack(OBJ_VAL(mp));
+    return true;
+  }
+  default: {
+    runtimeError("Can only set index on array/map/string");
+    return false;
+  }
+  }
+}
 
 static bool index() {
 
@@ -194,7 +239,7 @@ static bool index() {
     return true;
   }
   case OBJ_ARRAY: {
-    if (IS_NUMBER(key)) {
+    if (!IS_NUMBER(key)) {
       runtimeError("Can only index array with number");
       return false;
     }
@@ -436,6 +481,16 @@ InterpretResult run() {
       }
       break;
     }
+    case OP_SET_INDEX: {
+      if (!IS_OBJ(vm->stackTop[-3])) {
+        runtimeError("Can only assign index to map/array/string");
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      if (!setIndex()) {
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      break;
+    }
     case OP_CALL: {
       int argCount = instructions[frame->ip++];
       if (!callValue(vm->stackTop[-1 - argCount], argCount)) {
@@ -447,7 +502,7 @@ InterpretResult run() {
     case OP_ARRAY: {
       int argCount = instructions[frame->ip++];
       ObjArray *array = newArray(argCount);
-      for (int i = 0; i < argCount; i++) {
+      for (int i = argCount - 1; i >= 0; i--) {
         array->arr[i] = popStack();
       }
       pushStack(OBJ_VAL(array));

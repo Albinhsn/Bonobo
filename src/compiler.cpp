@@ -226,7 +226,8 @@ static void patchJump(Compiler *compiler, Parser *parser, int offset) {
   compiler->function->code[offset] = (jump >> 8) & 0xff;
   compiler->function->code[offset + 1] = jump & 0xff;
 }
-static void expression(Compiler *compiler, Parser *parser, Scanner *scanner) {
+static inline void expression(Compiler *compiler, Parser *parser,
+                              Scanner *scanner) {
   parsePrecedence(compiler, parser, scanner, PREC_ASSIGNMENT);
 }
 
@@ -594,6 +595,17 @@ static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
     expression(compiler, parser, scanner);
     writeChunks(compiler->function, setOp, (uint8_t)arg,
                 parser->previous->line);
+  } else if (canAssign && match(parser, scanner, TOKEN_LEFT_BRACKET)) {
+    writeChunks(compiler->function, getOp, (uint8_t)arg,
+                parser->previous->line);
+    expression(compiler, parser, scanner);
+    consume(parser, scanner, TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
+    if (match(parser, scanner, TOKEN_EQUAL)) {
+      expression(compiler, parser, scanner);
+      writeChunk(compiler->function, OP_SET_INDEX, parser->previous->line);
+    } else {
+      writeChunk(compiler->function, OP_INDEX, parser->previous->line);
+    }
   } else {
     writeChunks(compiler->function, getOp, (uint8_t)arg,
                 parser->previous->line);

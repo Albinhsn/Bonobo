@@ -5,11 +5,9 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 ## TODO before reworking compiler/scanner
 
-* Rethink strings
-
-* dynamic array sizes rather then fixed
-
 * Be able to change array/mp by index
+    a[0] = 5;
+    a["hi"] = 3;
 
 * Fix ci 
 
@@ -29,4 +27,9 @@ Toy implementation of a simple language in order to learn C++, memory management
     * len/size
     * ? : 
     * iterate over array/map
+
+OP_SET_INDEX 
+5
+a -> 
+"s"
 

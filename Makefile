@@ -7,7 +7,7 @@ cfd:
 	cd src/ && g++ -g -fsanitize=address,undefined -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
 c:
-	cd src/ && g++ -O3 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
+	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
 cr:
 	cd src/ && g++  -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main
 
@@ -18,7 +18,7 @@ ct:
 	cd src/ && g++ -g -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../test$(file)
 
 p: 
-	cd src/ && g++ -pg -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > log.txt
+	cd src/ && g++ -O3 -pg -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > log.txt
 
 
 b:

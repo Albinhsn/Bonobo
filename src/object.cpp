@@ -104,7 +104,9 @@ void printObject(Value value) {
     printf("[");
     for (int i = 0; i < array->arrLen; i++) {
       printValue(array->arr[i]);
-      printf("%c", (i < array->arrLen - 1 ? ',' : '\0'));
+      if (i < array->arrLen - 1) {
+        printf(",");
+      } 
     }
     printf("]");
     break;
