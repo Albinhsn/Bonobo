@@ -5,13 +5,13 @@ Toy implementation of a simple language in order to learn C++, memory management
 
 ## TODO before reworking compiler/scanner
 
-* Be able to change array/mp by index
-    a[0] = 5;
-    a["hi"] = 3;
-
 * Fix ci 
 
+* Timed CI tests
+
 * Cleanup Makefile 
+
+* Access map with number
 
 
 ### Features to fix

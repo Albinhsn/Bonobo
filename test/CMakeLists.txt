@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-set(This cpploxTests)
+set(This bonoboTests)
 
 set(test_SOURCES
   ./TestScanner.cpp
@@ -11,7 +11,7 @@ add_executable(${This} ${test_SOURCES})
 
 target_link_libraries(${This} PUBLIC
   gtest_main
-  cpplox
+  bonobo
 )
 
 include(GoogleTest)
