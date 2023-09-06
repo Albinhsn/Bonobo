@@ -56,11 +56,11 @@ TEST(TestVM, TestStruct) {
 }
 
 TEST(TestVM, TestMap) {
-  std::string source = "var m = {\"a\":1, \"b\": 2}; print m; print m[\"a\"]; m[\"c\"] = 5; print m[\"c\"];";
+  std::string source = "var m = {\"a\":1, \"b\": 2, 5:12}; print m; print m[\"a\"]; m[\"c\"] = 5; print m[\"c\"]; print m[5];";
   testing::internal::CaptureStdout();
   interpret(source.c_str());
   std::string output = testing::internal::GetCapturedStdout();
-  EXPECT_EQ(output, "{'a':1,'b':2}\n1\n5\n");
+  EXPECT_EQ(output, "{'a':1,'b':2,5:12}\n1\n5\n12\n");
 }
 
 TEST(TestVM, TestArray) {

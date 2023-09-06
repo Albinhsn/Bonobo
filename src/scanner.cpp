@@ -137,7 +137,7 @@ static inline bool isAlpha(char c) {
 
 static Token *parseIdentifier(Scanner *scanner) {
   const char *current = &scanner->source[scanner->current - 1];
-  while (!isAtEnd(scanner) && isAlpha(currentChar(scanner))) {
+  while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) || isdigit(currentChar(scanner))) {
     scanner->current++;
   }
 

@@ -106,7 +106,7 @@ void printObject(Value value) {
       printValue(array->arr[i]);
       if (i < array->arrLen - 1) {
         printf(",");
-      } 
+      }
     }
     printf("]");
     break;
@@ -115,11 +115,21 @@ void printObject(Value value) {
     ObjMap *mp = AS_MAP(value);
     printf("{");
     for (int i = 0; i < mp->mp; i++) {
-      printf("'%.*s':", mp->keys[i].length, mp->keys[i].literal);
-      printValue(mp->values[i]);
-      if (i < mp->mp - 1) {
-        printf(",");
-      } 
+      if (IS_STRING(mp->keys[i])) {
+        ObjString *string = AS_STRING(mp->keys[i]);
+        printf("'%.*s':", string->string.length, string->string.literal);
+        printValue(mp->values[i]);
+        if (i < mp->mp - 1) {
+          printf(",");
+        }
+      }
+      if (IS_NUMBER(mp->keys[i])) {
+        printf("%.0lf:", AS_NUMBER(mp->keys[i]));
+        printValue(mp->values[i]);
+        if (i < mp->mp - 1) {
+          printf(",");
+        }
+      }
     }
     printf("}");
     break;

@@ -180,7 +180,7 @@ static bool setIndex() {
     ObjString *string = AS_STRING(key);
     int idx = matchKey(string->string, vm->globalKeys, vm->gp);
     if (idx == -1) {
-      mp->keys[mp->mp] = string->string;
+      mp->keys[mp->mp] = OBJ_VAL(string);
       mp->values[mp->mp++] = item;
     } else {
       mp->values[idx] = item;
@@ -209,10 +209,13 @@ static bool index() {
   switch (OBJ_TYPE(item)) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
-    String string = AS_STRING(key)->string;
     int i = 0;
     for (; i < mp->mp; i++) {
-      if (cmpString(mp->keys[i], string)) {
+      if (IS_STRING(key) && IS_STRING(mp->keys[i]) &&
+          cmpString(AS_STRING(key)->string, AS_STRING(mp->keys[i])->string)) {
+        break;
+      } else if (IS_NUMBER(key) && IS_NUMBER(mp->keys[i]) &&
+                 AS_NUMBER(key) == AS_NUMBER(mp->keys[i])) {
         break;
       }
     }
@@ -220,8 +223,7 @@ static bool index() {
       pushStack(mp->values[i]);
       return true;
     }
-    runtimeError("Trying to access map with unknown key %.*s", string.length,
-                 string.literal);
+    runtimeError("Trying to access map with unknown key");
     return false;
   }
   case OBJ_STRING: {
@@ -513,7 +515,7 @@ InterpretResult run() {
       ObjMap *mp = newMap(argCount);
       for (int i = argCount - 1; i >= 0; i--) {
         mp->values[i] = popStack();
-        mp->keys[i] = AS_STRING(popStack())->string;
+        mp->keys[i] = popStack();
       }
       pushStack(OBJ_VAL(mp));
       break;

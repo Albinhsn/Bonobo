@@ -63,18 +63,19 @@ TEST(TestScanner, TestDoubleCharTokens) {
 }
 
 TEST(TestScanner, TestLiterals) {
-  std::string source = "arla haren \"Hello,\" \" Sailor!\" 1.0 2 20.45 123";
+  std::string source = "arla haren \"Hello,\"; \" Sailor!\" 1.0 2 20.45 123 a1";
   Scanner *scanner = new Scanner(source.c_str());
   std::vector<Token> tokens = {
       (Token){"arla", 4, 1, 0, TOKEN_IDENTIFIER},
       (Token){"haren", 5, 1, 0, TOKEN_IDENTIFIER},
       (Token){"Hello,", 6, 1, 0, TOKEN_STRING},
+      (Token){";,", 1, 1, 0, TOKEN_SEMICOLON},
       (Token){" Sailor!", 8, 1, 0, TOKEN_STRING},
       (Token){"1.0", 3, 1, 0, TOKEN_NUMBER},
       (Token){"2", 1, 1, 0, TOKEN_NUMBER},
       (Token){"20.45", 5, 1, 0, TOKEN_NUMBER},
       (Token){"123", 3, 1, 0, TOKEN_NUMBER},
-
+      (Token){"a1", 2, 1, 0, TOKEN_IDENTIFIER},
       (Token){"EOF", 3, 1, 0, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {

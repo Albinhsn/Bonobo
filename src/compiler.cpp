@@ -302,15 +302,28 @@ static void arrayDeclaration(Compiler *compiler, Parser *parser,
   writeChunks(compiler->function, OP_ARRAY, items, parser->previous->line);
 }
 
+static void number(Compiler *compiler, Parser *parser, Scanner *scanner) {
+  double value = std::stod(parser->previous->string.literal);
+  writeChunks(compiler->function, OP_CONSTANT,
+              makeConstant(compiler, parser, NUMBER_VAL(value)),
+              parser->previous->line);
+}
+
 static void mapDeclaration(Compiler *compiler, Parser *parser,
                            Scanner *scanner) {
   uint8_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACE) {
 
     do {
-      consume(parser, scanner, TOKEN_STRING, "Expect strings as keys");
-      writeChunks(compiler->function, OP_CONSTANT,
-                  stringConstant(compiler, parser), parser->previous->line);
+      if (match(parser, scanner, TOKEN_STRING)) {
+        writeChunks(compiler->function, OP_CONSTANT,
+                    stringConstant(compiler, parser), parser->previous->line);
+
+      } else if (match(parser, scanner, TOKEN_NUMBER)) {
+        number(compiler, parser, scanner);
+      } else {
+        errorAt(parser, "Expect number or string as key");
+      }
 
       consume(parser, scanner, TOKEN_COLON,
               "Expect colon between key and value");
@@ -568,13 +581,6 @@ static void unary(Compiler *compiler, Parser *parser, Scanner *scanner) {
     return;
   }
   }
-}
-
-static void number(Compiler *compiler, Parser *parser, Scanner *scanner) {
-  double value = std::stod(parser->previous->string.literal);
-  writeChunks(compiler->function, OP_CONSTANT,
-              makeConstant(compiler, parser, NUMBER_VAL(value)),
-              parser->previous->line);
 }
 
 static void namedVariable(Compiler *compiler, Parser *parser, Scanner *scanner,
