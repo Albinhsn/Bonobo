@@ -50,9 +50,11 @@ typedef struct ObjNative {
 typedef struct ObjStruct {
   Obj obj;
   ObjString *name;
-  String fields[50];
+  String *fields;
   int fieldLen;
-  ObjStruct(Obj o, ObjString *n) : obj(o), name(n), fieldLen(0){};
+  int fieldCap;
+  ObjStruct(Obj o, ObjString *n)
+      : obj(o), name(n), fieldLen(0), fieldCap(0), fields(NULL){};
 } ObjStruct;
 
 typedef struct ObjArray {

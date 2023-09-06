@@ -530,8 +530,13 @@ InterpretResult run() {
       // }
       ObjStruct *strukt = newStruct(name);
       int i = 0;
-
       while (matchByte(OP_STRUCT_ARG)) {
+        if (strukt->fieldCap < strukt->fieldLen + 1) {
+          int oldCapacity = strukt->fieldCap;
+          strukt->fieldCap = GROW_CAPACITY(oldCapacity);
+          strukt->fields =
+              GROW_ARRAY(String, strukt->fields, oldCapacity, strukt->fieldCap);
+        }
         strukt->fields[i] = AS_STRING(READ_CONSTANT())->string;
         i++;
       }
