@@ -33,7 +33,7 @@ typedef struct VM {
   CallFrame *frames[FRAMES_MAX];
   Value *stackTop;
   Value stack[STACK_MAX];
-  String *globalKeys;
+  ObjString **globalKeys;
   Value *globalValues;
   int globalLen;
   int globalCap;

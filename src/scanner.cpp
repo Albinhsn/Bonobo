@@ -11,6 +11,12 @@ void resetScanner(Scanner *scanner) {
   scanner->source = "";
 }
 
+void initScanner(Scanner *scanner, const char *source) {
+  scanner->source = source;
+  scanner->indent = scanner->current = 0;
+  scanner->line = 1;
+}
+
 Token *newToken(const char *l, int len, int li, int i, TokenType t) {
   Token *token = NULL;
   token = (Token *)malloc(sizeof(Token));

@@ -48,7 +48,7 @@ typedef struct ObjNative {
 typedef struct ObjStruct {
   Obj obj;
   ObjString *name;
-  String *fields;
+  ObjString**fields;
   int fieldLen;
   int fieldCap;
 } ObjStruct;

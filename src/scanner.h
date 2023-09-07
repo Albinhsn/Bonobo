@@ -89,6 +89,7 @@ typedef struct Scanner {
   int indent;
 } Scanner;
 
+void initScanner(Scanner * scanner, const char * source);
 const char *copyStr(String string);
 void resetScanner(Scanner *scanner);
 Token *scanToken(Scanner *scanner);

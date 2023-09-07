@@ -51,8 +51,7 @@ int addConstant(ObjFunction *function, Value value) {
         GROW_ARRAY(Value, function->constants, oldCapacity, function->constCap);
   }
 
-  function->constants[function->constP++] = value;
-  popStack();
+  function->constants[function->constP++] = popStack();
   return function->constP - 1;
 }
 

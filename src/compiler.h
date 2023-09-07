@@ -46,12 +46,10 @@ typedef struct Compiler {
 
 Compiler *compile(const char *);
 
-static void statement(Compiler *compiler, Parser *parser, Scanner *scanner);
-static void declaration(Compiler *compiler, Parser *parser, Scanner *scanner);
-
-static void prefixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
-                       TokenType type, bool canAssign);
-static void infixRule(Compiler *compiler, Parser *parser, Scanner *scanner,
-                      TokenType type, bool canAssign);
+static void statement();
+static void declaration();
+void markCompilerRoots();
+static void prefixRule(TokenType type, bool canAssign);
+static void infixRule(TokenType type, bool canAssign);
 
 #endif

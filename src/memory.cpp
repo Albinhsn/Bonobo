@@ -1,6 +1,7 @@
 
 
 #include "memory.h"
+#include "compiler.h"
 #include "object.h"
 #include "value.h"
 #include <cstdlib>
@@ -63,8 +64,9 @@ static void markRoots() {
   }
   for (int i = 0; i < vm->globalLen; i++) {
     markValue(vm->globalValues[i]);
-    // markObject((Obj*) vm->globalKeys[i]);
+    markObject((Obj *)vm->globalKeys[i]);
   }
+  markCompilerRoots();
 }
 void markObject(Obj *object) {
   if (object == NULL)
@@ -109,7 +111,7 @@ static void blackenObject(Obj *object) {
   case OBJ_FUNCTION: {
     ObjFunction *function = (ObjFunction *)object;
     markObject((Obj *)function->name);
-    markArray(function->constants, function->cp);
+    markArray(function->constants, function->constP);
     break;
   }
   case OBJ_ARRAY: {
@@ -117,11 +119,6 @@ static void blackenObject(Obj *object) {
     markArray(array->arr, array->arrLen);
     break;
   }
-  // case OBJ_STRING: {
-  //   ObjString *string = (ObjString *)object;
-  //   string->obj.isMarked = true;
-  //   break;
-  // }
   case OBJ_MAP: {
     ObjMap *mp = (ObjMap *)object;
     markArray(mp->keys, mp->mapLen);
@@ -137,6 +134,7 @@ static void blackenObject(Obj *object) {
   case OBJ_NATIVE: {
     ObjNative *native = (ObjNative *)object;
     native->obj.isMarked = true;
+    break;
   }
 
   case OBJ_STRING: {
@@ -151,7 +149,7 @@ static void blackenObject(Obj *object) {
 
 static void traceReferences() {
   while (vm->grayCount > 0) {
-    Obj *object = vm->grayStack[vm->grayCount--];
+    Obj *object = vm->grayStack[--vm->grayCount];
     blackenObject(object);
   }
 }
@@ -184,7 +182,9 @@ void collectGarbage() {
   size_t before = vm->bytesAllocated;
 #endif
   markRoots();
+  printf("Marked roots\n");
   traceReferences();
+  printf("Traced references\n");
   sweep();
   vm->nextGC = vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
 

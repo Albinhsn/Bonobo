@@ -72,9 +72,9 @@ static void runtimeError(const char *format, ...) {
   resetStack();
 }
 
-static inline int matchKey(String needle, String arr[], int arrLen) {
+static inline int matchKey(String needle, ObjString *arr[], int arrLen) {
   for (int i = 0; i < arrLen; i++) {
-    if (cmpString(needle, arr[i])) {
+    if (cmpString(needle, arr[i]->string)) {
       return i;
     }
   }
@@ -82,19 +82,19 @@ static inline int matchKey(String needle, String arr[], int arrLen) {
 }
 
 static void defineNative(const char *name, int len, NativeFn function) {
-  String s = newString(name, len);
-  ObjString *string = copyString(s);
-  ObjNative *native = newNative(function);
+  pushStack(OBJ_VAL(copyString(newString(name, len))));
+  pushStack(OBJ_VAL(newNative(function)));
   if (vm->globalCap < vm->globalLen + 1) {
     int oldCapacity = vm->globalCap;
     vm->globalCap = GROW_CAPACITY(oldCapacity);
     vm->globalValues =
         GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
     vm->globalKeys =
-        GROW_ARRAY(String, vm->globalKeys, oldCapacity, vm->globalCap);
+        GROW_ARRAY(ObjString *, vm->globalKeys, oldCapacity, vm->globalCap);
   }
-  vm->globalKeys[vm->globalLen] = s;
-  vm->globalValues[vm->globalLen++] = OBJ_VAL((Obj *)native);
+  vm->globalKeys[vm->globalLen] = AS_STRING(vm->stack[0]);
+  vm->globalValues[vm->globalLen++] = vm->stack[1];
+  vm->stackTop -= 2;
 }
 
 static bool matchByte(OpCode code) {
@@ -367,9 +367,9 @@ InterpretResult run() {
         vm->globalValues =
             GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
         vm->globalKeys =
-            GROW_ARRAY(String, vm->globalKeys, oldCapacity, vm->globalCap);
+            GROW_ARRAY(ObjString *, vm->globalKeys, oldCapacity, vm->globalCap);
       }
-      vm->globalKeys[vm->globalLen] = READ_STRING()->string;
+      vm->globalKeys[vm->globalLen] = READ_STRING();
       vm->globalValues[vm->globalLen++] = popStack();
       break;
     }
@@ -575,10 +575,10 @@ InterpretResult run() {
         if (strukt->fieldCap < strukt->fieldLen + 1) {
           int oldCapacity = strukt->fieldCap;
           strukt->fieldCap = GROW_CAPACITY(oldCapacity);
-          strukt->fields =
-              GROW_ARRAY(String, strukt->fields, oldCapacity, strukt->fieldCap);
+          strukt->fields = GROW_ARRAY(ObjString *, strukt->fields, oldCapacity,
+                                      strukt->fieldCap);
         }
-        strukt->fields[i] = AS_STRING(READ_CONSTANT())->string;
+        strukt->fields[i] = AS_STRING(READ_CONSTANT());
         i++;
       }
       strukt->fieldLen = i;
