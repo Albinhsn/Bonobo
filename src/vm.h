@@ -4,6 +4,7 @@
 #include "object.h"
 #include "opcode.h"
 #include "scanner.h"
+#include "table.h"
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -31,16 +32,14 @@ InterpretResult interpret(const char *source);
 typedef struct VM {
   int fp;
   CallFrame *frames[FRAMES_MAX];
-  Value *stackTop;
   Value stack[STACK_MAX];
-  ObjString **globalKeys;
-  Value *globalValues;
-  int globalLen;
-  int globalCap;
+  Value *stackTop;
+  Table globals;
+  Table strings;
   Obj *objects;
+  Obj **grayStack;
   int grayCount;
   int grayCapacity;
-  Obj** grayStack;
   size_t bytesAllocated;
   size_t nextGC;
 } VM;

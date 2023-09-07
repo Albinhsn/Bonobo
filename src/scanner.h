@@ -64,17 +64,11 @@ typedef enum {
   TOKEN_EOF
 } TokenType;
 
-typedef struct String {
-  const char *literal;
-  int length;
-} String;
-
-String newString(const char *l, int len);
-
-bool cmpString(String s1, String s2);
+bool cmpString(const char *s1, int l1, const char *s2, int l2);
 
 typedef struct Token {
-  String string;
+  const char *lexeme;
+  int length;
   int line;
   int indent;
   TokenType type;
@@ -89,8 +83,7 @@ typedef struct Scanner {
   int indent;
 } Scanner;
 
-void initScanner(Scanner * scanner, const char * source);
-const char *copyStr(String string);
+void initScanner(Scanner *scanner, const char *source);
 void resetScanner(Scanner *scanner);
 Token *scanToken(Scanner *scanner);
 #endif

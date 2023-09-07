@@ -19,12 +19,16 @@ static void freeObject(Obj *object) {
 #endif
   switch (object->type) {
   case OBJ_INSTANCE: {
+    ObjInstance *instance = (ObjInstance *)object;
+    if (instance->fields) {
+      FREE_ARRAY(Value, instance->fields, instance->fieldCap);
+    }
     FREE(ObjInstance, object);
     break;
   }
   case OBJ_STRUCT: {
     ObjStruct *strukt = (ObjStruct *)object;
-    FREE_ARRAY(String, strukt->fields, strukt->fieldCap);
+    FREE_ARRAY(ObjString *, strukt->fields, strukt->fieldCap);
     FREE(ObjStruct, object);
     break;
   }
@@ -41,19 +45,22 @@ static void freeObject(Obj *object) {
     break;
   }
   case OBJ_STRING: {
+    ObjString *string = (ObjString *)object;
+    free(string->chars);
     FREE(ObjString, object);
     break;
   }
   case OBJ_MAP: {
     ObjMap *mp = (ObjMap *)object;
-    FREE_ARRAY(Value, mp->keys, mp->mapCap);
-    FREE_ARRAY(Value, mp->values, mp->mapCap);
+    freeTable(&mp->map);
     FREE(ObjMap, object);
+    break;
   }
   case OBJ_ARRAY: {
     ObjArray *array = (ObjArray *)object;
     FREE_ARRAY(Value, array->arr, array->arrCap);
     FREE(ObjArray, object);
+    break;
   }
   }
 }
@@ -62,10 +69,7 @@ static void markRoots() {
   for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
     markValue(*slot);
   }
-  for (int i = 0; i < vm->globalLen; i++) {
-    markValue(vm->globalValues[i]);
-    markObject((Obj *)vm->globalKeys[i]);
-  }
+  markTable(&vm->globals);
   markCompilerRoots();
 }
 void markObject(Obj *object) {
@@ -114,15 +118,23 @@ static void blackenObject(Obj *object) {
     markArray(function->constants, function->constP);
     break;
   }
+  case OBJ_INSTANCE: {
+    ObjInstance *instance = (ObjInstance *)object;
+    if (instance->fields != NULL) {
+      markArray(instance->fields, instance->fieldLen);
+    }
+    markObject((Obj *)instance->name);
+    markObject((Obj *)instance->strukt);
+    break;
+  }
   case OBJ_ARRAY: {
     ObjArray *array = (ObjArray *)object;
     markArray(array->arr, array->arrLen);
     break;
   }
   case OBJ_MAP: {
-    ObjMap *mp = (ObjMap *)object;
-    markArray(mp->keys, mp->mapLen);
-    markArray(mp->values, mp->mapLen);
+    ObjMap *map = (ObjMap *)object;
+    markTable(&map->map);
     break;
   }
   case OBJ_STRUCT: {
@@ -131,16 +143,9 @@ static void blackenObject(Obj *object) {
     markObject((Obj *)strukt->name);
     break;
   }
-  case OBJ_NATIVE: {
-    ObjNative *native = (ObjNative *)object;
-    native->obj.isMarked = true;
+  case OBJ_NATIVE:
+  case OBJ_STRING:
     break;
-  }
-
-  case OBJ_STRING: {
-    ObjString *string = (ObjString *)object;
-    string->obj.isMarked = true;
-  } break;
   default: {
     break;
   }
@@ -182,9 +187,7 @@ void collectGarbage() {
   size_t before = vm->bytesAllocated;
 #endif
   markRoots();
-  printf("Marked roots\n");
   traceReferences();
-  printf("Traced references\n");
   sweep();
   vm->nextGC = vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
 
@@ -204,8 +207,8 @@ void freeObjects(VM *vm) {
     freeObject(obj);
     obj = next;
   }
-  free(vm->globalKeys);
-  free(vm->globalValues);
+  freeTable(&vm->globals);
+  freeTable(&vm->strings);
   free(vm->grayStack);
 }
 
@@ -223,10 +226,10 @@ void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
     free(pointer);
     return NULL;
   }
-
   void *result = realloc(pointer, newSize);
-  if (result == NULL)
+  if (result == NULL) {
     exit(1);
+  }
   return result;
 }
 

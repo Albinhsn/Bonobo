@@ -25,8 +25,8 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
 
   if (type != TYPE_SCRIPT) {
     pushStack(OBJ_VAL((Obj *)compiler->function));
-    compiler->function->name = copyString(newString(
-        parser->previous->string.literal, parser->previous->string.length));
+    compiler->function->name =
+        copyString(parser->previous->lexeme, parser->previous->length);
     popStack();
   }
   current = compiler;
@@ -83,7 +83,7 @@ static bool match(TokenType type) {
 static void emitLoop(int loopStart) {
   writeChunk(current->function, OP_LOOP, parser->previous->line);
 
-  int offset = current->function->cp - loopStart + 2;
+  int offset = current->function->codeP - loopStart + 2;
   if (offset > UINT16_MAX) {
     errorAt("Loop body too large.");
   }
@@ -96,12 +96,11 @@ static int emitJump(uint16_t instruction) {
   writeChunk(current->function, instruction, parser->previous->line);
   writeChunks(current->function, 0xff, 0xff, parser->previous->line);
 
-  return current->function->cp - 2;
+  return current->function->codeP - 2;
 }
 
 static uint16_t makeConstant(Value value) {
   int constant = addConstant(current->function, value);
-
   if (constant > UINT16_MAX) {
     errorAt("Too many constants in one chunk.");
     return 0;
@@ -110,22 +109,24 @@ static uint16_t makeConstant(Value value) {
 }
 
 static inline uint16_t stringConstant() {
-  return makeConstant(OBJ_VAL(copyString(parser->previous->string)));
+  uint16_t constant = makeConstant(
+      OBJ_VAL(copyString(parser->previous->lexeme, parser->previous->length)));
+  return constant;
 }
 
 static ObjFunction *endCompiler() {
 #ifdef DEBUG_PRINT_CODE
   std::string funcName;
   char *str;
-  if (compiler->function->name != NULL) {
-    sprintf(str, "%.*s", compiler->function->name->string.length,
-            compiler->function->name->string.literal);
+  if (current->function->name != NULL) {
+    sprintf(str, "%.*s", current->function->name->length,
+            current->function->name->chars);
     funcName = str;
   } else {
     funcName = "<script>";
   }
   if (!parser->hadError) {
-    disassembleChunk(compiler->function, funcName.c_str());
+    disassembleChunk(current->function, funcName.c_str());
   }
 #endif
   writeChunks(current->function, OP_NIL, OP_RETURN, parser->previous->line);
@@ -187,7 +188,8 @@ static void parsePrecedence(Precedence precedence) {
 static int resolveLocal() {
   for (int i = current->localLen - 1; i >= 0; i--) {
     Local local = current->locals[i];
-    if (cmpString(local.name.string, parser->previous->string)) {
+    if (cmpString(local.name.lexeme, local.name.length,
+                  parser->previous->lexeme, parser->previous->length)) {
       if (local.depth == -1) {
         errorAt("Can't read local variable in its own initializer.");
       }
@@ -208,7 +210,8 @@ static void declareVariable() {
       break;
     }
 
-    if (cmpString(parser->previous->string, local.name.string)) {
+    if (cmpString(local.name.lexeme, local.name.length,
+                  parser->previous->lexeme, parser->previous->length)) {
       errorAt("Already a variable with this name in this scope.");
     }
   }
@@ -238,7 +241,7 @@ static uint16_t parseVariable(const char *errorMessage) {
 
 static void patchJump(int offset) {
   // -2 to adjust for the bytecode for the jump offset itself.
-  int jump = current->function->cp - offset - 2;
+  int jump = current->function->codeP - offset - 2;
   if (jump > UINT16_MAX) {
     errorAt("Too much code to jump over.");
   }
@@ -315,7 +318,7 @@ static void arrayDeclaration() {
 }
 
 static void number() {
-  double value = std::stod(parser->previous->string.literal);
+  double value = std::stod(parser->previous->lexeme);
   writeChunks(current->function, OP_CONSTANT, makeConstant(NUMBER_VAL(value)),
               parser->previous->line);
 }
@@ -352,7 +355,6 @@ static void mapDeclaration() {
 
 static void varDeclaration() {
   uint16_t global = parseVariable("Expect variable name.");
-
   if (match(TOKEN_EQUAL)) {
     if (match(TOKEN_LEFT_BRACKET)) {
       arrayDeclaration();
@@ -396,7 +398,7 @@ static void forStatement() {
     expressionStatement();
   }
 
-  int loopStart = current->function->cp;
+  int loopStart = current->function->codeP;
   int exitJump = -1;
   if (!match(TOKEN_SEMICOLON)) {
     expression();
@@ -408,7 +410,7 @@ static void forStatement() {
 
   if (!match(TOKEN_RIGHT_PAREN)) {
     int bodyJump = emitJump(OP_JUMP);
-    int incrementStart = current->function->cp;
+    int incrementStart = current->function->codeP;
 
     expression();
     writeChunk(current->function, OP_POP, parser->previous->line);
@@ -471,7 +473,7 @@ static void returnStatement() {
 }
 
 static void whileStatement() {
-  int loopStart = current->function->cp;
+  int loopStart = current->function->codeP;
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
@@ -592,7 +594,6 @@ static void namedVariable(bool canAssign) {
     getOp = OP_GET_GLOBAL;
     setOp = OP_SET_GLOBAL;
   }
-
   if (canAssign && match(TOKEN_EQUAL)) {
     expression();
     writeChunks(current->function, setOp, (uint16_t)arg,

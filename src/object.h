@@ -3,11 +3,8 @@
 
 #include "common.h"
 #include "scanner.h"
+#include "table.h"
 #include "value.h"
-
-#define CODE_MAX 500
-#define CONST_MAX 100
-#define MAP_MAXSIZE 500
 
 typedef enum {
   OBJ_MAP,
@@ -32,7 +29,7 @@ typedef struct ObjFunction {
   uint16_t *code;
   int *lines;
   int codeCap;
-  int cp;
+  int codeP;
   int constP;
   Value *constants;
   int constCap;
@@ -48,14 +45,14 @@ typedef struct ObjNative {
 typedef struct ObjStruct {
   Obj obj;
   ObjString *name;
-  ObjString**fields;
+  ObjString **fields;
   int fieldLen;
   int fieldCap;
 } ObjStruct;
 
 typedef struct ObjArray {
   Obj obj;
-  Value * arr;
+  Value *arr;
   int arrLen;
   int arrCap;
 } ObjArray;
@@ -71,15 +68,14 @@ typedef struct ObjInstance {
 
 typedef struct ObjMap {
   Obj obj;
-  Value *keys;
-  Value *values;
-  int mapCap;
-  int mapLen;
+  Table map;
 } ObjMap;
 
 typedef struct ObjString {
   Obj obj;
-  String string;
+  int length;
+  uint32_t hash;
+  char *chars;
 } ObjString;
 
 #define IS_STRUCT(value) isObjType(value, OBJ_STRUCT)
@@ -108,10 +104,10 @@ void writeChunks(ObjFunction *function, uint16_t byte1, uint16_t byte2,
 int addConstant(ObjFunction *function, Value value);
 void printObject(Value value);
 ObjFunction *newFunction();
-ObjMap *newMap(int len);
+ObjMap *newMap();
 ObjArray *newArray(int len);
 ObjNative *newNative(NativeFn function);
-ObjString *copyString(String string);
+ObjString *copyString(const char *chars, int length);
 ObjStruct *newStruct(ObjString *name);
 ObjInstance *newInstance(ObjStruct *strukt);
 static inline bool isObjType(Value value, ObjType type) {

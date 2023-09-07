@@ -8,7 +8,7 @@
 void disassembleChunk(ObjFunction *function, const char *name) {
   printf("== %s ==\n", name);
 
-  for (int offset = 0; offset < function->cp;) {
+  for (int offset = 0; offset < function->codeP;) {
     offset = disassembleInstruction(function, offset);
   }
 }

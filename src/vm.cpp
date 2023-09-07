@@ -28,10 +28,11 @@ void freeVM() {
 void initVM() {
   vm = NULL;
   vm = (VM *)malloc(sizeof(VM));
-  vm->bytesAllocated = vm->fp = vm->globalCap = vm->globalLen = vm->grayCount =
-      vm->grayCapacity = 0;
+  vm->bytesAllocated = vm->fp = vm->grayCount = vm->grayCapacity = 0;
   vm->stackTop = vm->stack;
   vm->objects = NULL;
+  initTable(&vm->globals);
+  initTable(&vm->strings);
   vm->grayStack = NULL;
   vm->nextGC = 1024 * 1024;
 
@@ -65,16 +66,16 @@ static void runtimeError(const char *format, ...) {
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
-      fprintf(stderr, "%.*s()\n", function->name->string.length,
-              function->name->string.literal);
+      fprintf(stderr, "%.*s()\n", function->name->length,
+              function->name->chars);
     }
   }
   resetStack();
 }
 
-static inline int matchKey(String needle, ObjString *arr[], int arrLen) {
+static inline int matchKey(const char *s, int l, ObjString *arr[], int arrLen) {
   for (int i = 0; i < arrLen; i++) {
-    if (cmpString(needle, arr[i]->string)) {
+    if (cmpString(s, l, arr[i]->chars, arr[i]->length)) {
       return i;
     }
   }
@@ -82,18 +83,9 @@ static inline int matchKey(String needle, ObjString *arr[], int arrLen) {
 }
 
 static void defineNative(const char *name, int len, NativeFn function) {
-  pushStack(OBJ_VAL(copyString(newString(name, len))));
+  pushStack(OBJ_VAL(copyString(name, len)));
   pushStack(OBJ_VAL(newNative(function)));
-  if (vm->globalCap < vm->globalLen + 1) {
-    int oldCapacity = vm->globalCap;
-    vm->globalCap = GROW_CAPACITY(oldCapacity);
-    vm->globalValues =
-        GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
-    vm->globalKeys =
-        GROW_ARRAY(ObjString *, vm->globalKeys, oldCapacity, vm->globalCap);
-  }
-  vm->globalKeys[vm->globalLen] = AS_STRING(vm->stack[0]);
-  vm->globalValues[vm->globalLen++] = vm->stack[1];
+  tableSet(&vm->globals, AS_STRING(vm->stack[0]), vm->stack[1]);
   vm->stackTop -= 2;
 }
 
@@ -192,21 +184,7 @@ static bool setIndex() {
       runtimeError("Cant only access map with string");
       return false;
     }
-    ObjString *string = AS_STRING(key);
-    int idx = matchKey(string->string, vm->globalKeys, vm->globalLen);
-    if (idx == -1) {
-      if (mp->mapCap < mp->mapLen + 1) {
-        int oldCapacity = mp->mapCap;
-        mp->mapCap = GROW_CAPACITY(oldCapacity);
-        mp->values = GROW_ARRAY(Value, mp->values, oldCapacity, mp->mapCap);
-        mp->keys = GROW_ARRAY(Value, mp->keys, oldCapacity, mp->mapCap);
-      }
-      mp->keys[mp->mapLen] = OBJ_VAL(string);
-      mp->values[mp->mapLen++] = item;
-    } else {
-      mp->values[idx] = item;
-    }
-    pushStack(OBJ_VAL(mp));
+    tableSet(&mp->map, AS_STRING(key), item);
     return true;
   }
   default: {
@@ -230,35 +208,25 @@ static bool index() {
   switch (OBJ_TYPE(item)) {
   case OBJ_MAP: {
     ObjMap *mp = AS_MAP(item);
-    int i = 0;
-    for (; i < mp->mapLen; i++) {
-      if (IS_STRING(key) && IS_STRING(mp->keys[i]) &&
-          cmpString(AS_STRING(key)->string, AS_STRING(mp->keys[i])->string)) {
-        break;
-      } else if (IS_NUMBER(key) && IS_NUMBER(mp->keys[i]) &&
-                 AS_NUMBER(key) == AS_NUMBER(mp->keys[i])) {
-        break;
-      }
+    Value value;
+    if (!tableGet(&mp->map, AS_STRING(key), &value)) {
+      runtimeError("Undefined variable '%s'.", AS_STRING(key)->chars);
+      return INTERPRET_RUNTIME_ERROR;
     }
-    if (i <= mp->mapLen - 1) {
-      pushStack(mp->values[i]);
-      return true;
-    }
-    runtimeError("Trying to access map with unknown key");
-    return false;
+    pushStack(value);
   }
   case OBJ_STRING: {
     if (IS_NUMBER(key)) {
       runtimeError("Can only index string with number");
       return false;
     }
-    String string = AS_STRING(item)->string;
+    ObjString *string = AS_STRING(item);
     int k = (int)AS_NUMBER(key);
-    if (string.length <= k || k < 0) {
+    if (string->length <= k || k < 0) {
       runtimeError("Trying to access outside of array %d", k);
       return false;
     }
-    pushStack(OBJ_VAL(copyString(newString(&string.literal[k], 1))));
+    pushStack(OBJ_VAL(copyString(&string->chars[k], 1)));
     return true;
   }
   case OBJ_ARRAY: {
@@ -308,6 +276,7 @@ InterpretResult run() {
 
   for (;;) {
     uint16_t *instructions = frame->instructions;
+    // printf("stackSize %d\n", (int)(vm->stackTop - vm->stack));
 #ifdef DEBUG_TRACE_EXECUTION
     printf("        ");
     for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
@@ -349,40 +318,30 @@ InterpretResult run() {
       break;
     }
     case OP_GET_GLOBAL: {
-      String string = READ_STRING()->string;
-      int idx = matchKey(string, vm->globalKeys, vm->globalLen);
-      if (idx == -1) {
-        runtimeError("Undefined variable '%.*s'.", string.length,
-                     string.literal);
+      ObjString *name = READ_STRING();
+      Value value;
+
+      if (!tableGet(&vm->globals, name, &value)) {
+        runtimeError("Undefined variable '%s'.", name->chars);
         return INTERPRET_RUNTIME_ERROR;
       }
-      *vm->stackTop = vm->globalValues[idx];
-      vm->stackTop++;
+
+      pushStack(value);
       break;
     }
     case OP_DEFINE_GLOBAL: {
-      if (vm->globalCap < vm->globalLen + 1) {
-        int oldCapacity = vm->globalCap;
-        vm->globalCap = GROW_CAPACITY(oldCapacity);
-        vm->globalValues =
-            GROW_ARRAY(Value, vm->globalValues, oldCapacity, vm->globalCap);
-        vm->globalKeys =
-            GROW_ARRAY(ObjString *, vm->globalKeys, oldCapacity, vm->globalCap);
-      }
-      vm->globalKeys[vm->globalLen] = READ_STRING();
-      vm->globalValues[vm->globalLen++] = popStack();
+      ObjString *name = READ_STRING();
+      tableSet(&vm->globals, name, vm->stackTop[-1]);
+      vm->stackTop--;
       break;
     }
     case OP_SET_GLOBAL: {
-      String string = READ_STRING()->string;
-
-      int idx = matchKey(string, vm->globalKeys, vm->globalLen);
-      if (idx == vm->globalLen) {
-        runtimeError("Undefined variable '%.*s'.", string.length,
-                     string.literal);
+      ObjString *name = READ_STRING();
+      if (tableSet(&vm->globals, name, vm->stackTop[-1])) {
+        tableDelete(&vm->globals, name);
+        runtimeError("Undefined variable '%s'.", name->chars);
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->globalValues[idx] = vm->stackTop[-1];
       break;
     }
     case OP_GET_PROPERTY: {
@@ -392,10 +351,10 @@ InterpretResult run() {
       }
 
       ObjInstance *instance = AS_INSTANCE(vm->stackTop[-1]);
-      String fieldName = AS_STRING(READ_CONSTANT())->string;
+      ObjString *fieldName = AS_STRING(READ_CONSTANT());
 
-      int idx = matchKey(fieldName, instance->strukt->fields,
-                         instance->strukt->fieldLen);
+      int idx = matchKey(fieldName->chars, fieldName->length,
+                         instance->strukt->fields, instance->strukt->fieldLen);
       if (idx == -1) {
         runtimeError("Couldn't find field?");
         return INTERPRET_RUNTIME_ERROR;
@@ -445,14 +404,13 @@ InterpretResult run() {
                                       AS_NUMBER(vm->stackTop[-1]));
         vm->stackTop--;
       } else if (IS_STRING(vm->stackTop[-1]) && IS_STRING(vm->stackTop[-2])) {
-        String s1 = AS_STRING(popStack())->string;
-        String s2 = AS_STRING(vm->stackTop[-2])->string;
+        ObjString *s1 = AS_STRING(popStack());
+        ObjString *s2 = AS_STRING(vm->stackTop[-2]);
 
-        char s[s1.length + s2.length];
-        strcpy(s, s1.literal);
-        strcat(s, s2.literal);
-        vm->stackTop[-1] =
-            OBJ_VAL(copyString(newString(s, s1.length + s2.length)));
+        char s[s1->length + s2->length];
+        strcpy(s, s1->chars);
+        strcat(s, s2->chars);
+        vm->stackTop[-1] = OBJ_VAL(copyString(s, s1->length + s2->length));
 
       } else {
         runtimeError("Operands must be two number or two strings");
@@ -547,16 +505,10 @@ InterpretResult run() {
     }
     case OP_MAP: {
       int argCount = instructions[frame->ip++];
-      ObjMap *mp = newMap(argCount);
+      ObjMap *mp = newMap();
       for (int i = argCount - 1; i >= 0; i--) {
-        if (mp->mapCap < mp->mapLen + 1) {
-          int oldCapacity = mp->mapCap;
-          mp->mapCap = GROW_CAPACITY(oldCapacity);
-          mp->values = GROW_ARRAY(Value, mp->values, oldCapacity, mp->mapCap);
-          mp->keys = GROW_ARRAY(Value, mp->keys, oldCapacity, mp->mapCap);
-        }
-        mp->values[i] = popStack();
-        mp->keys[i] = popStack();
+        tableSet(&mp->map, AS_STRING(vm->stackTop[-1]), vm->stackTop[-1]);
+        vm->stackTop -= 2;
       }
       pushStack(OBJ_VAL(mp));
       break;
@@ -569,8 +521,10 @@ InterpretResult run() {
       //   runtimeError("Can't redeclare a struct '" + name->chars + "'.");
       //   return INTERPRET_RUNTIME_ERROR;
       // }
+
       ObjStruct *strukt = newStruct(name);
-      int i = 0;
+
+      pushStack(OBJ_VAL(strukt));
       while (matchByte(OP_STRUCT_ARG)) {
         if (strukt->fieldCap < strukt->fieldLen + 1) {
           int oldCapacity = strukt->fieldCap;
@@ -578,11 +532,9 @@ InterpretResult run() {
           strukt->fields = GROW_ARRAY(ObjString *, strukt->fields, oldCapacity,
                                       strukt->fieldCap);
         }
-        strukt->fields[i] = AS_STRING(READ_CONSTANT());
-        i++;
+        strukt->fields[strukt->fieldLen++] = AS_STRING(READ_CONSTANT());
       }
-      strukt->fieldLen = i;
-      pushStack(OBJ_VAL(strukt));
+      vm->stackTop[-1] = OBJ_VAL(strukt);
       break;
     }
     case OP_RETURN: {
@@ -591,6 +543,7 @@ InterpretResult run() {
       // free frame
       vm->fp--;
       vm->stackTop = frame->sp;
+      int e = frame->ip;
       free(frame);
 
       if (vm->fp == 0) {
@@ -619,7 +572,6 @@ InterpretResult interpret(const char *source) {
   ObjFunction *function = compiler->function;
   pushStack(OBJ_VAL(function));
   call(function, 0);
-
   freeCompiler(compiler);
   InterpretResult result = run();
   freeVM();

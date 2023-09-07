@@ -17,27 +17,21 @@ void initScanner(Scanner *scanner, const char *source) {
   scanner->line = 1;
 }
 
-Token *newToken(const char *l, int len, int li, int i, TokenType t) {
+Token *newToken(const char *lexeme, int length, int line, int indent,
+                TokenType type) {
   Token *token = NULL;
   token = (Token *)malloc(sizeof(Token));
-  token->type = t;
-  token->string = newString(l, len);
-  token->line = li;
-  token->indent = i;
+  token->type = type;
+  token->length = length;
+  token->lexeme = lexeme;
+  token->line = line;
+  token->indent = indent;
 
   return token;
 }
 
-String newString(const char *l, int len) {
-  String string;
-  string.literal = l;
-  string.length = len;
-  return string;
-}
-
-bool cmpString(String s1, String s2) {
-  return (s1.length == s2.length &&
-          memcmp(s1.literal, s2.literal, s1.length) == 0);
+bool cmpString(const char *s1, int l1, const char *s2, int l2) {
+  return (l1 == l2 && memcmp(s1, s2, l1) == 0);
 }
 
 static bool isAtEnd(Scanner *scanner) {
