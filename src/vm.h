@@ -31,7 +31,7 @@ InterpretResult interpret(const char *source);
 
 typedef struct VM {
   int fp;
-  CallFrame *frames[FRAMES_MAX];
+  CallFrame frames[FRAMES_MAX];
   Value stack[STACK_MAX];
   Value *stackTop;
   Table globals;
@@ -44,7 +44,7 @@ typedef struct VM {
   size_t nextGC;
 } VM;
 
-extern VM *vm;
+extern VM vm;
 
 Value popStack();
 void pushStack(Value value);

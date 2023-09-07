@@ -27,7 +27,7 @@ void collectGarbage();
 void freeParser(Parser *parser);
 void freeScanner(Scanner *scanner);
 void freeCompiler(Compiler *compiler);
-void freeObjects(VM * vm);
-Value *freeFrame(VM *vm);
+void freeObjects();
+Value *freeFrame();
 
 #endif

@@ -40,3 +40,4 @@ log.txt
 '
 callgrind.*
 test*
+csrc/

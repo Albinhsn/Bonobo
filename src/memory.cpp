@@ -66,10 +66,10 @@ static void freeObject(Obj *object) {
 }
 
 static void markRoots() {
-  for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
+  for (Value *slot = vm.stack; slot < vm.stackTop; slot++) {
     markValue(*slot);
   }
-  markTable(&vm->globals);
+  markTable(&vm.globals);
   markCompilerRoots();
 }
 void markObject(Obj *object) {
@@ -83,13 +83,13 @@ void markObject(Obj *object) {
   printf("\n");
 #endif
   object->isMarked = true;
-  if (vm->grayCapacity < vm->grayCount + 1) {
-    vm->grayCapacity = GROW_CAPACITY(vm->grayCapacity);
-    vm->grayStack =
-        (Obj **)realloc(vm->grayStack, sizeof(Obj *) * vm->grayCapacity);
+  if (vm.grayCapacity < vm.grayCount + 1) {
+    vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
+    vm.grayStack =
+        (Obj **)realloc(vm.grayStack, sizeof(Obj *) * vm.grayCapacity);
   }
 
-  vm->grayStack[vm->grayCount++] = object;
+  vm.grayStack[vm.grayCount++] = object;
 }
 static void markArray(Value *array, int len) {
   for (int i = 0; i < len; i++) {
@@ -153,15 +153,15 @@ static void blackenObject(Obj *object) {
 }
 
 static void traceReferences() {
-  while (vm->grayCount > 0) {
-    Obj *object = vm->grayStack[--vm->grayCount];
+  while (vm.grayCount > 0) {
+    Obj *object = vm.grayStack[--vm.grayCount];
     blackenObject(object);
   }
 }
 
 static void sweep() {
   Obj *previous = NULL;
-  Obj *object = vm->objects;
+  Obj *object = vm.objects;
   while (object != NULL) {
     if (object->isMarked) {
       object->isMarked = false;
@@ -173,7 +173,7 @@ static void sweep() {
       if (previous != NULL) {
         previous->next = object;
       } else {
-        vm->objects = object;
+        vm.objects = object;
       }
 
       freeObject(unreached);
@@ -189,7 +189,7 @@ void collectGarbage() {
   markRoots();
   traceReferences();
   sweep();
-  vm->nextGC = vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
+  vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
 
 #ifdef DEBUG_LOG_GC
   printf("-- gc end\n");
@@ -199,27 +199,27 @@ void collectGarbage() {
 #endif
 }
 
-void freeObjects(VM *vm) {
-  Obj *obj = vm->objects;
+void freeObjects() {
+  Obj *obj = vm.objects;
   Obj *next = NULL;
   while (obj) {
     next = obj->next;
     freeObject(obj);
     obj = next;
   }
-  freeTable(&vm->globals);
-  freeTable(&vm->strings);
-  free(vm->grayStack);
+  freeTable(&vm.globals);
+  freeTable(&vm.strings);
+  free(vm.grayStack);
 }
 
 void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
-  vm->bytesAllocated += newSize - oldSize;
+  vm.bytesAllocated += newSize - oldSize;
 #ifdef DEBUG_STRESS_GC
   if (newSize > oldSize) {
     collectGarbage();
   }
 #endif
-  if (vm->bytesAllocated > vm->nextGC) {
+  if (vm.bytesAllocated > vm.nextGC) {
     collectGarbage();
   }
   if (newSize == 0) {
@@ -247,9 +247,9 @@ void freeParser(Parser *parser) {
 
 void freeScanner(Scanner *scanner) { free(scanner); }
 
-Value *freeFrame(VM *vm) {
-  CallFrame *f2 = vm->frames[vm->fp - 1];
-  vm->fp--;
+Value *freeFrame() {
+  CallFrame *f2 = &vm.frames[vm.fp - 1];
+  vm.fp--;
   Value *sp = f2->sp;
   free(f2->sp);
   free(f2);

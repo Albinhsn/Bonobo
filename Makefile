@@ -10,7 +10,7 @@ cf:
 	cd src/ && g++ -O2 -g -o main main.cpp  table.cpp memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input
 
 p: 
-	cd src/ && g++ -O3 -pg -o main main.cpp  table.cpp memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > ../profile/log.txt
+	cd src/ && g++ -O2 -pg -o main main.cpp  table.cpp memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && ./main ../input && gprof ./main > ../profile/log.txt
 
 b:
 	cmake -S . -B build && cmake --build build
@@ -26,7 +26,7 @@ i:
 	cd src/ && ./main ../input
 
 vg:
-	cd src/ &&  g++ -g  -o main main.cpp  memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind --callgrind-out-file=../profile/callgrind.out.123 ./main ../input
+	cd src/ &&  g++ -g -o main main.cpp  table.cpp memory.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp && valgrind --tool=callgrind --callgrind-out-file=../profile/callgrind.out.123 ./main ../input
 
 time:
 	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp table.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
@@ -40,3 +40,6 @@ time:
 	./src/main ./benchmark/instantiation; \
 	echo "string equality:";\
 	./src/main ./benchmark/string_equality
+
+cc:
+	cd csrc/ && gcc -O2 -o  main main.c  memory.c table.c debug.c value.c vm.c compiler.c scanner.c object.c

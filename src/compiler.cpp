@@ -27,7 +27,7 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
     pushStack(OBJ_VAL((Obj *)compiler->function));
     compiler->function->name =
         copyString(parser->previous->lexeme, parser->previous->length);
-    popStack();
+    vm.stackTop--;
   }
   current = compiler;
 }

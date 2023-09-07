@@ -18,10 +18,10 @@ static Obj *allocateObject(size_t size, ObjType type) {
   Obj *object = (Obj *)reallocate(NULL, 0, size);
   object->type = type;
   // object->isMarked = false;
-  object->next = vm->objects;
+  object->next = vm.objects;
   object->isMarked = false;
 
-  vm->objects = object;
+  vm.objects = object;
 
 #ifdef DEBUG_LOG_GC
   printf("%p allocate %zu for %d\n", (void *)object, size, type);
@@ -100,7 +100,7 @@ ObjInstance *newInstance(ObjStruct *strukt) {
   pushStack(OBJ_VAL(instance));
   instance->fields = NULL;
   instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
-  popStack();
+  vm.stackTop--;
 
   return instance;
 }
@@ -185,8 +185,8 @@ static ObjString *allocateString(char *chars, int length, uint32_t hash) {
   string->hash = hash;
 
   pushStack(OBJ_VAL(string));
-  tableSet(&vm->strings, string, NIL_VAL);
-  popStack();
+  tableSet(&vm.strings, string, NIL_VAL);
+  vm.stackTop--;
   return string;
 }
 static uint32_t hashString(const char *key, int length) {
@@ -202,7 +202,7 @@ static uint32_t hashString(const char *key, int length) {
 ObjString *takeString(const char *chars, int length) {
   uint32_t hash = hashString(chars, length);
 
-  ObjString *interned = tableFindString(&vm->strings, chars, length, hash);
+  ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
 
   if (interned != NULL) {
     FREE_ARRAY(char, (char *)chars, length + 1);
@@ -212,7 +212,7 @@ ObjString *takeString(const char *chars, int length) {
 }
 ObjString *copyString(const char *chars, int length) {
   uint32_t hash = hashString(chars, length);
-  ObjString *interned = tableFindString(&vm->strings, chars, length, hash);
+  ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
 
   if (interned != NULL)
     return interned;

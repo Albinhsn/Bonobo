@@ -10,10 +10,11 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+
 #define TWO63 0x8000000000000000u
 #define TWO64f (TWO63 * 2.0)
 
-VM *vm;
+VM vm;
 
 static void defineNative(const char *name, int len, NativeFn function);
 
@@ -21,35 +22,30 @@ static Value clockNative(int argCount, Value args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
-void freeVM() {
-  freeObjects(vm);
-  free(vm);
-}
+void freeVM() { freeObjects(); }
 void initVM() {
-  vm = NULL;
-  vm = (VM *)malloc(sizeof(VM));
-  vm->bytesAllocated = vm->fp = vm->grayCount = vm->grayCapacity = 0;
-  vm->stackTop = vm->stack;
-  vm->objects = NULL;
-  initTable(&vm->globals);
-  initTable(&vm->strings);
-  vm->grayStack = NULL;
-  vm->nextGC = 1024 * 1024;
+  vm.bytesAllocated = vm.fp = vm.grayCount = vm.grayCapacity = 0;
+  vm.stackTop = vm.stack;
+  vm.objects = NULL;
+  initTable(&vm.globals);
+  initTable(&vm.strings);
+  vm.grayStack = NULL;
+  vm.nextGC = 1024 * 1024;
 
   defineNative("clock", 5, clockNative);
 }
 
 void pushStack(Value value) {
-  *vm->stackTop = value;
-  vm->stackTop++;
+  *vm.stackTop = value;
+  vm.stackTop++;
 }
 
 Value popStack() {
-  vm->stackTop--;
-  return *vm->stackTop;
+  vm.stackTop--;
+  return *vm.stackTop;
 }
 
-static void resetStack() { vm->stackTop = vm->stack; }
+static void resetStack() { vm.stackTop = vm.stack; }
 
 static void runtimeError(const char *format, ...) {
   va_list args;
@@ -57,8 +53,8 @@ static void runtimeError(const char *format, ...) {
   vfprintf(stderr, format, args);
   va_end(args);
   fputs("\n", stderr);
-  for (int i = 0; i < vm->fp; i++) {
-    CallFrame *frame = vm->frames[i];
+  for (int i = 0; i < vm.fp; i++) {
+    CallFrame *frame = &vm.frames[i];
     ObjFunction *function = frame->function;
     size_t instruction = frame->instructions[frame->ip];
     fprintf(stderr, "[line %d] in ", function->lines[instruction]);
@@ -85,12 +81,12 @@ static inline int matchKey(const char *s, int l, ObjString *arr[], int arrLen) {
 static void defineNative(const char *name, int len, NativeFn function) {
   pushStack(OBJ_VAL(copyString(name, len)));
   pushStack(OBJ_VAL(newNative(function)));
-  tableSet(&vm->globals, AS_STRING(vm->stack[0]), vm->stack[1]);
-  vm->stackTop -= 2;
+  tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+  vm.stackTop -= 2;
 }
 
 static bool matchByte(OpCode code) {
-  CallFrame *frame = vm->frames[vm->fp - 1];
+  CallFrame *frame = &vm.frames[vm.fp - 1];
   if (frame->instructions[frame->ip] == code) {
     frame->ip++;
     return true;
@@ -103,17 +99,15 @@ static bool call(ObjFunction *function, int argCount) {
     runtimeError("Expected %d arguments but got %d", function->arity, argCount);
     return false;
   }
-  if (vm->fp == FRAMES_MAX) {
+  if (vm.fp == FRAMES_MAX) {
     runtimeError("Stack overflow.");
     return false;
   }
-  CallFrame *frame = NULL;
-  frame = (CallFrame *)(malloc(sizeof(CallFrame)));
+  CallFrame *frame = &vm.frames[vm.fp++];
   frame->function = function;
   frame->instructions = &function->code[0];
-  frame->sp = vm->stackTop - argCount;
+  frame->sp = vm.stackTop - argCount;
   frame->ip = 0;
-  vm->frames[vm->fp++] = frame;
 
   return true;
 }
@@ -123,11 +117,11 @@ static bool callValue(Value callee, int argCount) {
     switch (OBJ_TYPE(callee)) {
     case OBJ_NATIVE: {
       NativeFn native = AS_NATIVE(callee);
-      Value result = native(argCount, vm->stackTop[-1 - argCount]);
+      Value result = native(argCount, vm.stackTop[-1 - argCount]);
       // wtf is this xD
-      vm->stackTop -= argCount + 1;
-      *vm->stackTop = result;
-      vm->stackTop++;
+      vm.stackTop -= argCount + 1;
+      *vm.stackTop = result;
+      vm.stackTop++;
       return true;
     }
     case OBJ_FUNCTION: {
@@ -146,7 +140,7 @@ static bool callValue(Value callee, int argCount) {
       for (int i = argCount - 1; i >= 0; --i) {
         instance->fields[i] = popStack();
       }
-      vm->stackTop[-1] = OBJ_VAL(instance);
+      vm.stackTop[-1] = OBJ_VAL(instance);
       return true;
     }
     default:
@@ -157,10 +151,10 @@ static bool callValue(Value callee, int argCount) {
   return false;
 }
 static bool setIndex() {
-  Value item = vm->stackTop[-1];
-  Value key = vm->stackTop[-2];
-  Value seq = vm->stackTop[-3];
-  vm->stackTop -= 3;
+  Value item = vm.stackTop[-1];
+  Value key = vm.stackTop[-2];
+  Value seq = vm.stackTop[-3];
+  vm.stackTop -= 3;
   switch (OBJ_TYPE(seq)) {
   case OBJ_ARRAY: {
     ObjArray *array = AS_ARRAY(seq);
@@ -196,9 +190,9 @@ static bool setIndex() {
 
 static bool index() {
 
-  Value key = vm->stackTop[-1];
-  Value item = vm->stackTop[-2];
-  vm->stackTop -= 2;
+  Value key = vm.stackTop[-1];
+  Value item = vm.stackTop[-2];
+  vm.stackTop -= 2;
 
   if (!IS_OBJ(item)) {
     runtimeError("Can't only index array, map and string");
@@ -255,7 +249,7 @@ static inline bool isFalsey(Value value) {
 }
 
 InterpretResult run() {
-  CallFrame *frame = vm->frames[vm->fp - 1];
+  CallFrame *frame = &vm.frames[vm.fp - 1];
 #define READ_SHORT()                                                           \
   (frame->ip += 2, (uint16_t)((frame->instructions[frame->ip - 2] << 8) |      \
                               frame->instructions[frame->ip - 1]))
@@ -265,13 +259,13 @@ InterpretResult run() {
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
-    if (!IS_NUMBER(vm->stackTop[-1]) || !IS_NUMBER(vm->stackTop[-2])) {        \
+    if (!IS_NUMBER(vm.stackTop[-1]) || !IS_NUMBER(vm.stackTop[-2])) {          \
       runtimeError("Operands must be numbers.");                               \
       return INTERPRET_RUNTIME_ERROR;                                          \
     }                                                                          \
-    vm->stackTop[-2] =                                                         \
-        valueType(AS_NUMBER(vm->stackTop[-2]) op AS_NUMBER(vm->stackTop[-1])); \
-    vm->stackTop--;                                                            \
+    vm.stackTop[-2] =                                                          \
+        valueType(AS_NUMBER(vm.stackTop[-2]) op AS_NUMBER(vm.stackTop[-1]));   \
+    vm.stackTop--;                                                             \
   } while (false)
 
   for (;;) {
@@ -305,7 +299,7 @@ InterpretResult run() {
       break;
     }
     case OP_POP: {
-      vm->stackTop--;
+      vm.stackTop--;
       break;
     }
     case OP_GET_LOCAL: {
@@ -314,14 +308,14 @@ InterpretResult run() {
     }
     case OP_SET_LOCAL: {
       uint16_t slot = instructions[frame->ip++];
-      frame->sp[slot] = vm->stackTop[-1];
+      frame->sp[slot] = vm.stackTop[-1];
       break;
     }
     case OP_GET_GLOBAL: {
       ObjString *name = READ_STRING();
       Value value;
 
-      if (!tableGet(&vm->globals, name, &value)) {
+      if (!tableGet(&vm.globals, name, &value)) {
         runtimeError("Undefined variable '%s'.", name->chars);
         return INTERPRET_RUNTIME_ERROR;
       }
@@ -331,26 +325,26 @@ InterpretResult run() {
     }
     case OP_DEFINE_GLOBAL: {
       ObjString *name = READ_STRING();
-      tableSet(&vm->globals, name, vm->stackTop[-1]);
-      vm->stackTop--;
+      tableSet(&vm.globals, name, vm.stackTop[-1]);
+      vm.stackTop--;
       break;
     }
     case OP_SET_GLOBAL: {
       ObjString *name = READ_STRING();
-      if (tableSet(&vm->globals, name, vm->stackTop[-1])) {
-        tableDelete(&vm->globals, name);
+      if (tableSet(&vm.globals, name, vm.stackTop[-1])) {
+        tableDelete(&vm.globals, name);
         runtimeError("Undefined variable '%s'.", name->chars);
         return INTERPRET_RUNTIME_ERROR;
       }
       break;
     }
     case OP_GET_PROPERTY: {
-      if (!IS_INSTANCE(vm->stackTop[-1])) {
+      if (!IS_INSTANCE(vm.stackTop[-1])) {
         runtimeError("Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
 
-      ObjInstance *instance = AS_INSTANCE(vm->stackTop[-1]);
+      ObjInstance *instance = AS_INSTANCE(vm.stackTop[-1]);
       ObjString *fieldName = AS_STRING(READ_CONSTANT());
 
       int idx = matchKey(fieldName->chars, fieldName->length,
@@ -360,26 +354,25 @@ InterpretResult run() {
         return INTERPRET_RUNTIME_ERROR;
       }
 
-      vm->stackTop[-1] = instance->fields[idx];
+      vm.stackTop[-1] = instance->fields[idx];
       break;
     }
     case OP_SET_PROPERTY: {
-      Value v1 = vm->stackTop[-2];
+      Value v1 = vm.stackTop[-2];
       if (!IS_INSTANCE(v1)) {
         runtimeError("Only instances have fields.");
         return INTERPRET_RUNTIME_ERROR;
       }
 
       ObjInstance *instance = AS_INSTANCE(v1);
-      instance->fields[(int)instructions[frame->ip++]] = vm->stackTop[-1];
+      instance->fields[(int)instructions[frame->ip++]] = vm.stackTop[-1];
       // might need to cast here?
-      vm->stackTop[-1] = v1;
+      vm.stackTop[-1] = v1;
       break;
     }
     case OP_EQUAL: {
-      vm->stackTop[-2] =
-          BOOL_VAL(valuesEqual(vm->stackTop[-1], vm->stackTop[-2]));
-      vm->stackTop--;
+      vm.stackTop[-2] = BOOL_VAL(valuesEqual(vm.stackTop[-1], vm.stackTop[-2]));
+      vm.stackTop--;
       break;
     }
     case OP_GREATER_EQUAL: {
@@ -399,18 +392,18 @@ InterpretResult run() {
       break;
     }
     case OP_ADD: {
-      if (IS_NUMBER(vm->stackTop[-1]) && IS_NUMBER(vm->stackTop[-2])) {
-        vm->stackTop[-2] = NUMBER_VAL(AS_NUMBER(vm->stackTop[-2]) +
-                                      AS_NUMBER(vm->stackTop[-1]));
-        vm->stackTop--;
-      } else if (IS_STRING(vm->stackTop[-1]) && IS_STRING(vm->stackTop[-2])) {
+      if (IS_NUMBER(vm.stackTop[-1]) && IS_NUMBER(vm.stackTop[-2])) {
+        vm.stackTop[-2] =
+            NUMBER_VAL(AS_NUMBER(vm.stackTop[-2]) + AS_NUMBER(vm.stackTop[-1]));
+        vm.stackTop--;
+      } else if (IS_STRING(vm.stackTop[-1]) && IS_STRING(vm.stackTop[-2])) {
         ObjString *s1 = AS_STRING(popStack());
-        ObjString *s2 = AS_STRING(vm->stackTop[-2]);
+        ObjString *s2 = AS_STRING(vm.stackTop[-2]);
 
         char s[s1->length + s2->length];
         strcpy(s, s1->chars);
         strcat(s, s2->chars);
-        vm->stackTop[-1] = OBJ_VAL(copyString(s, s1->length + s2->length));
+        vm.stackTop[-1] = OBJ_VAL(copyString(s, s1->length + s2->length));
 
       } else {
         runtimeError("Operands must be two number or two strings");
@@ -431,15 +424,15 @@ InterpretResult run() {
       break;
     }
     case OP_NOT: {
-      vm->stackTop[-1] = BOOL_VAL(isFalsey(vm->stackTop[-1]));
+      vm.stackTop[-1] = BOOL_VAL(isFalsey(vm.stackTop[-1]));
       break;
     }
     case OP_NEGATE: {
-      if (!IS_NUMBER(vm->stackTop[-1])) {
+      if (!IS_NUMBER(vm.stackTop[-1])) {
         runtimeError("Operand must be a number.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      vm->stackTop[-1] = NUMBER_VAL(-AS_NUMBER(vm->stackTop[-1]));
+      vm.stackTop[-1] = NUMBER_VAL(-AS_NUMBER(vm.stackTop[-1]));
       break;
     }
     case OP_PRINT: {
@@ -454,7 +447,7 @@ InterpretResult run() {
     }
     case OP_JUMP_IF_FALSE: {
       uint16_t offset = READ_SHORT();
-      if (isFalsey(vm->stackTop[-1])) {
+      if (isFalsey(vm.stackTop[-1])) {
         frame->ip += offset;
       }
       break;
@@ -471,7 +464,7 @@ InterpretResult run() {
       break;
     }
     case OP_SET_INDEX: {
-      if (!IS_OBJ(vm->stackTop[-3])) {
+      if (!IS_OBJ(vm.stackTop[-3])) {
         runtimeError("Can only assign index to map/array/string");
         return INTERPRET_RUNTIME_ERROR;
       }
@@ -482,10 +475,10 @@ InterpretResult run() {
     }
     case OP_CALL: {
       int argCount = instructions[frame->ip++];
-      if (!callValue(vm->stackTop[-1 - argCount], argCount)) {
+      if (!callValue(vm.stackTop[-1 - argCount], argCount)) {
         return INTERPRET_RUNTIME_ERROR;
       }
-      frame = vm->frames[vm->fp - 1];
+      frame = &vm.frames[vm.fp - 1];
       break;
     }
     case OP_ARRAY: {
@@ -507,8 +500,8 @@ InterpretResult run() {
       int argCount = instructions[frame->ip++];
       ObjMap *mp = newMap();
       for (int i = argCount - 1; i >= 0; i--) {
-        tableSet(&mp->map, AS_STRING(vm->stackTop[-1]), vm->stackTop[-1]);
-        vm->stackTop -= 2;
+        tableSet(&mp->map, AS_STRING(vm.stackTop[-1]), vm.stackTop[-2]);
+        vm.stackTop -= 2;
       }
       pushStack(OBJ_VAL(mp));
       break;
@@ -534,24 +527,22 @@ InterpretResult run() {
         }
         strukt->fields[strukt->fieldLen++] = AS_STRING(READ_CONSTANT());
       }
-      vm->stackTop[-1] = OBJ_VAL(strukt);
+      vm.stackTop[-1] = OBJ_VAL(strukt);
       break;
     }
     case OP_RETURN: {
       Value result = popStack();
 
       // free frame
-      vm->fp--;
-      vm->stackTop = frame->sp;
-      int e = frame->ip;
-      free(frame);
+      vm.fp--;
+      vm.stackTop = frame->sp;
 
-      if (vm->fp == 0) {
-        popStack();
+      if (vm.fp == 0) {
+        vm.stackTop--;
         return INTERPRET_OK;
       }
-      vm->stackTop[-1] = result;
-      frame = vm->frames[vm->fp - 1];
+      vm.stackTop[-1] = result;
+      frame = &vm.frames[vm.fp - 1];
       break;
     }
     }
