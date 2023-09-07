@@ -4,7 +4,6 @@
 #include "vm.h"
 #include <cstdio>
 #include <fstream>
-#include <gtest/gtest.h>
 #include <sstream>
 #include <iostream>
 
