@@ -39,5 +39,4 @@ input
 log.txt
 '
 callgrind.*
-test*
 csrc/

@@ -1,0 +1,15 @@
+print 5;
+
+for(var i = 0; i < 5; i = i + 1){print i;}
+
+var i = 0; while(i < 5){print i; i = i + 1;}
+
+fun fib(a){if(a <= 2){return 1;} return fib(a-1) + fib(a-2);} print fib(5);
+
+fun fib(a){} print fib(5);
+
+struct point{x;y;};print(point); var p = point(5,10); print(p); print(p.x); print(p.y);
+
+var m = [1,2,3]; print m; m[1] = 5; print m[1];
+
+var m = {"a":1, "b": 2, "5":12}; print m; print m["a"]; m["c"] = 5; print m["c"]; print m["5"];
