@@ -252,7 +252,6 @@ Value *freeFrame() {
   vm.fp--;
   Value *sp = f2->sp;
   free(f2->sp);
-  free(f2);
   return sp;
 };
 void freeCompiler(Compiler *compiler) {
