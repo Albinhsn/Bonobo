@@ -20,7 +20,15 @@ bt:
 	cd build/ && ctest --output-on-failure -V
 
 t:
-	cd build/ && ctest  --output-on-failure -V 
+	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp table.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
+	./src/main ./test/fib > ./test/fib_result 
+	cd test/ && python3 test_vm.py fib 
+
+	./src/main ./test/logical > ./test/logical_result 
+	cd test/ && python3 test_vm.py logical 
+
+	./src/main ./test/vm > ./test/vm_result 
+	cd test/ && python3.9 test_vm.py vm
 
 i:
 	cd src/ && ./main ../input
@@ -30,7 +38,7 @@ vg:
 
 time:
 	cd src/ && g++ -O2 -o  main main.cpp  memory.cpp table.cpp debug.cpp value.cpp vm.cpp compiler.cpp scanner.cpp object.cpp
-	echo "Recursive fib(40):";\
+	echo "Recursive fib:";\
 	./src/main ./benchmark/fib; \
 	echo "Struct property:";\
 	./src/main ./benchmark/struct; \

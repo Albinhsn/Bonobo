@@ -184,7 +184,7 @@ static void sweep() {
 void collectGarbage() {
 #ifdef DEBUG_LOG_GC
   printf("-- gc begin\n");
-  size_t before = vm->bytesAllocated;
+  size_t before = vm.bytesAllocated;
 #endif
   markRoots();
   traceReferences();
@@ -194,7 +194,7 @@ void collectGarbage() {
 #ifdef DEBUG_LOG_GC
   printf("-- gc end\n");
   printf("   collected %zu bytes (from %zu to %zu) next at %zu\n",
-         before - vm->bytesAllocated, before, vm->bytesAllocated, vm->nextGC);
+         before - vm.bytesAllocated, before, vm.bytesAllocated, vm.nextGC);
 
 #endif
 }

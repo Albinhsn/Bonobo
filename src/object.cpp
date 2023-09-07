@@ -31,7 +31,7 @@ static Obj *allocateObject(size_t size, ObjType type) {
 }
 
 void writeChunk(ObjFunction *function, uint16_t byte, int line) {
-  if (function->codeCap < function->codeP+ 1) {
+  if (function->codeCap < function->codeP + 1) {
     int oldCapacity = function->codeCap;
     function->codeCap = GROW_CAPACITY(oldCapacity);
     function->code =
@@ -59,7 +59,8 @@ int addConstant(ObjFunction *function, Value value) {
 
 ObjFunction *newFunction() {
   ObjFunction *function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
-  function->arity = function->constP = function->constCap = function->codeP  = function->codeCap = 0;
+  function->arity = function->constP = function->constCap = function->codeP =
+      function->codeCap = 0;
   function->code = NULL;
   function->lines = NULL;
   function->constants = NULL;
@@ -160,11 +161,11 @@ void printObject(Value value) {
   case OBJ_MAP: {
     Table map = AS_MAP(value)->map;
     printf("{");
-    for (int i = 0; i < map.count; i++) {
+    for (int i = 0; i < map.capacity; i++) {
       Entry entry = map.entries[i];
-      printf("'%s':", entry.key->chars);
-      printValue(entry.value);
-      if (i < map.count - 1) {
+      if (entry.key != NULL) {
+        printf("'%s':", entry.key->chars);
+        printValue(entry.value);
         printf(",");
       }
     }

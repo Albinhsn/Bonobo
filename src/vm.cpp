@@ -208,6 +208,7 @@ static bool index() {
       return INTERPRET_RUNTIME_ERROR;
     }
     pushStack(value);
+    return true;
   }
   case OBJ_STRING: {
     if (IS_NUMBER(key)) {
@@ -273,7 +274,7 @@ InterpretResult run() {
     // printf("stackSize %d\n", (int)(vm->stackTop - vm->stack));
 #ifdef DEBUG_TRACE_EXECUTION
     printf("        ");
-    for (Value *slot = vm->stack; slot < vm->stackTop; slot++) {
+    for (Value *slot = vm.stack; slot < vm.stackTop; slot++) {
       printf("[ ");
       printValue(*slot);
       printf(" ]");
@@ -500,8 +501,9 @@ InterpretResult run() {
       int argCount = instructions[frame->ip++];
       ObjMap *mp = newMap();
       for (int i = argCount - 1; i >= 0; i--) {
-        tableSet(&mp->map, AS_STRING(vm.stackTop[-1]), vm.stackTop[-2]);
-        vm.stackTop -= 2;
+        pushStack(OBJ_VAL(mp));
+        tableSet(&mp->map, AS_STRING(vm.stackTop[-3]), vm.stackTop[-2]);
+        vm.stackTop -= 3;
       }
       pushStack(OBJ_VAL(mp));
       break;
