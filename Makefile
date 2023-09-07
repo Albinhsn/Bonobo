@@ -28,7 +28,7 @@ t:
 	cd test/ && python3 test_vm.py logical 
 
 	./src/main ./test/vm > ./test/vm_result 
-	cd test/ && python3.9 test_vm.py vm
+	cd test/ && python3 test_vm.py vm
 
 i:
 	cd src/ && ./main ../input
