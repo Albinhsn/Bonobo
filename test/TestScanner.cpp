@@ -6,11 +6,10 @@
 #include <string>
 #include <vector>
 
-
 TEST(TestScanner, TestSingleCharTokens) {
   std::string source = "!<>(){}[],.-+;*/:=";
   Scanner *scanner = NULL;
-  scanner = (Scanner*) malloc(sizeof(Scanner));
+  scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
   scanner->indent = 0;
@@ -40,7 +39,8 @@ TEST(TestScanner, TestSingleCharTokens) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -48,7 +48,7 @@ TEST(TestScanner, TestSingleCharTokens) {
 TEST(TestScanner, TestDoubleCharTokens) {
   std::string source = "!=<=>=->";
   Scanner *scanner = NULL;
-  scanner = (Scanner*) malloc(sizeof(Scanner));
+  scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
   scanner->indent = 0;
@@ -64,13 +64,8 @@ TEST(TestScanner, TestDoubleCharTokens) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_EQ(scannedToken->string.length, tokens[i].string.length);
-    char s[scannedToken->string.length + 1];
-    s[scannedToken->string.length] = '\0';
-    for (int j = 0; j < scannedToken->string.length; j++) {
-      s[j] = scannedToken->string.literal[j];
-    }
-    EXPECT_TRUE(strcmp(tokens[i].string.literal, s) == 0);
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -78,7 +73,7 @@ TEST(TestScanner, TestDoubleCharTokens) {
 TEST(TestScanner, TestLiterals) {
   std::string source = "arla haren \"Hello,\"; \" Sailor!\" 1.0 2 20.45 123 a1";
   Scanner *scanner = NULL;
-  scanner = (Scanner*) malloc(sizeof(Scanner));
+  scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
   scanner->indent = 0;
@@ -99,7 +94,8 @@ TEST(TestScanner, TestLiterals) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -108,7 +104,7 @@ TEST(TestScanner, TestKeywords) {
   std::string source =
       "struct print else false for fun if nil return true while and or var";
   Scanner *scanner = NULL;
-  scanner = (Scanner*) malloc(sizeof(Scanner));
+  scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
   scanner->indent = 0;
@@ -133,7 +129,8 @@ TEST(TestScanner, TestKeywords) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
@@ -142,7 +139,7 @@ TEST(TestScanner, TestFibonnaci) {
   std::string source = "fun fib(a){\n if(a <= 2){\n return 1;\n}\n return "
                        "fib(a-1) + fib(a-2);\n} fib(35);";
   Scanner *scanner = NULL;
-  scanner = (Scanner*) malloc(sizeof(Scanner));
+  scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
   scanner->indent = 0;
@@ -191,7 +188,8 @@ TEST(TestScanner, TestFibonnaci) {
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
     EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_TRUE(cmpString(scannedToken->string, tokens[i].string));
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
   }
   EXPECT_EQ(scanner->current, source.size());
 }
