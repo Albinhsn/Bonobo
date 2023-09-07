@@ -23,6 +23,8 @@ FetchContent_MakeAvailable(googletest)
 set(Sources
   ./src/scanner.cpp
   ./src/scanner.h
+  ./src/table.h
+  ./src/table.cpp
   ./src/debug.cpp
   ./src/debug.h
   ./src/opcode.h
