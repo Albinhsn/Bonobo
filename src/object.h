@@ -35,7 +35,7 @@ typedef struct ObjFunction {
   int constCap;
 } ObjFunction;
 
-typedef Value (*NativeFn)(int argCount, Value args);
+typedef Value (*NativeFn)(int argCount, Value*args);
 
 typedef struct ObjNative {
   Obj obj;

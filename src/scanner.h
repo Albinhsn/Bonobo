@@ -36,13 +36,15 @@ typedef enum {
   // Literals.
   TOKEN_IDENTIFIER,
   TOKEN_STRING,
-  TOKEN_NUMBER,
 
   // Datatypes
-  // TOKEN_INT,   // int
-  // TOKEN_FLOAT, // int
-  // TOKEN_STR,   // str
-  // TOKEN_BOOL,  // bool
+  TOKEN_INT,   // int 1
+  TOKEN_FLOAT, // float 2
+  TOKEN_STR,   // str 3
+  TOKEN_BOOL,  // bool 4
+  TOKEN_MAP,   // map 5
+  TOKEN_ARRAY, // array 6
+  TOKEN_NIL, // nil 7
 
   // Keywords.
   TOKEN_STRUCT,
@@ -52,7 +54,6 @@ typedef enum {
   TOKEN_FOR,
   TOKEN_FUN,
   TOKEN_IF,
-  TOKEN_NIL,
   TOKEN_RETURN,
   TOKEN_TRUE,
   TOKEN_WHILE,
@@ -70,7 +71,6 @@ typedef struct Token {
   const char *lexeme;
   int length;
   int line;
-  int indent;
   TokenType type;
 } Token;
 
@@ -80,7 +80,6 @@ typedef struct Scanner {
   const char *source;
   int current;
   int line;
-  int indent;
 } Scanner;
 
 void initScanner(Scanner *scanner, const char *source);

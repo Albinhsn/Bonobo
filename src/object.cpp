@@ -78,6 +78,8 @@ ObjMap *newMap() {
 ObjArray *newArray(int len) {
   ObjArray *array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
   array->arrLen = len;
+  array->arr = NULL;
+  array->arrCap = 0;
 
   return array;
 }

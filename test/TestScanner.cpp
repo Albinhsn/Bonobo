@@ -12,29 +12,28 @@ TEST(TestScanner, TestSingleCharTokens) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
-  scanner->indent = 0;
   scanner->current = 0;
 
   std::vector<Token> tokens = {
-      (Token){"!", 1, 1, 0, TOKEN_BANG},
-      (Token){"<", 1, 1, 0, TOKEN_LESS},
-      (Token){">", 1, 1, 0, TOKEN_GREATER},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){"{", 1, 1, 0, TOKEN_LEFT_BRACE},
-      (Token){"}", 1, 1, 0, TOKEN_RIGHT_BRACE},
-      (Token){"[", 1, 1, 0, TOKEN_LEFT_BRACKET},
-      (Token){"]", 1, 1, 0, TOKEN_RIGHT_BRACKET},
-      (Token){",", 1, 1, 0, TOKEN_COMMA},
-      (Token){".", 1, 1, 0, TOKEN_DOT},
-      (Token){"-", 1, 1, 0, TOKEN_MINUS},
-      (Token){"+", 1, 1, 0, TOKEN_PLUS},
-      (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){"*", 1, 1, 0, TOKEN_STAR},
-      (Token){"/", 1, 1, 0, TOKEN_SLASH},
-      (Token){":", 1, 1, 0, TOKEN_COLON},
-      (Token){"=", 1, 1, 0, TOKEN_EQUAL},
-      (Token){"EOF", 3, 1, 0, TOKEN_EOF},
+      (Token){"!", 1, 1, TOKEN_BANG},
+      (Token){"<", 1, 1, TOKEN_LESS},
+      (Token){">", 1, 1, TOKEN_GREATER},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){"{", 1, 1, TOKEN_LEFT_BRACE},
+      (Token){"}", 1, 1, TOKEN_RIGHT_BRACE},
+      (Token){"[", 1, 1, TOKEN_LEFT_BRACKET},
+      (Token){"]", 1, 1, TOKEN_RIGHT_BRACKET},
+      (Token){",", 1, 1, TOKEN_COMMA},
+      (Token){".", 1, 1, TOKEN_DOT},
+      (Token){"-", 1, 1, TOKEN_MINUS},
+      (Token){"+", 1, 1, TOKEN_PLUS},
+      (Token){";", 1, 1, TOKEN_SEMICOLON},
+      (Token){"*", 1, 1, TOKEN_STAR},
+      (Token){"/", 1, 1, TOKEN_SLASH},
+      (Token){":", 1, 1, TOKEN_COLON},
+      (Token){"=", 1, 1, TOKEN_EQUAL},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
@@ -51,15 +50,14 @@ TEST(TestScanner, TestDoubleCharTokens) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
-  scanner->indent = 0;
   scanner->current = 0;
 
   std::vector<Token> tokens = {
-      (Token){"!=", 2, 1, 0, TOKEN_BANG_EQUAL},
-      (Token){"<=", 2, 1, 0, TOKEN_LESS_EQUAL},
-      (Token){">=", 2, 1, 0, TOKEN_GREATER_EQUAL},
-      (Token){"->", 2, 1, 0, TOKEN_ARROW},
-      (Token){"EOF", 3, 1, 0, TOKEN_EOF},
+      (Token){"!=", 2, 1, TOKEN_BANG_EQUAL},
+      (Token){"<=", 2, 1, TOKEN_LESS_EQUAL},
+      (Token){">=", 2, 1, TOKEN_GREATER_EQUAL},
+      (Token){"->", 2, 1, TOKEN_ARROW},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
@@ -76,20 +74,19 @@ TEST(TestScanner, TestLiterals) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
-  scanner->indent = 0;
   scanner->current = 0;
   std::vector<Token> tokens = {
-      (Token){"arla", 4, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"haren", 5, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"Hello,", 6, 1, 0, TOKEN_STRING},
-      (Token){";,", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){" Sailor!", 8, 1, 0, TOKEN_STRING},
-      (Token){"1.0", 3, 1, 0, TOKEN_NUMBER},
-      (Token){"2", 1, 1, 0, TOKEN_NUMBER},
-      (Token){"20.45", 5, 1, 0, TOKEN_NUMBER},
-      (Token){"123", 3, 1, 0, TOKEN_NUMBER},
-      (Token){"a1", 2, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"EOF", 3, 1, 0, TOKEN_EOF},
+      (Token){"arla", 4, 1, TOKEN_IDENTIFIER},
+      (Token){"haren", 5, 1, TOKEN_IDENTIFIER},
+      (Token){"Hello,", 6, 1, TOKEN_STRING},
+      (Token){";,", 1, 1, TOKEN_SEMICOLON},
+      (Token){" Sailor!", 8, 1, TOKEN_STRING},
+      (Token){"1.0", 3, 1, TOKEN_NUMBER},
+      (Token){"2", 1, 1, TOKEN_NUMBER},
+      (Token){"20.45", 5, 1, TOKEN_NUMBER},
+      (Token){"123", 3, 1, TOKEN_NUMBER},
+      (Token){"a1", 2, 1, TOKEN_IDENTIFIER},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
@@ -107,24 +104,23 @@ TEST(TestScanner, TestKeywords) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
-  scanner->indent = 0;
   scanner->current = 0;
   std::vector<Token> tokens = {
-      (Token){"struct", 6, 1, 0, TOKEN_STRUCT},
-      (Token){"print", 5, 1, 0, TOKEN_PRINT},
-      (Token){"else", 4, 1, 0, TOKEN_ELSE},
-      (Token){"false", 5, 1, 0, TOKEN_FALSE},
-      (Token){"for", 3, 1, 0, TOKEN_FOR},
-      (Token){"fun", 3, 1, 0, TOKEN_FUN},
-      (Token){"if", 2, 1, 0, TOKEN_IF},
-      (Token){"nil", 3, 1, 0, TOKEN_NIL},
-      (Token){"return", 6, 1, 0, TOKEN_RETURN},
-      (Token){"true", 4, 1, 0, TOKEN_TRUE},
-      (Token){"while", 5, 1, 0, TOKEN_WHILE},
-      (Token){"and", 3, 1, 0, TOKEN_AND},
-      (Token){"or", 2, 1, 0, TOKEN_OR},
-      (Token){"var", 3, 1, 0, TOKEN_VAR},
-      (Token){"EOF", 3, 1, 0, TOKEN_EOF},
+      (Token){"struct", 6, 1, TOKEN_STRUCT},
+      (Token){"print", 5, 1, TOKEN_PRINT},
+      (Token){"else", 4, 1, TOKEN_ELSE},
+      (Token){"false", 5, 1, TOKEN_FALSE},
+      (Token){"for", 3, 1, TOKEN_FOR},
+      (Token){"fun", 3, 1, TOKEN_FUN},
+      (Token){"if", 2, 1, TOKEN_IF},
+      (Token){"nil", 3, 1, TOKEN_NIL},
+      (Token){"return", 6, 1, TOKEN_RETURN},
+      (Token){"true", 4, 1, TOKEN_TRUE},
+      (Token){"while", 5, 1, TOKEN_WHILE},
+      (Token){"and", 3, 1, TOKEN_AND},
+      (Token){"or", 2, 1, TOKEN_OR},
+      (Token){"var", 3, 1, TOKEN_VAR},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);
@@ -142,48 +138,47 @@ TEST(TestScanner, TestFibonnaci) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   scanner->source = source.c_str();
   scanner->line = 1;
-  scanner->indent = 0;
   scanner->current = 0;
   std::vector<Token> tokens = {
-      (Token){"fun", 3, 1, 0, TOKEN_FUN},
-      (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){"a", 1, 1, 0, TOKEN_IDENTIFIER},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){"{", 1, 1, 0, TOKEN_LEFT_BRACE},
-      (Token){"if", 2, 1, 0, TOKEN_IF},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){"a", 1, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"<=", 2, 1, 0, TOKEN_LESS_EQUAL},
-      (Token){"2", 1, 1, 0, TOKEN_NUMBER},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){"{", 1, 1, 0, TOKEN_LEFT_BRACE},
-      (Token){"return", 6, 1, 0, TOKEN_RETURN},
-      (Token){"1", 1, 1, 0, TOKEN_NUMBER},
-      (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){"}", 1, 1, 0, TOKEN_RIGHT_BRACE},
-      (Token){"return", 6, 1, 0, TOKEN_RETURN},
-      (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){"a", 1, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"-", 1, 1, 0, TOKEN_MINUS},
-      (Token){"1", 1, 1, 0, TOKEN_NUMBER},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){"+", 1, 1, 0, TOKEN_PLUS},
-      (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){"a", 1, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"-", 1, 1, 0, TOKEN_MINUS},
-      (Token){"2", 1, 1, 0, TOKEN_NUMBER},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){"}", 1, 1, 0, TOKEN_RIGHT_BRACE},
-      (Token){"fib", 3, 1, 0, TOKEN_IDENTIFIER},
-      (Token){"(", 1, 1, 0, TOKEN_LEFT_PAREN},
-      (Token){"35", 2, 1, 0, TOKEN_NUMBER},
-      (Token){")", 1, 1, 0, TOKEN_RIGHT_PAREN},
-      (Token){";", 1, 1, 0, TOKEN_SEMICOLON},
-      (Token){"EOF", 3, 1, 0, TOKEN_EOF},
+      (Token){"fun", 3, 1, TOKEN_FUN},
+      (Token){"fib", 3, 1, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 1, TOKEN_IDENTIFIER},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){"{", 1, 1, TOKEN_LEFT_BRACE},
+      (Token){"if", 2, 1, TOKEN_IF},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 1, TOKEN_IDENTIFIER},
+      (Token){"<=", 2, 1, TOKEN_LESS_EQUAL},
+      (Token){"2", 1, 1, TOKEN_NUMBER},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){"{", 1, 1, TOKEN_LEFT_BRACE},
+      (Token){"return", 6, 1, TOKEN_RETURN},
+      (Token){"1", 1, 1, TOKEN_NUMBER},
+      (Token){";", 1, 1, TOKEN_SEMICOLON},
+      (Token){"}", 1, 1, TOKEN_RIGHT_BRACE},
+      (Token){"return", 6, 1, TOKEN_RETURN},
+      (Token){"fib", 3, 1, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 1, TOKEN_IDENTIFIER},
+      (Token){"-", 1, 1, TOKEN_MINUS},
+      (Token){"1", 1, 1, TOKEN_NUMBER},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){"+", 1, 1, TOKEN_PLUS},
+      (Token){"fib", 3, 1, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){"a", 1, 1, TOKEN_IDENTIFIER},
+      (Token){"-", 1, 1, TOKEN_MINUS},
+      (Token){"2", 1, 1, TOKEN_NUMBER},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){";", 1, 1, TOKEN_SEMICOLON},
+      (Token){"}", 1, 1, TOKEN_RIGHT_BRACE},
+      (Token){"fib", 3, 1, TOKEN_IDENTIFIER},
+      (Token){"(", 1, 1, TOKEN_LEFT_PAREN},
+      (Token){"35", 2, 1, TOKEN_NUMBER},
+      (Token){")", 1, 1, TOKEN_RIGHT_PAREN},
+      (Token){";", 1, 1, TOKEN_SEMICOLON},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
   };
   for (int i = 0; i < tokens.size(); i++) {
     Token *scannedToken = scanToken(scanner);

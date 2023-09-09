@@ -53,14 +53,13 @@ static int structArgInstruction(const char *name, ObjFunction *function,
 }
 
 int disassembleInstruction(ObjFunction *function, int offset) {
-  printf("%d ", offset);
+  printf("%04d ", offset);
   if (offset > 0 && function->lines[offset] == function->lines[offset - 1]) {
     printf("  |   ");
   } else {
-    printf(" %d   ", function->lines[offset]);
+    printf("  %d   ", function->lines[offset]);
   }
   uint16_t instruction = function->code[offset];
-  printf("%d\n", (int)instruction);
   switch (instruction) {
   case OP_CALL: {
     return byteInstruction("OP_CALL", function, offset);

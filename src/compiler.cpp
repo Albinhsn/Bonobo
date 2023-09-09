@@ -332,7 +332,7 @@ static void mapDeclaration() {
         writeChunks(current->function, OP_CONSTANT, stringConstant(),
                     parser->previous->line);
 
-      } else if (match(TOKEN_NUMBER)) {
+      } else if (match(TOKEN_INT)) {
         number();
       } else {
         errorAt("Expect number or string as key");
@@ -391,7 +391,6 @@ static void forStatement() {
   beginScope();
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
   if (match(TOKEN_SEMICOLON)) {
-    //
   } else if (match(TOKEN_VAR)) {
     varDeclaration();
   } else {
@@ -403,7 +402,6 @@ static void forStatement() {
   if (!match(TOKEN_SEMICOLON)) {
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after loop condition");
-
     exitJump = emitJump(OP_JUMP_IF_FALSE);
     writeChunk(current->function, OP_POP, parser->previous->line);
   }
@@ -442,8 +440,8 @@ static void ifStatement() {
   statement();
 
   int elseJump = emitJump(OP_JUMP);
-
   patchJump(thenJump);
+
   writeChunk(current->function, OP_POP, parser->previous->line);
 
   if (match(TOKEN_ELSE)) {
@@ -651,7 +649,7 @@ static void prefixRule(TokenType type, bool canAssign) {
                 parser->previous->line);
     break;
   }
-  case TOKEN_NUMBER: {
+  case TOKEN_INT: {
     number();
     break;
   }
@@ -823,7 +821,9 @@ static void statement() {
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
+    beginScope();
     block();
+    endScope();
   } else {
     expressionStatement();
   }

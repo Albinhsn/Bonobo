@@ -1,0 +1,46 @@
+// Open opens and read all the content of the file
+var inp = open("../test.txt");
+
+// Split splits by "\n"
+var splitInput = split(inp);
+
+// len gets the length of the split input
+var inputLength = len(splitInput);
+
+var p1 = 0;
+var p2 = [];
+
+var c1= 0;
+
+for(var i = 0; i < inputLength; i = i + 1){
+  if(splitInput[i] != "")
+  {
+    c1 = c1 + number(splitInput[i]);
+  }
+  else
+  {
+    var c2 = c1;
+    for(var j = 0; j < len(p2); j = j + 1)
+    {
+      if(p2[j] < c2)
+      {
+        var tmp = p2[j];
+        p2[j] = c2;
+        c2 = tmp;
+      }  
+    }
+
+    if(len(p2) < 3)
+    {
+      append(p2, c2);
+    }
+
+    if(p1 < c1)
+    {
+      p1 = c1;
+    }
+    c1 = 0;
+  }
+}
+print p1;
+print p2[0] + p2[1] + p2[2];

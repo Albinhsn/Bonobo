@@ -10,6 +10,9 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #define TWO63 0x8000000000000000u
 #define TWO64f (TWO63 * 2.0)
@@ -18,8 +21,174 @@ VM vm;
 
 static void defineNative(const char *name, int len, NativeFn function);
 
-static Value clockNative(int argCount, Value args) {
+static Value clockNative(int argCount, Value *args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+static Value splitNative(int argCount, Value *args) {
+  if (!IS_STRING(args[0])) {
+    printf("Can only split string\n");
+    exit(1);
+  }
+  ObjArray *array = newArray(0);
+
+  std::string str = AS_STRING(args[0])->chars;
+  std::istringstream iss(str);
+  std::string line;
+
+  pushStack(OBJ_VAL(array));
+  while (std::getline(iss, line, '\n')) {
+    if (array->arrCap < array->arrLen + 1) {
+      int oldCapacity = array->arrCap;
+      array->arrCap = GROW_CAPACITY(oldCapacity);
+      array->arr = GROW_ARRAY(Value, array->arr, oldCapacity, array->arrCap);
+    }
+    array->arr[array->arrLen++] =
+        OBJ_VAL(copyString(line.c_str(), line.size()));
+  }
+  popStack();
+
+  return OBJ_VAL(array);
+}
+
+static Value intNative(int argCunt, Value *args) {
+  if (!IS_STRING(args[0])) {
+    printf("Can only call int on string");
+    exit(1);
+  }
+  int x = std::stoi(AS_STRING(args[0])->chars);
+  return NUMBER_VAL((double)x);
+}
+
+static Value openNative(int argCount, Value *fileName) {
+  if (!IS_STRING(fileName[0])) {
+    printf("filename needs to be string\n");
+    exit(1);
+  }
+  std::ifstream t(AS_STRING(fileName[0])->chars);
+  std::stringstream buffer;
+  if (t.fail()) {
+    std::cout << "file doesn't exist\n";
+    exit(1);
+  }
+  buffer << t.rdbuf();
+  t.close();
+  return OBJ_VAL(copyString(buffer.str().c_str(), buffer.str().size()));
+}
+
+static Value writeNative(int argCount, Value *args) {
+  if (!IS_STRING(args[0])) {
+    printf("filename isn't string\n");
+    exit(1);
+  }
+  if (!IS_STRING(args[1])) {
+    printf("Content to write isn't string\n");
+    exit(1);
+  }
+  std::ofstream out(AS_STRING(args[0])->chars);
+  out << AS_STRING(args[1])->chars;
+  out.close();
+  return BOOL_VAL(true);
+}
+
+static Value appendNative(int argCount, Value *args) {
+  if (!IS_ARRAY(args[0])) {
+    printf("arg 0 needs to be an array\n");
+    exit(1);
+  }
+  ObjArray *array = AS_ARRAY(args[0]);
+  if (array->arrCap < array->arrLen + 1) {
+    int oldCapacity = array->arrCap;
+    array->arrCap = GROW_CAPACITY(oldCapacity);
+    array->arr = GROW_ARRAY(Value, array->arr, oldCapacity, array->arrCap);
+  }
+  array->arr[array->arrLen++] = args[1];
+  return OBJ_VAL(array);
+}
+static Value valuesNative(int argCount, Value *args) {
+  if (argCount != 1) {
+    printf("values needs 1 arg");
+    exit(1);
+  }
+  if (!IS_MAP(args[0])) {
+    printf("can only do keys on map");
+    exit(1);
+  }
+  ObjMap *map = AS_MAP(args[0]);
+  ObjArray *array = newArray(map->map.count);
+  pushStack(OBJ_VAL(array));
+
+  Entry *entry = map->map.entries;
+  for (int i = 0, j = 0; i < map->map.capacity - 1; i++) {
+    if (entry->key != NULL) {
+      if (array->arrCap < array->arrLen + 1) {
+        int oldCapacity = array->arrCap;
+        array->arrCap = GROW_CAPACITY(oldCapacity);
+        array->arr = GROW_ARRAY(Value, array->arr, oldCapacity, array->arrCap);
+      }
+      array->arr[j++] = entry->value;
+    }
+    entry++;
+  }
+  popStack();
+  return OBJ_VAL(array);
+}
+
+static Value keysNative(int argCount, Value *args) {
+  if (argCount != 1) {
+    printf("keys needs 1 arg");
+    exit(1);
+  }
+  if (!IS_MAP(args[0])) {
+    printf("can only do keys on map");
+    exit(1);
+  }
+  ObjMap *map = AS_MAP(args[0]);
+  ObjArray *array = newArray(map->map.count);
+  pushStack(OBJ_VAL(array));
+
+  Entry *entry = map->map.entries;
+  for (int i = 0, j = 0; i < map->map.capacity - 1; i++) {
+    if (entry->key != NULL) {
+      if (array->arrCap < array->arrLen + 1) {
+        int oldCapacity = array->arrCap;
+        array->arrCap = GROW_CAPACITY(oldCapacity);
+        array->arr = GROW_ARRAY(Value, array->arr, oldCapacity, array->arrCap);
+      }
+      array->arr[j++] = OBJ_VAL(entry->key);
+    }
+    entry++;
+  }
+  popStack();
+  return OBJ_VAL(array);
+}
+
+static Value inputNative(int argCount, Value *args) {
+  if (argCount != 0) {
+    printf("No args for input\n");
+    exit(1);
+  }
+  std::string s;
+  std::getline(std::cin, s);
+  return OBJ_VAL(copyString(s.c_str(), s.size()));
+}
+
+static Value lengthNative(int argCount, Value *args) {
+  if (argCount != 1) {
+    printf("length requires 1 arg not %d\n", argCount);
+    exit(1);
+  }
+  if (IS_STRING(args[0])) {
+    return NUMBER_VAL((double)AS_STRING(args[0])->length);
+  }
+  if (IS_ARRAY(args[0])) {
+    return NUMBER_VAL((double)AS_ARRAY(args[0])->arrLen);
+  }
+  if (IS_MAP(args[0])) {
+    return NUMBER_VAL((double)AS_MAP(args[0])->map.count);
+  }
+  printf("Can only get length of string/array/map\n");
+  exit(1);
 }
 
 void freeVM() { freeObjects(); }
@@ -33,6 +202,15 @@ void initVM() {
   vm.nextGC = 1024 * 1024;
 
   defineNative("clock", 5, clockNative);
+  defineNative("open", 4, openNative);
+  defineNative("write", 5, writeNative);
+  defineNative("input", 5, inputNative);
+  defineNative("append", 6, appendNative);
+  defineNative("len", 3, lengthNative);
+  defineNative("keys", 4, keysNative);
+  defineNative("values", 6, valuesNative);
+  defineNative("split", 5, splitNative);
+  defineNative("number", 6, intNative);
 }
 
 void pushStack(Value value) {
@@ -117,11 +295,9 @@ static bool callValue(Value callee, int argCount) {
     switch (OBJ_TYPE(callee)) {
     case OBJ_NATIVE: {
       NativeFn native = AS_NATIVE(callee);
-      Value result = native(argCount, vm.stackTop[-1 - argCount]);
-      // wtf is this xD
+      Value result = native(argCount, vm.stackTop - argCount);
       vm.stackTop -= argCount + 1;
-      *vm.stackTop = result;
-      vm.stackTop++;
+      pushStack(result);
       return true;
     }
     case OBJ_FUNCTION: {
