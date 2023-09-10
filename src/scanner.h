@@ -39,7 +39,7 @@ typedef enum {
 
   // Datatypes
   TOKEN_INT,   // int 1
-  TOKEN_FLOAT, // float 2
+  TOKEN_DOUBLE, // float 2
   TOKEN_STR,   // str 3
   TOKEN_BOOL,  // bool 4
   TOKEN_MAP,   // map 5

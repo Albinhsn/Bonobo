@@ -3,7 +3,6 @@
 #include "memory.h"
 #include "table.h"
 #include "value.h"
-#include "vm.h"
 
 #define ALLOCATE_OBJ(type, objectType)                                         \
   (type *)allocateObject(sizeof(type), objectType)
@@ -18,10 +17,7 @@ static Obj *allocateObject(size_t size, ObjType type) {
   Obj *object = (Obj *)reallocate(NULL, 0, size);
   object->type = type;
   // object->isMarked = false;
-  object->next = vm.objects;
   object->isMarked = false;
-
-  vm.objects = object;
 
 #ifdef DEBUG_LOG_GC
   printf("%p allocate %zu for %d\n", (void *)object, size, type);
@@ -45,7 +41,6 @@ void writeChunk(ObjFunction *function, uint16_t byte, int line) {
 }
 
 int addConstant(ObjFunction *function, Value value) {
-  pushStack(value);
   if (function->constCap < function->constP + 1) {
     int oldCapacity = function->constCap;
     function->constCap = GROW_CAPACITY(oldCapacity);
@@ -53,7 +48,7 @@ int addConstant(ObjFunction *function, Value value) {
         GROW_ARRAY(Value, function->constants, oldCapacity, function->constCap);
   }
 
-  function->constants[function->constP++] = popStack();
+  function->constants[function->constP++] = value;
   return function->constP - 1;
 }
 
@@ -100,10 +95,8 @@ ObjInstance *newInstance(ObjStruct *strukt) {
   instance->fieldCap = strukt->fieldCap;
   instance->name = strukt->name;
   instance->strukt = strukt;
-  pushStack(OBJ_VAL(instance));
   instance->fields = NULL;
   instance->fields = GROW_ARRAY(Value, instance->fields, 0, instance->fieldCap);
-  vm.stackTop--;
 
   return instance;
 }
@@ -187,9 +180,6 @@ static ObjString *allocateString(char *chars, int length, uint32_t hash) {
   string->chars = chars;
   string->hash = hash;
 
-  pushStack(OBJ_VAL(string));
-  tableSet(&vm.strings, string, NIL_VAL);
-  vm.stackTop--;
   return string;
 }
 static uint32_t hashString(const char *key, int length) {
@@ -205,20 +195,11 @@ static uint32_t hashString(const char *key, int length) {
 ObjString *takeString(const char *chars, int length) {
   uint32_t hash = hashString(chars, length);
 
-  ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
-
-  if (interned != NULL) {
-    FREE_ARRAY(char, (char *)chars, length + 1);
-    return interned;
-  }
   return allocateString((char *)chars, length, hash);
 }
+
 ObjString *copyString(const char *chars, int length) {
   uint32_t hash = hashString(chars, length);
-  ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
-
-  if (interned != NULL)
-    return interned;
 
   char *heapChars = ALLOCATE(char, length + 1);
   memcpy(heapChars, chars, length);

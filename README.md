@@ -3,21 +3,31 @@
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
 
-## TODO 
+## TODO statically typed
 
-* Rework into your own grammar
+* Statements
+    var a: int 
+    call(a:int, b:str)
+    struct foo{
+        a: int; 
+        b: str;
+    }
 
 
-### Features to fix
-* tabs/spaces > {} and ;
+* Statically typed maps/array?
+
+## TODO VM 
+
+* Why do you send array size if you don't expand the array anyway
+
+* builtin:
+    loop over map/array    
+    split on char
+
+## TODO Before LLVM backend
+
+* Improve error handling on ** etc
+
+* write formal grammar // Fix README with examples
 
 
-* write formal grammar
-
-
-* Builtins:
-    * io  
-    * allocate/change array size
-    * len/size
-    * ? : 
-    * iterate over array/map

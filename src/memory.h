@@ -4,7 +4,6 @@
 #include "compiler.h"
 #include "object.h"
 #include "scanner.h"
-#include "vm.h"
 
 #define FREE(type, pointer) reallocate(pointer, sizeof(type), 0)
 
@@ -20,14 +19,10 @@
 #define FREE_ARRAY(type, pointer, oldCount)                                    \
   reallocate(pointer, sizeof(type) * (oldCount), 0)
 
-void markValue(Value value);
-void markObject(Obj* object);
-void *reallocate(void * pointer, size_t oldSize, size_t newSize);
-void collectGarbage();
+void *reallocate(void *pointer, size_t oldSize, size_t newSize);
 void freeParser(Parser *parser);
 void freeScanner(Scanner *scanner);
 void freeCompiler(Compiler *compiler);
 void freeObjects();
-Value *freeFrame();
 
 #endif

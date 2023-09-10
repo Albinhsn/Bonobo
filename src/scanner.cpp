@@ -62,7 +62,7 @@ static Token *parseNumber(Scanner *scanner) {
       scanner->current++;
     }
     return newToken(current, getLength(scanner, current), scanner->line,
-                    TOKEN_FLOAT);
+                    TOKEN_DOUBLE);
   } else {
     return newToken(current, getLength(scanner, current), scanner->line,
                     TOKEN_INT);
@@ -90,7 +90,7 @@ static TokenType isKeyword(const char *current, int len) {
       return checkKeyword(current, "bool", 4, len, TOKEN_BOOL);
     }
     case 'l': {
-      return checkKeyword(current, "float", 5, len, TOKEN_FLOAT);
+      return checkKeyword(current, "float", 5, len, TOKEN_DOUBLE);
     }
     case 'o': {
       return checkKeyword(current, "for", 3, len, TOKEN_FOR);

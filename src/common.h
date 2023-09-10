@@ -2,9 +2,11 @@
 #define cpplox_common_h
 
 #include <cstdint>
+#include <cstdlib>
+#include <stdio.h>
+#include <string>
+#include <cstring>
+#include <string.h>
 
-// #define DEBUG_STRESS_GC
-// #define DEBUG_LOG_GC
 // #define DEBUG_PRINT_CODE
-// #define DEBUG_TRACE_EXECUTION
 #endif

@@ -9,6 +9,7 @@
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
+
 Compiler *current;
 Parser *parser;
 Scanner *scanner;
@@ -24,10 +25,8 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
   compiler->scopeDepth = 0;
 
   if (type != TYPE_SCRIPT) {
-    pushStack(OBJ_VAL((Obj *)compiler->function));
     compiler->function->name =
         copyString(parser->previous->lexeme, parser->previous->length);
-    vm.stackTop--;
   }
   current = compiler;
 }
@@ -355,16 +354,29 @@ static void mapDeclaration() {
 
 static void varDeclaration() {
   uint16_t global = parseVariable("Expect variable name.");
-  if (match(TOKEN_EQUAL)) {
-    if (match(TOKEN_LEFT_BRACKET)) {
-      arrayDeclaration();
-    } else if (match(TOKEN_LEFT_BRACE)) {
-      mapDeclaration();
-    } else {
-      expression();
-    }
+  consume(TOKEN_COLON, "Expect type declaration after var name");
+  if (match(TOKEN_STR)) {
+
+  } else if (match(TOKEN_INT)) {
+
+  } else if (match(TOKEN_DOUBLE)) {
+
+  } else if (match(TOKEN_BOOL)) {
+
+  } else if (match(TOKEN_MAP)) {
+
+  } else if (match(TOKEN_ARRAY)) {
+  }
+
+  if (!match(TOKEN_EQUAL)) {
+    errorAt("Expected assignment at var declaration");
+  }
+  if (match(TOKEN_LEFT_BRACKET)) {
+    arrayDeclaration();
+  } else if (match(TOKEN_LEFT_BRACE)) {
+    mapDeclaration();
   } else {
-    writeChunk(current->function, OP_NIL, parser->previous->line);
+    expression();
   }
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
 
@@ -870,14 +882,4 @@ Compiler *compile(const char *source) {
   }
 
   return hadError ? NULL : compiler;
-}
-void markCompilerRoots() {
-  Compiler *compiler = current;
-  while (compiler != NULL) {
-    markObject((Obj *)compiler->function);
-    if (compiler->function->name != NULL) {
-      markObject((Obj *)compiler->function->name);
-    }
-    compiler = compiler->enclosing;
-  }
 }

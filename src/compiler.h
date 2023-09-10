@@ -4,7 +4,6 @@
 #include "common.h"
 #include "object.h"
 #include "scanner.h"
-#include "vm.h"
 
 typedef struct Parser {
   Token *current;
