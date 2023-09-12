@@ -5,16 +5,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO statically typed
 
-* Statements
-    var a: int 
-    call(a:int, b:str)
-    struct foo{
-        a: int; 
-        b: str;
-    }
+* Compile empty main 
 
+* Compile hello world
 
-* Statically typed maps/array?
+* Compile expressions
+
+* Write c functions to create a standard library
+
 
 ## TODO VM 
 
