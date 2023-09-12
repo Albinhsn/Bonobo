@@ -35,6 +35,9 @@ typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
 typedef struct Compiler {
   struct Compiler *enclosing;
+  llvm::IRBuilder<> *builder;
+  llvm::Module *module;
+  llvm::LLVMContext *ctx;
   ObjFunction *function;
   FunctionType type;
   Local *locals;
