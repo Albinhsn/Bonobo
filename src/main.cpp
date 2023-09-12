@@ -60,7 +60,40 @@ int main(int argc, const char *argv[]) {
 
   llvm::IRBuilder<> fibBuilder(fibBlock);
 
+  llvm::Value *condV = fibBuilder.getInt32(0);
+  condV = fibBuilder.CreateFCmpONE(
+      llvm::ConstantFP::get(*ctx, llvm::APFloat(0.0)),
+      llvm::ConstantFP::get(*ctx, llvm::APFloat(0.0)), "ifcond");
 
+  llvm::Function *TheFunction = fibBuilder.GetInsertBlock()->getParent();
+
+  llvm::BasicBlock *ThenBB =
+      llvm::BasicBlock::Create(*ctx, "then", TheFunction);
+  llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(*ctx, "else");
+  llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*ctx, "ifcond");
+
+  fibBuilder.CreateCondBr(condV, ThenBB, ElseBB);
+
+  fibBuilder.SetInsertPoint(ThenBB);
+  llvm::Value *ThenV = llvm::ConstantFP::get(*ctx, llvm::APFloat(0.0));
+
+  builder.CreateBr(MergeBB);
+
+  ThenBB = builder.GetInsertBlock();
+
+  fibFunction->insert(fibFunction->end(), ElseBB);
+  fibBuilder.SetInsertPoint(ElseBB);
+
+  llvm::Value *ElseV = llvm::ConstantFP::get(*ctx, llvm::APFloat(0.0));
+  fibBuilder.CreateBr(MergeBB);
+  ElseBB = builder.GetInsertBlock();
+
+  fibFunction->insert(fibFunction->end(), MergeBB);
+  fibBuilder.SetInsertPoint(MergeBB);
+  llvm::PHINode *PN =
+      fibBuilder.CreatePHI(llvm::Type::getDoubleTy(*ctx), 2, "iftmp");
+  PN->addIncoming(ThenV, ThenBB);
+  PN->addIncoming(ElseV, ElseBB);
 
   llvm::Value *fibConstant = fibBuilder.getInt32(0);
   fibBuilder.CreateRet(fibConstant);
