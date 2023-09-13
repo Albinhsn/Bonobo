@@ -33,11 +33,14 @@ typedef struct Local {
 
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
-typedef struct Compiler {
-  struct Compiler *enclosing;
+typedef struct LLVMCompiler {
   llvm::IRBuilder<> *builder;
   llvm::Module *module;
   llvm::LLVMContext *ctx;
+} LLVMCompiler;
+
+typedef struct Compiler {
+  struct Compiler *enclosing;
   ObjFunction *function;
   FunctionType type;
   Local *locals;

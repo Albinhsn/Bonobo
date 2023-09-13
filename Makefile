@@ -8,7 +8,10 @@ DEBUGFLAGS = -g -fsanitize=address,undefined
 
 LLVMFILES = -I/home/
 
-FILES = main.cpp memory.cpp debug.cpp object.cpp value.cpp compiler.cpp scanner.cpp llvm.cpp
+FILES = test.cpp memory.cpp debug.cpp object.cpp value.cpp compiler.cpp scanner.cpp llvm.cpp
 
 c: 
 	cd src/ && clang++ -o main $(LLVMFLAGS)  main.cpp  && ./main && lli out.ll
+
+ex: 
+	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) for.cpp && ./main && lli out.ll
