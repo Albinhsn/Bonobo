@@ -1,9 +1,17 @@
 #ifndef cpplox_compiler_h
 #define cpplox_compiler_h
 
-#include "common.h"
-#include "object.h"
 #include "scanner.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <llvm/Support/raw_ostream.h>
+#include <stdio.h>
+#include <string.h>
+#include <string>
 
 typedef struct Parser {
   Token *current;
@@ -26,34 +34,21 @@ typedef enum {
   PREC_PRIMARY
 } Precedence;
 
-typedef struct Local {
-  Token name;
-  int depth;
-} Local;
-
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
-typedef struct LLVMCompiler {
+typedef struct Compiler {
+  Compiler *enclosing;
+  FunctionType type;
   llvm::IRBuilder<> *builder;
   llvm::Module *module;
   llvm::LLVMContext *ctx;
-} LLVMCompiler;
-
-typedef struct Compiler {
-  struct Compiler *enclosing;
-  ObjFunction *function;
-  FunctionType type;
-  Local *locals;
-  int localCap;
-  int localLen;
-  int scopeDepth;
+  std::vector<llvm::GlobalVariable> stringConstants;
 } Compiler;
 
-Compiler *compile(const char *);
+void compile(const char *);
 
 static void statement();
 static void declaration();
-void markCompilerRoots();
 static void prefixRule(TokenType type, bool canAssign);
 static void infixRule(TokenType type, bool canAssign);
 

@@ -1,6 +1,4 @@
 #include "scanner.h"
-#include "debug.h"
-
 #include <cstring>
 #include <stdexcept>
 
