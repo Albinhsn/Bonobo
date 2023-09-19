@@ -15,46 +15,57 @@ enum StatementType {
   FUNC_STMT
 };
 
+enum VarType {
+  STRING_VAR,
+  INT_VAR,
+  DOUBLE_VAR,
+  BOOL_VAR,
+  MAP_VAR,
+  ARRAY_VAR,
+  STRUCT_VAR
+};
+
 class Stmt {
 private:
 public:
   StatementType type;
 };
 
-class ExprStmt : Stmt {
+class ExprStmt : public Stmt {
 private:
 public:
   Expr expression;
 };
 
-class ReturnStmt : Stmt {
+class ReturnStmt : public Stmt {
 private:
 public:
   Token keyword;
   Expr value;
 };
 
-class VarStmt : Stmt {
+class VarStmt : public Stmt {
 private:
 public:
   Token name;
+  VarType varType;
   Expr initializer;
 };
 
-class WhileStmt : Stmt {
+class WhileStmt : public Stmt {
 private:
 public:
   Expr condition;
   Stmt body;
 };
 
-class BlockStmt : Stmt {
+class BlockStmt : public Stmt {
 private:
 public:
   std::vector<Stmt> statements;
 };
 
-class StructStmt : Stmt {
+class StructStmt : public Stmt {
 private:
 public:
   Token name;
@@ -62,7 +73,7 @@ public:
   std::vector<LiteralType> fieldTypes;
 };
 
-class IfStmt : Stmt {
+class IfStmt : public Stmt {
 private:
 public:
   Expr condition;
@@ -70,7 +81,7 @@ public:
   Stmt elseBranch;
 };
 
-class FuncStmt : Stmt {
+class FuncStmt : public Stmt {
 private:
 public:
   Token name;

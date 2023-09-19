@@ -177,7 +177,8 @@ static Token *parseString(Scanner *scanner) {
   }
 
   if (isAtEnd(scanner)) {
-    throw std::invalid_argument("Hit eof with unterminated string.");
+    std::cout << "Hit eof with unterminated string.";
+    exit(1);
   }
 
   scanner->current++;
@@ -306,8 +307,7 @@ Token *scanToken(Scanner *scanner) {
     return newToken("/", 1, scanner->line, TOKEN_SLASH);
   }
   default:
-    std::string exception = "Unknown characther ";
-    exception.push_back(c);
-    throw std::invalid_argument(exception);
+    std::cout << "Unknown characther " << c << "\n";
+    exit(1);
   }
 }

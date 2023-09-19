@@ -18,8 +18,7 @@ int main(int argc, const char *argv[]) {
     printf("Need file name\n");
     exit(1);
   }
-  argv++;
-  std::string source = readFile(*argv);
-  compile(source);
+  std::string source = readFile(argv[1]);
+  compile(source.c_str());
   return 0;
 }

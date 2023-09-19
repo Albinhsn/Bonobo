@@ -1,6 +1,9 @@
 #include "compiler.h"
 #include "common.h"
 #include "scanner.h"
+#include <cstdio>
+#include <map>
+#include <string>
 
 Compiler *compiler;
 Parser *parser;
@@ -8,10 +11,8 @@ Scanner *scanner;
 
 static void initCompiler() {
   compiler = (Compiler *)malloc(sizeof(Compiler));
-  compiler->ctx = new llvm::LLVMContext();
-  compiler->module = new llvm::Module("Bonobo", *compiler->ctx);
-  compiler->builder = new llvm::IRBuilder<>(*compiler->ctx);
-  compiler->stringConstants = std::vector<llvm::GlobalVariable>();
+  compiler->variables = std::map<std::string, LiteralExpr>();
+  compiler->statements = std::vector<Stmt *>();
 }
 
 static void endCompiler(Compiler *current) {
@@ -37,6 +38,7 @@ static void errorAt(const char *message) {
 
   fprintf(stderr, ": %s\n", message);
   parser->hadError = true;
+  exit(1);
 }
 
 static void advance() {
@@ -67,20 +69,7 @@ static bool match(TokenType type) {
   return true;
 }
 
-static inline void stringConstant() {
-  llvm::Constant *strConstant = llvm::ConstantDataArray::getString(
-      *compiler->ctx, parser->previous->lexeme);
-  llvm::GlobalVariable *strGlobal =
-      new llvm::GlobalVariable(*compiler->module, strConstant->getType(), true,
-                               llvm::GlobalValue::PrivateLinkage, strConstant);
-  compiler->stringConstants.push_back(*strGlobal);
-}
-
-static void emitIR() {
-  std::error_code errorCode;
-  llvm::raw_fd_ostream outLL("./out.ll", errorCode);
-  compiler->module->print(outLL, nullptr);
-}
+static inline void stringConstant() {}
 
 static Precedence getPrecedence(TokenType type) {
   switch (type) {
@@ -119,7 +108,7 @@ static Precedence getPrecedence(TokenType type) {
   }
 }
 
-static void expression(Precedence precedence) {
+static Expr expression(Precedence precedence, Expr expr) {
   advance();
   bool canAssign = precedence <= PREC_ASSIGNMENT;
   prefixRule(parser->previous->type, canAssign);
@@ -130,16 +119,25 @@ static void expression(Precedence precedence) {
   if (canAssign && match(TOKEN_EQUAL)) {
     errorAt("Invalid assignment target.");
   }
+  return expr;
 }
 
-// static llvm::Value *resolveLocal() {}
 static void resolveLocal() {}
 
-static void declareVariable() {}
+static Token declareVariable() {
+  Token varName = *parser->previous;
+  std::string varNameString(varName.lexeme, varName.length);
+  if (compiler->variables.count(varNameString)) {
+    errorAt(("Already declared variable with name " + varNameString).c_str());
+  }
 
-static void parseVariable(const char *errorMessage) {
+  compiler->variables[varNameString] = LiteralExpr();
+  return varName;
+}
+
+static Token parseVariable(const char *errorMessage) {
   consume(TOKEN_IDENTIFIER, errorMessage);
-  declareVariable();
+  return declareVariable();
 }
 
 static void defineVariable(uint16_t global) {}
@@ -148,7 +146,7 @@ static uint16_t argumentList() {
   uint16_t argCount = 0;
   if (!(parser->current->type == TOKEN_RIGHT_PAREN)) {
     do {
-      expression(PREC_ASSIGNMENT);
+      expression(PREC_ASSIGNMENT, Expr());
       if (argCount == 255) {
         errorAt("Can't have more than 255 arguments.");
       }
@@ -159,15 +157,11 @@ static uint16_t argumentList() {
   return argCount;
 }
 
-static void and_(bool canAssign) { expression(PREC_AND); }
-
-static void or_(bool canAssign) { expression(PREC_OR); }
-
-static void arrayDeclaration() {
+static Expr arrayDeclaration() {
   uint16_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACKET) {
     do {
-      expression(PREC_ASSIGNMENT);
+      expression(PREC_ASSIGNMENT, Expr());
       if (items == 255) {
         errorAt("Can't have more than 255 arguments.");
       }
@@ -180,7 +174,7 @@ static void arrayDeclaration() {
 // Should handle float/int
 static void number() { double value = std::stod(parser->previous->lexeme); }
 
-static void mapDeclaration() {
+static Expr mapDeclaration() {
   uint16_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACE) {
 
@@ -193,7 +187,7 @@ static void mapDeclaration() {
       }
 
       consume(TOKEN_COLON, "Expect colon between key and value");
-      expression(PREC_ASSIGNMENT);
+      expression(PREC_ASSIGNMENT, Expr());
 
       if (items == 255) {
         errorAt("Can't have more than 255 arguments.");
@@ -207,38 +201,43 @@ static void mapDeclaration() {
 }
 
 static void varDeclaration() {
-  parseVariable("Expect variable name.");
+  VarStmt *varStmt = (VarStmt *)malloc(sizeof(VarStmt));
+  varStmt->type = VAR_STMT;
+  varStmt->name = parseVariable("Expect variable name.");
   consume(TOKEN_COLON, "Expect type declaration after var name");
   if (match(TOKEN_STR)) {
-
+    varStmt->varType = STRING_VAR;
   } else if (match(TOKEN_INT)) {
-
+    varStmt->varType = INT_VAR;
   } else if (match(TOKEN_DOUBLE)) {
-
+    varStmt->varType = DOUBLE_VAR;
   } else if (match(TOKEN_BOOL)) {
-
+    varStmt->varType = BOOL_VAR;
   } else if (match(TOKEN_MAP)) {
-
+    varStmt->varType = MAP_VAR;
   } else if (match(TOKEN_ARRAY)) {
+    varStmt->varType = ARRAY_VAR;
+  } else if (match(TOKEN_STRUCT)) {
+    varStmt->varType = STRUCT_VAR;
+  } else {
+    errorAt("Expected type declaration after ':'");
   }
 
-  if (!match(TOKEN_EQUAL)) {
-    errorAt("Expected assignment at var declaration");
-  }
+  consume(TOKEN_EQUAL, "Expected assignment at var declaration");
+
   if (match(TOKEN_LEFT_BRACKET)) {
-    arrayDeclaration();
+    varStmt->initializer = arrayDeclaration();
   } else if (match(TOKEN_LEFT_BRACE)) {
-    mapDeclaration();
+    varStmt->initializer = mapDeclaration();
   } else {
-    expression(PREC_ASSIGNMENT);
+    varStmt->initializer = expression(PREC_ASSIGNMENT, Expr());
   }
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
-
-  // defineVariable(global);
+  compiler->statements.push_back((Stmt *)varStmt);
 }
 
 static void expressionStatement() {
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
 }
 
@@ -257,12 +256,12 @@ static void forStatement() {
   }
 
   if (!match(TOKEN_SEMICOLON)) {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
     consume(TOKEN_SEMICOLON, "Expect ';' after loop condition");
   }
 
   if (!match(TOKEN_RIGHT_PAREN)) {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
   }
 
@@ -273,7 +272,7 @@ static void forStatement() {
 
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   statement();
@@ -284,7 +283,7 @@ static void ifStatement() {
 }
 
 static void printStatement() {
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_SEMICOLON, "Expect ';' after value.");
 }
 
@@ -295,14 +294,14 @@ static void returnStatement() {
 
   if (match(TOKEN_SEMICOLON)) {
   } else {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
     consume(TOKEN_SEMICOLON, "Expect ';' after return value");
   }
 }
 
 static void whileStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   statement();
@@ -311,7 +310,7 @@ static void whileStatement() {
 static void binary() {
   TokenType operatorType = parser->previous->type;
 
-  expression((Precedence)(getPrecedence(operatorType) + 1));
+  expression((Precedence)(getPrecedence(operatorType) + 1), Expr());
 
   switch (operatorType) {
   case TOKEN_BANG_EQUAL: {
@@ -351,26 +350,26 @@ static void binary() {
 }
 
 static void index() {
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
 }
 
 static void dot(bool canAssign) {
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
   if (canAssign && match(TOKEN_EQUAL)) {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
   } else {
   }
 }
 
 static void grouping() {
-  expression(PREC_ASSIGNMENT);
+  expression(PREC_ASSIGNMENT, Expr());
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 static void unary() {
   TokenType operatorType = parser->previous->type;
-  expression(PREC_UNARY);
+  expression(PREC_ASSIGNMENT, Expr());
 
   switch (operatorType) {
   case TOKEN_MINUS: {
@@ -394,12 +393,12 @@ static void namedVariable(bool canAssign) {
     stringConstant();
   }
   if (canAssign && match(TOKEN_EQUAL)) {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
   } else if (canAssign && match(TOKEN_LEFT_BRACKET)) {
-    expression(PREC_ASSIGNMENT);
+    expression(PREC_ASSIGNMENT, Expr());
     consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
     if (match(TOKEN_EQUAL)) {
-      expression(PREC_ASSIGNMENT);
+      expression(PREC_ASSIGNMENT, Expr());
     } else {
     }
   } else {
@@ -520,10 +519,8 @@ static void infixRule(TokenType type, bool canAssign) {
     break;
   }
   case TOKEN_AND: {
-    and_(canAssign);
   }
   case TOKEN_OR: {
-    or_(canAssign);
   }
   default: {
     break;
@@ -540,15 +537,6 @@ static void block() {
 }
 
 static void function(FunctionType type) {
-  Compiler *funcCompiler = (Compiler *)malloc(sizeof(Compiler));
-  funcCompiler->builder = new llvm::IRBuilder<>(*compiler->ctx);
-  funcCompiler->module = compiler->module;
-  funcCompiler->ctx = compiler->ctx;
-  funcCompiler->type = TYPE_SCRIPT;
-
-  compiler->enclosing = funcCompiler;
-  compiler = funcCompiler;
-
   beginScope();
 
   consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
@@ -639,9 +627,6 @@ void compile(const char *source) {
     declaration();
   }
   bool hadError = parser->hadError;
-  if (!hadError) {
-    emitIR();
-  }
 
   free(scanner);
   free(parser);

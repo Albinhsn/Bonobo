@@ -1,7 +1,6 @@
 #ifndef EXPR_HEADER
 #define EXPR_HEADER
 
-#include "compiler.h"
 #include "scanner.h"
 #include <string>
 #include <vector>
@@ -20,7 +19,7 @@ enum ExprType {
 };
 
 enum LiteralType {
-  FLOAT_LITERAL,
+  DOUBLE_LITERAL,
   INT_LITERAL,
   BOOL_LITERAL,
   STRING_LITERAL,
@@ -65,12 +64,7 @@ class LiteralExpr : Expr {
 private:
 public:
   LiteralType type;
-  union {
-    double dbl;
-    int integer;
-    std::string string;
-    bool boolean;
-  } literal;
+  Token literal;
 };
 
 class UnaryExpr : Expr {

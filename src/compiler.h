@@ -1,14 +1,13 @@
 #ifndef cpplox_compiler_h
 #define cpplox_compiler_h
 
+#include "expr.h"
 #include "scanner.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
+#include "stmt.h"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <llvm/Support/raw_ostream.h>
+#include <map>
 #include <stdio.h>
 #include <string.h>
 #include <string>
@@ -39,13 +38,11 @@ typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 typedef struct Compiler {
   Compiler *enclosing;
   FunctionType type;
-  llvm::IRBuilder<> *builder;
-  llvm::Module *module;
-  llvm::LLVMContext *ctx;
-  std::vector<llvm::GlobalVariable> stringConstants;
+  std::vector<Stmt *> statements;
+  std::map<std::string, LiteralExpr> variables;
 } Compiler;
 
-void compile(const char *);
+void compile(const char *source);
 
 static void statement();
 static void declaration();
