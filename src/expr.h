@@ -1,7 +1,12 @@
 #ifndef EXPR_HEADER
 #define EXPR_HEADER
 
-enum ExpressionType {
+#include "compiler.h"
+#include "scanner.h"
+#include <string>
+#include <vector>
+
+enum ExprType {
   ASSIGN_EXPR,
   BINARY_EXPR,
   GROUPING_EXPR,
@@ -14,50 +19,81 @@ enum ExpressionType {
   DOT_EXPR
 };
 
-typedef struct {
-} AssignExpr;
+enum LiteralType {
+  FLOAT_LITERAL,
+  INT_LITERAL,
+  BOOL_LITERAL,
+  STRING_LITERAL,
+};
 
-typedef struct {
-} BinaryExpr;
+class Expr {
+private:
+public:
+  ExprType type;
+};
 
-typedef struct {
-} GroupingExpr;
+class AssignExpr : Expr {
+private:
+public:
+  Token name;
+  Expr value;
+};
 
-typedef struct {
-} LogicalExpr;
+class BinaryExpr : Expr {
+private:
+public:
+  Expr left;
+  Token op;
+  Expr right;
+};
 
-typedef struct {
-} LiteralExpr;
+class GroupingExpr : Expr {
+private:
+public:
+  Expr expression;
+};
 
-typedef struct {
-} UnaryExpr;
+class LogicalExpr : Expr {
+private:
+public:
+  Expr left;
+  Token op;
+  Expr right;
+};
 
-typedef struct {
-} SetExpr;
+class LiteralExpr : Expr {
+private:
+public:
+  LiteralType type;
+  union {
+    double dbl;
+    int integer;
+    std::string string;
+    bool boolean;
+  } literal;
+};
 
-typedef struct {
-} VarExpr;
+class UnaryExpr : Expr {
+private:
+public:
+  Token op;
+  Expr right;
+};
 
-typedef struct {
-} CallExpr;
+class VarExpr : Expr {
+private:
+public:
+  Token name;
+};
+
+class CallExpr : Expr {
+private:
+public:
+  Expr callee;
+  std::vector<Expr> arguments;
+};
 
 typedef struct {
 } DotExpr;
-
-typedef struct {
-  ExpressionType type;
-  union expr {
-    AssignExpr assign;
-    BinaryExpr binary;
-    GroupingExpr grouping;
-    LogicalExpr logical;
-    LiteralExpr literal;
-    UnaryExpr unary;
-    SetExpr set;
-    VarExpr var;
-    CallExpr call;
-    DotExpr dot;
-  };
-} Expression;
 
 #endif

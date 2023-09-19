@@ -1,4 +1,7 @@
+#ifndef STMT_HEADER
+#define STMT_HEADER
 
+#include "expr.h"
 
 enum StatementType {
   PRINT_STMT,
@@ -12,44 +15,67 @@ enum StatementType {
   FUNC_STMT
 };
 
-typedef struct {
-} ExprStmt;
-
-typedef struct {
-} ReturnStmt;
-
-typedef struct {
-} VarStmt;
-
-typedef struct {
-} WhileStmt;
-
-typedef struct {
-} BlockStmt;
-
-typedef struct {
-} StructStmt;
-
-typedef struct {
-} IfStmt;
-
-typedef struct {
-} FuncStmt;
-
-typedef struct {
-} PrintStmt;
-
-typedef struct {
+class Stmt {
+private:
+public:
   StatementType type;
-  union stmt {
-    ExprStmt exprStmt;
-    ReturnStmt returnStmt;
-    VarStmt varStmt;
-    WhileStmt whileStmt;
-    BlockStmt blockStmt;
-    StructStmt structStmt;
-    IfStmt ifStmt;
-    FuncStmt funcStmt;
-    PrintStmt printStmt;
-  };
-} Statement;
+};
+
+class ExprStmt : Stmt {
+private:
+public:
+  Expr expression;
+};
+
+class ReturnStmt : Stmt {
+private:
+public:
+  Token keyword;
+  Expr value;
+};
+
+class VarStmt : Stmt {
+private:
+public:
+  Token name;
+  Expr initializer;
+};
+
+class WhileStmt : Stmt {
+private:
+public:
+  Expr condition;
+  Stmt body;
+};
+
+class BlockStmt : Stmt {
+private:
+public:
+  std::vector<Stmt> statements;
+};
+
+class StructStmt : Stmt {
+private:
+public:
+  Token name;
+  std::vector<Token> fieldNames;
+  std::vector<LiteralType> fieldTypes;
+};
+
+class IfStmt : Stmt {
+private:
+public:
+  Expr condition;
+  Stmt thenBranch;
+  Stmt elseBranch;
+};
+
+class FuncStmt : Stmt {
+private:
+public:
+  Token name;
+  std::vector<Token> params;
+  std::vector<Stmt> body;
+};
+
+#endif
