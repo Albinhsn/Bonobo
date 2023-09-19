@@ -5,5 +5,6 @@
 #include "compiler.h"
 
 void debugStatements(Compiler *compiler);
+void debugExpression(Expr *expr);
 
 #endif

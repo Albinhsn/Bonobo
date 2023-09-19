@@ -2,13 +2,33 @@
 #include "debug.h"
 
 void debugExpression(Expr *expr) {
-  if(expr == NULL){
+  if (expr == NULL) {
     printf("<null expr>");
     return;
   }
   switch (expr->type) {
   case BINARY_EXPR: {
     BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    debugExpression(binaryExpr->left);
+    switch (binaryExpr->op) {
+    case ADD: {
+      printf(" + ");
+      break;
+    }
+    case SUB: {
+      printf(" - ");
+      break;
+    }
+    case MUL: {
+      printf(" * ");
+      break;
+    }
+    case DIV: {
+      printf(" / ");
+      break;
+    }
+    }
+    debugExpression(binaryExpr->right);
     break;
   }
   case GROUPING_EXPR: {
@@ -21,7 +41,7 @@ void debugExpression(Expr *expr) {
   }
   case LITERAL_EXPR: {
     LiteralExpr *literalExpr = (LiteralExpr *)expr;
-    if (literalExpr->type == STRING_LITERAL) {
+    if (literalExpr->literalType == STRING_LITERAL) {
       printf("\"%.*s\"", literalExpr->literal.length,
              literalExpr->literal.lexeme);
     } else {
@@ -41,6 +61,9 @@ void debugExpression(Expr *expr) {
     CallExpr *callExpr = (CallExpr *)expr;
     break;
   }
+  default: {
+    printf("unknown expr %d", expr->type);
+  }
   }
 }
 
@@ -51,7 +74,7 @@ void debugStatements(Compiler *compiler) {
       VarStmt *varStmt = (VarStmt *)compiler->statements[i];
       printf("var %.*s = ", varStmt->name.length, varStmt->name.lexeme);
       debugExpression(varStmt->initializer);
-      printf("\n");
+      printf(";\n");
       break;
     }
     case STRUCT_STMT: {

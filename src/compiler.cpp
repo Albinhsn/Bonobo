@@ -134,12 +134,15 @@ static LiteralType getLiteralType() {
   exit(1);
 }
 
-static void literal(Expr *expr) {
+static void literal(Expr *&expr) {
   if (expr == NULL) {
-    LiteralExpr *literalExpr = new LiteralExpr();
+    LiteralExpr *literalExpr = new LiteralExpr;
     literalExpr->literal = *parser->current;
-    literalExpr->type = getLiteralType();
-    expr = (Expr *)literalExpr;
+    literalExpr->literalType = getLiteralType();
+    literalExpr->type = LITERAL_EXPR;
+
+    delete expr;
+    expr = literalExpr;
   } else {
     switch (expr->type) {
     case BINARY_EXPR: {
@@ -180,11 +183,49 @@ static void grouping(Expr *expr) {
   consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
 }
 
-static void operation(Expr *expr) {}
+static BinaryOp getBinaryOp(Token *token) {
+  switch (token->type) {
+  case TOKEN_PLUS: {
+    return ADD;
+  }
+  case TOKEN_MINUS: {
+    return SUB;
+  }
+  case TOKEN_SLASH: {
+    return DIV;
+  }
+  case TOKEN_STAR: {
+    return MUL;
+  }
+  default: {
+    errorAt("Unknown binaryOp type");
+    exit(1);
+  }
+  }
+}
 
-static void logical(Expr *expr) {}
+static void operation(Expr *&expr) {
+  if (expr == NULL) {
+    errorAt("What can't op without expr");
+  }
+  BinaryOp op = getBinaryOp(parser->current);
+  switch (expr->type) {
+  case LITERAL_EXPR: {
+    BinaryExpr *binaryExpr = new BinaryExpr;
+    binaryExpr->op = op;
 
-static void expression(Precedence precedence, Expr *expr) {
+    binaryExpr->left = expr;
+    binaryExpr->type = BINARY_EXPR;
+
+    expr = binaryExpr;
+    break;
+  }
+  }
+}
+
+static void logical(Expr *&expr) {}
+
+static Expr *expression(Precedence precedence, Expr *expr) {
   while (parser->current->type != TOKEN_SEMICOLON) {
     switch (parser->current->type) {
     case TOKEN_INT: {
@@ -255,9 +296,13 @@ static void expression(Precedence precedence, Expr *expr) {
       grouping(expr);
       break;
     }
+    default: {
+      errorAt("Can't parse expr with this token");
+    }
     }
     advance();
   }
+  return expr;
 }
 
 static void resolveLocal() {}
@@ -371,9 +416,7 @@ static void varDeclaration() {
   } else if (match(TOKEN_LEFT_BRACE)) {
     varStmt->initializer = mapDeclaration();
   } else {
-
-    varStmt->initializer = NULL;
-    expression(PREC_ASSIGNMENT, varStmt->initializer);
+    varStmt->initializer = expression(PREC_ASSIGNMENT, NULL);
   }
 
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");

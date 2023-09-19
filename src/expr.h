@@ -6,6 +6,7 @@
 #include <vector>
 
 enum ExprType {
+  EMPTY_EXPR,
   BINARY_EXPR,
   GROUPING_EXPR,
   LOGICAL_EXPR,
@@ -22,27 +23,29 @@ enum LiteralType {
   STRING_LITERAL,
 };
 
+enum BinaryOp { DIV, ADD, MUL, SUB };
+
 class Expr {
 private:
 public:
   ExprType type;
 };
 
-class BinaryExpr : Expr {
+class BinaryExpr : public Expr {
 private:
 public:
   Expr *left;
-  Token op;
+  BinaryOp op;
   Expr *right;
 };
 
-class GroupingExpr : Expr {
+class GroupingExpr : public Expr {
 private:
 public:
   Expr *expression;
 };
 
-class LogicalExpr : Expr {
+class LogicalExpr : public Expr {
 private:
 public:
   Expr *left;
@@ -50,27 +53,27 @@ public:
   Expr *right;
 };
 
-class LiteralExpr : Expr {
+class LiteralExpr : public Expr {
 private:
 public:
-  LiteralType type;
+  LiteralType literalType;
   Token literal;
 };
 
-class UnaryExpr : Expr {
+class UnaryExpr : public Expr {
 private:
 public:
   Token op;
   Expr *right;
 };
 
-class VarExpr : Expr {
+class VarExpr : public Expr {
 private:
 public:
   Token name;
 };
 
-class CallExpr : Expr {
+class CallExpr : public Expr {
 private:
 public:
   Token callee;
