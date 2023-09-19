@@ -4,7 +4,6 @@
 #include "expr.h"
 
 enum StatementType {
-  PRINT_STMT,
   EXPR_STMT,
   RETURN_STMT,
   VAR_STMT,
@@ -34,14 +33,14 @@ public:
 class ExprStmt : public Stmt {
 private:
 public:
-  Expr expression;
+  Expr *expression;
 };
 
 class ReturnStmt : public Stmt {
 private:
 public:
   Token keyword;
-  Expr value;
+  Expr *value;
 };
 
 class VarStmt : public Stmt {
@@ -49,13 +48,20 @@ private:
 public:
   Token name;
   VarType varType;
-  Expr initializer;
+  Expr *initializer;
+};
+
+class AssignStmt : public Stmt {
+private:
+public:
+  Token name;
+  Expr *value;
 };
 
 class WhileStmt : public Stmt {
 private:
 public:
-  Expr condition;
+  Expr *condition;
   Stmt body;
 };
 
@@ -76,7 +82,7 @@ public:
 class IfStmt : public Stmt {
 private:
 public:
-  Expr condition;
+  Expr *condition;
   Stmt thenBranch;
   Stmt elseBranch;
 };
