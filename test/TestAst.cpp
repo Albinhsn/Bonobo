@@ -127,3 +127,27 @@ TEST(TestComparisonOp, TestEqualEqual) {
   ComparisonExpr *expr = (ComparisonExpr *)varStmt->initializer;
   EXPECT_EQ(expr->op, EQUAL_EQUAL_COMPARISON);
 }
+
+TEST(TestLogicalOp, TestAnd) {
+  std::string source = "var a: int = 5 and 3;";
+
+  std::vector<Stmt *> result = compile(source.c_str());
+
+  VarStmt *varStmt = (VarStmt *)result[0];
+  EXPECT_EQ(varStmt->initializer->type, LOGICAL_EXPR);
+
+  LogicalExpr *expr = (LogicalExpr *)varStmt->initializer;
+  EXPECT_EQ(expr->op, AND_LOGICAL);
+}
+
+TEST(TestLogicalOp, TestOr) {
+  std::string source = "var a: int = 5 or 3;";
+
+  std::vector<Stmt *> result = compile(source.c_str());
+
+  VarStmt *varStmt = (VarStmt *)result[0];
+  EXPECT_EQ(varStmt->initializer->type, LOGICAL_EXPR);
+
+  LogicalExpr *expr = (LogicalExpr *)varStmt->initializer;
+  EXPECT_EQ(expr->op, OR_LOGICAL);
+}
