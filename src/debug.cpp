@@ -40,29 +40,40 @@ void debugExpression(Expr *expr) {
   case LOGICAL_EXPR: {
     LogicalExpr *logicalExpr = (LogicalExpr *)expr;
     debugExpression(logicalExpr->left);
-    switch (logicalExpr->op) {
-    case LESS_LOGICAL: {
+    if (logicalExpr->op == AND_LOGICAL) {
+      printf(" and ");
+    } else {
+      printf(" or ");
+    }
+    debugExpression(logicalExpr->right);
+    break;
+  }
+  case COMPARISON_EXPR: {
+    ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+    debugExpression(comparisonExpr->left);
+    switch (comparisonExpr->op) {
+    case LESS_COMPARISON: {
       printf(" < ");
       break;
     }
-    case LESS_EQUAL_LOGICAL: {
+    case LESS_EQUAL_COMPARISON: {
       printf(" <= ");
       break;
     }
-    case GREATER_LOGICAL: {
+    case GREATER_COMPARISON: {
       printf(" > ");
       break;
     }
-    case GREATER_EQUAL_LOGICAL: {
+    case GREATER_EQUAL_COMPARISON: {
       printf(" <= ");
       break;
     }
-    case EQUAL_EQUAL_LOGICAL: {
+    case EQUAL_EQUAL_COMPARISON: {
       printf(" == ");
       break;
     }
     }
-    debugExpression(logicalExpr->right);
+    debugExpression(comparisonExpr->right);
     break;
   }
   case LITERAL_EXPR: {
@@ -77,10 +88,17 @@ void debugExpression(Expr *expr) {
   }
   case UNARY_EXPR: {
     UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+    if (unaryExpr->op == BANG_UNARY) {
+      printf("!");
+    } else {
+      printf("-");
+    }
+    debugExpression(unaryExpr->right);
     break;
   }
   case VAR_EXPR: {
     VarExpr *varExpr = (VarExpr *)expr;
+    printf("%.*s", varExpr->name.length, varExpr->name.lexeme);
     break;
   }
   case CALL_EXPR: {
@@ -88,7 +106,7 @@ void debugExpression(Expr *expr) {
     break;
   }
   default: {
-    printf("unknown expr %d", expr->type);
+    printf("unknown expr");
   }
   }
 }

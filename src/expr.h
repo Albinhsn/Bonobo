@@ -10,17 +10,22 @@ enum ExprType {
   GROUPING_EXPR,
   LOGICAL_EXPR,
   LITERAL_EXPR,
+  COMPARISON_EXPR,
   UNARY_EXPR,
   VAR_EXPR,
   CALL_EXPR,
 };
 
-enum LogicalOp {
-  LESS_EQUAL_LOGICAL,
-  LESS_LOGICAL,
-  GREATER_LOGICAL,
-  GREATER_EQUAL_LOGICAL,
-  EQUAL_EQUAL_LOGICAL,
+enum UnaryOp { BANG_UNARY, NEG_UNARY };
+
+enum LogicalOp { AND_LOGICAL, OR_LOGICAL };
+
+enum ComparisonOp {
+  LESS_EQUAL_COMPARISON,
+  LESS_COMPARISON,
+  GREATER_COMPARISON,
+  GREATER_EQUAL_COMPARISON,
+  EQUAL_EQUAL_COMPARISON,
 };
 
 enum LiteralType {
@@ -60,6 +65,14 @@ public:
   Expr *right;
 };
 
+class ComparisonExpr : public Expr {
+private:
+public:
+  Expr *left;
+  ComparisonOp op;
+  Expr *right;
+};
+
 class LiteralExpr : public Expr {
 private:
 public:
@@ -70,7 +83,7 @@ public:
 class UnaryExpr : public Expr {
 private:
 public:
-  Token op;
+  UnaryOp op;
   Expr *right;
 };
 

@@ -109,28 +109,53 @@ static Precedence getPrecedence(TokenType type) {
   }
 }
 
-static LogicalOp getLogicalType() {
+static UnaryOp getUnaryType() {
+  switch (parser->previous->type) {
+  case TOKEN_BANG: {
+    return BANG_UNARY;
+  }
+  case TOKEN_MINUS: {
+    return NEG_UNARY;
+  }
+  default: {
+    errorAt("Can't get unary op for this?");
+    exit(1);
+  }
+  }
+}
+
+static ComparisonOp getComparisonOp() {
   switch (parser->previous->type) {
   case TOKEN_LESS: {
-    return LESS_LOGICAL;
+    return LESS_COMPARISON;
   }
   case TOKEN_LESS_EQUAL: {
-    return LESS_EQUAL_LOGICAL;
+    return LESS_EQUAL_COMPARISON;
   }
   case TOKEN_GREATER: {
-    return GREATER_LOGICAL;
+    return GREATER_COMPARISON;
   }
   case TOKEN_GREATER_EQUAL: {
-    return GREATER_EQUAL_LOGICAL;
+    return GREATER_EQUAL_COMPARISON;
   }
   case TOKEN_EQUAL_EQUAL: {
-    return EQUAL_EQUAL_LOGICAL;
+    return EQUAL_EQUAL_COMPARISON;
   }
   default: {
     errorAt("unable to get logical type");
     exit(1);
   }
   }
+}
+
+static LogicalOp getLogicalOp() {
+  if (parser->previous->type == TOKEN_AND) {
+    return AND_LOGICAL;
+  } else if (parser->previous->type == TOKEN_OR) {
+    return OR_LOGICAL;
+  }
+  errorAt("Unknown logical op?");
+  exit(1);
 }
 
 static LiteralType getLiteralType() {
@@ -165,7 +190,6 @@ static void literal(Expr *&expr) {
     literalExpr->literalType = getLiteralType();
     literalExpr->type = LITERAL_EXPR;
 
-    delete expr;
     expr = literalExpr;
   } else {
     switch (expr->type) {
@@ -184,6 +208,11 @@ static void literal(Expr *&expr) {
       literal(logicalExpr->right);
       break;
     }
+    case COMPARISON_EXPR: {
+      ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+      literal(comparisonExpr->right);
+      break;
+    }
     case UNARY_EXPR: {
       UnaryExpr *unaryExpr = (UnaryExpr *)expr;
       literal(unaryExpr->right);
@@ -195,10 +224,43 @@ static void literal(Expr *&expr) {
       break;
     }
     default: {
+      printf("%d \n", expr->type == LOGICAL_EXPR);
       errorAt("Can't add literal to expr");
       break;
     }
     }
+  }
+}
+
+static void unary(Expr *&expr) {
+  if (expr == NULL) {
+    UnaryExpr *unaryExpr = new UnaryExpr;
+    unaryExpr->type = UNARY_EXPR;
+    unaryExpr->op = getUnaryType();
+    unaryExpr->right = NULL;
+
+    expr = unaryExpr;
+
+    return;
+  }
+  switch (expr->type) {
+  case BINARY_EXPR: {
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    unary(binaryExpr->right);
+    break;
+  }
+  case LOGICAL_EXPR: {
+    LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    unary(logicalExpr->right);
+    break;
+  }
+  case GROUPING_EXPR: {
+    GroupingExpr *groupingExpr = (GroupingExpr *)expr;
+    unary(groupingExpr->expression);
+    break;
+  }
+  default: {
+  }
   }
 }
 
@@ -248,34 +310,97 @@ static void operation(Expr *&expr) {
 
     binaryExpr->left = expr;
     binaryExpr->type = BINARY_EXPR;
+    binaryExpr->right = NULL;
 
     expr = binaryExpr;
     break;
+  }
+  case VAR_EXPR: {
+    BinaryExpr *binaryExpr = new BinaryExpr;
+    binaryExpr->op = op;
+
+    binaryExpr->left = expr;
+    binaryExpr->type = BINARY_EXPR;
+    binaryExpr->right = NULL;
+
+    expr = binaryExpr;
+    break;
+  }
+  default: {
+  }
+  }
+}
+
+static void comparison(Expr *&expr) {
+  if (expr == NULL) {
+    errorAt("Unable to add logical to empty expr");
+  }
+
+  ComparisonExpr *comparisonExpr = new ComparisonExpr;
+  comparisonExpr->type = COMPARISON_EXPR;
+  comparisonExpr->op = getComparisonOp();
+  comparisonExpr->right = NULL;
+
+  switch (expr->type) {
+  case COMPARISON_EXPR: {
+    break;
+  }
+  case LOGICAL_EXPR: {
+    break;
+  }
+  default: {
+    comparisonExpr->left = expr;
+  }
+  }
+  expr = comparisonExpr;
+}
+
+static void identifier(Expr *&expr) {
+  if (expr == NULL) {
+    VarExpr *varExpr = new VarExpr;
+    varExpr->type = VAR_EXPR;
+    varExpr->name = *parser->previous;
+
+    expr = varExpr;
+    return;
+  }
+  switch (expr->type) {
+  case BINARY_EXPR: {
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    identifier(binaryExpr->right);
+    break;
+  }
+  case LOGICAL_EXPR: {
+    LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    identifier(logicalExpr->right);
+    break;
+  }
+  case UNARY_EXPR: {
+    UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+    identifier(unaryExpr->right);
+    break;
+  }
+  default: {
+    printf("%d ", expr->type);
+    printf("woopsie no identifier yet\n");
+    exit(1);
   }
   }
 }
 
 static void logical(Expr *&expr) {
   if (expr == NULL) {
-    errorAt("Unable to add logical to empty expr");
+    errorAt("Can't add logical op to empty expr?");
   }
-
-  LogicalOp logicalType = getLogicalType();
-
   LogicalExpr *logicalExpr = new LogicalExpr;
   logicalExpr->type = LOGICAL_EXPR;
-  logicalExpr->op = logicalType;
-  logicalExpr->right = NULL;
-
-  switch (expr->type) {
-  case LOGICAL_EXPR: {
-    break;
-  }
-  default: {
+  logicalExpr->op = getLogicalOp();
+  if (expr->type == LOGICAL_EXPR) {
+    // Check precedence
+  } else {
     logicalExpr->left = expr;
+    expr = logicalExpr;
   }
-  }
-  expr = logicalExpr;
 }
 
 static Expr *expression(Expr *expr) {
@@ -296,7 +421,7 @@ static Expr *expression(Expr *expr) {
       break;
     }
     case TOKEN_IDENTIFIER: {
-      literal(expr);
+      identifier(expr);
       break;
     }
     case TOKEN_TRUE: {
@@ -324,35 +449,44 @@ static Expr *expression(Expr *expr) {
       break;
     }
     case TOKEN_BANG: {
-      // logical(expr);
+      unary(expr);
       break;
     }
     case TOKEN_LESS: {
-      logical(expr);
+      comparison(expr);
       break;
     }
     case TOKEN_LESS_EQUAL: {
-      logical(expr);
+      comparison(expr);
       break;
     }
     case TOKEN_GREATER: {
-      logical(expr);
+      comparison(expr);
       break;
     }
     case TOKEN_GREATER_EQUAL: {
-      logical(expr);
+      comparison(expr);
       break;
     }
     case TOKEN_EQUAL_EQUAL: {
-      logical(expr);
+      comparison(expr);
       break;
     }
     case TOKEN_LEFT_PAREN: {
       grouping(expr);
       break;
     }
+    case TOKEN_AND: {
+      logical(expr);
+      break;
+    }
+    case TOKEN_OR: {
+      logical(expr);
+      break;
+    }
     default: {
-      printf("%.*s\n", parser->current->length, parser->current->lexeme);
+      printf("%.*s %d\n", parser->current->length, parser->current->lexeme,
+             parser->previous->type);
       errorAt("Can't parse expr with this token");
     }
     }
