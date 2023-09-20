@@ -8,7 +8,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * fucking precedence 
     comparison precedence 
     logical precedence
-    binary precedence
 
 * conditional blocks
 

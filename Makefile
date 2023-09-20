@@ -8,6 +8,9 @@ FILES = main.cpp compiler.cpp scanner.cpp debug.cpp
 c: 
 	cd src/ && g++ -o main $(FILES) && ./main ../input
 
+cd: 
+	cd src/ && g++ -o main $(FILES) && ./main ../input --debug
+
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
 
