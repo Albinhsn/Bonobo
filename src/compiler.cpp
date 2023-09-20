@@ -109,6 +109,30 @@ static Precedence getPrecedence(TokenType type) {
   }
 }
 
+static LogicalOp getLogicalType() {
+  switch (parser->previous->type) {
+  case TOKEN_LESS: {
+    return LESS_LOGICAL;
+  }
+  case TOKEN_LESS_EQUAL: {
+    return LESS_EQUAL_LOGICAL;
+  }
+  case TOKEN_GREATER: {
+    return GREATER_LOGICAL;
+  }
+  case TOKEN_GREATER_EQUAL: {
+    return GREATER_EQUAL_LOGICAL;
+  }
+  case TOKEN_EQUAL_EQUAL: {
+    return EQUAL_EQUAL_LOGICAL;
+  }
+  default: {
+    errorAt("unable to get logical type");
+    exit(1);
+  }
+  }
+}
+
 static LiteralType getLiteralType() {
   switch (parser->previous->type) {
   case TOKEN_INT: {
@@ -231,7 +255,28 @@ static void operation(Expr *&expr) {
   }
 }
 
-static void logical(Expr *&expr) {}
+static void logical(Expr *&expr) {
+  if (expr == NULL) {
+    errorAt("Unable to add logical to empty expr");
+  }
+
+  LogicalOp logicalType = getLogicalType();
+
+  LogicalExpr *logicalExpr = new LogicalExpr;
+  logicalExpr->type = LOGICAL_EXPR;
+  logicalExpr->op = logicalType;
+  logicalExpr->right = NULL;
+
+  switch (expr->type) {
+  case LOGICAL_EXPR: {
+    break;
+  }
+  default: {
+    logicalExpr->left = expr;
+  }
+  }
+  expr = logicalExpr;
+}
 
 static Expr *expression(Expr *expr) {
   while (parser->current->type != TOKEN_SEMICOLON &&
@@ -279,7 +324,7 @@ static Expr *expression(Expr *expr) {
       break;
     }
     case TOKEN_BANG: {
-      logical(expr);
+      // logical(expr);
       break;
     }
     case TOKEN_LESS: {
@@ -428,7 +473,6 @@ static void varDeclaration() {
   } else {
     varStmt->initializer = expression(NULL);
   }
-
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
   compiler->statements.push_back((Stmt *)varStmt);
 }

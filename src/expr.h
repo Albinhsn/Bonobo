@@ -6,7 +6,6 @@
 #include <vector>
 
 enum ExprType {
-  EMPTY_EXPR,
   BINARY_EXPR,
   GROUPING_EXPR,
   LOGICAL_EXPR,
@@ -14,6 +13,14 @@ enum ExprType {
   UNARY_EXPR,
   VAR_EXPR,
   CALL_EXPR,
+};
+
+enum LogicalOp {
+  LESS_EQUAL_LOGICAL,
+  LESS_LOGICAL,
+  GREATER_LOGICAL,
+  GREATER_EQUAL_LOGICAL,
+  EQUAL_EQUAL_LOGICAL,
 };
 
 enum LiteralType {
@@ -49,7 +56,7 @@ class LogicalExpr : public Expr {
 private:
 public:
   Expr *left;
-  Token op;
+  LogicalOp op;
   Expr *right;
 };
 

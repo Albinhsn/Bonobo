@@ -3,6 +3,10 @@
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
 
+## TODO ast compiler
+
+* fucking precedence 
+
 ## TODO statically typed
 
 * Compile empty main 

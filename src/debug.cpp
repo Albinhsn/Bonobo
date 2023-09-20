@@ -1,4 +1,3 @@
-
 #include "debug.h"
 
 void debugExpression(Expr *expr) {
@@ -40,6 +39,30 @@ void debugExpression(Expr *expr) {
   }
   case LOGICAL_EXPR: {
     LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    debugExpression(logicalExpr->left);
+    switch (logicalExpr->op) {
+    case LESS_LOGICAL: {
+      printf(" < ");
+      break;
+    }
+    case LESS_EQUAL_LOGICAL: {
+      printf(" <= ");
+      break;
+    }
+    case GREATER_LOGICAL: {
+      printf(" > ");
+      break;
+    }
+    case GREATER_EQUAL_LOGICAL: {
+      printf(" <= ");
+      break;
+    }
+    case EQUAL_EQUAL_LOGICAL: {
+      printf(" == ");
+      break;
+    }
+    }
+    debugExpression(logicalExpr->right);
     break;
   }
   case LITERAL_EXPR: {
