@@ -160,11 +160,6 @@ static void literal(Expr *&expr) {
       literal(binaryExpr->right);
       break;
     }
-    case GROUPING_EXPR: {
-      GroupingExpr *groupingExpr = (GroupingExpr *)expr;
-      literal(groupingExpr->expression);
-      break;
-    }
     case LOGICAL_EXPR: {
       LogicalExpr *logicalExpr = (LogicalExpr *)expr;
       literal(logicalExpr->right);
@@ -216,12 +211,8 @@ static void unary(Expr *&expr) {
     unary(logicalExpr->right);
     break;
   }
-  case GROUPING_EXPR: {
-    GroupingExpr *groupingExpr = (GroupingExpr *)expr;
-    unary(groupingExpr->expression);
-    break;
-  }
   default: {
+    errorAt("Can't add unary to expr");
   }
   }
 }
@@ -266,29 +257,30 @@ static void operation(Expr *&expr) {
   }
   BinaryOp op = getBinaryOp(parser->previous);
   switch (expr->type) {
-  case LITERAL_EXPR: {
-    BinaryExpr *binaryExpr = new BinaryExpr;
-    binaryExpr->op = op;
-
-    binaryExpr->left = expr;
-    binaryExpr->type = BINARY_EXPR;
-    binaryExpr->right = NULL;
-
-    expr = binaryExpr;
+  case COMPARISON_EXPR: {
+    ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+    operation(comparisonExpr->right);
     break;
   }
-  case VAR_EXPR: {
-    BinaryExpr *binaryExpr = new BinaryExpr;
-    binaryExpr->op = op;
-
-    binaryExpr->left = expr;
-    binaryExpr->type = BINARY_EXPR;
-    binaryExpr->right = NULL;
-
-    expr = binaryExpr;
+  case LOGICAL_EXPR: {
+    LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    operation(logicalExpr->right);
+    break;
+  }
+  case BINARY_EXPR: {
+    // Check precedence
     break;
   }
   default: {
+    BinaryExpr *binaryExpr = new BinaryExpr;
+    binaryExpr->op = op;
+
+    binaryExpr->left = expr;
+    binaryExpr->type = BINARY_EXPR;
+    binaryExpr->right = NULL;
+
+    expr = binaryExpr;
+    break;
   }
   }
 }
@@ -312,6 +304,7 @@ static void comparison(Expr *&expr) {
   }
   default: {
     comparisonExpr->left = expr;
+    break;
   }
   }
   expr = comparisonExpr;
@@ -390,6 +383,7 @@ static void logical(Expr *&expr) {
   if (expr == NULL) {
     errorAt("Can't add logical op to empty expr?");
   }
+
   LogicalExpr *logicalExpr = new LogicalExpr;
   logicalExpr->type = LOGICAL_EXPR;
   logicalExpr->op = getLogicalOp();
@@ -808,111 +802,6 @@ static void literal() {
   default: {
     printf("Unknown literal token %d\n", (int)parser->previous->type);
     exit(1);
-  }
-  }
-}
-
-static void prefixRule(TokenType type, bool canAssign) {
-  switch (type) {
-  case TOKEN_LEFT_PAREN: {
-    grouping();
-    break;
-  }
-  case TOKEN_MINUS: {
-    unary();
-    break;
-  }
-  case TOKEN_STRING: {
-    break;
-  }
-  case TOKEN_INT: {
-    number();
-    break;
-  }
-  case TOKEN_FALSE: {
-    literal();
-    break;
-  }
-  case TOKEN_TRUE: {
-    literal();
-    break;
-  }
-  case TOKEN_NIL: {
-    literal();
-    break;
-  }
-  case TOKEN_BANG: {
-    unary();
-    break;
-  }
-  case TOKEN_IDENTIFIER: {
-    namedVariable(canAssign);
-    break;
-  }
-  default: {
-    break;
-  }
-  }
-}
-static void infixRule(TokenType type, bool canAssign) {
-  switch (type) {
-  case TOKEN_LEFT_BRACKET: {
-    index();
-    break;
-  }
-  case TOKEN_LEFT_PAREN: {
-    break;
-  }
-  case TOKEN_DOT: {
-    dot(canAssign);
-    break;
-  }
-  case TOKEN_MINUS: {
-    binary();
-    break;
-  }
-  case TOKEN_PLUS: {
-    binary();
-    break;
-  }
-  case TOKEN_STAR: {
-    binary();
-    break;
-  }
-  case TOKEN_SLASH: {
-    binary();
-    break;
-  }
-  case TOKEN_BANG_EQUAL: {
-    binary();
-    break;
-  }
-  case TOKEN_EQUAL_EQUAL: {
-    binary();
-    break;
-  }
-  case TOKEN_GREATER: {
-    binary();
-    break;
-  }
-  case TOKEN_GREATER_EQUAL: {
-    binary();
-    break;
-  }
-  case TOKEN_LESS: {
-    binary();
-    break;
-  }
-  case TOKEN_LESS_EQUAL: {
-    binary();
-    break;
-  }
-  case TOKEN_AND: {
-  }
-  case TOKEN_OR: {
-  }
-  default: {
-    break;
   }
   }
 }
