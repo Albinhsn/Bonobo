@@ -138,6 +138,8 @@ TEST(TestLogicalOp, TestAnd) {
 
   LogicalExpr *expr = (LogicalExpr *)varStmt->initializer;
   EXPECT_EQ(expr->op, AND_LOGICAL);
+  EXPECT_EQ(expr->left->type, LITERAL_EXPR);
+  EXPECT_EQ(expr->right->type, LITERAL_EXPR);
 }
 
 TEST(TestLogicalOp, TestOr) {
@@ -150,4 +152,31 @@ TEST(TestLogicalOp, TestOr) {
 
   LogicalExpr *expr = (LogicalExpr *)varStmt->initializer;
   EXPECT_EQ(expr->op, OR_LOGICAL);
+}
+
+TEST(TestUnaryOp, TestBang) {
+  std::string source = "var a: int = !5;";
+
+  std::vector<Stmt *> result = compile(source.c_str());
+
+  VarStmt *varStmt = (VarStmt *)result[0];
+  EXPECT_EQ(varStmt->initializer->type, UNARY_EXPR);
+
+  UnaryExpr *expr = (UnaryExpr *)varStmt->initializer;
+  EXPECT_EQ(expr->op, BANG_UNARY);
+}
+
+TEST(TestGroupingOp, TestGrouping) {
+  std::string source = "var a: int = !(5);";
+
+  std::vector<Stmt *> result = compile(source.c_str());
+
+  VarStmt *varStmt = (VarStmt *)result[0];
+  EXPECT_EQ(varStmt->initializer->type, UNARY_EXPR);
+
+  UnaryExpr *expr = (UnaryExpr *)varStmt->initializer;
+  EXPECT_EQ(expr->op, BANG_UNARY);
+  EXPECT_EQ(expr->right->type, GROUPING_EXPR);
+  GroupingExpr *groupingExpr = (GroupingExpr *)expr->right;
+  EXPECT_EQ(groupingExpr->expression->type, LITERAL_EXPR);
 }

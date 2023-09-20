@@ -88,7 +88,7 @@ static TokenType isKeyword(const char *current, int len) {
       return checkKeyword(current, "bool", 4, len, TOKEN_BOOL);
     }
     case 'l': {
-      return checkKeyword(current, "float", 5, len, TOKEN_DOUBLE);
+      return checkKeyword(current, "double", 5, len, TOKEN_DOUBLE_LITERAL);
     }
     case 'o': {
       return checkKeyword(current, "for", 3, len, TOKEN_FOR);
@@ -106,7 +106,7 @@ static TokenType isKeyword(const char *current, int len) {
   case 'i': {
     switch (current[1]) {
     case 'n': {
-      return checkKeyword(current, "int", 3, len, TOKEN_INT);
+      return checkKeyword(current, "int", 3, len, TOKEN_INT_LITERAL);
     }
     case 'f': {
       return checkKeyword(current, "if", 2, len, TOKEN_IF);

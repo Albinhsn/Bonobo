@@ -6,5 +6,6 @@
 
 void debugStatements(Compiler *compiler);
 void debugExpression(Expr *expr);
+void debugToken(Token * token);
 
 #endif

@@ -36,6 +36,8 @@ typedef enum {
   // Literals.
   TOKEN_IDENTIFIER,
   TOKEN_STRING,
+  TOKEN_INT_LITERAL,   // int 1
+  TOKEN_DOUBLE_LITERAL, // float 2
 
   // Datatypes
   TOKEN_INT,   // int 1

@@ -40,6 +40,34 @@ TEST(TestScanner, TestSingleCharTokens) {
   EXPECT_EQ(scanner->current, source.size());
 }
 
+TEST(TestScanner, TestVarInt) {
+  std::string source = "var a: int = !5;";
+  Scanner *scanner = NULL;
+  scanner = (Scanner *)malloc(sizeof(Scanner));
+  scanner->source = source.c_str();
+  scanner->line = 1;
+  scanner->current = 0;
+
+  std::vector<Token> tokens = {
+      (Token){"var", 3, 1, TOKEN_VAR},
+      (Token){"a", 1, 1, TOKEN_IDENTIFIER},
+      (Token){":", 1, 1, TOKEN_COLON},
+      (Token){"int", 3, 1, TOKEN_INT_LITERAL},
+      (Token){"=", 1, 1, TOKEN_EQUAL},
+      (Token){"!", 1, 1, TOKEN_BANG},
+      (Token){"5", 1, 1, TOKEN_INT},
+      (Token){";", 1, 1, TOKEN_SEMICOLON},
+      (Token){"EOF", 3, 1, TOKEN_EOF},
+  };
+  for (int i = 0; i < tokens.size(); i++) {
+    Token *scannedToken = scanToken(scanner);
+    EXPECT_EQ(scannedToken->type, tokens[i].type);
+    EXPECT_TRUE(cmpString(scannedToken->lexeme, scannedToken->length,
+                          tokens[i].lexeme, tokens[i].length));
+  }
+  EXPECT_EQ(scanner->current, source.size());
+}
+
 TEST(TestScanner, TestDoubleCharTokens) {
   std::string source = "!=<=>=->";
   Scanner *scanner = NULL;

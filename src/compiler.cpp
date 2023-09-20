@@ -197,7 +197,6 @@ static void unary(Expr *&expr) {
     unaryExpr->right = NULL;
 
     expr = unaryExpr;
-
     return;
   }
   switch (expr->type) {
@@ -218,16 +217,44 @@ static void unary(Expr *&expr) {
 }
 
 static void grouping(Expr *&expr) {
-  GroupingExpr *groupingExpr = new GroupingExpr;
+  if (expr == NULL) {
+    GroupingExpr *groupingExpr = new GroupingExpr;
+    groupingExpr->type = GROUPING_EXPR;
+    groupingExpr->expression = expression(expr);
 
-  groupingExpr->type = GROUPING_EXPR;
-  groupingExpr->expression = expression(expr);
+    consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
 
-  consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
-
-  delete expr;
-
-  expr = groupingExpr;
+    expr = groupingExpr;
+    debugExpression(expr);
+    printf("\n");
+    return;
+  }
+  switch (expr->type) {
+  case BINARY_EXPR: {
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    grouping(binaryExpr->right);
+    break;
+  }
+  case LOGICAL_EXPR: {
+    LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    grouping(logicalExpr->right);
+    break;
+  }
+  case COMPARISON_EXPR: {
+    ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+    grouping(comparisonExpr->right);
+    break;
+  }
+  case UNARY_EXPR: {
+    UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+    grouping(unaryExpr->right);
+    break;
+  }
+  default: {
+    // This should change when we get call expr?
+    errorAt("Can't add grouping to this?");
+  }
+  }
 }
 
 static BinaryOp getBinaryOp(Token *token) {
@@ -400,6 +427,9 @@ static Expr *expression(Expr *expr) {
   while (parser->current->type != TOKEN_SEMICOLON &&
          parser->current->type != TOKEN_RIGHT_PAREN) {
     advance();
+    debugToken(parser->previous);
+    debugExpression(expr);
+    printf("\n");
     switch (parser->previous->type) {
     case TOKEN_INT: {
       literal(expr);
@@ -478,8 +508,6 @@ static Expr *expression(Expr *expr) {
       break;
     }
     default: {
-      printf("%.*s %d\n", parser->current->length, parser->current->lexeme,
-             parser->previous->type);
       errorAt("Can't parse expr with this token");
     }
     }
@@ -575,9 +603,9 @@ static void varDeclaration() {
   consume(TOKEN_COLON, "Expect type declaration after var name");
   if (match(TOKEN_STR)) {
     varStmt->varType = STRING_VAR;
-  } else if (match(TOKEN_INT)) {
+  } else if (match(TOKEN_INT_LITERAL)) {
     varStmt->varType = INT_VAR;
-  } else if (match(TOKEN_DOUBLE)) {
+  } else if (match(TOKEN_DOUBLE_LITERAL)) {
     varStmt->varType = DOUBLE_VAR;
   } else if (match(TOKEN_BOOL)) {
     varStmt->varType = BOOL_VAR;
