@@ -5,7 +5,23 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
+* On grouping i don't think we call inside it, i.e literal. 
+
+* Binary/Logical/Comparison creates new from it
+
 * fucking precedence 
+    comparison precedence 
+    logical precedence
+    binary precedence
+
+* conditional blocks
+
+* loops
+
+* function definitions 
+
+* function calls
+
 
 ## TODO statically typed
 

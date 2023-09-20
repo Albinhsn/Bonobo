@@ -71,43 +71,6 @@ static bool match(TokenType type) {
 
 static inline void stringConstant() {}
 
-static Precedence getPrecedence(TokenType type) {
-  switch (type) {
-  case TOKEN_LEFT_BRACKET:
-    return PREC_CALL;
-  case TOKEN_DOT:
-    return PREC_CALL;
-  case TOKEN_LEFT_PAREN:
-    return PREC_CALL;
-  case TOKEN_MINUS:
-    return PREC_TERM;
-  case TOKEN_PLUS:
-    return PREC_TERM;
-  case TOKEN_SLASH:
-    return PREC_FACTOR;
-  case TOKEN_STAR:
-    return PREC_FACTOR;
-  case TOKEN_BANG_EQUAL:
-    return PREC_EQUALITY;
-  case TOKEN_EQUAL_EQUAL:
-    return PREC_EQUALITY;
-  case TOKEN_GREATER:
-    return PREC_COMPARISON;
-  case TOKEN_GREATER_EQUAL:
-    return PREC_COMPARISON;
-  case TOKEN_LESS:
-    return PREC_COMPARISON;
-  case TOKEN_LESS_EQUAL:
-    return PREC_COMPARISON;
-  case TOKEN_AND:
-    return PREC_AND;
-  case TOKEN_OR:
-    return PREC_OR;
-  default:
-    return PREC_NONE;
-  }
-}
-
 static UnaryOp getUnaryType() {
   switch (parser->previous->type) {
   case TOKEN_BANG: {
@@ -387,6 +350,42 @@ static void identifier(Expr *&expr) {
   }
 }
 
+static void minus(Expr *&expr) {
+  if (expr == NULL) {
+    UnaryExpr *unaryExpr = new UnaryExpr;
+    unaryExpr->type = UNARY_EXPR;
+    unaryExpr->op = NEG_UNARY;
+    unaryExpr->right = NULL;
+
+    expr = unaryExpr;
+    return;
+  }
+  switch (expr->type) {
+  case BINARY_EXPR: {
+    // If right is viable
+  }
+  case LOGICAL_EXPR: {
+    LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+    minus(logicalExpr->right);
+    break;
+  }
+  case COMPARISON_EXPR: {
+    ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+    minus(comparisonExpr->right);
+    break;
+  }
+  default: {
+    BinaryExpr *binaryExpr = new BinaryExpr;
+    binaryExpr->op = SUB;
+    binaryExpr->type = BINARY_EXPR;
+    binaryExpr->left = expr;
+    binaryExpr->right = NULL;
+    expr = binaryExpr;
+    break;
+  }
+  }
+}
+
 static void logical(Expr *&expr) {
   if (expr == NULL) {
     errorAt("Can't add logical op to empty expr?");
@@ -394,6 +393,7 @@ static void logical(Expr *&expr) {
   LogicalExpr *logicalExpr = new LogicalExpr;
   logicalExpr->type = LOGICAL_EXPR;
   logicalExpr->op = getLogicalOp();
+
   if (expr->type == LOGICAL_EXPR) {
     // Check precedence
   } else {
@@ -436,7 +436,7 @@ static Expr *expression(Expr *expr) {
       break;
     }
     case TOKEN_MINUS: {
-      operation(expr);
+      minus(expr);
       break;
     }
     case TOKEN_STAR: {
