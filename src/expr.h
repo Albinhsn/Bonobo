@@ -2,8 +2,6 @@
 #define EXPR_HEADER
 
 #include "scanner.h"
-#include <string>
-#include <vector>
 
 enum ExprType {
   BINARY_EXPR,

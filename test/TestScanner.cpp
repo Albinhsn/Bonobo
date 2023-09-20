@@ -1,10 +1,6 @@
-
 #include "../src/scanner.h"
-#include <cstring>
+#include "../src/common.h"
 #include <gtest/gtest.h>
-#include <iostream>
-#include <string>
-#include <vector>
 
 TEST(TestScanner, TestSingleCharTokens) {
   std::string source = "!<>(){}[],.-+;*/:=";

@@ -21,28 +21,15 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 set(Sources
-  # ./src/common.h
-  # ./src/compiler.h
-  # ./src/compiler.cpp
-  # ./src/debug.cpp
-  # ./src/debug.h
-  # ./src/main.cpp
-  # ./src/memory.cpp
-  # ./src/memory.h
+  ./src/common.h
+  ./src/compiler.h
+  ./src/compiler.cpp
+  ./src/debug.cpp
+  ./src/debug.h
+  ./src/expr.h
   ./src/scanner.cpp
   ./src/scanner.h
-  # ./src/table.h
-  # ./src/table.cpp
-  # ./src/opcode.h
-  # ./src/value.cpp
-  # ./src/value.h
-  # ./src/vm.cpp
-  # ./src/vm.h
-  # ./src/object.h
-  # ./src/object.cpp
+  ./src/stmt.h
   )
-# add_executable(
-#   main ${Sources}
-#   )
 
 add_library(${This} STATIC ${Sources})

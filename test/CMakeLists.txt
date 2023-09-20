@@ -3,6 +3,7 @@ set(This bonoboTests)
 
 set(test_SOURCES
   ./TestScanner.cpp
+  ./TestAst.cpp
   )
 add_executable(${This} ${test_SOURCES})
 

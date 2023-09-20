@@ -10,3 +10,8 @@ c:
 
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
+
+bt: 
+	cmake -S . -B build && cmake --build build && cd build && ctest --output-on-failure -V
+t: 
+	cd build && ctest --output-on-failure -V

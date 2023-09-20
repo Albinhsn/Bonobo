@@ -2,23 +2,22 @@
 #include "common.h"
 #include "debug.h"
 #include "scanner.h"
-#include <cstdio>
-#include <map>
-#include <string>
 
 Compiler *compiler;
 Parser *parser;
 Scanner *scanner;
 
 static void initCompiler() {
-  compiler = (Compiler *)malloc(sizeof(Compiler));
-  compiler->variables = std::map<std::string, LiteralExpr>();
+  compiler = new Compiler;
+  compiler->enclosing = NULL;
+  compiler->type = TYPE_SCRIPT;
   compiler->statements = std::vector<Stmt *>();
+  compiler->variables = std::map<std::string, LiteralExpr>();
 }
 
 static void endCompiler(Compiler *current) {
   compiler = current->enclosing;
-  free(current);
+  delete (current);
 }
 
 static void errorAt(const char *message) {
@@ -576,7 +575,7 @@ static Expr *mapDeclaration() {
 }
 
 static void varDeclaration() {
-  VarStmt *varStmt = (VarStmt *)malloc(sizeof(VarStmt));
+  VarStmt *varStmt = new VarStmt;
   varStmt->type = VAR_STMT;
   varStmt->name = parseVariable("Expect variable name.");
   consume(TOKEN_COLON, "Expect type declaration after var name");
@@ -1005,13 +1004,12 @@ static void initParser() {
   parser->hadError = false;
 }
 
-void compile(const char *source) {
+std::vector<Stmt *> compile(const char *source) {
   scanner = (Scanner *)malloc(sizeof(Scanner));
   initScanner(scanner, source);
   initParser();
 
   initCompiler();
-
   advance();
   while (!match(TOKEN_EOF)) {
     declaration();
@@ -1021,5 +1019,8 @@ void compile(const char *source) {
 
   free(scanner);
   free(parser);
-  free(compiler);
+  std::vector<Stmt *> out = compiler->statements;
+  delete (compiler);
+
+  return out;
 }

@@ -4,13 +4,7 @@
 #include "expr.h"
 #include "scanner.h"
 #include "stmt.h"
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <map>
-#include <stdio.h>
-#include <string.h>
-#include <string>
+#include "common.h"
 
 typedef struct Parser {
   Token *current;
@@ -38,11 +32,12 @@ typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 typedef struct Compiler {
   Compiler *enclosing;
   FunctionType type;
+  std::vector<std::string> s;
   std::vector<Stmt *> statements;
   std::map<std::string, LiteralExpr> variables;
 } Compiler;
 
-void compile(const char *source);
+std::vector<Stmt *> compile(const char *source);
 
 static Expr *expression(Expr *expr);
 static void statement();
