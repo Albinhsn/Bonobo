@@ -33,7 +33,7 @@ enum LiteralType {
   STRING_LITERAL,
 };
 
-enum BinaryOp { DIV, ADD, MUL, SUB };
+enum BinaryOp { ADD, SUB, MUL, DIV};
 
 class Expr {
 private:

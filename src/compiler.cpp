@@ -295,7 +295,26 @@ static void operation(Expr *&expr) {
     break;
   }
   case BINARY_EXPR: {
-    // Check precedence
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+
+    BinaryExpr *newBinaryExpr = new BinaryExpr;
+    newBinaryExpr->type = BINARY_EXPR;
+    newBinaryExpr->op = op;
+
+    if (op >= MUL && binaryExpr->op <= SUB) {
+      if (binaryExpr->right != NULL && binaryExpr->right->type == BINARY_EXPR) {
+        operation(binaryExpr->right);
+      } else {
+        newBinaryExpr->left = binaryExpr->right;
+        binaryExpr->right = newBinaryExpr;
+        expr = binaryExpr;
+      }
+    } else {
+      printf("GOT\n");
+      newBinaryExpr->left = binaryExpr;
+      newBinaryExpr->right = NULL;
+      expr = newBinaryExpr;
+    }
     break;
   }
   default: {
@@ -370,6 +389,18 @@ static void identifier(Expr *&expr) {
   }
 }
 
+static bool isChildUnary(Expr *&expr) {
+  if (expr == NULL) {
+    return true;
+  }
+  if (expr->type == BINARY_EXPR) {
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    return isChildUnary(binaryExpr->right);
+  }
+
+  return false;
+}
+
 static void minus(Expr *&expr) {
   if (expr == NULL) {
     UnaryExpr *unaryExpr = new UnaryExpr;
@@ -382,7 +413,19 @@ static void minus(Expr *&expr) {
   }
   switch (expr->type) {
   case BINARY_EXPR: {
+    BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    if (isChildUnary(binaryExpr->right)) {
+      minus(binaryExpr->right);
+    } else {
+      BinaryExpr *newBinaryExpr = new BinaryExpr;
+      newBinaryExpr->op = SUB;
+      newBinaryExpr->type = BINARY_EXPR;
+      newBinaryExpr->left = expr;
+      newBinaryExpr->right = NULL;
+      expr = newBinaryExpr;
+    }
     // If right is viable
+    break;
   }
   case LOGICAL_EXPR: {
     LogicalExpr *logicalExpr = (LogicalExpr *)expr;

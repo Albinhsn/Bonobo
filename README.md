@@ -5,8 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* Binary/Logical/Comparison creates new from it
-
 * fucking precedence 
     comparison precedence 
     logical precedence

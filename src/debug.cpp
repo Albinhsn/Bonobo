@@ -8,6 +8,7 @@ void debugExpression(Expr *expr) {
   switch (expr->type) {
   case BINARY_EXPR: {
     BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+    printf("(");
     debugExpression(binaryExpr->left);
     switch (binaryExpr->op) {
     case ADD: {
@@ -28,6 +29,7 @@ void debugExpression(Expr *expr) {
     }
     }
     debugExpression(binaryExpr->right);
+    printf(")");
     break;
   }
   case GROUPING_EXPR: {
