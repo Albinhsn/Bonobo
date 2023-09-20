@@ -110,7 +110,7 @@ static Precedence getPrecedence(TokenType type) {
 }
 
 static LiteralType getLiteralType() {
-  switch (parser->current->type) {
+  switch (parser->previous->type) {
   case TOKEN_INT: {
     return INT_LITERAL;
   }
@@ -137,7 +137,7 @@ static LiteralType getLiteralType() {
 static void literal(Expr *&expr) {
   if (expr == NULL) {
     LiteralExpr *literalExpr = new LiteralExpr;
-    literalExpr->literal = *parser->current;
+    literalExpr->literal = *parser->previous;
     literalExpr->literalType = getLiteralType();
     literalExpr->type = LITERAL_EXPR;
 
@@ -178,9 +178,17 @@ static void literal(Expr *&expr) {
   }
 }
 
-static void grouping(Expr *expr) {
-  GroupingExpr groupingExpr;
+static void grouping(Expr *&expr) {
+  GroupingExpr *groupingExpr = new GroupingExpr;
+
+  groupingExpr->type = GROUPING_EXPR;
+  groupingExpr->expression = expression(expr);
+
   consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
+
+  delete expr;
+
+  expr = groupingExpr;
 }
 
 static BinaryOp getBinaryOp(Token *token) {
@@ -208,7 +216,7 @@ static void operation(Expr *&expr) {
   if (expr == NULL) {
     errorAt("What can't op without expr");
   }
-  BinaryOp op = getBinaryOp(parser->current);
+  BinaryOp op = getBinaryOp(parser->previous);
   switch (expr->type) {
   case LITERAL_EXPR: {
     BinaryExpr *binaryExpr = new BinaryExpr;
@@ -225,9 +233,11 @@ static void operation(Expr *&expr) {
 
 static void logical(Expr *&expr) {}
 
-static Expr *expression(Precedence precedence, Expr *expr) {
-  while (parser->current->type != TOKEN_SEMICOLON) {
-    switch (parser->current->type) {
+static Expr *expression(Expr *expr) {
+  while (parser->current->type != TOKEN_SEMICOLON &&
+         parser->current->type != TOKEN_RIGHT_PAREN) {
+    advance();
+    switch (parser->previous->type) {
     case TOKEN_INT: {
       literal(expr);
       break;
@@ -297,10 +307,10 @@ static Expr *expression(Precedence precedence, Expr *expr) {
       break;
     }
     default: {
+      printf("%.*s\n", parser->current->length, parser->current->lexeme);
       errorAt("Can't parse expr with this token");
     }
     }
-    advance();
   }
   return expr;
 }
@@ -330,7 +340,7 @@ static uint16_t argumentList() {
   if (!(parser->current->type == TOKEN_RIGHT_PAREN)) {
     do {
       Expr *expr = new Expr();
-      expression(PREC_ASSIGNMENT, expr);
+      expression(expr);
       if (argCount == 255) {
         errorAt("Can't have more than 255 arguments.");
       }
@@ -345,7 +355,7 @@ static Expr *arrayDeclaration() {
   uint16_t items = 0;
   if (parser->current->type != TOKEN_RIGHT_BRACKET) {
     do {
-      expression(PREC_ASSIGNMENT, NULL);
+      expression(NULL);
       if (items == 255) {
         errorAt("Can't have more than 255 arguments.");
       }
@@ -372,7 +382,7 @@ static Expr *mapDeclaration() {
       }
 
       consume(TOKEN_COLON, "Expect colon between key and value");
-      expression(PREC_ASSIGNMENT, NULL);
+      expression(NULL);
 
       if (items == 255) {
         errorAt("Can't have more than 255 arguments.");
@@ -416,7 +426,7 @@ static void varDeclaration() {
   } else if (match(TOKEN_LEFT_BRACE)) {
     varStmt->initializer = mapDeclaration();
   } else {
-    varStmt->initializer = expression(PREC_ASSIGNMENT, NULL);
+    varStmt->initializer = expression(NULL);
   }
 
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
@@ -425,7 +435,7 @@ static void varDeclaration() {
 
 static void expressionStatement() {
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
 }
 
@@ -445,13 +455,13 @@ static void forStatement() {
 
   if (!match(TOKEN_SEMICOLON)) {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
     consume(TOKEN_SEMICOLON, "Expect ';' after loop condition");
   }
 
   if (!match(TOKEN_RIGHT_PAREN)) {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
   }
 
@@ -463,7 +473,7 @@ static void forStatement() {
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   statement();
@@ -475,7 +485,7 @@ static void ifStatement() {
 
 static void printStatement() {
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_SEMICOLON, "Expect ';' after value.");
 }
 
@@ -487,7 +497,7 @@ static void returnStatement() {
   if (match(TOKEN_SEMICOLON)) {
   } else {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
     consume(TOKEN_SEMICOLON, "Expect ';' after return value");
   }
 }
@@ -495,7 +505,7 @@ static void returnStatement() {
 static void whileStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   statement();
@@ -505,7 +515,7 @@ static void binary() {
   TokenType operatorType = parser->previous->type;
 
   Expr *expr = new Expr();
-  expression((Precedence)(getPrecedence(operatorType) + 1), expr);
+  expression(expr);
 
   switch (operatorType) {
   case TOKEN_BANG_EQUAL: {
@@ -546,7 +556,7 @@ static void binary() {
 
 static void index() {
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
 }
 
@@ -554,21 +564,21 @@ static void dot(bool canAssign) {
   consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
   if (canAssign && match(TOKEN_EQUAL)) {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
   } else {
   }
 }
 
 static void grouping() {
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 static void unary() {
   TokenType operatorType = parser->previous->type;
   Expr *expr = new Expr();
-  expression(PREC_ASSIGNMENT, expr);
+  expression(expr);
 
   switch (operatorType) {
   case TOKEN_MINUS: {
@@ -593,14 +603,14 @@ static void namedVariable(bool canAssign) {
   }
   if (canAssign && match(TOKEN_EQUAL)) {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
   } else if (canAssign && match(TOKEN_LEFT_BRACKET)) {
     Expr *expr = new Expr();
-    expression(PREC_ASSIGNMENT, expr);
+    expression(expr);
     consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
     if (match(TOKEN_EQUAL)) {
       Expr *expr = new Expr();
-      expression(PREC_ASSIGNMENT, expr);
+      expression(expr);
     } else {
     }
   } else {

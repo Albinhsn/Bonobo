@@ -44,6 +44,7 @@ typedef struct Compiler {
 
 void compile(const char *source);
 
+static Expr *expression(Expr *expr);
 static void statement();
 static void declaration();
 static void prefixRule(TokenType type, bool canAssign);

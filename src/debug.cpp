@@ -33,6 +33,9 @@ void debugExpression(Expr *expr) {
   }
   case GROUPING_EXPR: {
     GroupingExpr *groupingExpr = (GroupingExpr *)expr;
+    printf("(");
+    debugExpression(groupingExpr->expression);
+    printf(")");
     break;
   }
   case LOGICAL_EXPR: {
