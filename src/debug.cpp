@@ -116,6 +116,18 @@ void debugExpression(Expr *expr) {
         printf(")");
         break;
     }
+    case ARRAY_EXPR: {
+        ArrayExpr *arrayExpr = (ArrayExpr *)expr;
+        printf("[");
+        for (int i = 0; i < arrayExpr->items.size(); i++) {
+            debugExpression(arrayExpr->items[i]);
+            if (i < arrayExpr->items.size() - 1) {
+                printf(",");
+            }
+        }
+        printf("]");
+        break;
+    }
     default: {
         printf("unknown expr");
     }
@@ -124,7 +136,7 @@ void debugExpression(Expr *expr) {
 const char *debugVarType(VarType varType) {
     switch (varType) {
     case ARRAY_VAR: {
-        return "array";
+        return "arr";
     }
     case BOOL_VAR: {
         return "bool";

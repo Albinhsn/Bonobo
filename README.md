@@ -7,8 +7,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Scanner tests for keywords
 
-* Array declaration
-
 * Indexing 
 
 

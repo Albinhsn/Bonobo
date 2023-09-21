@@ -447,6 +447,10 @@ static void minus(Expr *&expr) {
     }
 }
 
+static void index(Expr *& expr){
+  
+}
+
 static void logical(Expr *&expr) {
     if (expr == NULL) {
         errorAt("Can't add logical op to empty expr?");
@@ -471,12 +475,13 @@ static void logical(Expr *&expr) {
 static Expr *expression(Expr *expr) {
     while (parser->current->type != TOKEN_SEMICOLON &&
            parser->current->type != TOKEN_RIGHT_PAREN &&
+           parser->current->type != TOKEN_RIGHT_BRACKET &&
            parser->current->type != TOKEN_COMMA) {
         advance();
 
         // debugExpression(expr);
         // printf("\n");
-        // debugToken(parser->previous);
+        debugToken(parser->previous);
         // printf("\n");
 
         switch (parser->previous->type) {
@@ -548,6 +553,10 @@ static Expr *expression(Expr *expr) {
             grouping(expr);
             break;
         }
+        case TOKEN_LEFT_BRACKET: {
+            index(expr);
+            break;
+        }
         case TOKEN_AND: {
             logical(expr);
             break;
@@ -581,18 +590,16 @@ static uint16_t argumentList() {
 }
 
 static Expr *arrayDeclaration() {
-    uint16_t items = 0;
+    ArrayExpr *arrayExpr = new ArrayExpr();
     if (parser->current->type != TOKEN_RIGHT_BRACKET) {
         do {
-            expression(NULL);
-            if (items == 255) {
-                errorAt("Can't have more than 255 arguments.");
-            }
-            items++;
+            arrayExpr->items.push_back(expression(NULL));
+            debugToken(parser->previous);
+            printf("\n");
         } while (match(TOKEN_COMMA));
     }
-    consume(TOKEN_RIGHT_BRACKET, "Expect ')' after arguments.");
-    return NULL;
+    consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array declarations.");
+    return arrayExpr;
 }
 
 static Expr *mapDeclaration() {

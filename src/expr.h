@@ -11,6 +11,8 @@ enum ExprType {
     COMPARISON_EXPR,
     UNARY_EXPR,
     VAR_EXPR,
+    ARRAY_EXPR,
+    MAP_EXPR,
     CALL_EXPR,
 };
 
@@ -34,7 +36,6 @@ enum LiteralType {
 };
 
 enum BinaryOp { ADD, SUB, MUL, DIV };
-
 
 class Expr {
   private:
@@ -64,6 +65,16 @@ class GroupingExpr : public Expr {
         this->type = GROUPING_EXPR;
         this->expression = expression;
     }
+};
+
+class ArrayExpr : public Expr {
+  private:
+  public:
+  std::vector<Expr*> items;
+  ArrayExpr(){
+    this->type = ARRAY_EXPR;
+    this->items = std::vector<Expr*>();
+  }
 };
 
 class LogicalExpr : public Expr {
@@ -135,7 +146,7 @@ class CallExpr : public Expr {
     std::vector<Expr *> arguments;
     CallExpr(Token callee) {
         this->callee = callee;
-        this->arguments = std::vector<Expr*>();
+        this->arguments = std::vector<Expr *>();
         this->type = CALL_EXPR;
     };
 };

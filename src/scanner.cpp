@@ -77,7 +77,17 @@ static inline TokenType checkKeyword(const char *current, const char *keyword,
 static TokenType isKeyword(const char *current, int len) {
     switch (current[0]) {
     case 'a': {
-        return checkKeyword(current, "and", 3, len, TOKEN_AND);
+        switch (current[1]) {
+        case 'n': {
+            return checkKeyword(current, "and", 3, len, TOKEN_AND);
+        }
+        case 'r': {
+            return checkKeyword(current, "arr", 3, len, TOKEN_ARRAY_TYPE);
+        }
+        default: {
+            return TOKEN_IDENTIFIER;
+        }
+        }
     }
     case 'f': {
         switch (current[1]) {
@@ -134,7 +144,7 @@ static TokenType isKeyword(const char *current, int len) {
             switch (current[2]) {
             case 'r': {
                 if (len == 3) {
-                  return TOKEN_STR_TYPE;
+                    return TOKEN_STR_TYPE;
                 }
                 switch (current[3]) {
                 case 'u': {
