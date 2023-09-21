@@ -1,7 +1,7 @@
 #include "debug.h"
 
 void debugExpression(Expr *expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         printf("<null expr>");
         return;
     }
@@ -202,17 +202,17 @@ void debugStatement(Stmt *statement) {
     case FOR_STMT: {
         ForStmt *forStmt = (ForStmt *)statement;
         printf("for(");
-        if (forStmt->initializer == NULL) {
+        if (forStmt->initializer == nullptr) {
             printf(";");
         } else {
             debugStatement(forStmt->initializer);
         }
-        if (forStmt->condition == NULL) {
+        if (forStmt->condition == nullptr) {
             printf(";");
         } else {
             debugStatement(forStmt->condition);
         }
-        if (forStmt->increment != NULL) {
+        if (forStmt->increment != nullptr) {
             debugStatement(forStmt->increment);
         }
         printf("){\n");

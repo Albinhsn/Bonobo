@@ -33,7 +33,7 @@ class ExprStmt : public Stmt {
   public:
     Expr *expression;
     ExprStmt() {
-        this->expression = NULL;
+        this->expression = nullptr;
         this->type = EXPR_STMT;
     }
 };
@@ -58,7 +58,7 @@ class AssignStmt : public Stmt {
     Token name;
     Expr *value;
     AssignStmt() {
-        this->value = NULL;
+        this->value = nullptr;
         this->type = ASSIGN_STMT;
     }
 };
@@ -84,9 +84,9 @@ class ForStmt : public Stmt {
     std::vector<Stmt *> body;
     ForStmt() {
         this->type = FOR_STMT;
-        this->initializer = NULL;
-        this->condition = NULL;
-        this->increment = NULL;
+        this->initializer = nullptr;
+        this->condition = nullptr;
+        this->increment = nullptr;
         this->body = std::vector<Stmt *>();
     }
 };
@@ -110,7 +110,7 @@ class IfStmt : public Stmt {
     std::vector<Stmt *> elseBranch;
     IfStmt() {
         this->type = IF_STMT;
-        this->condition = NULL;
+        this->condition = nullptr;
         this->thenBranch = std::vector<Stmt *>();
         this->elseBranch = std::vector<Stmt *>();
     }

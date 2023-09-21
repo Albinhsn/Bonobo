@@ -15,6 +15,7 @@ set(testAst_SOURCES
   ./TestLogical.cpp
   ./TestIf.cpp
   ./TestIndex.cpp
+  ./TestMap.cpp
   ./TestStruct.cpp
   ./TestWhile.cpp
   )

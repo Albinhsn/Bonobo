@@ -63,7 +63,7 @@ class BinaryExpr : public Expr {
     BinaryExpr(Expr *left, BinaryOp op) {
         this->left = left;
         this->op = op;
-        this->right = NULL;
+        this->right = nullptr;
         this->type = BINARY_EXPR;
     }
 };
@@ -112,7 +112,7 @@ class LogicalExpr : public Expr {
     LogicalExpr(Expr *left, LogicalOp op) {
         this->left = left;
         this->op = op;
-        this->right = NULL;
+        this->right = nullptr;
         this->type = LOGICAL_EXPR;
     }
 };
@@ -126,7 +126,7 @@ class ComparisonExpr : public Expr {
     ComparisonExpr(Expr *left, ComparisonOp op) {
         this->left = left;
         this->op = op;
-        this->right = NULL;
+        this->right = nullptr;
         this->type = COMPARISON_EXPR;
     }
 };
@@ -150,7 +150,7 @@ class UnaryExpr : public Expr {
     Expr *right;
     UnaryExpr(UnaryOp op) {
         this->op = op;
-        this->right = NULL;
+        this->right = nullptr;
         this->type = UNARY_EXPR;
     };
 };

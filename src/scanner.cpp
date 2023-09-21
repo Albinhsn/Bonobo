@@ -15,7 +15,7 @@ void initScanner(Scanner *scanner, const char *source) {
 }
 
 Token *newToken(const char *lexeme, int length, int line, TokenType type) {
-    Token *token = NULL;
+    Token *token = nullptr;
     token = (Token *)malloc(sizeof(Token));
     token->type = type;
     token->length = length;

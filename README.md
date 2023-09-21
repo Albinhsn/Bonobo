@@ -5,15 +5,11 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* Map declaration
-
 * Returnstatement
 
 * Cleanup expr parsing to handle new exprs
 
 * Scanner tests for keywords
-
-* Change NULL -> nullptr
 
 * Support foo[][]
 

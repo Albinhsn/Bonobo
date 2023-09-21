@@ -10,7 +10,7 @@ typedef struct Parser {
     Token *current;
     bool hadError;
     Token *previous;
-    Parser() : current(NULL), hadError(false), previous(NULL){};
+    Parser() : current(nullptr), hadError(false), previous(nullptr){};
 } Parser;
 
 typedef enum {
@@ -38,6 +38,7 @@ typedef struct Compiler {
 
 std::vector<Stmt *> compile(const char *source);
 
+static Expr *mapDeclaration();
 static Expr *arrayDeclaration();
 static Expr *expression(Expr *expr);
 static Stmt*statement();

@@ -9,7 +9,7 @@ Scanner *scanner;
 
 static void initCompiler() {
     compiler = new Compiler;
-    compiler->enclosing = NULL;
+    compiler->enclosing = nullptr;
     compiler->type = TYPE_SCRIPT;
     compiler->statements = std::vector<Stmt *>();
 }
@@ -184,7 +184,7 @@ static LiteralType getLiteralType() {
 }
 
 static void literal(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         expr = new LiteralExpr(*parser->previous, getLiteralType());
     } else {
         switch (expr->type) {
@@ -223,7 +223,7 @@ static void literal(Expr *&expr) {
 }
 
 static void unary(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         UnaryExpr *unaryExpr = new UnaryExpr(getUnaryType());
 
         expr = unaryExpr;
@@ -247,7 +247,7 @@ static void unary(Expr *&expr) {
 }
 
 static void grouping(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         expr = new GroupingExpr(expression(expr));
         consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
 
@@ -280,7 +280,7 @@ static void grouping(Expr *&expr) {
         callExpr->callee = varExpr->name;
         if (!match(TOKEN_RIGHT_PAREN)) {
             while (true) {
-                callExpr->arguments.push_back(expression(NULL));
+                callExpr->arguments.push_back(expression(nullptr));
                 if (match(TOKEN_RIGHT_PAREN)) {
                     break;
                 }
@@ -318,7 +318,7 @@ static BinaryOp getBinaryOp(Token *token) {
 }
 
 static void operation(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         errorAt("What can't op without expr");
     }
     BinaryOp op = getBinaryOp(parser->previous);
@@ -337,7 +337,7 @@ static void operation(Expr *&expr) {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
 
         if (op >= MUL && binaryExpr->op <= SUB) {
-            if (binaryExpr->right != NULL &&
+            if (binaryExpr->right != nullptr &&
                 binaryExpr->right->type == BINARY_EXPR) {
                 operation(binaryExpr->right);
             } else {
@@ -358,7 +358,7 @@ static void operation(Expr *&expr) {
 }
 
 static void comparison(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         errorAt("Unable to add logical to empty expr");
     }
     if (expr->type == LOGICAL_EXPR) {
@@ -372,7 +372,7 @@ static void comparison(Expr *&expr) {
 }
 
 static void identifier(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         expr = new VarExpr(*parser->previous);
         return;
     }
@@ -401,7 +401,7 @@ static void identifier(Expr *&expr) {
 }
 
 static bool isChildUnary(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         return true;
     }
     if (expr->type == BINARY_EXPR) {
@@ -413,7 +413,7 @@ static bool isChildUnary(Expr *&expr) {
 }
 
 static void minus(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         expr = new UnaryExpr(NEG_UNARY);
         return;
     }
@@ -448,7 +448,7 @@ static void minus(Expr *&expr) {
 }
 
 static void index(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         expr = arrayDeclaration();
         return;
     }
@@ -493,7 +493,7 @@ static void index(Expr *&expr) {
 }
 
 static void logical(Expr *&expr) {
-    if (expr == NULL) {
+    if (expr == nullptr) {
         errorAt("Can't add logical op to empty expr?");
     }
 
@@ -510,6 +510,42 @@ static void logical(Expr *&expr) {
         }
     } else {
         expr = new LogicalExpr(expr, op);
+    }
+}
+
+static void mapExpression(Expr *&expr) {
+    if (expr == nullptr) {
+        expr = mapDeclaration();
+        return;
+    }
+    switch (expr->type) {
+    case BINARY_EXPR: {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        mapExpression(binaryExpr->right);
+        expr = binaryExpr;
+        break;
+    }
+    case LOGICAL_EXPR: {
+        LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+        mapExpression(logicalExpr->right);
+        expr = logicalExpr;
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        mapExpression(comparisonExpr->right);
+        expr = comparisonExpr;
+        break;
+    }
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        mapExpression(unaryExpr->right);
+        expr = unaryExpr;
+        break;
+    }
+    default: {
+        errorAt("Don't know how to parse this expr (mapExpression)");
+    }
     }
 }
 
@@ -600,6 +636,10 @@ static Expr *expression(Expr *expr) {
             index(expr);
             break;
         }
+        case TOKEN_LEFT_BRACE: {
+            mapExpression(expr);
+            break;
+        }
         case TOKEN_AND: {
             logical(expr);
             break;
@@ -620,7 +660,7 @@ static Expr *arrayDeclaration() {
     ArrayExpr *arrayExpr = new ArrayExpr();
     if (parser->current->type != TOKEN_RIGHT_BRACKET) {
         do {
-            arrayExpr->items.push_back(expression(NULL));
+            arrayExpr->items.push_back(expression(nullptr));
         } while (match(TOKEN_COMMA));
     }
     consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array declarations.");
@@ -653,7 +693,7 @@ static Stmt *varDeclaration() {
     } else if (match(TOKEN_LEFT_BRACE)) {
         varStmt->initializer = mapDeclaration();
     } else {
-        varStmt->initializer = expression(NULL);
+        varStmt->initializer = expression(nullptr);
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
     return (Stmt *)varStmt;
@@ -739,7 +779,7 @@ static Stmt *returnStatement() {
         expression(expr);
         consume(TOKEN_SEMICOLON, "Expect ';' after return value");
     }
-    return NULL;
+    return nullptr;
 }
 
 static Stmt *whileStatement() {
@@ -825,8 +865,8 @@ static Stmt *declaration() {
 
 static void initParser() {
     parser = (Parser *)malloc(sizeof(Parser));
-    parser->current = NULL;
-    parser->previous = NULL;
+    parser->current = nullptr;
+    parser->previous = nullptr;
     parser->hadError = false;
 }
 
