@@ -16,10 +16,6 @@ static std::string readFile(const char *path) {
 }
 
 int main(int argc, const char *argv[]) {
-    Trie *trie = new Trie();
-    printf("%d\n", trie->isKeyword("and", 3) == TOKEN_IDENTIFIER);
-    // printf("%d\n", trie->isKeyword("fun", 3) == TOKEN_IDENTIFIER);
-    return 0;
     if (argc == 1) {
         printf("Need file name\n");
         exit(1);

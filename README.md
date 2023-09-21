@@ -5,18 +5,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* Create retrieval tree for keywords
-
-* Scanner tests for keywords
-
-* Support foo[][]
-
 * Statically type array/map
 
-* Cleanup expr parsing to handle new exprs
-    * Should just create massive test suite for this
-        * Proll just keep moving and create test when encounter the bug
-
+* Create snd pass
+    * Check validity of everything
 
 
 ## TODO LLVM backend

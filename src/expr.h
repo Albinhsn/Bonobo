@@ -180,7 +180,7 @@ class CallExpr : public Expr {
 class IndexExpr : public Expr {
   private:
   public:
-    VarExpr *variable;
+    Expr *variable;
     Expr *index;
     IndexExpr() {
         this->type = INDEX_EXPR;

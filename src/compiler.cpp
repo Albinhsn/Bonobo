@@ -483,6 +483,17 @@ static void index(Expr *&expr) {
         expr = unaryExpr;
         break;
     }
+    case INDEX_EXPR: {
+        IndexExpr *indexExpr = (IndexExpr *)expr;
+
+        IndexExpr *newIndexExpr = new IndexExpr();
+        newIndexExpr->variable = indexExpr;
+        newIndexExpr->index = expression(nullptr);
+
+        consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
+        expr = newIndexExpr;
+        break;
+    }
     case VAR_EXPR: {
         IndexExpr *indexExpr = new IndexExpr();
         indexExpr->variable = (VarExpr *)expr;
