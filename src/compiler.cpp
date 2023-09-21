@@ -68,6 +68,47 @@ static bool match(TokenType type) {
     return true;
 }
 
+static VarType getVarType() {
+    switch (parser->previous->type) {
+    case TOKEN_INT_LITERAL: {
+        return INT_VAR;
+    }
+    case TOKEN_DOUBLE_LITERAL: {
+        return DOUBLE_VAR;
+    }
+    case TOKEN_BOOL: {
+        return BOOL_VAR;
+    }
+    case TOKEN_STRING: {
+        return STRING_VAR;
+    }
+    case TOKEN_ARRAY: {
+        return ARRAY_VAR;
+    }
+    case TOKEN_MAP: {
+        return MAP_VAR;
+    }
+    default: {
+        break;
+    }
+    }
+    errorAt("Invalid varType");
+    exit(1);
+}
+
+static Variable parseVariable() {
+    Variable var;
+
+    consume(TOKEN_IDENTIFIER, "Expected identifier for variable");
+    var.name = *parser->previous;
+
+    consume(TOKEN_COLON, "Expected ':' after var name");
+    advance();
+    var.type = getVarType();
+
+    return var;
+}
+
 static UnaryOp getUnaryType() {
     switch (parser->previous->type) {
     case TOKEN_BANG: {
@@ -567,26 +608,7 @@ static Expr *mapDeclaration() {
 static Stmt *varDeclaration() {
     VarStmt *varStmt = new VarStmt;
     varStmt->type = VAR_STMT;
-    consume(TOKEN_IDENTIFIER, "Expect variable name");
-    varStmt->name = *parser->previous;
-    consume(TOKEN_COLON, "Expect type declaration after var name");
-    if (match(TOKEN_STR)) {
-        varStmt->varType = STRING_VAR;
-    } else if (match(TOKEN_INT_LITERAL)) {
-        varStmt->varType = INT_VAR;
-    } else if (match(TOKEN_DOUBLE_LITERAL)) {
-        varStmt->varType = DOUBLE_VAR;
-    } else if (match(TOKEN_BOOL)) {
-        varStmt->varType = BOOL_VAR;
-    } else if (match(TOKEN_MAP)) {
-        varStmt->varType = MAP_VAR;
-    } else if (match(TOKEN_ARRAY)) {
-        varStmt->varType = ARRAY_VAR;
-    } else if (match(TOKEN_STRUCT)) {
-        varStmt->varType = STRUCT_VAR;
-    } else {
-        errorAt("Expected type declaration after ':'");
-    }
+    varStmt->var = parseVariable();
 
     consume(TOKEN_EQUAL, "Expected assignment at var declaration");
 
@@ -699,19 +721,6 @@ static Stmt *whileStatement() {
     return whileStmt;
 }
 
-static Stmt *function(FunctionType type) {
-
-    consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
-    if (parser->current->type != TOKEN_RIGHT_PAREN) {
-        do {
-        } while (match(TOKEN_COMMA));
-    }
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after last function param.");
-    consume(TOKEN_LEFT_BRACE, "Expect '{' after function params.");
-    endCompiler(compiler);
-    return NULL;
-}
-
 static void structArgs() {
     while (parser->current->type != TOKEN_RIGHT_BRACE) {
         consume(TOKEN_IDENTIFIER, "Expect field identifier in struct");
@@ -731,8 +740,29 @@ static Stmt *structDeclaration() {
 }
 
 static Stmt *funDeclaration() {
-    function(TYPE_FUNCTION);
-    return NULL;
+    FuncStmt *funcStmt = new FuncStmt();
+    consume(TOKEN_IDENTIFIER, "Need function name in func declaration");
+    funcStmt->name = *parser->previous;
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after func name");
+    if (!match(TOKEN_RIGHT_PAREN)) {
+        funcStmt->params.push_back(parseVariable());
+        while (match(TOKEN_COMMA)) {
+            funcStmt->params.push_back(parseVariable());
+        }
+        consume(TOKEN_RIGHT_PAREN, "Expect ')' after func params");
+    }
+
+    consume(TOKEN_ARROW, "Expect '->' after func params");
+    advance();
+    funcStmt->returnType = getVarType();
+
+    consume(TOKEN_LEFT_BRACE,
+            "Expect '{' after returntype in func declaration");
+    while (!match(TOKEN_RIGHT_BRACE)) {
+        funcStmt->body.push_back(declaration());
+    }
+    return funcStmt;
 }
 
 static Stmt *statement() {
@@ -745,7 +775,7 @@ static Stmt *statement() {
     } else if (match(TOKEN_WHILE)) {
         return whileStatement();
     } else {
-        Stmt * stmt = expressionStatement();
+        Stmt *stmt = expressionStatement();
         consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
         return stmt;
     }

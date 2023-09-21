@@ -25,6 +25,13 @@ enum VarType {
     STRUCT_VAR
 };
 
+class Variable {
+  private:
+  public:
+    VarType type;
+    Token name;
+};
+
 class Stmt {
   private:
   public:
@@ -51,8 +58,7 @@ class ReturnStmt : public Stmt {
 class VarStmt : public Stmt {
   private:
   public:
-    Token name;
-    VarType varType;
+    Variable var;
     Expr *initializer;
 };
 
@@ -121,8 +127,14 @@ class FuncStmt : public Stmt {
   private:
   public:
     Token name;
-    std::vector<Token> params;
-    std::vector<Stmt> body;
+    VarType returnType;
+    std::vector<Variable> params;
+    std::vector<Stmt *> body;
+    FuncStmt() {
+        this->type = FUNC_STMT;
+        this->body = std::vector<Stmt *>();
+        this->params = std::vector<Variable>();
+    }
 };
 
 #endif

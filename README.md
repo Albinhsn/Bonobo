@@ -5,8 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* loops
-
 * function definitions 
 
 * function calls

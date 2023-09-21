@@ -115,12 +115,45 @@ void debugExpression(Expr *expr) {
     }
     }
 }
+const char *debugVarType(VarType varType) {
+    switch (varType) {
+    case ARRAY_VAR: {
+        return "array";
+    }
+    case BOOL_VAR: {
+        return "bool";
+    }
+    case INT_VAR: {
+        return "int";
+    }
+    case DOUBLE_VAR: {
+        return "double";
+    }
+    case MAP_VAR: {
+        return "map";
+    }
+    case STRUCT_VAR: {
+        return "struct";
+    }
+    case STRING_VAR: {
+        return "string";
+    }
+    default: {
+        return "unknown";
+    }
+    }
+}
+
+void debugVariable(Variable var) {
+    printf("%.*s:%s", var.name.length, var.name.lexeme, debugVarType(var.type));
+}
 
 void debugStatement(Stmt *statement) {
     switch (statement->type) {
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)statement;
-        printf("var %.*s = ", varStmt->name.length, varStmt->name.lexeme);
+        printf("var %.*s: %s = ", varStmt->var.name.length,
+               varStmt->var.name.lexeme, debugVarType(varStmt->var.type));
         debugExpression(varStmt->initializer);
         printf(";");
         break;
@@ -178,6 +211,17 @@ void debugStatement(Stmt *statement) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)statement;
+        printf("fun %.*s(", funcStmt->name.length, funcStmt->name.lexeme);
+        for (int i = 0; i < funcStmt->params.size(); i++) {
+            debugVariable(funcStmt->params[i]);
+            if (i != funcStmt->params.size() - 1) {
+                printf(",");
+            }
+        }
+        printf(") -> %s\n{\n", debugVarType(funcStmt->returnType));
+        debugStatements(funcStmt->body);
+        printf("}\n");
+
         break;
     }
     case ASSIGN_STMT: {

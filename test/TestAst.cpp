@@ -11,7 +11,8 @@ TEST(TestIntVariable, TestIntVar) {
 
     EXPECT_EQ(result[0]->type, VAR_STMT);
     VarStmt *varStmt = (VarStmt *)result[0];
-    EXPECT_EQ(std::string(varStmt->name.lexeme, varStmt->name.length), "a");
+    EXPECT_EQ(std::string(varStmt->var.name.lexeme, varStmt->var.name.length),
+              "a");
     EXPECT_EQ(varStmt->initializer->type, LITERAL_EXPR);
 
     LiteralExpr *literalExpr = (LiteralExpr *)varStmt->initializer;

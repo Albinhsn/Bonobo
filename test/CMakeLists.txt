@@ -8,6 +8,7 @@ set(testAst_SOURCES
   ./TestComparison.cpp
   ./TestIf.cpp
   ./TestFor.cpp
+  ./TestFun.cpp
   ./TestWhile.cpp
   ./TestLogical.cpp
   ./TestBinary.cpp
