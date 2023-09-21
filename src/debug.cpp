@@ -185,16 +185,31 @@ const char *debugVarType(VarType varType) {
     }
 }
 
-void debugVariable(Variable var) {
-    printf("%.*s:%s", var.name.length, var.name.lexeme, debugVarType(var.type));
+void debugVariable(Variable *var) {
+    printf("%.*s:%s", var->name.length, var->name.lexeme,
+           debugVarType(var->type));
+    if (var->type == ARRAY_VAR) {
+        ArrayVariable *arrayVar = (ArrayVariable *)var;
+        printf("[");
+        debugVariable(arrayVar->items);
+        printf("]");
+    } else if (var->type == MAP_VAR) {
+        MapVariable *mapVar = (MapVariable *)var;
+        printf("[");
+        debugVariable(mapVar->keys);
+        printf(",");
+        debugVariable(mapVar->values);
+        printf("]");
+    }
 }
 
 void debugStatement(Stmt *statement) {
     switch (statement->type) {
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)statement;
-        printf("var %.*s: %s = ", varStmt->var.name.length,
-               varStmt->var.name.lexeme, debugVarType(varStmt->var.type));
+        printf("var ");
+        debugVariable(varStmt->var);
+        printf(" = ");
         debugExpression(varStmt->initializer);
         printf(";");
         break;
@@ -218,6 +233,7 @@ void debugStatement(Stmt *statement) {
         printf("){\n");
         debugStatements(forStmt->body);
         printf("}\n");
+        break;
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)statement;

@@ -15,13 +15,6 @@ enum StatementType {
     FUNC_STMT
 };
 
-class Variable {
-  private:
-  public:
-    VarType type;
-    Token name;
-};
-
 class Stmt {
   private:
   public:
@@ -42,16 +35,16 @@ class ReturnStmt : public Stmt {
   private:
   public:
     Expr *value;
-    ReturnStmt(){
-    this->value = nullptr;
-    this->type = RETURN_STMT;
-  }
+    ReturnStmt() {
+        this->value = nullptr;
+        this->type = RETURN_STMT;
+    }
 };
 
 class VarStmt : public Stmt {
   private:
   public:
-    Variable var;
+    Variable *var;
     Expr *initializer;
 };
 
@@ -98,10 +91,10 @@ class StructStmt : public Stmt {
   private:
   public:
     Token name;
-    std::vector<Variable> fieldNames;
+    std::vector<Variable*> fieldNames;
     StructStmt() {
         this->type = STRUCT_STMT;
-        this->fieldNames = std::vector<Variable>();
+        this->fieldNames = std::vector<Variable*>();
     }
 };
 
@@ -124,12 +117,12 @@ class FuncStmt : public Stmt {
   public:
     Token name;
     VarType returnType;
-    std::vector<Variable> params;
+    std::vector<Variable*> params;
     std::vector<Stmt *> body;
     FuncStmt() {
         this->type = FUNC_STMT;
         this->body = std::vector<Stmt *>();
-        this->params = std::vector<Variable>();
+        this->params = std::vector<Variable*>();
     }
 };
 

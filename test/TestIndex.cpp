@@ -15,10 +15,11 @@ TEST(TestIndex, TestIntIndex) {
     EXPECT_EQ(varStmt->initializer->type, INDEX_EXPR);
 
     IndexExpr *indexExpr = (IndexExpr *)varStmt->initializer;
+    EXPECT_EQ(indexExpr->variable->type, VAR_EXPR);
 
-    EXPECT_EQ(std::string(indexExpr->variable->name.lexeme,
-                          indexExpr->variable->name.length),
-              "baz");
+    VarExpr *varExpr = (VarExpr *)indexExpr->variable;
+    EXPECT_EQ(std::string(varExpr->name.lexeme, varExpr->name.length), "baz");
+
     EXPECT_EQ(indexExpr->index->type, LITERAL_EXPR);
 }
 

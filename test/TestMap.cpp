@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 TEST(TestMap, TestEmptyMap) {
-    std::string source = "var foo: map = {};";
+    std::string source = "var foo: map[int, int] = {};";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);
@@ -21,7 +21,7 @@ TEST(TestMap, TestEmptyMap) {
 }
 
 TEST(TestMap, TestBasicMap) {
-    std::string source = "var foo: map = {1:2, 3:4};";
+    std::string source = "var foo: map[int, int] = {1:2, 3:4};";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);

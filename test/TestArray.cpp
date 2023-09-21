@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 TEST(TestArray, TestEmptyArray) {
-    std::string source = "var a: arr = [];";
+    std::string source = "var a: arr[int] = [];";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);
@@ -19,7 +19,7 @@ TEST(TestArray, TestEmptyArray) {
 }
 
 TEST(TestArray, Test1DArray) {
-    std::string source = "var a: arr = [1,2,3];";
+    std::string source = "var a: arr[int] = [1,2,3];";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);
@@ -34,7 +34,7 @@ TEST(TestArray, Test1DArray) {
 }
 
 TEST(TestArray, Test2DArray) {
-    std::string source = "var a: arr = [[], []];";
+    std::string source = "var a: arr[arr] = [[], []];";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);

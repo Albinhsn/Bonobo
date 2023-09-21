@@ -92,19 +92,44 @@ static VarType getVarType() {
         break;
     }
     }
-    errorAt("Invalid varType");
+    debugToken(parser->previous);
+    errorAt(" Invalid varType");
     exit(1);
 }
 
-static Variable parseVariable() {
-    Variable var;
+static Variable *parseVariable() {
+    Variable *var = new Variable();
 
     consume(TOKEN_IDENTIFIER, "Expected identifier for variable");
-    var.name = *parser->previous;
+    var->name = *parser->previous;
 
     consume(TOKEN_COLON, "Expected ':' after var name");
     advance();
-    var.type = getVarType();
+    var->type = getVarType();
+    if (var->type == ARRAY_VAR) {
+        ArrayVariable *arrayVar = new ArrayVariable(var->name);
+        consume(TOKEN_LEFT_BRACKET, "Need array type");
+
+        advance();
+        arrayVar->items = parseVariable();
+
+        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        var = arrayVar;
+    } else if (var->type == MAP_VAR) {
+        MapVariable *mapVar = new MapVariable(var->name);
+        consume(TOKEN_LEFT_BRACKET, "Need array type");
+
+        advance();
+        mapVar->keys = parseVariable();
+
+        consume(TOKEN_COMMA, "Need , before map values");
+
+        advance();
+        mapVar->values = parseVariable();
+
+        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        var = mapVar;
+    }
 
     return var;
 }
