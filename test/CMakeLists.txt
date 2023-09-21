@@ -1,22 +1,37 @@
 cmake_minimum_required(VERSION 3.14)
-set(This bonoboTests)
+include(GoogleTest)
 
-set(test_SOURCES
-  ./TestScanner.cpp
-  ./TestBinaryOp.cpp
+set(ThisAst AstTests)
+set(ThisScanner ScannerTests)
+
+set(testAst_SOURCES
+  ./TestComparison.cpp
+  ./TestBinary.cpp
   ./TestAst.cpp
   )
+set(testScanner_SOURCES
+  ./TestScanner.cpp
+  )
 
-add_executable(${This} ${test_SOURCES})
+add_executable(${ThisAst} ${testAst_SOURCES})
+add_executable(${ThisScanner} ${testScanner_SOURCES})
 
-target_link_libraries(${This} PUBLIC
+target_link_libraries(${ThisAst} PUBLIC
+  gtest_main
+  bonobo
+)
+target_link_libraries(${ThisScanner} PUBLIC
   gtest_main
   bonobo
 )
 
-include(GoogleTest)
 
 add_test(
-  NAME ${This}
-  COMMAND ${This}
+  NAME ${ThisAst}
+  COMMAND ${ThisAst}
+  )
+
+add_test(
+  NAME ${ThisScanner}
+  COMMAND ${ThisScanner}
   )

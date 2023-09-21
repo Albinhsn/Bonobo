@@ -54,6 +54,7 @@ void debugExpression(Expr *expr) {
     }
     case COMPARISON_EXPR: {
         ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        printf("(");
         debugExpression(comparisonExpr->left);
         switch (comparisonExpr->op) {
         case LESS_COMPARISON: {
@@ -78,6 +79,7 @@ void debugExpression(Expr *expr) {
         }
         }
         debugExpression(comparisonExpr->right);
+        printf(")");
         break;
     }
     case LITERAL_EXPR: {

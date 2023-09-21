@@ -310,7 +310,6 @@ static void comparison(Expr *&expr) {
         errorAt("Unable to add logical to empty expr");
     }
     if (expr->type == LOGICAL_EXPR) {
-
         LogicalExpr *logicalExpr = (LogicalExpr *)expr;
         comparison(logicalExpr->right);
         expr = logicalExpr;
@@ -921,6 +920,7 @@ static void declaration() {
         statement();
     }
 }
+
 static void initParser() {
     parser = (Parser *)malloc(sizeof(Parser));
     parser->current = NULL;
