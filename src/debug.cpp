@@ -136,20 +136,20 @@ void debugExpression(Expr *expr) {
         printf("]");
         break;
     }
-    case MAP_EXPR:{
-      MapExpr * mapExpr = (MapExpr*)expr;
+    case MAP_EXPR: {
+        MapExpr *mapExpr = (MapExpr *)expr;
 
-      printf("{");
-      for(int i = 0; i < mapExpr->keys.size(); i++){
-        debugExpression(mapExpr->keys[i]);
-        printf(":");
-        debugExpression(mapExpr->values[i]);
-        if(i < mapExpr->keys.size() - 1){
-          printf(", ");
+        printf("{");
+        for (int i = 0; i < mapExpr->keys.size(); i++) {
+            debugExpression(mapExpr->keys[i]);
+            printf(":");
+            debugExpression(mapExpr->values[i]);
+            if (i < mapExpr->keys.size() - 1) {
+                printf(", ");
+            }
         }
-      }
-      printf("}");
-      break;
+        printf("}");
+        break;
     }
     default: {
         printf("unknown expr");
@@ -232,6 +232,9 @@ void debugStatement(Stmt *statement) {
     }
     case RETURN_STMT: {
         ReturnStmt *returnStmt = (ReturnStmt *)statement;
+        printf("return ");
+        debugExpression(returnStmt->value);
+        printf(";");
         break;
     }
     case WHILE_STMT: {

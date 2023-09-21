@@ -769,17 +769,11 @@ static Stmt *ifStatement() {
 }
 
 static Stmt *returnStatement() {
-    if (compiler->type == TYPE_SCRIPT) {
-        errorAt("Can't return from top-level code");
-    }
+    ReturnStmt *returnStmt = new ReturnStmt();
+    returnStmt->value = expression(nullptr);
+    consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
 
-    if (match(TOKEN_SEMICOLON)) {
-    } else {
-        Expr *expr = new Expr();
-        expression(expr);
-        consume(TOKEN_SEMICOLON, "Expect ';' after return value");
-    }
-    return nullptr;
+    return returnStmt;
 }
 
 static Stmt *whileStatement() {

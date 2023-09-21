@@ -41,8 +41,11 @@ class ExprStmt : public Stmt {
 class ReturnStmt : public Stmt {
   private:
   public:
-    Token keyword;
     Expr *value;
+    ReturnStmt(){
+    this->value = nullptr;
+    this->type = RETURN_STMT;
+  }
 };
 
 class VarStmt : public Stmt {
