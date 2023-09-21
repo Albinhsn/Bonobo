@@ -5,9 +5,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* function calls
-
-* Struct declaration
+* Scanner tests for keywords
 
 * Array declaration
 

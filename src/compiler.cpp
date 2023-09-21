@@ -70,22 +70,22 @@ static bool match(TokenType type) {
 
 static VarType getVarType() {
     switch (parser->previous->type) {
-    case TOKEN_INT_LITERAL: {
+    case TOKEN_INT_TYPE: {
         return INT_VAR;
     }
-    case TOKEN_DOUBLE_LITERAL: {
+    case TOKEN_DOUBLE_TYPE: {
         return DOUBLE_VAR;
     }
-    case TOKEN_BOOL: {
+    case TOKEN_BOOL_TYPE: {
         return BOOL_VAR;
     }
-    case TOKEN_STRING: {
-        return STRING_VAR;
+    case TOKEN_STR_TYPE: {
+        return STR_VAR;
     }
-    case TOKEN_ARRAY: {
+    case TOKEN_ARRAY_TYPE: {
         return ARRAY_VAR;
     }
-    case TOKEN_MAP: {
+    case TOKEN_MAP_TYPE: {
         return MAP_VAR;
     }
     default: {
@@ -160,10 +160,10 @@ static LogicalOp getLogicalOp() {
 
 static LiteralType getLiteralType() {
     switch (parser->previous->type) {
-    case TOKEN_INT: {
+    case TOKEN_INT_LITERAL: {
         return INT_LITERAL;
     }
-    case TOKEN_DOUBLE: {
+    case TOKEN_DOUBLE_LITERAL: {
         return DOUBLE_LITERAL;
     }
     case TOKEN_TRUE: {
@@ -172,8 +172,8 @@ static LiteralType getLiteralType() {
     case TOKEN_FALSE: {
         return BOOL_LITERAL;
     }
-    case TOKEN_STRING: {
-        return STRING_LITERAL;
+    case TOKEN_STR_LITERAL: {
+        return STR_LITERAL;
     }
     default: {
         break;
@@ -291,7 +291,6 @@ static void grouping(Expr *&expr) {
         break;
     }
     default: {
-        // This should change when we get call expr?
         errorAt("Can't add grouping to this?");
     }
     }
@@ -481,15 +480,15 @@ static Expr *expression(Expr *expr) {
         // printf("\n");
 
         switch (parser->previous->type) {
-        case TOKEN_INT: {
+        case TOKEN_INT_LITERAL: {
             literal(expr);
             break;
         }
-        case TOKEN_DOUBLE: {
+        case TOKEN_DOUBLE_LITERAL: {
             literal(expr);
             break;
         }
-        case TOKEN_STRING: {
+        case TOKEN_STR_LITERAL: {
             literal(expr);
             break;
         }
@@ -601,8 +600,8 @@ static Expr *mapDeclaration() {
     if (parser->current->type != TOKEN_RIGHT_BRACE) {
 
         do {
-            if (match(TOKEN_STRING)) {
-            } else if (match(TOKEN_INT)) {
+            if (match(TOKEN_STR_LITERAL)) {
+            } else if (match(TOKEN_INT_LITERAL)) {
             } else {
                 errorAt("Expect number or string as key");
             }
@@ -738,22 +737,18 @@ static Stmt *whileStatement() {
     return whileStmt;
 }
 
-static void structArgs() {
-    while (parser->current->type != TOKEN_RIGHT_BRACE) {
-        consume(TOKEN_IDENTIFIER, "Expect field identifier in struct");
+static Stmt *structDeclaration() {
+    StructStmt *structStmt = new StructStmt();
+    consume(TOKEN_IDENTIFIER, "Expect struct name");
+    structStmt->name = *parser->previous;
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
+    while (!match(TOKEN_RIGHT_BRACE)) {
+        structStmt->fieldNames.push_back(parseVariable());
         consume(TOKEN_SEMICOLON,
                 "Expect semicolon after struct field identifier");
     }
-}
-
-static Stmt *structDeclaration() {
-    consume(TOKEN_IDENTIFIER, "Expect struct name");
-
-    consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
-    structArgs();
-    consume(TOKEN_RIGHT_BRACE, "Expect '}' after struct body.");
     consume(TOKEN_SEMICOLON, "Expect ';' after struct end.");
-    return NULL;
+    return structStmt;
 }
 
 static Stmt *funDeclaration() {
@@ -803,7 +798,7 @@ static Stmt *declaration() {
         return funDeclaration();
     } else if (match(TOKEN_VAR)) {
         return varDeclaration();
-    } else if (match(TOKEN_STRUCT)) {
+    } else if (match(TOKEN_STRUCT_TYPE)) {
         return structDeclaration();
     } else {
         return statement();
@@ -828,7 +823,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    // debugStatements(compiler->statements);
+    debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

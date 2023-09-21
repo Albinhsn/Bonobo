@@ -5,15 +5,16 @@ set(ThisAst AstTests)
 set(ThisScanner ScannerTests)
 
 set(testAst_SOURCES
+  ./TestAst.cpp
+  ./TestBinary.cpp
   ./TestComparison.cpp
-  ./TestIf.cpp
   ./TestFor.cpp
   ./TestFun.cpp
   ./TestFunCall.cpp
-  ./TestWhile.cpp
   ./TestLogical.cpp
-  ./TestBinary.cpp
-  ./TestAst.cpp
+  ./TestIf.cpp
+  ./TestStruct.cpp
+  ./TestWhile.cpp
   )
 set(testScanner_SOURCES
   ./TestScanner.cpp

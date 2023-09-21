@@ -30,7 +30,7 @@ enum LiteralType {
     DOUBLE_LITERAL,
     INT_LITERAL,
     BOOL_LITERAL,
-    STRING_LITERAL,
+    STR_LITERAL,
 };
 
 enum BinaryOp { ADD, SUB, MUL, DIV };

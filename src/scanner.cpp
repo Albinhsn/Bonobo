@@ -60,10 +60,10 @@ static Token *parseNumber(Scanner *scanner) {
             scanner->current++;
         }
         return newToken(current, getLength(scanner, current), scanner->line,
-                        TOKEN_DOUBLE);
+                        TOKEN_DOUBLE_LITERAL);
     } else {
         return newToken(current, getLength(scanner, current), scanner->line,
-                        TOKEN_INT);
+                        TOKEN_INT_LITERAL);
     }
 }
 
@@ -85,11 +85,10 @@ static TokenType isKeyword(const char *current, int len) {
             return checkKeyword(current, "false", 5, len, TOKEN_FALSE);
         }
         case 'b': {
-            return checkKeyword(current, "bool", 4, len, TOKEN_BOOL);
+            return checkKeyword(current, "bool", 4, len, TOKEN_BOOL_TYPE);
         }
         case 'l': {
-            return checkKeyword(current, "double", 5, len,
-                                TOKEN_DOUBLE_LITERAL);
+            return checkKeyword(current, "double", 5, len, TOKEN_DOUBLE_TYPE);
         }
         case 'o': {
             return checkKeyword(current, "for", 3, len, TOKEN_FOR);
@@ -107,10 +106,13 @@ static TokenType isKeyword(const char *current, int len) {
     case 'i': {
         switch (current[1]) {
         case 'n': {
-            return checkKeyword(current, "int", 3, len, TOKEN_INT_LITERAL);
+            return checkKeyword(current, "int", 3, len, TOKEN_INT_TYPE);
         }
         case 'f': {
             return checkKeyword(current, "if", 2, len, TOKEN_IF);
+        }
+        default: {
+            return TOKEN_IDENTIFIER;
         }
         }
     }
@@ -131,12 +133,26 @@ static TokenType isKeyword(const char *current, int len) {
         case 't': {
             switch (current[2]) {
             case 'r': {
-                return checkKeyword(current, "struct", 6, len, TOKEN_STRUCT);
+                if (len == 3) {
+                  return TOKEN_STR_TYPE;
+                }
+                switch (current[3]) {
+                case 'u': {
+                    return checkKeyword(current, "struct", 6, len,
+                                        TOKEN_STRUCT_TYPE);
+                }
+                default: {
+                    return TOKEN_IDENTIFIER;
+                }
+                }
             }
-            case 'i': {
-                return checkKeyword(current, "string", 3, len, TOKEN_STRING);
+            default: {
+                return TOKEN_IDENTIFIER;
             }
             }
+        }
+        default: {
+            return TOKEN_IDENTIFIER;
         }
         }
     }
@@ -184,7 +200,7 @@ static Token *parseString(Scanner *scanner) {
 
     scanner->current++;
     return newToken(current, getLength(scanner, current) - 1, scanner->line,
-                    TOKEN_STRING);
+                    TOKEN_STR_LITERAL);
 }
 
 void skipWhitespace(Scanner *scanner) {

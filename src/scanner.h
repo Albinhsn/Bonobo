@@ -35,21 +35,21 @@ typedef enum {
 
     // Literals.
     TOKEN_IDENTIFIER,
-    TOKEN_STRING,
+    TOKEN_STR_LITERAL,
     TOKEN_INT_LITERAL,    // int 1
     TOKEN_DOUBLE_LITERAL, // float 2
 
     // Datatypes
-    TOKEN_INT,    // int 1
-    TOKEN_DOUBLE, // float 2
-    TOKEN_STR,    // str 3
-    TOKEN_BOOL,   // bool 4
-    TOKEN_MAP,    // map 5
-    TOKEN_ARRAY,  // array 6
-    TOKEN_NIL,    // nil 7
+    TOKEN_INT_TYPE,    // int 1
+    TOKEN_DOUBLE_TYPE, // float 2
+    TOKEN_STR_TYPE,    // str 3
+    TOKEN_BOOL_TYPE,   // bool 4
+    TOKEN_MAP_TYPE,    // map 5
+    TOKEN_ARRAY_TYPE,  // array 6
+    TOKEN_STRUCT_TYPE, // struct
+    TOKEN_NIL, // nil 7
 
     // Keywords.
-    TOKEN_STRUCT,
     TOKEN_PRINT,
     TOKEN_ELSE,
     TOKEN_FALSE,

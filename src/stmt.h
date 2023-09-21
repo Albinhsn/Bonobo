@@ -16,7 +16,7 @@ enum StatementType {
 };
 
 enum VarType {
-    STRING_VAR,
+    STR_VAR,
     INT_VAR,
     DOUBLE_VAR,
     BOOL_VAR,
@@ -105,8 +105,11 @@ class StructStmt : public Stmt {
   private:
   public:
     Token name;
-    std::vector<Token> fieldNames;
-    std::vector<LiteralType> fieldTypes;
+    std::vector<Variable> fieldNames;
+    StructStmt() {
+        this->type = STRUCT_STMT;
+        this->fieldNames = std::vector<Variable>();
+    }
 };
 
 class IfStmt : public Stmt {

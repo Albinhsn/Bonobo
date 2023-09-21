@@ -80,7 +80,7 @@ void debugExpression(Expr *expr) {
     }
     case LITERAL_EXPR: {
         LiteralExpr *literalExpr = (LiteralExpr *)expr;
-        if (literalExpr->literalType == STRING_LITERAL) {
+        if (literalExpr->literalType == STR_LITERAL) {
             printf("\"%.*s\"", literalExpr->literal.length,
                    literalExpr->literal.lexeme);
         } else {
@@ -107,12 +107,12 @@ void debugExpression(Expr *expr) {
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
         printf("%.*s(", callExpr->callee.length, callExpr->callee.lexeme);
-        for(int i = 0; i < callExpr->arguments.size(); i++){
-          debugExpression(callExpr->arguments[i]);
-          if(i < callExpr->arguments.size() - 1){
-            printf(",");
+        for (int i = 0; i < callExpr->arguments.size(); i++) {
+            debugExpression(callExpr->arguments[i]);
+            if (i < callExpr->arguments.size() - 1) {
+                printf(",");
+            }
         }
-      }
         printf(")");
         break;
     }
@@ -141,7 +141,7 @@ const char *debugVarType(VarType varType) {
     case STRUCT_VAR: {
         return "struct";
     }
-    case STRING_VAR: {
+    case STR_VAR: {
         return "string";
     }
     default: {
@@ -186,6 +186,13 @@ void debugStatement(Stmt *statement) {
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)statement;
+        printf("struct %.*s\n{\n", structStmt->name.length,
+               structStmt->name.lexeme);
+        for (int i = 0; i < structStmt->fieldNames.size(); i++) {
+            debugVariable(structStmt->fieldNames[i]);
+            printf(";\n");
+        }
+        printf("}\n");
         break;
     }
     case RETURN_STMT: {
@@ -351,18 +358,6 @@ void debugToken(Token *token) {
         printf("TOKEN_IDENTIFIER\n");
         break;
     }
-    case TOKEN_STRING: {
-        printf("TOKEN_STRING\n");
-        break;
-    }
-    case TOKEN_INT: {
-        printf("TOKEN_INT\n");
-        break;
-    }
-    case TOKEN_DOUBLE: {
-        printf("TOKEN_DOUBLE\n");
-        break;
-    }
     case TOKEN_INT_LITERAL: {
         printf("TOKEN_INT_LITERAL\n");
         break;
@@ -371,19 +366,31 @@ void debugToken(Token *token) {
         printf("TOKEN_DOUBLE_LITERAL\n");
         break;
     }
-    case TOKEN_STR: {
-        printf("TOKEN_STR\n");
+    case TOKEN_STR_LITERAL: {
+        printf("TOKEN_STR_LITERAL\n");
         break;
     }
-    case TOKEN_BOOL: {
-        printf("TOKEN_BOOL\n");
+    case TOKEN_STR_TYPE: {
+        printf("TOKEN_STRING_TYPE\n");
         break;
     }
-    case TOKEN_MAP: {
+    case TOKEN_INT_TYPE: {
+        printf("TOKEN_INT_TYPE\n");
+        break;
+    }
+    case TOKEN_DOUBLE_TYPE: {
+        printf("TOKEN_DOUBLE_TYPE\n");
+        break;
+    }
+    case TOKEN_BOOL_TYPE: {
+        printf("TOKEN_BOOL_TYPE\n");
+        break;
+    }
+    case TOKEN_MAP_TYPE: {
         printf("TOKEN_MAP\n");
         break;
     }
-    case TOKEN_ARRAY: {
+    case TOKEN_ARRAY_TYPE: {
         printf("TOKEN_ARRAY\n");
         break;
     }
@@ -391,7 +398,7 @@ void debugToken(Token *token) {
         printf("TOKEN_NIL\n");
         break;
     }
-    case TOKEN_STRUCT: {
+    case TOKEN_STRUCT_TYPE: {
         printf("TOKEN_STRUCT\n");
         break;
     }
