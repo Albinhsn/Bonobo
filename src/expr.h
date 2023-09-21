@@ -11,6 +11,7 @@ enum ExprType {
     COMPARISON_EXPR,
     UNARY_EXPR,
     VAR_EXPR,
+    INDEX_EXPR,
     ARRAY_EXPR,
     MAP_EXPR,
     CALL_EXPR,
@@ -70,11 +71,11 @@ class GroupingExpr : public Expr {
 class ArrayExpr : public Expr {
   private:
   public:
-  std::vector<Expr*> items;
-  ArrayExpr(){
-    this->type = ARRAY_EXPR;
-    this->items = std::vector<Expr*>();
-  }
+    std::vector<Expr *> items;
+    ArrayExpr() {
+        this->type = ARRAY_EXPR;
+        this->items = std::vector<Expr *>();
+    }
 };
 
 class LogicalExpr : public Expr {
@@ -149,6 +150,18 @@ class CallExpr : public Expr {
         this->arguments = std::vector<Expr *>();
         this->type = CALL_EXPR;
     };
+};
+
+class IndexExpr : public Expr {
+  private:
+  public:
+    VarExpr *variable;
+    Expr *index;
+    IndexExpr() {
+        this->type = INDEX_EXPR;
+        this->index = nullptr;
+        this->variable = nullptr;
+    }
 };
 
 #endif

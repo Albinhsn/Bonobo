@@ -38,6 +38,7 @@ typedef struct Compiler {
 
 std::vector<Stmt *> compile(const char *source);
 
+static Expr *arrayDeclaration();
 static Expr *expression(Expr *expr);
 static Stmt*statement();
 static Stmt*declaration();

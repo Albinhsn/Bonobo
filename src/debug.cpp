@@ -128,6 +128,14 @@ void debugExpression(Expr *expr) {
         printf("]");
         break;
     }
+    case INDEX_EXPR: {
+        IndexExpr *indexExpr = (IndexExpr *)expr;
+        debugExpression(indexExpr->variable);
+        printf("[");
+        debugExpression(indexExpr->index);
+        printf("]");
+        break;
+    }
     default: {
         printf("unknown expr");
     }

@@ -32,3 +32,18 @@ TEST(TestArray, Test1DArray) {
     ArrayExpr *arrayExpr = (ArrayExpr *)stmt->initializer;
     EXPECT_EQ(arrayExpr->items.size(), 3);
 }
+
+TEST(TestArray, Test2DArray) {
+    std::string source = "var a: arr = [[], []];";
+
+    std::vector<Stmt *> result = compile(source.c_str());
+    EXPECT_EQ(result.size(), 1);
+
+    EXPECT_EQ(result[0]->type, VAR_STMT);
+    VarStmt *stmt = (VarStmt *)result[0];
+
+    EXPECT_EQ(stmt->initializer->type, ARRAY_EXPR);
+
+    ArrayExpr *arrayExpr = (ArrayExpr *)stmt->initializer;
+    EXPECT_EQ(arrayExpr->items.size(), 2);
+}

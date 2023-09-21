@@ -5,9 +5,18 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
+* Indexing 
+
+* Map declaration
+
+* Cleanup expr parsing to handle new exprs
+
 * Scanner tests for keywords
 
-* Indexing 
+* Change NULL -> nullptr
+
+* Support foo[][]
+
 
 
 ## TODO LLVM backend

@@ -447,8 +447,49 @@ static void minus(Expr *&expr) {
     }
 }
 
-static void index(Expr *& expr){
-  
+static void index(Expr *&expr) {
+    if (expr == NULL) {
+        expr = arrayDeclaration();
+        return;
+    }
+    switch (expr->type) {
+    case BINARY_EXPR: {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        index(binaryExpr->right);
+        expr = binaryExpr;
+        break;
+    }
+    case LOGICAL_EXPR: {
+        LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+        index(logicalExpr->right);
+        expr = logicalExpr;
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        index(comparisonExpr->right);
+        expr = comparisonExpr;
+        break;
+    }
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        index(unaryExpr->right);
+        expr = unaryExpr;
+        break;
+    }
+    case VAR_EXPR: {
+        IndexExpr *indexExpr = new IndexExpr();
+        indexExpr->variable = (VarExpr *)expr;
+        indexExpr->index = expression(nullptr);
+        consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
+
+        expr = indexExpr;
+        break;
+    }
+    default: {
+        errorAt("Don't know how to index this expr");
+    }
+    }
 }
 
 static void logical(Expr *&expr) {
@@ -481,7 +522,7 @@ static Expr *expression(Expr *expr) {
 
         // debugExpression(expr);
         // printf("\n");
-        debugToken(parser->previous);
+        // debugToken(parser->previous);
         // printf("\n");
 
         switch (parser->previous->type) {
@@ -573,29 +614,11 @@ static Expr *expression(Expr *expr) {
     return expr;
 }
 
-static uint16_t argumentList() {
-    uint16_t argCount = 0;
-    if (!(parser->current->type == TOKEN_RIGHT_PAREN)) {
-        do {
-            Expr *expr = new Expr();
-            expression(expr);
-            if (argCount == 255) {
-                errorAt("Can't have more than 255 arguments.");
-            }
-            argCount++;
-        } while (match(TOKEN_COMMA));
-    }
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-    return argCount;
-}
-
 static Expr *arrayDeclaration() {
     ArrayExpr *arrayExpr = new ArrayExpr();
     if (parser->current->type != TOKEN_RIGHT_BRACKET) {
         do {
             arrayExpr->items.push_back(expression(NULL));
-            debugToken(parser->previous);
-            printf("\n");
         } while (match(TOKEN_COMMA));
     }
     consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array declarations.");
@@ -736,10 +759,8 @@ static Stmt *whileStatement() {
     grouping(whileStmt->condition);
 
     consume(TOKEN_LEFT_BRACE, "Expect '{' after while()");
-    debugStatement(whileStmt);
     while (!match(TOKEN_RIGHT_BRACE)) {
         whileStmt->body.push_back(declaration());
-        debugToken(parser->current);
     }
     return whileStmt;
 }
@@ -830,7 +851,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    debugStatements(compiler->statements);
+    // debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);
