@@ -193,6 +193,7 @@ static void literal(Expr *&expr) {
             literal(binaryExpr->right);
             break;
         }
+
         case LOGICAL_EXPR: {
             LogicalExpr *logicalExpr = (LogicalExpr *)expr;
             literal(logicalExpr->right);
@@ -238,6 +239,11 @@ static void unary(Expr *&expr) {
     case LOGICAL_EXPR: {
         LogicalExpr *logicalExpr = (LogicalExpr *)expr;
         unary(logicalExpr->right);
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        unary(comparisonExpr->right);
         break;
     }
     default: {
@@ -688,13 +694,8 @@ static Stmt *varDeclaration() {
 
     consume(TOKEN_EQUAL, "Expected assignment at var declaration");
 
-    if (match(TOKEN_LEFT_BRACKET)) {
-        varStmt->initializer = arrayDeclaration();
-    } else if (match(TOKEN_LEFT_BRACE)) {
-        varStmt->initializer = mapDeclaration();
-    } else {
-        varStmt->initializer = expression(nullptr);
-    }
+    varStmt->initializer = expression(nullptr);
+
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
     return (Stmt *)varStmt;
 }
