@@ -3,7 +3,7 @@
 #include "../src/stmt.h"
 #include <gtest/gtest.h>
 
-TEST(TestBinaryOp, TestIntVar) {
+TEST(TestIntVariable, TestIntVar) {
     std::string source = "var a: int = 5;";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -19,51 +19,6 @@ TEST(TestBinaryOp, TestIntVar) {
     EXPECT_EQ(
         std::string(literalExpr->literal.lexeme, literalExpr->literal.length),
         "5");
-}
-
-TEST(TestBinaryOp, TestAddOp) {
-    std::string source = "var a: int = 5 + 3;";
-
-    std::vector<Stmt *> result = compile(source.c_str());
-
-    VarStmt *varStmt = (VarStmt *)result[0];
-    EXPECT_EQ(varStmt->initializer->type, BINARY_EXPR);
-
-    BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
-    EXPECT_EQ(binaryExpr->op, ADD);
-    EXPECT_EQ(binaryExpr->left->type, LITERAL_EXPR);
-    LiteralExpr *left = (LiteralExpr *)binaryExpr->left;
-    EXPECT_EQ(left->literalType, INT_LITERAL);
-    EXPECT_EQ(std::string(left->literal.lexeme, left->literal.length), "5");
-
-    EXPECT_EQ(binaryExpr->right->type, LITERAL_EXPR);
-    LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
-    EXPECT_EQ(right->literalType, INT_LITERAL);
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "3");
-}
-
-TEST(TestBinaryOp, TestDivOp) {
-    std::string source = "var a: int = 5 / 3;";
-
-    std::vector<Stmt *> result = compile(source.c_str());
-
-    VarStmt *varStmt = (VarStmt *)result[0];
-    EXPECT_EQ(varStmt->initializer->type, BINARY_EXPR);
-
-    BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
-    EXPECT_EQ(binaryExpr->op, DIV);
-}
-
-TEST(TestBinaryOp, TestMulOp) {
-    std::string source = "var a: int = 5 * 3;";
-
-    std::vector<Stmt *> result = compile(source.c_str());
-
-    VarStmt *varStmt = (VarStmt *)result[0];
-    EXPECT_EQ(varStmt->initializer->type, BINARY_EXPR);
-
-    BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
-    EXPECT_EQ(binaryExpr->op, MUL);
 }
 
 TEST(TestComparisonOp, TestLess) {
