@@ -4,7 +4,7 @@
 
 #include "compiler.h"
 
-void debugStatements(Compiler *compiler);
+void debugStatements(std::vector<Stmt*> statements);
 void debugExpression(Expr *expr);
 void debugToken(Token *token);
 

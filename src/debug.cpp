@@ -54,7 +54,6 @@ void debugExpression(Expr *expr) {
     }
     case COMPARISON_EXPR: {
         ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
-        printf("(");
         debugExpression(comparisonExpr->left);
         switch (comparisonExpr->op) {
         case LESS_COMPARISON: {
@@ -79,7 +78,6 @@ void debugExpression(Expr *expr) {
         }
         }
         debugExpression(comparisonExpr->right);
-        printf(")");
         break;
     }
     case LITERAL_EXPR: {
@@ -118,42 +116,49 @@ void debugExpression(Expr *expr) {
     }
 }
 
-void debugStatements(Compiler *compiler) {
-    for (int i = 0; i < compiler->statements.size(); i++) {
-        switch (compiler->statements[i]->type) {
+void debugStatements(std::vector<Stmt *> statements) {
+    for (int i = 0; i < statements.size(); i++) {
+        switch (statements[i]->type) {
         case VAR_STMT: {
-            VarStmt *varStmt = (VarStmt *)compiler->statements[i];
+            VarStmt *varStmt = (VarStmt *)statements[i];
             printf("var %.*s = ", varStmt->name.length, varStmt->name.lexeme);
             debugExpression(varStmt->initializer);
             printf(";\n");
             break;
         }
         case STRUCT_STMT: {
-            StructStmt *structStmt = (StructStmt *)compiler->statements[i];
+            StructStmt *structStmt = (StructStmt *)statements[i];
             break;
         }
         case RETURN_STMT: {
-            ReturnStmt *returnStmt = (ReturnStmt *)compiler->statements[i];
+            ReturnStmt *returnStmt = (ReturnStmt *)statements[i];
             break;
         }
         case WHILE_STMT: {
-            WhileStmt *whileStmt = (WhileStmt *)compiler->statements[i];
-            break;
-        }
-        case BLOCK_STMT: {
-            BlockStmt *blockStmt = (BlockStmt *)compiler->statements[i];
+            WhileStmt *whileStmt = (WhileStmt *)statements[i];
             break;
         }
         case IF_STMT: {
-            IfStmt *ifStmt = (IfStmt *)compiler->statements[i];
+            IfStmt *ifStmt = (IfStmt *)statements[i];
+            printf("if");
+            debugExpression(ifStmt->condition);
+            printf("\n{\n");
+            debugStatements(ifStmt->thenBranch);
+            printf("}");
+            if (ifStmt->elseBranch.size()) {
+                printf("else\n{\n");
+                debugStatements(ifStmt->elseBranch);
+                printf("}");
+            }
+            printf("\n");
             break;
         }
         case FUNC_STMT: {
-            FuncStmt *funcStmt = (FuncStmt *)compiler->statements[i];
+            FuncStmt *funcStmt = (FuncStmt *)statements[i];
             break;
         }
         case EXPR_STMT: {
-            ExprStmt *exprStmt = (ExprStmt *)compiler->statements[i];
+            ExprStmt *exprStmt = (ExprStmt *)statements[i];
             break;
         }
         }

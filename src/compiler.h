@@ -34,16 +34,12 @@ typedef struct Compiler {
     FunctionType type;
     std::vector<std::string> s;
     std::vector<Stmt *> statements;
-    std::vector<VarExpr> varValues;
-    std::vector<std::string> varKeys;
 } Compiler;
 
 std::vector<Stmt *> compile(const char *source);
 
 static Expr *expression(Expr *expr);
-static void statement();
-static void declaration();
-static void prefixRule(TokenType type, bool canAssign);
-static void infixRule(TokenType type, bool canAssign);
+static Stmt*statement();
+static Stmt*declaration();
 
 #endif

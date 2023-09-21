@@ -6,6 +6,7 @@ set(ThisScanner ScannerTests)
 
 set(testAst_SOURCES
   ./TestComparison.cpp
+  ./TestIf.cpp
   ./TestLogical.cpp
   ./TestBinary.cpp
   ./TestAst.cpp

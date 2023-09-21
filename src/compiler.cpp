@@ -12,8 +12,6 @@ static void initCompiler() {
     compiler->enclosing = NULL;
     compiler->type = TYPE_SCRIPT;
     compiler->statements = std::vector<Stmt *>();
-    compiler->varValues = std::vector<VarExpr>();
-    compiler->varKeys = std::vector<std::string>();
 }
 
 static void endCompiler(Compiler *current) {
@@ -69,8 +67,6 @@ static bool match(TokenType type) {
     advance();
     return true;
 }
-
-static inline void stringConstant() {}
 
 static UnaryOp getUnaryType() {
     switch (parser->previous->type) {
@@ -421,10 +417,10 @@ static Expr *expression(Expr *expr) {
            parser->current->type != TOKEN_RIGHT_PAREN) {
         advance();
 
-        debugExpression(expr);
-        printf("\n");
-        debugToken(parser->previous);
-        printf("\n");
+        // debugExpression(expr);
+        // printf("\n");
+        // debugToken(parser->previous);
+        // printf("\n");
 
         switch (parser->previous->type) {
         case TOKEN_INT: {
@@ -511,35 +507,6 @@ static Expr *expression(Expr *expr) {
     return expr;
 }
 
-static void resolveLocal() {}
-
-static Token declareVariable() {
-    Token varName = *parser->previous;
-    std::string varNameString(varName.lexeme, varName.length);
-    int idx = -1;
-    for (int i = 0; i < compiler->varKeys.size(); i++) {
-        if (compiler->varKeys[i] == varNameString) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx != -1) {
-        errorAt(
-            ("Already declared variable with name " + varNameString).c_str());
-    }
-    compiler->varKeys.push_back(varNameString);
-    compiler->varValues.push_back(varName);
-
-    return varName;
-}
-
-static Token parseVariable(const char *errorMessage) {
-    consume(TOKEN_IDENTIFIER, errorMessage);
-    return declareVariable();
-}
-
-static void defineVariable(uint16_t global) {}
-
 static uint16_t argumentList() {
     uint16_t argCount = 0;
     if (!(parser->current->type == TOKEN_RIGHT_PAREN)) {
@@ -571,9 +538,6 @@ static Expr *arrayDeclaration() {
     return NULL;
 }
 
-// Should handle float/int
-static void number() { double value = std::stod(parser->previous->lexeme); }
-
 static Expr *mapDeclaration() {
     uint16_t items = 0;
     if (parser->current->type != TOKEN_RIGHT_BRACE) {
@@ -581,7 +545,6 @@ static Expr *mapDeclaration() {
         do {
             if (match(TOKEN_STRING)) {
             } else if (match(TOKEN_INT)) {
-                number();
             } else {
                 errorAt("Expect number or string as key");
             }
@@ -601,10 +564,11 @@ static Expr *mapDeclaration() {
     return NULL;
 }
 
-static void varDeclaration() {
+static Stmt *varDeclaration() {
     VarStmt *varStmt = new VarStmt;
     varStmt->type = VAR_STMT;
-    varStmt->name = parseVariable("Expect variable name.");
+    consume(TOKEN_IDENTIFIER, "Expect variable name");
+    varStmt->name = *parser->previous;
     consume(TOKEN_COLON, "Expect type declaration after var name");
     if (match(TOKEN_STR)) {
         varStmt->varType = STRING_VAR;
@@ -634,21 +598,17 @@ static void varDeclaration() {
         varStmt->initializer = expression(NULL);
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
-    compiler->statements.push_back((Stmt *)varStmt);
+    return (Stmt *)varStmt;
 }
 
-static void expressionStatement() {
+static Stmt *expressionStatement() {
     Expr *expr = new Expr();
     expression(expr);
     consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    return NULL;
 }
 
-static inline void beginScope() {}
-
-static void endScope() {}
-
-static void forStatement() {
-    beginScope();
+static Stmt *forStatement() {
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON)) {
     } else if (match(TOKEN_VAR)) {
@@ -670,30 +630,30 @@ static void forStatement() {
     }
 
     statement();
-
-    endScope();
+    return NULL;
 }
 
-static void ifStatement() {
+static Stmt *ifStatement() {
+    IfStmt *ifStmt = new IfStmt();
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
-    statement();
+    grouping(ifStmt->condition);
+
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after condition.");
+    while (!match(TOKEN_RIGHT_BRACE)) {
+        ifStmt->thenBranch.push_back(declaration());
+    }
 
     if (match(TOKEN_ELSE)) {
-        statement();
+        consume(TOKEN_LEFT_BRACE, "Expect '{' after else");
+        while (!match(TOKEN_RIGHT_BRACE)) {
+            ifStmt->elseBranch.push_back(declaration());
+        }
     }
+    return ifStmt;
 }
 
-static void printStatement() {
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-}
-
-static void returnStatement() {
+static Stmt *returnStatement() {
     if (compiler->type == TYPE_SCRIPT) {
         errorAt("Can't return from top-level code");
     }
@@ -704,164 +664,30 @@ static void returnStatement() {
         expression(expr);
         consume(TOKEN_SEMICOLON, "Expect ';' after return value");
     }
+    return NULL;
 }
 
-static void whileStatement() {
+static Stmt *whileStatement() {
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
     Expr *expr = new Expr();
     expression(expr);
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
     statement();
+    return NULL;
 }
 
-static void binary() {
-    TokenType operatorType = parser->previous->type;
-
-    Expr *expr = new Expr();
-    expression(expr);
-
-    switch (operatorType) {
-    case TOKEN_BANG_EQUAL: {
-        break;
-    }
-    case TOKEN_EQUAL_EQUAL: {
-        break;
-    }
-    case TOKEN_GREATER: {
-        break;
-    }
-    case TOKEN_GREATER_EQUAL: {
-        break;
-    }
-    case TOKEN_LESS: {
-        break;
-    }
-    case TOKEN_LESS_EQUAL: {
-        break;
-    }
-    case TOKEN_PLUS: {
-        break;
-    }
-    case TOKEN_MINUS: {
-        break;
-    }
-    case TOKEN_STAR: {
-        break;
-    }
-    case TOKEN_SLASH: {
-        break;
-    }
-    default: {
-        return;
-    }
-    }
-}
-
-static void index() {
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
-}
-
-static void dot(bool canAssign) {
-    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
-    if (canAssign && match(TOKEN_EQUAL)) {
-        Expr *expr = new Expr();
-        expression(expr);
-    } else {
-    }
-}
-
-static void grouping() {
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-}
-
-static void unary() {
-    TokenType operatorType = parser->previous->type;
-    Expr *expr = new Expr();
-    expression(expr);
-
-    switch (operatorType) {
-    case TOKEN_MINUS: {
-        break;
-    }
-    case TOKEN_BANG: {
-        break;
-    }
-    default: {
-        return;
-    }
-    }
-}
-
-static void namedVariable(bool canAssign) {
-
-    resolveLocal();
-    int arg = -1;
-    if (arg != -1) {
-    } else {
-        stringConstant();
-    }
-    if (canAssign && match(TOKEN_EQUAL)) {
-        Expr *expr = new Expr();
-        expression(expr);
-    } else if (canAssign && match(TOKEN_LEFT_BRACKET)) {
-        Expr *expr = new Expr();
-        expression(expr);
-        consume(TOKEN_RIGHT_BRACKET, "Expect ']' after indexing");
-        if (match(TOKEN_EQUAL)) {
-            Expr *expr = new Expr();
-            expression(expr);
-        } else {
-        }
-    } else {
-    }
-}
-
-static void literal() {
-    switch (parser->previous->type) {
-    case TOKEN_FALSE: {
-        break;
-    }
-    case TOKEN_NIL: {
-        break;
-    }
-    case TOKEN_TRUE: {
-        break;
-    }
-    default: {
-        printf("Unknown literal token %d\n", (int)parser->previous->type);
-        exit(1);
-    }
-    }
-}
-
-static void block() {
-    while (parser->current->type != TOKEN_RIGHT_BRACE &&
-           parser->current->type != TOKEN_EOF) {
-        declaration();
-    }
-    consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
-}
-
-static void function(FunctionType type) {
-    beginScope();
+static Stmt *function(FunctionType type) {
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
     if (parser->current->type != TOKEN_RIGHT_PAREN) {
         do {
-            parseVariable("Expect parameter name.");
-            defineVariable(0);
         } while (match(TOKEN_COMMA));
     }
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after last function param.");
     consume(TOKEN_LEFT_BRACE, "Expect '{' after function params.");
-    block();
-
     endCompiler(compiler);
+    return NULL;
 }
 
 static void structArgs() {
@@ -872,52 +698,44 @@ static void structArgs() {
     }
 }
 
-static void structDeclaration() {
+static Stmt *structDeclaration() {
     consume(TOKEN_IDENTIFIER, "Expect struct name");
-    stringConstant();
-    declareVariable();
 
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     structArgs();
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after struct body.");
     consume(TOKEN_SEMICOLON, "Expect ';' after struct end.");
-    defineVariable(0);
+    return NULL;
 }
 
-static void funDeclaration() {
-    parseVariable("Expect function name");
+static Stmt *funDeclaration() {
     function(TYPE_FUNCTION);
+    return NULL;
 }
 
-static void statement() {
-    if (match(TOKEN_PRINT)) {
-        printStatement();
-    } else if (match(TOKEN_FOR)) {
-        forStatement();
+static Stmt *statement() {
+    if (match(TOKEN_FOR)) {
+        return forStatement();
     } else if (match(TOKEN_IF)) {
-        ifStatement();
+        return ifStatement();
     } else if (match(TOKEN_RETURN)) {
-        returnStatement();
+        return returnStatement();
     } else if (match(TOKEN_WHILE)) {
-        whileStatement();
-    } else if (match(TOKEN_LEFT_BRACE)) {
-        beginScope();
-        block();
-        endScope();
+        return whileStatement();
     } else {
-        expressionStatement();
+        return expressionStatement();
     }
 }
 
-static void declaration() {
+static Stmt *declaration() {
     if (match(TOKEN_FUN)) {
-        funDeclaration();
+        return funDeclaration();
     } else if (match(TOKEN_VAR)) {
-        varDeclaration();
+        return varDeclaration();
     } else if (match(TOKEN_STRUCT)) {
-        structDeclaration();
+        return structDeclaration();
     } else {
-        statement();
+        return statement();
     }
 }
 
@@ -936,10 +754,10 @@ std::vector<Stmt *> compile(const char *source) {
     initCompiler();
     advance();
     while (!match(TOKEN_EOF)) {
-        declaration();
+        compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    debugStatements(compiler);
+    debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

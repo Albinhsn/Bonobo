@@ -21,7 +21,6 @@ TEST(TestIntVariable, TestIntVar) {
         "5");
 }
 
-
 TEST(TestUnaryOp, TestBang) {
     std::string source = "var a: int = !5;";
 

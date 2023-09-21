@@ -8,7 +8,6 @@ enum StatementType {
     RETURN_STMT,
     VAR_STMT,
     WHILE_STMT,
-    BLOCK_STMT,
     STRUCT_STMT,
     IF_STMT,
     FUNC_STMT
@@ -65,12 +64,6 @@ class WhileStmt : public Stmt {
     Stmt body;
 };
 
-class BlockStmt : public Stmt {
-  private:
-  public:
-    std::vector<Stmt> statements;
-};
-
 class StructStmt : public Stmt {
   private:
   public:
@@ -83,8 +76,14 @@ class IfStmt : public Stmt {
   private:
   public:
     Expr *condition;
-    Stmt thenBranch;
-    Stmt elseBranch;
+    std::vector<Stmt*> thenBranch;
+    std::vector<Stmt*> elseBranch;
+    IfStmt() {
+        this->type = IF_STMT;
+        this->condition = NULL;
+        this->thenBranch = std::vector<Stmt*>();
+        this->elseBranch = std::vector<Stmt*>();
+    }
 };
 
 class FuncStmt : public Stmt {
