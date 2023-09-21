@@ -685,13 +685,18 @@ static Stmt *returnStatement() {
 }
 
 static Stmt *whileStatement() {
-    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+    WhileStmt *whileStmt = new WhileStmt();
 
-    statement();
-    return NULL;
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    grouping(whileStmt->condition);
+
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after while()");
+    debugStatement(whileStmt);
+    while (!match(TOKEN_RIGHT_BRACE)) {
+        whileStmt->body.push_back(declaration());
+        debugToken(parser->current);
+    }
+    return whileStmt;
 }
 
 static Stmt *function(FunctionType type) {
@@ -740,7 +745,9 @@ static Stmt *statement() {
     } else if (match(TOKEN_WHILE)) {
         return whileStatement();
     } else {
-        return expressionStatement();
+        Stmt * stmt = expressionStatement();
+        consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
+        return stmt;
     }
 }
 

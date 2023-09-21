@@ -35,10 +35,10 @@ class ExprStmt : public Stmt {
   private:
   public:
     Expr *expression;
-  ExprStmt(){
-    this->expression = NULL;
-    this->type = EXPR_STMT;
-  }
+    ExprStmt() {
+        this->expression = NULL;
+        this->type = EXPR_STMT;
+    }
 };
 
 class ReturnStmt : public Stmt {
@@ -61,17 +61,22 @@ class AssignStmt : public Stmt {
   public:
     Token name;
     Expr *value;
-  AssignStmt(){
-    this->value = NULL;
-    this->type = ASSIGN_STMT;
-  }
+    AssignStmt() {
+        this->value = NULL;
+        this->type = ASSIGN_STMT;
+    }
 };
 
 class WhileStmt : public Stmt {
   private:
   public:
     Expr *condition;
-    Stmt body;
+    std::vector<Stmt *> body;
+    WhileStmt() {
+        this->condition = nullptr;
+        this->type = WHILE_STMT;
+        this->body = std::vector<Stmt *>();
+    }
 };
 
 class ForStmt : public Stmt {

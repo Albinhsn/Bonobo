@@ -155,6 +155,11 @@ void debugStatement(Stmt *statement) {
     }
     case WHILE_STMT: {
         WhileStmt *whileStmt = (WhileStmt *)statement;
+        printf("while");
+        debugExpression(whileStmt->condition);
+        printf("\n{\n");
+        debugStatements(whileStmt->body);
+        printf("}\n");
         break;
     }
     case IF_STMT: {
