@@ -15,16 +15,6 @@ enum StatementType {
     FUNC_STMT
 };
 
-enum VarType {
-    STR_VAR,
-    INT_VAR,
-    DOUBLE_VAR,
-    BOOL_VAR,
-    MAP_VAR,
-    ARRAY_VAR,
-    STRUCT_VAR
-};
-
 class Variable {
   private:
   public:

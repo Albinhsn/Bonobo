@@ -517,6 +517,8 @@ static Expr *expression(Expr *expr) {
     while (parser->current->type != TOKEN_SEMICOLON &&
            parser->current->type != TOKEN_RIGHT_PAREN &&
            parser->current->type != TOKEN_RIGHT_BRACKET &&
+           parser->current->type != TOKEN_RIGHT_BRACE &&
+           parser->current->type != TOKEN_COLON &&
            parser->current->type != TOKEN_COMMA) {
         advance();
 
@@ -626,29 +628,17 @@ static Expr *arrayDeclaration() {
 }
 
 static Expr *mapDeclaration() {
-    uint16_t items = 0;
+    MapExpr *mapExpr = new MapExpr();
     if (parser->current->type != TOKEN_RIGHT_BRACE) {
-
         do {
-            if (match(TOKEN_STR_LITERAL)) {
-            } else if (match(TOKEN_INT_LITERAL)) {
-            } else {
-                errorAt("Expect number or string as key");
-            }
-
+            mapExpr->keys.push_back(expression(nullptr));
             consume(TOKEN_COLON, "Expect colon between key and value");
-            expression(NULL);
-
-            if (items == 255) {
-                errorAt("Can't have more than 255 arguments.");
-            }
-            items++;
-
+            mapExpr->values.push_back(expression(nullptr));
         } while (match(TOKEN_COMMA));
     }
 
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after map items.");
-    return NULL;
+    return mapExpr;
 }
 
 static Stmt *varDeclaration() {
@@ -851,7 +841,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    // debugStatements(compiler->statements);
+    debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

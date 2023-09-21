@@ -136,6 +136,21 @@ void debugExpression(Expr *expr) {
         printf("]");
         break;
     }
+    case MAP_EXPR:{
+      MapExpr * mapExpr = (MapExpr*)expr;
+
+      printf("{");
+      for(int i = 0; i < mapExpr->keys.size(); i++){
+        debugExpression(mapExpr->keys[i]);
+        printf(":");
+        debugExpression(mapExpr->values[i]);
+        if(i < mapExpr->keys.size() - 1){
+          printf(", ");
+        }
+      }
+      printf("}");
+      break;
+    }
     default: {
         printf("unknown expr");
     }

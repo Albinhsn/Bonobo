@@ -126,6 +126,9 @@ static TokenType isKeyword(const char *current, int len) {
         }
         }
     }
+    case 'm': {
+        return checkKeyword(current, "map", 3, len, TOKEN_MAP_TYPE);
+    }
     case 'n': {
         return checkKeyword(current, "nil", 3, len, TOKEN_NIL);
     }

@@ -17,6 +17,16 @@ enum ExprType {
     CALL_EXPR,
 };
 
+enum VarType {
+    STR_VAR,
+    INT_VAR,
+    DOUBLE_VAR,
+    BOOL_VAR,
+    MAP_VAR,
+    ARRAY_VAR,
+    STRUCT_VAR
+};
+
 enum UnaryOp { BANG_UNARY, NEG_UNARY };
 
 enum LogicalOp { OR_LOGICAL, AND_LOGICAL };
@@ -68,10 +78,25 @@ class GroupingExpr : public Expr {
     }
 };
 
+class MapExpr : public Expr {
+  private:
+  public:
+    std::vector<Expr *> values;
+    std::vector<Expr *> keys;
+    VarType valueType;
+    VarType keyType;
+    MapExpr() {
+        this->type = MAP_EXPR;
+        this->values = std::vector<Expr *>();
+        this->keys = std::vector<Expr *>();
+    }
+};
+
 class ArrayExpr : public Expr {
   private:
   public:
     std::vector<Expr *> items;
+    VarType itemType;
     ArrayExpr() {
         this->type = ARRAY_EXPR;
         this->items = std::vector<Expr *>();

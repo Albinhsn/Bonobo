@@ -5,9 +5,9 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* Indexing 
-
 * Map declaration
+
+* Returnstatement
 
 * Cleanup expr parsing to handle new exprs
 
@@ -16,6 +16,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Change NULL -> nullptr
 
 * Support foo[][]
+
+* Statically type array/map
 
 
 
