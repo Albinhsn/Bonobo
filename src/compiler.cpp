@@ -638,8 +638,6 @@ static Stmt *forStatement() {
         forStmt->condition = expressionStatement();
         consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
     }
-    printf("increment: ");
-    debugToken(parser->current);
     if (!match(TOKEN_RIGHT_PAREN)) {
         forStmt->increment = expressionStatement();
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
