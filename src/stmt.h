@@ -5,9 +5,11 @@
 
 enum StatementType {
     EXPR_STMT,
+    ASSIGN_STMT,
     RETURN_STMT,
     VAR_STMT,
     WHILE_STMT,
+    FOR_STMT,
     STRUCT_STMT,
     IF_STMT,
     FUNC_STMT
@@ -33,6 +35,10 @@ class ExprStmt : public Stmt {
   private:
   public:
     Expr *expression;
+  ExprStmt(){
+    this->expression = NULL;
+    this->type = EXPR_STMT;
+  }
 };
 
 class ReturnStmt : public Stmt {
@@ -55,6 +61,10 @@ class AssignStmt : public Stmt {
   public:
     Token name;
     Expr *value;
+  AssignStmt(){
+    this->value = NULL;
+    this->type = ASSIGN_STMT;
+  }
 };
 
 class WhileStmt : public Stmt {
@@ -62,6 +72,22 @@ class WhileStmt : public Stmt {
   public:
     Expr *condition;
     Stmt body;
+};
+
+class ForStmt : public Stmt {
+  private:
+  public:
+    Stmt *initializer;
+    Stmt *condition;
+    Stmt *increment;
+    std::vector<Stmt *> body;
+    ForStmt() {
+        this->type = FOR_STMT;
+        this->initializer = NULL;
+        this->condition = NULL;
+        this->increment = NULL;
+        this->body = std::vector<Stmt *>();
+    }
 };
 
 class StructStmt : public Stmt {
@@ -76,13 +102,13 @@ class IfStmt : public Stmt {
   private:
   public:
     Expr *condition;
-    std::vector<Stmt*> thenBranch;
-    std::vector<Stmt*> elseBranch;
+    std::vector<Stmt *> thenBranch;
+    std::vector<Stmt *> elseBranch;
     IfStmt() {
         this->type = IF_STMT;
         this->condition = NULL;
-        this->thenBranch = std::vector<Stmt*>();
-        this->elseBranch = std::vector<Stmt*>();
+        this->thenBranch = std::vector<Stmt *>();
+        this->elseBranch = std::vector<Stmt *>();
     }
 };
 

@@ -116,52 +116,85 @@ void debugExpression(Expr *expr) {
     }
 }
 
+void debugStatement(Stmt *statement) {
+    switch (statement->type) {
+    case VAR_STMT: {
+        VarStmt *varStmt = (VarStmt *)statement;
+        printf("var %.*s = ", varStmt->name.length, varStmt->name.lexeme);
+        debugExpression(varStmt->initializer);
+        printf(";");
+        break;
+    }
+    case FOR_STMT: {
+        ForStmt *forStmt = (ForStmt *)statement;
+        printf("for(");
+        if (forStmt->initializer == NULL) {
+            printf(";");
+        } else {
+            debugStatement(forStmt->initializer);
+        }
+        if (forStmt->condition == NULL) {
+            printf(";");
+        } else {
+            debugStatement(forStmt->condition);
+        }
+        if (forStmt->increment != NULL) {
+            debugStatement(forStmt->increment);
+        }
+        printf("){\n");
+        debugStatements(forStmt->body);
+        printf("}\n");
+    }
+    case STRUCT_STMT: {
+        StructStmt *structStmt = (StructStmt *)statement;
+        break;
+    }
+    case RETURN_STMT: {
+        ReturnStmt *returnStmt = (ReturnStmt *)statement;
+        break;
+    }
+    case WHILE_STMT: {
+        WhileStmt *whileStmt = (WhileStmt *)statement;
+        break;
+    }
+    case IF_STMT: {
+        IfStmt *ifStmt = (IfStmt *)statement;
+        printf("if");
+        debugExpression(ifStmt->condition);
+        printf("\n{\n");
+        debugStatements(ifStmt->thenBranch);
+        printf("}");
+        if (ifStmt->elseBranch.size()) {
+            printf("else\n{\n");
+            debugStatements(ifStmt->elseBranch);
+            printf("}");
+        }
+        break;
+    }
+    case FUNC_STMT: {
+        FuncStmt *funcStmt = (FuncStmt *)statement;
+        break;
+    }
+    case ASSIGN_STMT: {
+        AssignStmt *assignStmt = (AssignStmt *)statement;
+        printf("%.*s = ", assignStmt->name.length, assignStmt->name.lexeme);
+        debugExpression(assignStmt->value);
+        printf(";");
+        break;
+    }
+    case EXPR_STMT: {
+        ExprStmt *exprStmt = (ExprStmt *)statement;
+        debugExpression(exprStmt->expression);
+        printf(";");
+        break;
+    }
+    }
+}
+
 void debugStatements(std::vector<Stmt *> statements) {
     for (int i = 0; i < statements.size(); i++) {
-        switch (statements[i]->type) {
-        case VAR_STMT: {
-            VarStmt *varStmt = (VarStmt *)statements[i];
-            printf("var %.*s = ", varStmt->name.length, varStmt->name.lexeme);
-            debugExpression(varStmt->initializer);
-            printf(";\n");
-            break;
-        }
-        case STRUCT_STMT: {
-            StructStmt *structStmt = (StructStmt *)statements[i];
-            break;
-        }
-        case RETURN_STMT: {
-            ReturnStmt *returnStmt = (ReturnStmt *)statements[i];
-            break;
-        }
-        case WHILE_STMT: {
-            WhileStmt *whileStmt = (WhileStmt *)statements[i];
-            break;
-        }
-        case IF_STMT: {
-            IfStmt *ifStmt = (IfStmt *)statements[i];
-            printf("if");
-            debugExpression(ifStmt->condition);
-            printf("\n{\n");
-            debugStatements(ifStmt->thenBranch);
-            printf("}");
-            if (ifStmt->elseBranch.size()) {
-                printf("else\n{\n");
-                debugStatements(ifStmt->elseBranch);
-                printf("}");
-            }
-            printf("\n");
-            break;
-        }
-        case FUNC_STMT: {
-            FuncStmt *funcStmt = (FuncStmt *)statements[i];
-            break;
-        }
-        case EXPR_STMT: {
-            ExprStmt *exprStmt = (ExprStmt *)statements[i];
-            break;
-        }
-        }
+        debugStatement(statements[i]);
+        printf("\n");
     }
 }
 

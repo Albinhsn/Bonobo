@@ -602,35 +602,54 @@ static Stmt *varDeclaration() {
 }
 
 static Stmt *expressionStatement() {
-    Expr *expr = new Expr();
-    expression(expr);
-    consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
-    return NULL;
+    // Figure out whether or not it's an assignExpr first?
+    if (match(TOKEN_IDENTIFIER)) {
+        Token ident = *parser->previous;
+        if (match(TOKEN_EQUAL)) {
+            AssignStmt *assignStmt = new AssignStmt();
+            assignStmt->name = ident;
+            assignStmt->value = expression(assignStmt->value);
+            return assignStmt;
+        } else {
+            ExprStmt *exprStmt = new ExprStmt();
+            VarExpr *expr = new VarExpr(ident);
+            exprStmt->expression = expression(expr);
+            return exprStmt;
+        }
+    } else {
+        ExprStmt *exprStmt = new ExprStmt();
+        exprStmt->expression = expression(exprStmt->expression);
+        return exprStmt;
+    }
 }
 
 static Stmt *forStatement() {
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+    ForStmt *forStmt = new ForStmt();
     if (match(TOKEN_SEMICOLON)) {
     } else if (match(TOKEN_VAR)) {
-        varDeclaration();
+        forStmt->initializer = varDeclaration();
     } else {
-        expressionStatement();
+        forStmt->initializer = expressionStatement();
+        consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
     }
 
     if (!match(TOKEN_SEMICOLON)) {
-        Expr *expr = new Expr();
-        expression(expr);
-        consume(TOKEN_SEMICOLON, "Expect ';' after loop condition");
+        forStmt->condition = expressionStatement();
+        consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
     }
-
+    printf("increment: ");
+    debugToken(parser->current);
     if (!match(TOKEN_RIGHT_PAREN)) {
-        Expr *expr = new Expr();
-        expression(expr);
+        forStmt->increment = expressionStatement();
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
     }
 
-    statement();
-    return NULL;
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after 'for()'");
+    while (!match(TOKEN_RIGHT_BRACE)) {
+        forStmt->body.push_back(declaration());
+    }
+    return forStmt;
 }
 
 static Stmt *ifStatement() {
