@@ -5,12 +5,16 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
-* function definitions 
-
 * function calls
 
+* Struct declaration
 
-## TODO statically typed
+* Array declaration
+
+* Indexing 
+
+
+## TODO LLVM backend
 
 * Compile empty main 
 
@@ -19,6 +23,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Compile expressions
 
 * Write c functions to create a standard library
+
+## TODO x86_64 backend
+
+* Cry
 
 
 ## TODO VM 

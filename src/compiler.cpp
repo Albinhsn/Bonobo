@@ -274,6 +274,22 @@ static void grouping(Expr *&expr) {
         grouping(unaryExpr->right);
         break;
     }
+    case VAR_EXPR: {
+        VarExpr *varExpr = (VarExpr *)expr;
+        CallExpr *callExpr = new CallExpr(varExpr->name);
+        callExpr->callee = varExpr->name;
+        if (!match(TOKEN_RIGHT_PAREN)) {
+            while (true) {
+                callExpr->arguments.push_back(expression(NULL));
+                if (match(TOKEN_RIGHT_PAREN)) {
+                    break;
+                }
+                consume(TOKEN_COMMA, "Expect ',' after func param");
+            }
+        }
+        expr = callExpr;
+        break;
+    }
     default: {
         // This should change when we get call expr?
         errorAt("Can't add grouping to this?");
@@ -455,7 +471,8 @@ static void logical(Expr *&expr) {
 
 static Expr *expression(Expr *expr) {
     while (parser->current->type != TOKEN_SEMICOLON &&
-           parser->current->type != TOKEN_RIGHT_PAREN) {
+           parser->current->type != TOKEN_RIGHT_PAREN &&
+           parser->current->type != TOKEN_COMMA) {
         advance();
 
         // debugExpression(expr);
@@ -811,7 +828,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    debugStatements(compiler->statements);
+    // debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

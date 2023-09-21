@@ -133,10 +133,10 @@ class CallExpr : public Expr {
   public:
     Token callee;
     std::vector<Expr *> arguments;
-    CallExpr(Token callee, std::vector<Expr *> arguments) {
+    CallExpr(Token callee) {
         this->callee = callee;
-        this->arguments = arguments;
-        this->type = VAR_EXPR;
+        this->arguments = std::vector<Expr*>();
+        this->type = CALL_EXPR;
     };
 };
 

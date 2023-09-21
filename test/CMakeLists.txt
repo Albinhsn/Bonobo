@@ -9,6 +9,7 @@ set(testAst_SOURCES
   ./TestIf.cpp
   ./TestFor.cpp
   ./TestFun.cpp
+  ./TestFunCall.cpp
   ./TestWhile.cpp
   ./TestLogical.cpp
   ./TestBinary.cpp

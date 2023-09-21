@@ -8,7 +8,6 @@ void debugExpression(Expr *expr) {
     switch (expr->type) {
     case BINARY_EXPR: {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
-        printf("(");
         debugExpression(binaryExpr->left);
         switch (binaryExpr->op) {
         case ADD: {
@@ -29,7 +28,6 @@ void debugExpression(Expr *expr) {
         }
         }
         debugExpression(binaryExpr->right);
-        printf(")");
         break;
     }
     case GROUPING_EXPR: {
@@ -108,6 +106,14 @@ void debugExpression(Expr *expr) {
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
+        printf("%.*s(", callExpr->callee.length, callExpr->callee.lexeme);
+        for(int i = 0; i < callExpr->arguments.size(); i++){
+          debugExpression(callExpr->arguments[i]);
+          if(i < callExpr->arguments.size() - 1){
+            printf(",");
+        }
+      }
+        printf(")");
         break;
     }
     default: {
