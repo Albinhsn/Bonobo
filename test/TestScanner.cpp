@@ -1,4 +1,5 @@
 #include "../src/common.h"
+#include "../src/debug.h"
 #include "../src/scanner.h"
 #include <gtest/gtest.h>
 

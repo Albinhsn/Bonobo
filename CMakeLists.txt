@@ -30,6 +30,7 @@ set(Sources
   ./src/scanner.cpp
   ./src/scanner.h
   ./src/stmt.h
+  ./src/trie.h
   )
 
 add_library(${This} STATIC ${Sources})

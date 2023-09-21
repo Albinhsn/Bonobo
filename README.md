@@ -5,6 +5,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO ast compiler
 
+* Create retrieval tree for keywords
+
 * Scanner tests for keywords
 
 * Support foo[][]

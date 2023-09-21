@@ -1,6 +1,9 @@
 #include "scanner.h"
+#include "trie.h"
 #include <cstring>
 #include <stdexcept>
+
+Trie *trie;
 
 void resetScanner(Scanner *scanner) {
     scanner->current = 0;
@@ -9,6 +12,7 @@ void resetScanner(Scanner *scanner) {
 }
 
 void initScanner(Scanner *scanner, const char *source) {
+    trie = new Trie();
     scanner->source = source;
     scanner->current = 0;
     scanner->line = 1;
@@ -74,115 +78,6 @@ static inline TokenType checkKeyword(const char *current, const char *keyword,
                ? type
                : TOKEN_IDENTIFIER;
 }
-static TokenType isKeyword(const char *current, int len) {
-    switch (current[0]) {
-    case 'a': {
-        switch (current[1]) {
-        case 'n': {
-            return checkKeyword(current, "and", 3, len, TOKEN_AND);
-        }
-        case 'r': {
-            return checkKeyword(current, "arr", 3, len, TOKEN_ARRAY_TYPE);
-        }
-        default: {
-            return TOKEN_IDENTIFIER;
-        }
-        }
-    }
-    case 'f': {
-        switch (current[1]) {
-        case 'a': {
-            return checkKeyword(current, "false", 5, len, TOKEN_FALSE);
-        }
-        case 'b': {
-            return checkKeyword(current, "bool", 4, len, TOKEN_BOOL_TYPE);
-        }
-        case 'l': {
-            return checkKeyword(current, "double", 5, len, TOKEN_DOUBLE_TYPE);
-        }
-        case 'o': {
-            return checkKeyword(current, "for", 3, len, TOKEN_FOR);
-        }
-        case 'u': {
-            return checkKeyword(current, "fun", 3, len, TOKEN_FUN);
-        }
-        default:
-            return TOKEN_IDENTIFIER;
-        }
-    }
-    case 'e': {
-        return checkKeyword(current, "else", 4, len, TOKEN_ELSE);
-    }
-    case 'i': {
-        switch (current[1]) {
-        case 'n': {
-            return checkKeyword(current, "int", 3, len, TOKEN_INT_TYPE);
-        }
-        case 'f': {
-            return checkKeyword(current, "if", 2, len, TOKEN_IF);
-        }
-        default: {
-            return TOKEN_IDENTIFIER;
-        }
-        }
-    }
-    case 'm': {
-        return checkKeyword(current, "map", 3, len, TOKEN_MAP_TYPE);
-    }
-    case 'n': {
-        return checkKeyword(current, "nil", 3, len, TOKEN_NIL);
-    }
-    case 'o': {
-        return checkKeyword(current, "or", 2, len, TOKEN_OR);
-    }
-    case 'p': {
-        return checkKeyword(current, "print", 5, len, TOKEN_PRINT);
-    }
-    case 'r': {
-        return checkKeyword(current, "return", 6, len, TOKEN_RETURN);
-    }
-    case 's': {
-        switch (current[1]) {
-        case 't': {
-            switch (current[2]) {
-            case 'r': {
-                if (len == 3) {
-                    return TOKEN_STR_TYPE;
-                }
-                switch (current[3]) {
-                case 'u': {
-                    return checkKeyword(current, "struct", 6, len,
-                                        TOKEN_STRUCT_TYPE);
-                }
-                default: {
-                    return TOKEN_IDENTIFIER;
-                }
-                }
-            }
-            default: {
-                return TOKEN_IDENTIFIER;
-            }
-            }
-        }
-        default: {
-            return TOKEN_IDENTIFIER;
-        }
-        }
-    }
-    case 't': {
-        return checkKeyword(current, "true", 4, len, TOKEN_TRUE);
-    }
-    case 'v': {
-        return checkKeyword(current, "var", 3, len, TOKEN_VAR);
-    }
-    case 'w': {
-        return checkKeyword(current, "while", 5, len, TOKEN_WHILE);
-    }
-    default: {
-        return TOKEN_IDENTIFIER;
-    }
-    }
-}
 
 static inline bool isAlpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
@@ -196,7 +91,7 @@ static Token *parseIdentifier(Scanner *scanner) {
     }
 
     int len = getLength(scanner, current);
-    return newToken(current, len, scanner->line, isKeyword(current, len));
+    return newToken(current, len, scanner->line, trie->isKeyword(current, len));
 }
 
 static Token *parseString(Scanner *scanner) {
