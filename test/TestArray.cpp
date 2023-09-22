@@ -34,7 +34,7 @@ TEST(TestArray, Test1DArray) {
 }
 
 TEST(TestArray, Test2DArray) {
-    std::string source = "var a: arr[arr] = [[], []];";
+    std::string source = "var a: arr[arr[int]] = [[], []];";
 
     std::vector<Stmt *> result = compile(source.c_str());
     EXPECT_EQ(result.size(), 1);
