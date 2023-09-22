@@ -18,6 +18,9 @@ class Variable {
   public:
     Token name;
     VarType type;
+  Variable(){
+    this->name.lexeme = "0";
+  }
 };
 
 class ArrayVariable : public Variable {

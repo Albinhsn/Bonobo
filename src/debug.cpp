@@ -186,20 +186,31 @@ const char *debugVarType(VarType varType) {
 }
 
 void debugVariable(Variable *var) {
-    printf("%.*s:%s", var->name.length, var->name.lexeme,
-           debugVarType(var->type));
-    if (var->type == ARRAY_VAR) {
+    if (strcmp(var->name.lexeme, "0") != 0) {
+        printf("%.*s:", var->name.length, var->name.lexeme);
+    }
+    switch (var->type) {
+    case ARRAY_VAR: {
         ArrayVariable *arrayVar = (ArrayVariable *)var;
+        printf("arr");
         printf("[");
         debugVariable(arrayVar->items);
         printf("]");
-    } else if (var->type == MAP_VAR) {
+        break;
+    }
+    case MAP_VAR: {
         MapVariable *mapVar = (MapVariable *)var;
+        printf("map");
         printf("[");
         debugVariable(mapVar->keys);
         printf(",");
         debugVariable(mapVar->values);
         printf("]");
+        break;
+    }
+    default: {
+        printf("%s", debugVarType(var->type));
+    }
     }
 }
 

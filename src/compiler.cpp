@@ -93,8 +93,38 @@ static VarType getVarType() {
     }
     }
     debugToken(parser->previous);
+    printf("\n");
     errorAt(" Invalid varType");
     exit(1);
+}
+
+static Variable *parseVarType(Variable *var) {
+    advance();
+    var->type = getVarType();
+    if (var->type == ARRAY_VAR) {
+        ArrayVariable *arrayVar = new ArrayVariable(var->name);
+        consume(TOKEN_LEFT_BRACKET, "Need array type");
+
+        Variable *items = new Variable();
+        arrayVar->items = parseVarType(items);
+
+        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        return arrayVar;
+    } else if (var->type == MAP_VAR) {
+        MapVariable *mapVar = new MapVariable(var->name);
+        consume(TOKEN_LEFT_BRACKET, "Need array type");
+
+        mapVar->keys = parseVarType(new Variable());
+
+        consume(TOKEN_COMMA, "Need , before map values");
+
+        mapVar->values = parseVarType(new Variable());
+
+        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        return mapVar;
+    } else {
+        return var;
+    }
 }
 
 static Variable *parseVariable() {
@@ -104,33 +134,7 @@ static Variable *parseVariable() {
     var->name = *parser->previous;
 
     consume(TOKEN_COLON, "Expected ':' after var name");
-    advance();
-    var->type = getVarType();
-    if (var->type == ARRAY_VAR) {
-        ArrayVariable *arrayVar = new ArrayVariable(var->name);
-        consume(TOKEN_LEFT_BRACKET, "Need array type");
-
-        advance();
-        arrayVar->items = parseVariable();
-
-        consume(TOKEN_RIGHT_BRACKET, "Need array type");
-        var = arrayVar;
-    } else if (var->type == MAP_VAR) {
-        MapVariable *mapVar = new MapVariable(var->name);
-        consume(TOKEN_LEFT_BRACKET, "Need array type");
-
-        advance();
-        mapVar->keys = parseVariable();
-
-        consume(TOKEN_COMMA, "Need , before map values");
-
-        advance();
-        mapVar->values = parseVariable();
-
-        consume(TOKEN_RIGHT_BRACKET, "Need array type");
-        var = mapVar;
-    }
-
+    var = parseVarType(var);
     return var;
 }
 
