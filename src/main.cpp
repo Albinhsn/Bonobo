@@ -1,5 +1,6 @@
 #include "common.h"
 #include "compiler.h"
+#include "llvm.h"
 #include "scanner.h"
 #include "trie.h"
 
@@ -21,6 +22,8 @@ int main(int argc, const char *argv[]) {
         exit(1);
     }
     std::string source = readFile(argv[1]);
-    compile(source.c_str());
+    std::vector<Stmt *> stmts = compile(source.c_str());
+    LLVMCompiler *llvmCompiler = new LLVMCompiler(stmts);
+    llvmCompiler->compile();
     return 0;
 }

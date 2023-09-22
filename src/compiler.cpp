@@ -2,6 +2,7 @@
 #include "common.h"
 #include "debug.h"
 #include "scanner.h"
+#include <vector>
 
 Compiler *compiler;
 Parser *parser;
@@ -904,6 +905,7 @@ static void initParser() {
     parser->previous = nullptr;
     parser->hadError = false;
 }
+
 
 std::vector<Stmt *> compile(const char *source) {
     scanner = (Scanner *)malloc(sizeof(Scanner));
