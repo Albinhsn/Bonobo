@@ -305,6 +305,14 @@ class LLVMCompiler {
                 printf("Calling %s requires %d params but got %d\n",
                        name.c_str(), (int)func->arg_size(), (int)params.size());
             }
+            int i = 0;
+            for (llvm::Argument &arg : func->args()) {
+                if (arg.getType() != params[i]->getType()) {
+                    printf("Invalid arg type in function %s with arg %d\n",
+                           name.c_str(), i + 1);
+                }
+                ++i;
+            }
             return this->func->builder->CreateCall(func, params);
         }
         default: {

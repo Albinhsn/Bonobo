@@ -3,7 +3,7 @@ source_filename = "Bonobo"
 
 define i32 @main() {
 entry:
-  %0 = call i32 @fib()
+  %0 = call i32 @fib(i32 2)
   %a = alloca i32, align 4
   store i32 %0, ptr %a, align 4
   %1 = load i32, ptr %a, align 4
