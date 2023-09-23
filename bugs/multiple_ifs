@@ -1,0 +1,10 @@
+fun fib(a:int)->int{
+  if(a < 2){
+    if(a < 2){
+      if(a < 2){
+      }
+    }
+  }
+  return 1;
+}
+return fib(0);

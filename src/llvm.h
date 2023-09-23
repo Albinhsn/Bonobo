@@ -72,7 +72,7 @@ class LLVMCompiler {
             return llvm::ArrayType::get(llvm::Type::getInt32Ty(*this->ctx), 0);
         }
         default: {
-            printf("unknown llvmType");
+            printf("unknown llvmType\n");
             exit(1);
         }
         }
@@ -89,24 +89,22 @@ class LLVMCompiler {
                             return arg;
                         }
                     }
-                    printf("didn't find it what");
+                    printf("didn't find it what\n");
                     exit(1);
                 }
             }
             for (int i = 0; i < this->func->localVariables.size(); i++) {
                 if (this->func->localVariables[i]->getName() == name) {
-                    printf("local\n");
                     return this->func->localVariables[i];
                 }
             }
         }
         for (int i = 0; i < this->globalVariables.size(); i++) {
             if (this->globalVariables[i]->getName() == name) {
-                printf("global\n");
                 return this->globalVariables[i];
             }
         }
-        printf("Unknown variable %s", name.c_str());
+        printf("Unknown variable %s\n", name.c_str());
         exit(1);
     }
 
@@ -233,7 +231,7 @@ class LLVMCompiler {
                 exit(1);
             }
 
-            printf("unknown unary expr?");
+            printf("unknown unary expr?\n");
             exit(1);
         }
         case VAR_EXPR: {
@@ -302,6 +300,10 @@ class LLVMCompiler {
             if (func == nullptr) {
                 printf("calling unknown func '%s'\n", name.c_str());
                 exit(1);
+            }
+            if (((int)func->arg_size()) != params.size()) {
+                printf("Calling %s requires %d params but got %d\n",
+                       name.c_str(), (int)func->arg_size(), (int)params.size());
             }
             return this->func->builder->CreateCall(func, params);
         }
@@ -482,7 +484,7 @@ class LLVMCompiler {
                 llvm::FunctionType::get(returnType, params, false);
 
             if (this->func->enclosing) {
-                printf("Can't declare a function in a function");
+                printf("Can't declare a function in a function\n");
                 exit(1);
             }
 
