@@ -6,7 +6,7 @@ c:
 	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../input
 
 r:
-	cd src/ && llc -filetype=obj -o out.o out.ll && clang -o out out.o && ./out
+	cd src/ && llc -filetype=obj -o out.o out.ll && clang -no-pie -o out out.o && ./out
 
 s:
 	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../suite

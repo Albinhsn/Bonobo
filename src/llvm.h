@@ -38,6 +38,7 @@ class LLVMCompiler {
     std::vector<llvm::AllocaInst *> globalVariables;
     std::vector<Stmt *> stmts;
     llvm::IRBuilder<> *builder;
+    std::map<std::string, llvm::FunctionCallee> libraryFuncs;
     std::vector<llvm::Function *> callableFunctions;
     Function *func;
 
@@ -130,8 +131,7 @@ class LLVMCompiler {
         std::string stringLiteral = expr->literal.lexeme;
         switch (expr->literalType) {
         case STR_LITERAL: {
-            return llvm::ConstantDataArray::getString(*this->ctx,
-                                                      stringLiteral);
+            return this->builder->CreateGlobalStringPtr(expr->literal.lexeme);
         }
         case INT_LITERAL: {
             return this->builder->getInt32(std::stoi(stringLiteral));
@@ -293,6 +293,12 @@ class LLVMCompiler {
             }
             if (this->func->function->getName() == name) {
                 func = this->func->function;
+            }
+            for (const auto &[key, value] : this->libraryFuncs) {
+                if (key == name) {
+                    return this->builder->CreateCall(value, params);
+                    break;
+                }
             }
             if (func == nullptr) {
                 printf("calling unknown func '%s'\n", name.c_str());
@@ -503,6 +509,21 @@ class LLVMCompiler {
         }
         }
     }
+    std::map<std::string, llvm::FunctionCallee> addLibraryFuncs() {
+        std::map<std::string, llvm::FunctionCallee> libraryFuncs =
+            std::map<std::string, llvm::FunctionCallee>();
+        std::vector<llvm::Type *> printfArgs;
+        printfArgs.push_back(
+            llvm::Type::getInt8PtrTy(*this->ctx)); // Format string
+        llvm::FunctionType *printfType = llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(*this->ctx), printfArgs, true);
+        llvm::FunctionCallee printfFunc =
+            this->module->getOrInsertFunction("printf", printfType);
+
+        libraryFuncs["printf"] = printfFunc;
+
+        return libraryFuncs;
+    }
 
   public:
     LLVMCompiler(std::vector<Stmt *> stmts) {
@@ -515,8 +536,8 @@ class LLVMCompiler {
         this->func = new Function(nullptr, funcType, "main", {}, this->ctx,
                                   this->module);
 
-        this->builder = new llvm::IRBuilder<>(
-            llvm::BasicBlock::Create(*ctx, "entry", this->func->function));
+        this->libraryFuncs = addLibraryFuncs();
+        this->builder = new llvm::IRBuilder<>(this->func->entryBlock);
     }
     void compile() {
         for (int i = 0; i < stmts.size(); i++) {
