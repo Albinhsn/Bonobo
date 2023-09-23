@@ -17,13 +17,13 @@ TEST(TestBinaryOp, TestAddOp) {
 
     LiteralExpr *left = (LiteralExpr *)binaryExpr->left;
     EXPECT_EQ(left->literalType, INT_LITERAL);
-    EXPECT_EQ(std::string(left->literal.lexeme, left->literal.length), "5");
+    EXPECT_EQ(left->literal.lexeme, "5");
 
     EXPECT_EQ(binaryExpr->right->type, LITERAL_EXPR);
 
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literalType, INT_LITERAL);
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "3");
+    EXPECT_EQ(right->literal.lexeme, "3");
 }
 
 TEST(TestBinaryOp, TestDivOp) {
@@ -259,7 +259,7 @@ TEST(TestBinaryOp, TestPrecedenceMulMul) {
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "2");
+    EXPECT_EQ(right->literal.lexeme, "2");
 }
 
 TEST(TestBinaryOp, TestPrecedenceMulDiv) {
@@ -281,7 +281,7 @@ TEST(TestBinaryOp, TestPrecedenceMulDiv) {
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "2");
+    EXPECT_EQ(right->literal.lexeme, "2");
 }
 
 TEST(TestBinaryOp, TestPrecedenceDivAdd) {
@@ -341,7 +341,7 @@ TEST(TestBinaryOp, TestPrecedenceDivMul) {
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "2");
+    EXPECT_EQ(right->literal.lexeme, "2");
 }
 
 TEST(TestBinaryOp, TestPrecedenceDivDiv) {
@@ -363,7 +363,7 @@ TEST(TestBinaryOp, TestPrecedenceDivDiv) {
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length), "2");
+    EXPECT_EQ(right->literal.lexeme, "2");
 }
 
 TEST(TestBinaryOp, TestBinaryOpVar) {
@@ -378,20 +378,16 @@ TEST(TestBinaryOp, TestBinaryOpVar) {
     EXPECT_EQ(binaryExpr->op, SUB);
     EXPECT_EQ(binaryExpr->left->type, BINARY_EXPR);
     EXPECT_EQ(binaryExpr->right->type, VAR_EXPR);
-    LiteralExpr * right = (LiteralExpr*) binaryExpr->right;
-    EXPECT_EQ(std::string(right->literal.lexeme, right->literal.length),
-              "c");
-
+    LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
+    EXPECT_EQ(right->literal.lexeme, "c");
 
     BinaryExpr *left = (BinaryExpr *)binaryExpr->left;
     EXPECT_EQ(left->op, DIV);
     EXPECT_EQ(left->left->type, VAR_EXPR);
     LiteralExpr *leftLeft = (LiteralExpr *)left->left;
-    EXPECT_EQ(std::string(leftLeft->literal.lexeme, leftLeft->literal.length),
-              "a");
+    EXPECT_EQ(leftLeft->literal.lexeme, "a");
 
     LiteralExpr *leftRight = (LiteralExpr *)left->right;
-    EXPECT_EQ(std::string(leftRight->literal.lexeme, leftRight->literal.length),
-              "b");
+    EXPECT_EQ(leftRight->literal.lexeme, "b");
     EXPECT_EQ(left->right->type, VAR_EXPR);
 }

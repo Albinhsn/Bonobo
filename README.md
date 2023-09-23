@@ -3,21 +3,21 @@
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
 
-## TODO ast compiler
+## Bugs LLVM backend
 
-* Statically type array/map
-
-* Create snd pass
-    * Check validity of everything
-
+* Check always return something
+    * Check correct return type
 
 ## TODO LLVM backend
 
-* Compile empty main 
+* itemType in ArrayDeclaration?
+    * How does an array know what type it has?
 
-* Compile hello world
+* Structs
 
-* Compile expressions
+* MapExpr
+
+* Index
 
 * Write c functions to create a standard library
 
@@ -33,11 +33,3 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * builtin:
     loop over map/array    
     split on char
-
-## TODO Before LLVM backend
-
-* Improve error handling on ** etc
-
-* write formal grammar // Fix README with examples
-
-

@@ -15,8 +15,8 @@ TEST(TestFunCall, TestEmptyFunCall) {
     EXPECT_EQ(exprStmt->expression->type, CALL_EXPR);
 
     CallExpr *callExpr = (CallExpr *)exprStmt->expression;
-    
-    EXPECT_EQ(std::string(callExpr->callee.lexeme, callExpr->callee.length), "foo");
+
+    EXPECT_EQ(callExpr->callee.lexeme, "foo");
     EXPECT_EQ(callExpr->arguments.size(), 0);
 }
 
@@ -32,7 +32,7 @@ TEST(TestFunCall, TestParamFunCall) {
     EXPECT_EQ(exprStmt->expression->type, CALL_EXPR);
 
     CallExpr *callExpr = (CallExpr *)exprStmt->expression;
-    
-    EXPECT_EQ(std::string(callExpr->callee.lexeme, callExpr->callee.length), "foo");
+
+    EXPECT_EQ(callExpr->callee.lexeme, "foo");
     EXPECT_EQ(callExpr->arguments.size(), 2);
 }

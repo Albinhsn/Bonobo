@@ -12,7 +12,7 @@ TEST(TestFunction, TestBasicFunc) {
     EXPECT_EQ(result[0]->type, FUNC_STMT);
 
     FuncStmt *funStmt = (FuncStmt *)result[0];
-    EXPECT_EQ(std::string(funStmt->name.lexeme, funStmt->name.length), "foo");
+    EXPECT_EQ(funStmt->name.lexeme, "foo");
 
     EXPECT_EQ(funStmt->params.size(), 2);
     EXPECT_EQ(funStmt->body.size(), 1);
@@ -28,7 +28,7 @@ TEST(TestFunction, TestEmptyFunc) {
     EXPECT_EQ(result[0]->type, FUNC_STMT);
 
     FuncStmt *funStmt = (FuncStmt *)result[0];
-    EXPECT_EQ(std::string(funStmt->name.lexeme, funStmt->name.length), "foo");
+    EXPECT_EQ(funStmt->name.lexeme, "foo");
 
     EXPECT_EQ(funStmt->params.size(), 0);
     EXPECT_EQ(funStmt->body.size(), 0);
@@ -43,7 +43,7 @@ TEST(TestFunction, TestFuncReturn) {
     EXPECT_EQ(result[0]->type, FUNC_STMT);
 
     FuncStmt *funStmt = (FuncStmt *)result[0];
-    EXPECT_EQ(std::string(funStmt->name.lexeme, funStmt->name.length), "foo");
+    EXPECT_EQ(funStmt->name.lexeme, "foo");
 
     EXPECT_EQ(funStmt->params.size(), 0);
     EXPECT_EQ(funStmt->body.size(), 1);

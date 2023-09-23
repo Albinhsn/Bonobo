@@ -47,7 +47,7 @@ typedef enum {
     TOKEN_MAP_TYPE,    // map 5
     TOKEN_ARRAY_TYPE,  // array 6
     TOKEN_STRUCT_TYPE, // struct
-    TOKEN_NIL, // nil 7
+    TOKEN_NIL,         // nil 7
 
     // Keywords.
     TOKEN_PRINT,
@@ -70,8 +70,7 @@ typedef enum {
 bool cmpString(const char *s1, int l1, const char *s2, int l2);
 
 typedef struct Token {
-    const char *lexeme;
-    int length;
+    std::string lexeme;
     int line;
     TokenType type;
 } Token;

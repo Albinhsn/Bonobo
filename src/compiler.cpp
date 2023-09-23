@@ -42,7 +42,7 @@ static void errorAt(const char *message) {
 }
 
 static void advance() {
-    free(parser->previous);
+    delete (parser->previous);
     parser->previous = parser->current;
     for (;;) {
         parser->current = scanToken(scanner);
@@ -775,7 +775,7 @@ static Stmt *forStatement() {
     }
 
     if (!match(TOKEN_SEMICOLON)) {
-        forStmt->condition = expressionStatement();
+        forStmt->condition = expression(nullptr);
         consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
     }
     if (!match(TOKEN_RIGHT_PAREN)) {
@@ -906,7 +906,6 @@ static void initParser() {
     parser->hadError = false;
 }
 
-
 std::vector<Stmt *> compile(const char *source) {
     scanner = (Scanner *)malloc(sizeof(Scanner));
     initScanner(scanner, source);
@@ -918,7 +917,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    debugStatements(compiler->statements);
+    // debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

@@ -75,7 +75,7 @@ class ForStmt : public Stmt {
   private:
   public:
     Stmt *initializer;
-    Stmt *condition;
+    Expr *condition;
     Stmt *increment;
     std::vector<Stmt *> body;
     ForStmt() {
@@ -91,10 +91,10 @@ class StructStmt : public Stmt {
   private:
   public:
     Token name;
-    std::vector<Variable*> fieldNames;
+    std::vector<Variable *> fieldNames;
     StructStmt() {
         this->type = STRUCT_STMT;
-        this->fieldNames = std::vector<Variable*>();
+        this->fieldNames = std::vector<Variable *>();
     }
 };
 
@@ -117,12 +117,12 @@ class FuncStmt : public Stmt {
   public:
     Token name;
     VarType returnType;
-    std::vector<Variable*> params;
+    std::vector<Variable *> params;
     std::vector<Stmt *> body;
     FuncStmt() {
         this->type = FUNC_STMT;
         this->body = std::vector<Stmt *>();
-        this->params = std::vector<Variable*>();
+        this->params = std::vector<Variable *>();
     }
 };
 

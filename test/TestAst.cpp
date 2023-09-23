@@ -11,15 +11,12 @@ TEST(TestIntVariable, TestIntVar) {
 
     EXPECT_EQ(result[0]->type, VAR_STMT);
     VarStmt *varStmt = (VarStmt *)result[0];
-    EXPECT_EQ(std::string(varStmt->var->name.lexeme, varStmt->var->name.length),
-              "a");
+    EXPECT_EQ(varStmt->var->name.lexeme, "a");
     EXPECT_EQ(varStmt->initializer->type, LITERAL_EXPR);
 
     LiteralExpr *literalExpr = (LiteralExpr *)varStmt->initializer;
     EXPECT_EQ(literalExpr->literalType, INT_LITERAL);
-    EXPECT_EQ(
-        std::string(literalExpr->literal.lexeme, literalExpr->literal.length),
-        "5");
+    EXPECT_EQ(literalExpr->literal.lexeme, "5");
 }
 
 TEST(TestUnaryOp, TestBang) {

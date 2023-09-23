@@ -12,8 +12,7 @@ TEST(TestStruct, TestStructFields) {
     EXPECT_EQ(result[0]->type, STRUCT_STMT);
     StructStmt *structStmt = (StructStmt *)result[0];
 
-    EXPECT_EQ(std::string(structStmt->name.lexeme, structStmt->name.length),
-              "foo");
+    EXPECT_EQ(structStmt->name.lexeme, "foo");
 
     EXPECT_EQ(structStmt->fieldNames.size(), 2);
 }

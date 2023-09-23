@@ -3,7 +3,10 @@ LLVMFLAGS =  -std=c++17  -fno-exceptions -funwind-tables -fno-rtti -D_GNU_SOURCE
 FILES = main.cpp compiler.cpp scanner.cpp debug.cpp
 
 c: 
-	cd src/ && clang++ -o main $(FILES) && ./main ../input
+	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../input
+
+r:
+	cd src/ && llc -filetype=obj -o out.o out.ll && clang -o out out.o && ./out
 
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll

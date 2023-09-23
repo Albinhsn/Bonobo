@@ -14,7 +14,7 @@ TEST(TestForLoop, TestBasicFor) {
 
     ForStmt *forStmt = (ForStmt *)result[0];
     EXPECT_EQ(forStmt->initializer->type, VAR_STMT);
-    EXPECT_EQ(forStmt->condition->type, EXPR_STMT);
+    EXPECT_EQ(forStmt->condition->type, COMPARISON_EXPR);
     EXPECT_EQ(forStmt->increment->type, ASSIGN_STMT);
     EXPECT_EQ(forStmt->body.size(), 1);
 }

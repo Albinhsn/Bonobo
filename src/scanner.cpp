@@ -19,11 +19,9 @@ void initScanner(Scanner *scanner, const char *source) {
 }
 
 Token *newToken(const char *lexeme, int length, int line, TokenType type) {
-    Token *token = nullptr;
-    token = (Token *)malloc(sizeof(Token));
+    Token *token = new Token();
     token->type = type;
-    token->length = length;
-    token->lexeme = lexeme;
+    token->lexeme = std::string(lexeme, length);
     token->line = line;
 
     return token;
