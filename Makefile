@@ -8,6 +8,10 @@ c:
 r:
 	cd src/ && llc -filetype=obj -o out.o out.ll && clang -o out out.o && ./out
 
+s:
+	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../suite
+
+
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
 

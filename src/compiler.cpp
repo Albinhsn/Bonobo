@@ -917,7 +917,7 @@ std::vector<Stmt *> compile(const char *source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    // debugStatements(compiler->statements);
+    debugStatements(compiler->statements);
 
     free(scanner);
     free(parser);

@@ -8,7 +8,11 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Check always return something
     * Check correct return type
 
+* if/else/merge things
+
 ## TODO LLVM backend
+
+* Massive "test" suite of at least things that should be able to be compiled
 
 * itemType in ArrayDeclaration?
     * How does an array know what type it has?
