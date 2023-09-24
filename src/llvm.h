@@ -498,6 +498,8 @@ class LLVMCompiler {
             this->func =
                 new Function(this->func, funcType, funcStmt->name.lexeme,
                              funcArgs, this->ctx, this->module);
+            llvm::IRBuilder<> *prevBuilder = this->builder;
+            this->builder = new llvm::IRBuilder<>(this->func->entryBlock);
 
             for (int i = 0; i < funcStmt->body.size(); ++i) {
                 compileStatement(funcStmt->body[i]);
@@ -505,6 +507,7 @@ class LLVMCompiler {
             this->builder->CreateRet(this->builder->getInt32(0));
             this->callableFunctions.push_back(this->func->function);
             this->func = this->func->enclosing;
+            this->builder = prevBuilder;
             break;
         }
         }

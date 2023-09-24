@@ -10,11 +10,13 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * if/else/merge things
 
-* Idk can't run fib now
-
 ## TODO LLVM backend
 
 * Do some sort of big test suite anyway with printf, currently breaking stuff to easily
+
+* Need to figure out where we're not type checking etc 
+
+* Some better error handling
 
 * itemType in ArrayDeclaration?
     * How does an array know what type it has?
