@@ -292,7 +292,9 @@ void debugStatement(Stmt *statement) {
                 printf(",");
             }
         }
-        printf(") -> %s\n{\n", debugVarType(funcStmt->returnType));
+        printf(") -> ");
+        debugVariable(funcStmt->returnType);
+        printf("\n{\n");
         debugStatements(funcStmt->body);
         printf("}\n");
 

@@ -18,9 +18,7 @@ class Variable {
   public:
     Token name;
     VarType type;
-  Variable(){
-    this->name.lexeme = "0";
-  }
+    Variable() { this->name.lexeme = "0"; }
 };
 
 class ArrayVariable : public Variable {
@@ -30,6 +28,7 @@ class ArrayVariable : public Variable {
     ArrayVariable(Token name) {
         this->name = name;
         this->type = ARRAY_VAR;
+        this->items = nullptr;
     }
 };
 
@@ -41,6 +40,8 @@ class MapVariable : public Variable {
     MapVariable(Token name) {
         this->name = name;
         this->type = MAP_VAR;
+        this->keys = nullptr;
+        this->values = nullptr;
     }
 };
 

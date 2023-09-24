@@ -16,7 +16,7 @@ TEST(TestFunction, TestBasicFunc) {
 
     EXPECT_EQ(funStmt->params.size(), 2);
     EXPECT_EQ(funStmt->body.size(), 1);
-    EXPECT_EQ(funStmt->returnType, INT_VAR);
+    EXPECT_EQ(funStmt->returnType->type, INT_VAR);
 }
 
 TEST(TestFunction, TestEmptyFunc) {
@@ -32,7 +32,7 @@ TEST(TestFunction, TestEmptyFunc) {
 
     EXPECT_EQ(funStmt->params.size(), 0);
     EXPECT_EQ(funStmt->body.size(), 0);
-    EXPECT_EQ(funStmt->returnType, INT_VAR);
+    EXPECT_EQ(funStmt->returnType->type, INT_VAR);
 }
 TEST(TestFunction, TestFuncReturn) {
     std::string source = "fun foo() -> int{return 5;}";
@@ -47,5 +47,5 @@ TEST(TestFunction, TestFuncReturn) {
 
     EXPECT_EQ(funStmt->params.size(), 0);
     EXPECT_EQ(funStmt->body.size(), 1);
-    EXPECT_EQ(funStmt->returnType, INT_VAR);
+    EXPECT_EQ(funStmt->returnType->type, INT_VAR);
 }

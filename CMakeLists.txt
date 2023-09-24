@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 set(This bonobo)
 project(${This})
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 enable_testing()
 
@@ -20,6 +21,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+
 set(Sources
   ./src/common.h
   ./src/compiler.h
@@ -27,6 +29,7 @@ set(Sources
   ./src/debug.cpp
   ./src/debug.h
   ./src/expr.h
+  ./src/llvm.h
   ./src/scanner.cpp
   ./src/scanner.h
   ./src/stmt.h

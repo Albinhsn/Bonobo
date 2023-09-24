@@ -40,7 +40,7 @@ class LLVMCompiler {
     llvm::IRBuilder<> *builder;
     std::map<std::string, llvm::FunctionCallee> libraryFuncs;
     std::vector<llvm::Function *> callableFunctions;
-    Function *func;
+    Function *function;
 
     void endCompiler() {
         this->builder->CreateRet(this->builder->getInt32(0));
@@ -49,7 +49,11 @@ class LLVMCompiler {
         llvm::raw_fd_ostream outLL("./out.ll", errorCode);
         this->module->print(outLL, nullptr);
     }
-    llvm::Type *getLLVMType(Variable *var, llvm::Value *value) {
+    llvm::Type *getVariableLLVMType(Variable *var) {
+        if (var == nullptr) {
+            printf("Variable is none in getVariableLLVMType\n");
+            exit(1);
+        }
         switch (var->type) {
         case INT_VAR: {
             return this->builder->getInt32Ty();
@@ -61,9 +65,12 @@ class LLVMCompiler {
             return this->builder->getDoubleTy();
         }
         case BOOL_VAR: {
-            return this->builder->getInt32Ty();
+            return this->builder->getInt1Ty();
         }
         case ARRAY_VAR: {
+            return this->builder->getPtrTy();
+        }
+        case STRUCT_VAR: {
             return this->builder->getPtrTy();
         }
         default: {
@@ -73,22 +80,22 @@ class LLVMCompiler {
         }
     }
     llvm::Value *getVariable(std::string name) {
-        if (this->func->enclosing) {
-            for (const auto &[key, value] : this->func->funcArgs) {
+        if (this->function->enclosing) {
+            for (const auto &[key, value] : this->function->funcArgs) {
                 if (key == name) {
                     int i = 0;
                     for (llvm::Function::arg_iterator arg =
-                             this->func->function->arg_begin();
-                         arg != this->func->function->arg_end(); ++arg) {
+                             this->function->function->arg_begin();
+                         arg != this->function->function->arg_end(); ++arg) {
                         if (i == value) {
                             return arg;
                         }
                     }
                 }
             }
-            for (int i = 0; i < this->func->localVariables.size(); i++) {
-                if (this->func->localVariables[i]->getName() == name) {
-                    return this->func->localVariables[i];
+            for (int i = 0; i < this->function->localVariables.size(); i++) {
+                if (this->function->localVariables[i]->getName() == name) {
+                    return this->function->localVariables[i];
                 }
             }
         }
@@ -101,6 +108,20 @@ class LLVMCompiler {
         exit(1);
     }
 
+    void debugValueType(llvm::Type *type) {
+        if (type == llvm::Type::getInt32Ty(*this->ctx)) {
+            printf("int32\n");
+        } else if (type == llvm::Type::getInt1Ty(*this->ctx)) {
+            printf("int1\n");
+        } else if (type == llvm::Type::getDoubleTy(*this->ctx)) {
+            printf("double\n");
+        } else if (type->isPointerTy()) {
+            printf("ptr\n");
+        } else if (type->isArrayTy()) {
+            printf("array\n");
+        }
+    }
+
     bool checkValueMatch(Variable *var, llvm::Value *value) {
         if (value->getType() == llvm::Type::getInt32Ty(*this->ctx)) {
             return var->type == INT_VAR;
@@ -110,12 +131,10 @@ class LLVMCompiler {
 
         } else if (value->getType() == llvm::Type::getDoubleTy(*this->ctx)) {
             return var->type == DOUBLE_VAR;
-
         } else if (value->getType()->isPointerTy()) {
-            return var->type == STR_VAR;
-
-        } else if (value->getType()->isArrayTy()) {
-            return var->type == ARRAY_VAR;
+            // ToDo this needs to check underlying type as well
+            return var->type == STR_VAR || var->type == ARRAY_VAR ||
+                   var->type == MAP_VAR || var->type == STRUCT_VAR;
         }
 
         printf("unknown value\n");
@@ -250,29 +269,41 @@ class LLVMCompiler {
         case ARRAY_EXPR: {
             ArrayExpr *arrayExpr = (ArrayExpr *)expr;
 
-            // Figure out how to have this be different?
-            llvm::Type *elementType = this->builder->getInt32Ty();
+            llvm::Type *elementType = getVariableLLVMType(arrayExpr->itemType);
 
             uint64_t arraySize = arrayExpr->items.size();
             uint64_t totalSize =
                 arraySize * elementType->getPrimitiveSizeInBits();
 
-            llvm::AllocaInst *array = this->builder->CreateAlloca(
-                llvm::ArrayType::get(elementType, arraySize));
+            llvm::ArrayType *arrayType =
+                llvm::ArrayType::get(elementType, arraySize);
+            llvm::GlobalVariable *globalArray = new llvm::GlobalVariable(
+                *this->module, arrayType, false,
+                llvm::GlobalValue::ExternalLinkage,
+                llvm::ConstantAggregateZero::get(arrayType));
 
             for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
                 llvm::Value *value = compileExpression(arrayExpr->items[i]);
                 llvm::Value *index = llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(*this->ctx), i);
+                if (value->getType() != elementType) {
+                    printf("value: ");
+                    debugValueType(value->getType());
+                    printf("elementType: ");
+                    debugValueType(elementType);
+                    printf("Can't create an array different element then "
+                           "specified\n");
+                    exit(1);
+                }
 
                 llvm::ArrayRef<llvm::Value *> indices({index});
                 llvm::Value *gep =
-                    this->builder->CreateGEP(elementType, array, indices);
+                    this->builder->CreateGEP(elementType, globalArray, indices);
 
                 this->builder->CreateStore(value, gep);
             }
 
-            return this->builder->CreateLoad(array->getAllocatedType(), array);
+            return globalArray;
         }
         case MAP_EXPR: {
         }
@@ -292,8 +323,8 @@ class LLVMCompiler {
                     break;
                 }
             }
-            if (this->func->function->getName() == name) {
-                func = this->func->function;
+            if (this->function->function->getName() == name) {
+                func = this->function->function;
             }
             if (this->libraryFuncs.count(name)) {
                 return this->builder->CreateCall(this->libraryFuncs[name],
@@ -343,24 +374,36 @@ class LLVMCompiler {
         case RETURN_STMT: {
             ReturnStmt *returnStmt = (ReturnStmt *)stmt;
             // Need to check type is correct;
-            this->builder->CreateRet(compileExpression(returnStmt->value));
+            if (!this->function->enclosing) {
+                printf("Can't return outside of a function\n");
+                exit(1);
+            }
+
+            llvm::Value *returnValue = compileExpression(returnStmt->value);
+            if (this->function->funcType->getReturnType() !=
+                returnValue->getType()) {
+                printf("Mismatching return in %s\n",
+                       this->function->function->getName().str().c_str());
+                exit(1);
+            }
+
+            this->builder->CreateRet(returnValue);
             break;
         }
         case VAR_STMT: {
+            // ToDo check overwriting existing variable?
             VarStmt *varStmt = (VarStmt *)stmt;
             llvm::Value *value = compileExpression(varStmt->initializer);
             if (!checkValueMatch(varStmt->var, value)) {
-                printf("Invalid type mismatch in var declaration");
+                printf("Invalid type mismatch in var declaration\n");
                 exit(1);
             }
-            // Do i need to check whether it exists or not?
             llvm::AllocaInst *var =
-                this->builder->CreateAlloca(getLLVMType(varStmt->var, value),
+                this->builder->CreateAlloca(getVariableLLVMType(varStmt->var),
                                             nullptr, varStmt->var->name.lexeme);
             this->builder->CreateStore(value, var);
-            // ToDo check this
-            if (this->func->enclosing) {
-                this->func->localVariables.push_back(var);
+            if (this->function->enclosing) {
+                this->function->localVariables.push_back(var);
             } else {
                 this->globalVariables.push_back(var);
             }
@@ -370,13 +413,13 @@ class LLVMCompiler {
             WhileStmt *whileStmt = (WhileStmt *)stmt;
 
             llvm::BasicBlock *loopHeaderBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.header", this->func->function);
+                *this->ctx, "loop.header", this->function->function);
 
             llvm::BasicBlock *loopBodyBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.body", this->func->function);
+                *this->ctx, "loop.body", this->function->function);
 
             llvm::BasicBlock *loopExitBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.exit", this->func->function);
+                *this->ctx, "loop.exit", this->function->function);
 
             this->builder->CreateBr(loopHeaderBlock);
             this->builder->SetInsertPoint(loopHeaderBlock);
@@ -399,13 +442,13 @@ class LLVMCompiler {
             ForStmt *forStmt = (ForStmt *)stmt;
 
             llvm::BasicBlock *loopHeaderBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.header", this->func->function);
+                *this->ctx, "loop.header", this->function->function);
 
             llvm::BasicBlock *loopBodyBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.body", this->func->function);
+                *this->ctx, "loop.body", this->function->function);
 
             llvm::BasicBlock *loopExitBlock = llvm::BasicBlock::Create(
-                *this->ctx, "loop.exit", this->func->function);
+                *this->ctx, "loop.exit", this->function->function);
 
             compileStatement(forStmt->initializer);
             this->builder->CreateBr(loopHeaderBlock);
@@ -432,24 +475,26 @@ class LLVMCompiler {
             IfStmt *ifStmt = (IfStmt *)stmt;
             llvm::Value *condition = compileExpression(ifStmt->condition);
 
-            llvm::BasicBlock *thenBlock =
-                llvm::BasicBlock::Create(*ctx, "then", this->func->function);
+            llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(
+                *ctx, "then", this->function->function);
 
-            llvm::BasicBlock *elseBlock =
-                llvm::BasicBlock::Create(*ctx, "else", this->func->function);
+            llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(
+                *ctx, "else", this->function->function);
 
-            llvm::BasicBlock *mergeBlock =
-                llvm::BasicBlock::Create(*ctx, "merge", this->func->function);
+            llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(
+                *ctx, "merge", this->function->function);
 
             this->builder->CreateCondBr(condition, thenBlock, elseBlock);
             this->builder->SetInsertPoint(thenBlock);
+
             // This is just bad, especially for multiple returns?
             bool returned = false;
             for (int i = 0; i < ifStmt->thenBranch.size(); ++i) {
+                compileStatement(ifStmt->thenBranch[i]);
                 if (ifStmt->thenBranch[i]->type == RETURN_STMT) {
                     returned = true;
+                    break;
                 }
-                compileStatement(ifStmt->thenBranch[i]);
             }
             if (!returned) {
                 this->builder->CreateBr(mergeBlock);
@@ -458,10 +503,11 @@ class LLVMCompiler {
 
             returned = false;
             for (int i = 0; i < ifStmt->elseBranch.size(); ++i) {
+                compileStatement(ifStmt->elseBranch[i]);
                 if (ifStmt->elseBranch[i]->type == RETURN_STMT) {
                     returned = true;
+                    break;
                 }
-                compileStatement(ifStmt->elseBranch[i]);
             }
             if (!returned) {
                 this->builder->CreateBr(mergeBlock);
@@ -477,36 +523,36 @@ class LLVMCompiler {
                 std::vector<llvm::Type *>(funcStmt->params.size());
             std::map<std::string, int> funcArgs;
             for (int i = 0; i < funcStmt->params.size(); ++i) {
-                params[i] = getLLVMType(funcStmt->params[i], nullptr);
+                params[i] = getVariableLLVMType(funcStmt->params[i]);
                 funcArgs[funcStmt->params[i]->name.lexeme] = i;
             }
 
             // Ret type
-            Variable *var = new Variable();
-            var->type = funcStmt->returnType;
-            llvm::Type *returnType = getLLVMType(var, nullptr);
+            llvm::Type *returnType = getVariableLLVMType(funcStmt->returnType);
 
             // Fix func type
             llvm::FunctionType *funcType =
                 llvm::FunctionType::get(returnType, params, false);
 
-            if (this->func->enclosing) {
+            if (this->function->enclosing) {
                 printf("Can't declare a function in a function\n");
                 exit(1);
             }
 
-            this->func =
-                new Function(this->func, funcType, funcStmt->name.lexeme,
+            this->function =
+                new Function(this->function, funcType, funcStmt->name.lexeme,
                              funcArgs, this->ctx, this->module);
             llvm::IRBuilder<> *prevBuilder = this->builder;
-            this->builder = new llvm::IRBuilder<>(this->func->entryBlock);
+            this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
 
             for (int i = 0; i < funcStmt->body.size(); ++i) {
                 compileStatement(funcStmt->body[i]);
+                if (funcStmt->body[i]->type == RETURN_STMT) {
+                    break;
+                }
             }
-            this->builder->CreateRet(this->builder->getInt32(0));
-            this->callableFunctions.push_back(this->func->function);
-            this->func = this->func->enclosing;
+            this->callableFunctions.push_back(this->function->function);
+            this->function = this->function->enclosing;
             this->builder = prevBuilder;
             break;
         }
@@ -535,11 +581,11 @@ class LLVMCompiler {
         this->callableFunctions = std::vector<llvm::Function *>();
         llvm::FunctionType *funcType =
             llvm::FunctionType::get(llvm::Type::getInt32Ty(*ctx), false);
-        this->func = new Function(nullptr, funcType, "main", {}, this->ctx,
-                                  this->module);
+        this->function = new Function(nullptr, funcType, "main", {}, this->ctx,
+                                      this->module);
 
         this->libraryFuncs = addLibraryFuncs();
-        this->builder = new llvm::IRBuilder<>(this->func->entryBlock);
+        this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
     }
     void compile() {
         for (int i = 0; i < stmts.size(); i++) {

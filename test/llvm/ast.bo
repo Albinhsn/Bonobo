@@ -1,0 +1,8 @@
+var a: int = 5;
+printf("%d\n", a);
+
+var b: int = !true;
+printf("%d\n", b);
+
+var c: int = !(false);
+printf("%d\n", c);

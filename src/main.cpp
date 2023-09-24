@@ -3,6 +3,7 @@
 #include "llvm.h"
 #include "scanner.h"
 #include "trie.h"
+#include <cstdlib>
 
 static std::string readFile(const char *path) {
     std::ifstream t(path);
@@ -37,5 +38,7 @@ int main(int argc, const char *argv[]) {
     std::vector<Stmt *> stmts = compile(source);
     LLVMCompiler *llvmCompiler = new LLVMCompiler(stmts);
     llvmCompiler->compile();
+    system("lli out.ll");
+
     return 0;
 }

@@ -18,7 +18,6 @@ enum ExprType {
     CALL_EXPR,
 };
 
-
 enum UnaryOp { BANG_UNARY, NEG_UNARY };
 
 enum LogicalOp { OR_LOGICAL, AND_LOGICAL };
@@ -88,10 +87,11 @@ class ArrayExpr : public Expr {
   private:
   public:
     std::vector<Expr *> items;
-    VarType itemType;
+    Variable *itemType;
     ArrayExpr() {
         this->type = ARRAY_EXPR;
         this->items = std::vector<Expr *>();
+        this->itemType = nullptr;
     }
 };
 

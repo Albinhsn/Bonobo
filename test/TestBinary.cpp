@@ -24,6 +24,7 @@ TEST(TestBinaryOp, TestAddOp) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literalType, INT_LITERAL);
     EXPECT_EQ(right->literal.lexeme, "3");
+
 }
 
 TEST(TestBinaryOp, TestDivOp) {

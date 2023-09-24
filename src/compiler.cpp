@@ -89,6 +89,9 @@ static VarType getVarType() {
     case TOKEN_MAP_TYPE: {
         return MAP_VAR;
     }
+    case TOKEN_IDENTIFIER: {
+        return STRUCT_VAR;
+    }
     default: {
         break;
     }
@@ -736,13 +739,19 @@ static Stmt *varDeclaration() {
     consume(TOKEN_EQUAL, "Expected assignment at var declaration");
 
     varStmt->initializer = expression(nullptr);
+    // Change this xD
+    if (varStmt->initializer->type == ARRAY_EXPR &&
+        varStmt->var->type == ARRAY_VAR) {
+        ArrayExpr *arrayExpr = (ArrayExpr *)varStmt->initializer;
+        ArrayVariable *arrayVar = (ArrayVariable *)varStmt->var;
+        arrayExpr->itemType = arrayVar->items;
+    }
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
     return (Stmt *)varStmt;
 }
 
 static Stmt *expressionStatement() {
-    // Figure out whether or not it's an assignExpr first?
     if (match(TOKEN_IDENTIFIER)) {
         Token ident = *parser->previous;
         if (match(TOKEN_EQUAL)) {
@@ -860,8 +869,7 @@ static Stmt *funDeclaration() {
     }
 
     consume(TOKEN_ARROW, "Expect '->' after func params");
-    advance();
-    funcStmt->returnType = getVarType();
+    funcStmt->returnType = parseVarType(new Variable());
 
     consume(TOKEN_LEFT_BRACE,
             "Expect '{' after returntype in func declaration");
@@ -918,7 +926,7 @@ std::vector<Stmt *> compile(std::string source) {
         compiler->statements.push_back(declaration());
     }
     bool hadError = parser->hadError;
-    debugStatements(compiler->statements);
+    // debugStatements(compiler->statements);
 
     delete (scanner);
     free(parser);

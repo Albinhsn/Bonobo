@@ -5,35 +5,48 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Be able to return:
-    * string
-    * bool
-    * array
-    * struct/object
+* Struct lookup in compiler "foo.bar";
 
-* Check always return something
-    * Check correct return type
+* Just check for bugs with comments
 
-* if/else/merge miscalculates smth 
+* Rename/Lookover functions, it's getting ridiculous
 
 * Do some sort of big test suite anyway with printf, currently breaking stuff to easily
+    * Write gtest tests with system(command) and check output to files
+
+* Check recursively when compiler gives array_expr it's items to support 2d arrays
+
+* Check always return something or error if you don't?
+
+* Scoping rules with variables
+
+* Fix func args, add(1,2) doesn't even work
 
 * Need to figure out where we're not type checking etc 
 
 * Some better error handling
 
+
 * itemType in ArrayDeclaration?
     * How does an array know what type it has?
-
-
+        * It doesn't after you calculated what it contains;
+            * Do so and then check its validity?
 
 ## TODO LLVM backend
 
+* Index
+
 * Structs
+    * Declare
+    * Instance
+    * Property
+    * Return from func
+    * Array of:
+        struct
 
 * MapExpr
 
-* Index
+* Break
 
 * Write c functions to create a standard library
 

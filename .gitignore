@@ -41,5 +41,4 @@ log.txt
 callgrind.*
 csrc/
 .clang-format
-out
-out.ll
+out*

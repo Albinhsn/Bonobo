@@ -116,7 +116,7 @@ class FuncStmt : public Stmt {
   private:
   public:
     Token name;
-    VarType returnType;
+    Variable *returnType;
     std::vector<Variable *> params;
     std::vector<Stmt *> body;
     FuncStmt() {

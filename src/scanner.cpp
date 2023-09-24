@@ -90,9 +90,6 @@ static Token *parseString(Scanner *scanner) {
     }
 
     scanner->current++;
-    std::cout << "string: "
-              << scanner->source.substr(current,
-                                        scanner->current - current - 1);
     return newToken(
         scanner->source.substr(current, scanner->current - current - 1),
         scanner->line, TOKEN_STR_LITERAL);
