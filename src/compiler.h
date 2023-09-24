@@ -36,7 +36,7 @@ typedef struct Compiler {
     std::vector<Stmt *> statements;
 } Compiler;
 
-std::vector<Stmt *> compile(const char *source);
+std::vector<Stmt *> compile(std::string source);
 
 static Expr *mapDeclaration();
 static Expr *arrayDeclaration();

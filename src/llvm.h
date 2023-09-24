@@ -49,19 +49,13 @@ class LLVMCompiler {
         llvm::raw_fd_ostream outLL("./out.ll", errorCode);
         this->module->print(outLL, nullptr);
     }
-    llvm::Type *getLLVMType(Variable *var) {
+    llvm::Type *getLLVMType(Variable *var, llvm::Value *value) {
         switch (var->type) {
         case INT_VAR: {
             return this->builder->getInt32Ty();
         }
         case STR_VAR: {
-            for (int i = 0; i < this->globalVariables.size(); i++) {
-                if (this->globalVariables[i]->getName() == var->name.lexeme) {
-                    return llvm::ArrayType::get(
-                        llvm::IntegerType::get(*this->ctx, 8),
-                        this->globalVariables[i]->getNumOperands());
-                }
-            }
+            return this->builder->getPtrTy();
         }
         case DOUBLE_VAR: {
             return this->builder->getDoubleTy();
@@ -70,7 +64,7 @@ class LLVMCompiler {
             return this->builder->getInt32Ty();
         }
         case ARRAY_VAR: {
-            return llvm::ArrayType::get(llvm::Type::getInt32Ty(*this->ctx), 0);
+            return this->builder->getPtrTy();
         }
         default: {
             printf("unknown llvmType\n");
@@ -117,7 +111,7 @@ class LLVMCompiler {
         } else if (value->getType() == llvm::Type::getDoubleTy(*this->ctx)) {
             return var->type == DOUBLE_VAR;
 
-        } else if (llvm::isa<llvm::ConstantDataArray>(value)) {
+        } else if (value->getType()->isPointerTy()) {
             return var->type == STR_VAR;
 
         } else if (value->getType()->isArrayTy()) {
@@ -196,8 +190,8 @@ class LLVMCompiler {
             ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
             llvm::Value *left = compileExpression(comparisonExpr->left);
             llvm::Value *right = compileExpression(comparisonExpr->right);
-            // Need to check fp as well, string equality, array equality, map
-            // equality
+            // Need to check fp as well, string equality, array equality,
+            // map equality
             switch (comparisonExpr->op) {
             case LESS_EQUAL_COMPARISON: {
                 return this->builder->CreateICmpULE(left, right);
@@ -234,13 +228,20 @@ class LLVMCompiler {
         }
         case VAR_EXPR: {
             VarExpr *varExpr = (VarExpr *)expr;
-
             llvm::Value *var = getVariable(varExpr->name.lexeme);
             if (var->getType()->isPointerTy()) {
-                llvm::AllocaInst *alloc = (llvm::AllocaInst *)var;
-                llvm::Value *value =
-                    this->builder->CreateLoad(alloc->getAllocatedType(), alloc);
-                return value;
+                if (llvm::AllocaInst *allocaInst =
+                        llvm::dyn_cast<llvm::AllocaInst>(var)) {
+                    if (allocaInst->getType()->isPointerTy()) {
+                        llvm::Value *loadedValue = this->builder->CreateLoad(
+                            allocaInst->getAllocatedType(), allocaInst);
+                        return loadedValue;
+                    }
+                    return var;
+                } else {
+                    printf("failed to cast to allocaInst");
+                    exit(1);
+                }
             }
             return var;
         }
@@ -266,7 +267,7 @@ class LLVMCompiler {
 
                 llvm::ArrayRef<llvm::Value *> indices({index});
                 llvm::Value *gep =
-                    this->builder->CreateGEP(elementType, index, indices);
+                    this->builder->CreateGEP(elementType, array, indices);
 
                 this->builder->CreateStore(value, gep);
             }
@@ -294,11 +295,9 @@ class LLVMCompiler {
             if (this->func->function->getName() == name) {
                 func = this->func->function;
             }
-            for (const auto &[key, value] : this->libraryFuncs) {
-                if (key == name) {
-                    return this->builder->CreateCall(value, params);
-                    break;
-                }
+            if (this->libraryFuncs.count(name)) {
+                return this->builder->CreateCall(this->libraryFuncs[name],
+                                                 params);
             }
             if (func == nullptr) {
                 printf("calling unknown func '%s'\n", name.c_str());
@@ -355,8 +354,9 @@ class LLVMCompiler {
                 exit(1);
             }
             // Do i need to check whether it exists or not?
-            llvm::AllocaInst *var = this->builder->CreateAlloca(
-                getLLVMType(varStmt->var), nullptr, varStmt->var->name.lexeme);
+            llvm::AllocaInst *var =
+                this->builder->CreateAlloca(getLLVMType(varStmt->var, value),
+                                            nullptr, varStmt->var->name.lexeme);
             this->builder->CreateStore(value, var);
             // ToDo check this
             if (this->func->enclosing) {
@@ -477,14 +477,14 @@ class LLVMCompiler {
                 std::vector<llvm::Type *>(funcStmt->params.size());
             std::map<std::string, int> funcArgs;
             for (int i = 0; i < funcStmt->params.size(); ++i) {
-                params[i] = getLLVMType(funcStmt->params[i]);
+                params[i] = getLLVMType(funcStmt->params[i], nullptr);
                 funcArgs[funcStmt->params[i]->name.lexeme] = i;
             }
 
             // Ret type
             Variable *var = new Variable();
             var->type = funcStmt->returnType;
-            llvm::Type *returnType = getLLVMType(var);
+            llvm::Type *returnType = getLLVMType(var, nullptr);
 
             // Fix func type
             llvm::FunctionType *funcType =
@@ -516,8 +516,7 @@ class LLVMCompiler {
         std::map<std::string, llvm::FunctionCallee> libraryFuncs =
             std::map<std::string, llvm::FunctionCallee>();
         std::vector<llvm::Type *> printfArgs;
-        printfArgs.push_back(
-            llvm::Type::getInt8PtrTy(*this->ctx)); // Format string
+        printfArgs.push_back(llvm::Type::getInt8PtrTy(*this->ctx));
         llvm::FunctionType *printfType = llvm::FunctionType::get(
             llvm::Type::getInt32Ty(*this->ctx), printfArgs, true);
         llvm::FunctionCallee printfFunc =

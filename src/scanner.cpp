@@ -11,24 +11,20 @@ void resetScanner(Scanner *scanner) {
     scanner->source = "";
 }
 
-void initScanner(Scanner *scanner, const char *source) {
+void initScanner(Scanner *scanner, std::string source) {
     trie = new Trie();
     scanner->source = source;
     scanner->current = 0;
     scanner->line = 1;
 }
 
-Token *newToken(const char *lexeme, int length, int line, TokenType type) {
+Token *newToken(std::string lexeme, int line, TokenType type) {
     Token *token = new Token();
     token->type = type;
-    token->lexeme = std::string(lexeme, length);
+    token->lexeme = lexeme;
     token->line = line;
 
     return token;
-}
-
-bool cmpString(const char *s1, int l1, const char *s2, int l2) {
-    return (l1 == l2 && memcmp(s1, s2, l1) == 0);
 }
 
 static bool isAtEnd(Scanner *scanner) {
@@ -47,12 +43,8 @@ static bool match(Scanner *scanner, char needle) {
     return false;
 }
 
-static inline int getLength(Scanner *scanner, const char *current) {
-    return (int)(&scanner->source[scanner->current] - current);
-}
-
 static Token *parseNumber(Scanner *scanner) {
-    const char *current = &scanner->source[scanner->current - 1];
+    int current = scanner->current - 1;
     while (!isAtEnd(scanner) && isdigit(currentChar(scanner))) {
         scanner->current++;
     }
@@ -61,20 +53,14 @@ static Token *parseNumber(Scanner *scanner) {
         while (!isAtEnd(scanner) && isdigit(currentChar(scanner))) {
             scanner->current++;
         }
-        return newToken(current, getLength(scanner, current), scanner->line,
-                        TOKEN_DOUBLE_LITERAL);
+        return newToken(
+            scanner->source.substr(current, scanner->current - current),
+            scanner->line, TOKEN_DOUBLE_LITERAL);
     } else {
-        return newToken(current, getLength(scanner, current), scanner->line,
-                        TOKEN_INT_LITERAL);
+        return newToken(
+            scanner->source.substr(current, scanner->current - current),
+            scanner->line, TOKEN_INT_LITERAL);
     }
-}
-
-static inline TokenType checkKeyword(const char *current, const char *keyword,
-                                     int check_len, int length,
-                                     TokenType type) {
-    return (check_len == length && memcmp(current, keyword, length) == 0)
-               ? type
-               : TOKEN_IDENTIFIER;
 }
 
 static inline bool isAlpha(char c) {
@@ -82,20 +68,19 @@ static inline bool isAlpha(char c) {
 }
 
 static Token *parseIdentifier(Scanner *scanner) {
-    const char *current = &scanner->source[scanner->current - 1];
+    int current = scanner->current - 1;
     while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) ||
            isdigit(currentChar(scanner))) {
         scanner->current++;
     }
-
-    int len = getLength(scanner, current);
-    return newToken(current, len, scanner->line, trie->isKeyword(current, len));
+    std::string ident =
+        scanner->source.substr(current, scanner->current - current);
+    return newToken(ident, scanner->line, trie->isKeyword(ident));
 }
 
 static Token *parseString(Scanner *scanner) {
-    const char *current = &scanner->source[scanner->current];
-    while (!isAtEnd(scanner) && currentChar(scanner) != '"' &&
-           currentChar(scanner) != '\n') {
+    int current = scanner->current;
+    while (!isAtEnd(scanner) && currentChar(scanner) != '"') {
         scanner->current++;
     }
 
@@ -105,8 +90,12 @@ static Token *parseString(Scanner *scanner) {
     }
 
     scanner->current++;
-    return newToken(current, getLength(scanner, current) - 1, scanner->line,
-                    TOKEN_STR_LITERAL);
+    std::cout << "string: "
+              << scanner->source.substr(current,
+                                        scanner->current - current - 1);
+    return newToken(
+        scanner->source.substr(current, scanner->current - current - 1),
+        scanner->line, TOKEN_STR_LITERAL);
 }
 
 void skipWhitespace(Scanner *scanner) {
@@ -146,7 +135,7 @@ void skipWhitespace(Scanner *scanner) {
 Token *scanToken(Scanner *scanner) {
     skipWhitespace(scanner);
     if (isAtEnd(scanner)) {
-        return newToken("EOF", 3, scanner->line, TOKEN_EOF);
+        return newToken("EOF", scanner->line, TOKEN_EOF);
     }
     scanner->current++;
     char c = scanner->source[scanner->current - 1];
@@ -161,73 +150,73 @@ Token *scanToken(Scanner *scanner) {
         return parseString(scanner);
     }
     case '(': {
-        return newToken("(", 1, scanner->line, TOKEN_LEFT_PAREN);
+        return newToken("(", scanner->line, TOKEN_LEFT_PAREN);
     }
     case ')': {
-        return newToken(")", 1, scanner->line, TOKEN_RIGHT_PAREN);
+        return newToken(")", scanner->line, TOKEN_RIGHT_PAREN);
     }
     case '{': {
-        return newToken("{", 1, scanner->line, TOKEN_LEFT_BRACE);
+        return newToken("{", scanner->line, TOKEN_LEFT_BRACE);
     }
     case '}': {
-        return newToken("}", 1, scanner->line, TOKEN_RIGHT_BRACE);
+        return newToken("}", scanner->line, TOKEN_RIGHT_BRACE);
     }
     case '[': {
-        return newToken("[", 1, scanner->line, TOKEN_LEFT_BRACKET);
+        return newToken("[", scanner->line, TOKEN_LEFT_BRACKET);
     }
     case ']': {
-        return newToken("]", 1, scanner->line, TOKEN_RIGHT_BRACKET);
+        return newToken("]", scanner->line, TOKEN_RIGHT_BRACKET);
     }
     case ';': {
-        return newToken(";", 1, scanner->line, TOKEN_SEMICOLON);
+        return newToken(";", scanner->line, TOKEN_SEMICOLON);
     }
     case ',': {
-        return newToken(",", 1, scanner->line, TOKEN_COMMA);
+        return newToken(",", scanner->line, TOKEN_COMMA);
     }
     case '.': {
-        return newToken(".", 1, scanner->line, TOKEN_DOT);
+        return newToken(".", scanner->line, TOKEN_DOT);
     }
     case '+': {
-        return newToken("+", 1, scanner->line, TOKEN_PLUS);
+        return newToken("+", scanner->line, TOKEN_PLUS);
     }
     case '*': {
-        return newToken("*", 1, scanner->line, TOKEN_STAR);
+        return newToken("*", scanner->line, TOKEN_STAR);
     }
     case ':': {
-        return newToken(":", 1, scanner->line, TOKEN_COLON);
+        return newToken(":", scanner->line, TOKEN_COLON);
     }
     case '!': {
         if (match(scanner, '=')) {
-            return newToken("!=", 2, scanner->line, TOKEN_BANG_EQUAL);
+            return newToken("!=", scanner->line, TOKEN_BANG_EQUAL);
         }
-        return newToken("!", 1, scanner->line, TOKEN_BANG);
+        return newToken("!", scanner->line, TOKEN_BANG);
     }
     case '=': {
         if (match(scanner, '=')) {
-            return newToken("==", 2, scanner->line, TOKEN_EQUAL_EQUAL);
+            return newToken("==", scanner->line, TOKEN_EQUAL_EQUAL);
         }
-        return newToken("=", 1, scanner->line, TOKEN_EQUAL);
+        return newToken("=", scanner->line, TOKEN_EQUAL);
     }
     case '<': {
         if (match(scanner, '=')) {
-            return newToken("<=", 2, scanner->line, TOKEN_LESS_EQUAL);
+            return newToken("<=", scanner->line, TOKEN_LESS_EQUAL);
         }
-        return newToken("<", 1, scanner->line, TOKEN_LESS);
+        return newToken("<", scanner->line, TOKEN_LESS);
     }
     case '>': {
         if (match(scanner, '=')) {
-            return newToken(">=", 2, scanner->line, TOKEN_GREATER_EQUAL);
+            return newToken(">=", scanner->line, TOKEN_GREATER_EQUAL);
         }
-        return newToken(">", 1, scanner->line, TOKEN_GREATER);
+        return newToken(">", scanner->line, TOKEN_GREATER);
     }
     case '-': {
         if (match(scanner, '>')) {
-            return newToken("->", 2, scanner->line, TOKEN_ARROW);
+            return newToken("->", scanner->line, TOKEN_ARROW);
         }
-        return newToken("-", 1, scanner->line, TOKEN_MINUS);
+        return newToken("-", scanner->line, TOKEN_MINUS);
     }
     case '/': {
-        return newToken("/", 1, scanner->line, TOKEN_SLASH);
+        return newToken("/", scanner->line, TOKEN_SLASH);
     }
     default:
         std::cout << "Unknown characther " << c << "\n";

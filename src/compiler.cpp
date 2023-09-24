@@ -906,9 +906,10 @@ static void initParser() {
     parser->hadError = false;
 }
 
-std::vector<Stmt *> compile(const char *source) {
-    scanner = (Scanner *)malloc(sizeof(Scanner));
+std::vector<Stmt *> compile(std::string source) {
+    scanner = new Scanner();
     initScanner(scanner, source);
+
     initParser();
 
     initCompiler();
@@ -919,7 +920,7 @@ std::vector<Stmt *> compile(const char *source) {
     bool hadError = parser->hadError;
     debugStatements(compiler->statements);
 
-    free(scanner);
+    delete (scanner);
     free(parser);
     std::vector<Stmt *> out = compiler->statements;
     delete (compiler);

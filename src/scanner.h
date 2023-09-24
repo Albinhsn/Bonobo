@@ -67,23 +67,21 @@ typedef enum {
     TOKEN_EOF
 } TokenType;
 
-bool cmpString(const char *s1, int l1, const char *s2, int l2);
-
 typedef struct Token {
     std::string lexeme;
     int line;
     TokenType type;
 } Token;
 
-Token *newToken(const char *l, int len, int li, int i, TokenType t);
+Token *newToken(std::string lexeme, int line, TokenType type);
 
 typedef struct Scanner {
-    const char *source;
+  std::string source;
     int current;
     int line;
 } Scanner;
 
-void initScanner(Scanner *scanner, const char *source);
+void initScanner(Scanner *scanner, std::string source);
 void resetScanner(Scanner *scanner);
 Token *scanToken(Scanner *scanner);
 #endif

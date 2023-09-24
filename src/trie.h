@@ -81,8 +81,7 @@ class Trie {
     }
 
   public:
-    TokenType isKeyword(const char *current, int len) {
-        std::string keyword(current, len);
+    TokenType isKeyword(std::string keyword) {
         return findNode(keyword, 0, head);
     }
 

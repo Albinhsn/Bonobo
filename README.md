@@ -3,14 +3,18 @@
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
 
-## Bugs LLVM backend
+## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
+
+* Be able to return:
+    * string
+    * bool
+    * array
+    * struct/object
 
 * Check always return something
     * Check correct return type
 
-* if/else/merge things
-
-## TODO LLVM backend
+* if/else/merge miscalculates smth 
 
 * Do some sort of big test suite anyway with printf, currently breaking stuff to easily
 
@@ -20,6 +24,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * itemType in ArrayDeclaration?
     * How does an array know what type it has?
+
+
+
+## TODO LLVM backend
 
 * Structs
 

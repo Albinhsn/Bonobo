@@ -28,7 +28,7 @@ TEST(TestScanner, TestSingleCharTokens) {
         (Token){"/", 1, TOKEN_SLASH},
         (Token){":", 1, TOKEN_COLON},
         (Token){"=", 1, TOKEN_EQUAL},
-        (Token){"EOF", 3, TOKEN_EOF},
+        (Token){"EOF", 1, TOKEN_EOF},
     };
     for (int i = 0; i < tokens.size(); i++) {
         Token *scannedToken = scanToken(scanner);

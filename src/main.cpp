@@ -21,8 +21,20 @@ int main(int argc, const char *argv[]) {
         printf("Need file name\n");
         exit(1);
     }
+
     std::string source = readFile(argv[1]);
-    std::vector<Stmt *> stmts = compile(source.c_str());
+    size_t found = source.find("\\n");
+    while (found != std::string::npos) {
+        source.replace(found, 2, "\n");
+        found = source.find("\\n");
+    }
+    found = source.find("\\t");
+    while (found != std::string::npos) {
+        source.replace(found, 2, "\t");
+        found = source.find("\\t");
+    }
+
+    std::vector<Stmt *> stmts = compile(source);
     LLVMCompiler *llvmCompiler = new LLVMCompiler(stmts);
     llvmCompiler->compile();
     return 0;
