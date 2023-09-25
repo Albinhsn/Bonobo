@@ -12,9 +12,9 @@ jobs:
     steps:
     - name: Install LLVM
       run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh 
-          sudo ./llvm.sh 17 all
+          sudo apt-get update
+          sudo apt-get install -y llvm-16 llvm-16-dev clang-16
+          llvm-config --version
     - uses: actions/checkout@v3
       with:
         submodules: recursive
