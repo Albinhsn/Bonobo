@@ -4,43 +4,39 @@
 #include <gtest/gtest.h>
 
 TEST(TestScanner, TestSingleCharTokens) {
+    std::string source = "!<>(){}[],.-+;*/:=";
+    Scanner *scanner = new Scanner();
+    initScanner(scanner, source);
     EXPECT_EQ(1,1);
+
+    // std::vector<Token> tokens = {
+    //     (Token){"!", 1, TOKEN_BANG},
+    //     (Token){"<", 1, TOKEN_LESS},
+    //     (Token){">", 1, TOKEN_GREATER},
+    //     (Token){"(", 1, TOKEN_LEFT_PAREN},
+    //     (Token){")", 1, TOKEN_RIGHT_PAREN},
+    //     (Token){"{", 1, TOKEN_LEFT_BRACE},
+    //     (Token){"}", 1, TOKEN_RIGHT_BRACE},
+    //     (Token){"[", 1, TOKEN_LEFT_BRACKET},
+    //     (Token){"]", 1, TOKEN_RIGHT_BRACKET},
+    //     (Token){",", 1, TOKEN_COMMA},
+    //     (Token){".", 1, TOKEN_DOT},
+    //     (Token){"-", 1, TOKEN_MINUS},
+    //     (Token){"+", 1, TOKEN_PLUS},
+    //     (Token){";", 1, TOKEN_SEMICOLON},
+    //     (Token){"*", 1, TOKEN_STAR},
+    //     (Token){"/", 1, TOKEN_SLASH},
+    //     (Token){":", 1, TOKEN_COLON},
+    //     (Token){"=", 1, TOKEN_EQUAL},
+    //     (Token){"EOF", 1, TOKEN_EOF},
+    // };
+    // for (int i = 0; i < tokens.size(); i++) {
+    //     Token *scannedToken = scanToken(scanner);
+    //     EXPECT_EQ(scannedToken->type, tokens[i].type);
+    //     EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
+    // }
+    // EXPECT_EQ(scanner->current, source.size());
 }
-
-// TEST(TestScanner, TestSingleCharTokens) {
-//     std::string source = "!<>(){}[],.-+;*/:=";
-//     Scanner *scanner = nullptr;
-//     scanner = (Scanner *)malloc(sizeof(Scanner));
-//     initScanner(scanner, source);
-
-//     std::vector<Token> tokens = {
-//         (Token){"!", 1, TOKEN_BANG},
-//         (Token){"<", 1, TOKEN_LESS},
-//         (Token){">", 1, TOKEN_GREATER},
-//         (Token){"(", 1, TOKEN_LEFT_PAREN},
-//         (Token){")", 1, TOKEN_RIGHT_PAREN},
-//         (Token){"{", 1, TOKEN_LEFT_BRACE},
-//         (Token){"}", 1, TOKEN_RIGHT_BRACE},
-//         (Token){"[", 1, TOKEN_LEFT_BRACKET},
-//         (Token){"]", 1, TOKEN_RIGHT_BRACKET},
-//         (Token){",", 1, TOKEN_COMMA},
-//         (Token){".", 1, TOKEN_DOT},
-//         (Token){"-", 1, TOKEN_MINUS},
-//         (Token){"+", 1, TOKEN_PLUS},
-//         (Token){";", 1, TOKEN_SEMICOLON},
-//         (Token){"*", 1, TOKEN_STAR},
-//         (Token){"/", 1, TOKEN_SLASH},
-//         (Token){":", 1, TOKEN_COLON},
-//         (Token){"=", 1, TOKEN_EQUAL},
-//         (Token){"EOF", 1, TOKEN_EOF},
-//     };
-//     for (int i = 0; i < tokens.size(); i++) {
-//         Token *scannedToken = scanToken(scanner);
-//         EXPECT_EQ(scannedToken->type, tokens[i].type);
-//         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
-//     }
-//     EXPECT_EQ(scanner->current, source.size());
-// }
 
 // TEST(TestScanner, TestVarInt) {
 //     std::string source = "var a: int = !5;";
@@ -49,11 +45,11 @@ TEST(TestScanner, TestSingleCharTokens) {
 //     initScanner(scanner, source);
 
 //     std::vector<Token> tokens = {
-//         (Token){"var", 3, TOKEN_VAR},       (Token){"a", 1, TOKEN_IDENTIFIER},
-//         (Token){":", 1, TOKEN_COLON},       (Token){"int", 3, TOKEN_INT_TYPE},
-//         (Token){"=", 1, TOKEN_EQUAL},       (Token){"!", 1, TOKEN_BANG},
-//         (Token){"5", 1, TOKEN_INT_LITERAL}, (Token){";", 1, TOKEN_SEMICOLON},
-//         (Token){"EOF", 3, TOKEN_EOF},
+//         (Token){"var", 3, TOKEN_VAR},       (Token){"a", 1,
+//         TOKEN_IDENTIFIER}, (Token){":", 1, TOKEN_COLON},       (Token){"int",
+//         3, TOKEN_INT_TYPE}, (Token){"=", 1, TOKEN_EQUAL},       (Token){"!",
+//         1, TOKEN_BANG}, (Token){"5", 1, TOKEN_INT_LITERAL}, (Token){";", 1,
+//         TOKEN_SEMICOLON}, (Token){"EOF", 3, TOKEN_EOF},
 //     };
 //     for (int i = 0; i < tokens.size(); i++) {
 //         Token *scannedToken = scanToken(scanner);
@@ -114,7 +110,8 @@ TEST(TestScanner, TestSingleCharTokens) {
 
 // TEST(TestScanner, TestKeywords) {
 //     std::string source =
-//         "struct print else false for fun if nil return true while and or var";
+//         "struct print else false for fun if nil return true while and or
+//         var";
 //     Scanner *scanner = nullptr;
 //     scanner = (Scanner *)malloc(sizeof(Scanner));
 //     initScanner(scanner, source);
