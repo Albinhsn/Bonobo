@@ -5,28 +5,22 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Just check for bugs with comments
-
-* Struct lookup in compiler "foo.bar";
+* Scoping rules with variables
+    * Check whether creating smth in a if remains
 
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
 
-* Check always return something or error if you don't?
+* itemType in ArrayDeclaration?
+    * Create the array and check its type 
+    * Then return it and check it's validity for the stmt
+    * if creating == [1,2] it doesn't matter
 
-* Scoping rules with variables
+* Different binary expr for fp
 
-* Some better error handling
-    * Need to figure out where we're not type checking etc 
+* Comparison op for anything other then int
 
 * Don't change \n prior to scanning, find better place to do it
-
-* itemType in ArrayDeclaration?
-    * How does an array know what type it has?
-        * It doesn't after you calculated what it contains;
-            * Do so and then check its validity?
-
-* Can't redeclare var/func, check both
 
 
 ## TODO LLVM backend

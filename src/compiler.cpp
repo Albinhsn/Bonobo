@@ -92,6 +92,9 @@ static VarType getVarType() {
     case TOKEN_IDENTIFIER: {
         return STRUCT_VAR;
     }
+    case TOKEN_NIL: {
+        return NIL_VAR;
+    }
     default: {
         break;
     }

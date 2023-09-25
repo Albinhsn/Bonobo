@@ -10,7 +10,8 @@ enum VarType {
     BOOL_VAR,
     MAP_VAR,
     ARRAY_VAR,
-    STRUCT_VAR
+    STRUCT_VAR,
+    NIL_VAR
 };
 
 class Variable {

@@ -44,6 +44,26 @@ class LLVMCompiler {
         llvm::raw_fd_ostream outLL("./out.ll", errorCode);
         this->module->print(outLL, nullptr);
     }
+
+    bool nameIsAlreadyDeclared(std::string name) {
+        for (int i = 0; i < this->globalVariables.size(); ++i) {
+            if (this->globalVariables[i]->getName().str() == name) {
+                return true;
+            }
+        }
+        for (const auto &[key, value] : this->libraryFuncs) {
+            if (key == name) {
+                return true;
+            }
+        }
+        for (int i = 0; i < this->callableFunctions.size(); ++i) {
+            if (this->callableFunctions[i]->getName().str() == name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     llvm::Type *getVariableLLVMType(Variable *var) {
         if (var == nullptr) {
             printf("Variable is none in getVariableLLVMType\n");
@@ -67,6 +87,9 @@ class LLVMCompiler {
         }
         case STRUCT_VAR: {
             return this->builder->getPtrTy();
+        }
+        case NIL_VAR: {
+            return this->builder->getVoidTy();
         }
         default: {
             printf("unknown llvmType\n");
@@ -150,20 +173,36 @@ class LLVMCompiler {
             BinaryExpr *binaryExpr = (BinaryExpr *)expr;
             llvm::Value *left = compileExpression(binaryExpr->left);
             llvm::Value *right = compileExpression(binaryExpr->right);
-            switch (binaryExpr->op) {
-            case ADD: {
-                return this->builder->CreateAdd(left, right);
+            if (left->getType()->isIntegerTy() &&
+                right->getType()->isIntegerTy()) {
+                switch (binaryExpr->op) {
+                case ADD: {
+                    return this->builder->CreateAdd(left, right);
+                }
+                case SUB: {
+                    return this->builder->CreateSub(left, right);
+                }
+                case MUL: {
+                    return this->builder->CreateMul(left, right);
+                }
+                case DIV: {
+                    return this->builder->CreateUDiv(left, right);
+                }
+                }
+            } else if (left->getType()->isDoubleTy() &&
+                       right->getType()->isDoubleTy()) {
+            } else if (left->getType()->isIntegerTy() &&
+                       right->getType()->isDoubleTy()) {
+            } else if (left->getType()->isDoubleTy() &&
+                       right->getType()->isIntegerTy()) {
+
             }
-            case SUB: {
-                return this->builder->CreateSub(left, right);
+            // This should be string concat
+            else if (left->getType()->isPointerTy() &&
+                     right->getType()->isPointerTy()) {
             }
-            case MUL: {
-                return this->builder->CreateMul(left, right);
-            }
-            case DIV: {
-                return this->builder->CreateUDiv(left, right);
-            }
-            }
+            printf("Can't do this addition\n");
+            exit(1);
         }
         case GROUPING_EXPR: {
             GroupingExpr *groupingExpr = (GroupingExpr *)expr;
@@ -173,15 +212,20 @@ class LLVMCompiler {
             LogicalExpr *logicalExpr = (LogicalExpr *)expr;
             llvm::Value *left = compileExpression(logicalExpr->left);
             llvm::Value *right = compileExpression(logicalExpr->right);
-            // Need to type check this?
-            switch (logicalExpr->op) {
-            case OR_LOGICAL: {
-                return this->builder->CreateLogicalOr(left, right);
+            if (left->getType() == this->builder->getInt1Ty() &&
+                right->getType() == this->builder->getInt1Ty()) {
+
+                switch (logicalExpr->op) {
+                case OR_LOGICAL: {
+                    return this->builder->CreateLogicalOr(left, right);
+                }
+                case AND_LOGICAL: {
+                    return this->builder->CreateLogicalAnd(left, right);
+                }
+                }
             }
-            case AND_LOGICAL: {
-                return this->builder->CreateLogicalAnd(left, right);
-            }
-            }
+            printf("Can't do 'and' or 'or' with these types");
+            exit(1);
         }
         case LITERAL_EXPR: {
             return compileLiteral((LiteralExpr *)expr);
@@ -215,8 +259,13 @@ class LLVMCompiler {
             UnaryExpr *unaryExpr = (UnaryExpr *)expr;
             llvm::Value *value = compileExpression(unaryExpr->right);
             if (unaryExpr->op == NEG_UNARY) {
-                return this->builder->CreateMul(value,
-                                                this->builder->getInt32(-1));
+                if (value->getType()->isIntegerTy() ||
+                    value->getType()->isDoubleTy()) {
+                    return this->builder->CreateMul(
+                        value, this->builder->getInt32(-1));
+                }
+                printf("Can't do '-' with this type\n");
+                exit(1);
             } else if (unaryExpr->op == BANG_UNARY) {
                 // Check value type?
                 return this->builder->CreateXor(value, 1);
@@ -375,6 +424,13 @@ class LLVMCompiler {
         case VAR_STMT: {
             // ToDo check overwriting existing variable?
             VarStmt *varStmt = (VarStmt *)stmt;
+
+            if (nameIsAlreadyDeclared(varStmt->var->name.lexeme)) {
+                printf(
+                    "Can't declare variable '%s', name is already declared\n",
+                    varStmt->var->name.lexeme.c_str());
+                exit(1);
+            }
             llvm::Value *value = compileExpression(varStmt->initializer);
             if (!checkVariableValueMatch(varStmt->var, value)) {
 
@@ -504,19 +560,11 @@ class LLVMCompiler {
         case FUNC_STMT: {
             FuncStmt *funcStmt = (FuncStmt *)stmt;
 
-            // Check if it already exists
-            for (int i = 0; i < this->callableFunctions.size(); ++i) {
-                if (this->callableFunctions[i]->getName().str() ==
-                    funcStmt->name.lexeme) {
-                    printf("Can't redeclare a function\n");
-                    exit(1);
-                }
-            }
-            for (const auto &[key, value] : this->libraryFuncs) {
-                if (key == funcStmt->name.lexeme) {
-                    printf("Can't redeclare a function\n");
-                    exit(1);
-                }
+            if (nameIsAlreadyDeclared(funcStmt->name.lexeme)) {
+                printf(
+                    "Can't declare function '%s', name is already declared\n",
+                    funcStmt->name.lexeme.c_str());
+                exit(1);
             }
 
             // Fix params
@@ -545,11 +593,22 @@ class LLVMCompiler {
                              funcArgs, this->ctx, this->module);
             llvm::IRBuilder<> *prevBuilder = this->builder;
             this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
-
+            bool returned = false;
             for (int i = 0; i < funcStmt->body.size(); ++i) {
                 compileStatement(funcStmt->body[i]);
                 if (funcStmt->body[i]->type == RETURN_STMT) {
+                    returned = true;
                     break;
+                }
+            }
+            if (!returned) {
+                if (!this->function->funcType->getReturnType()->isVoidTy()) {
+                    printf(
+                        "Non-void function does not return a value in '%s'\n",
+                        funcStmt->name.lexeme.c_str());
+                    exit(1);
+                } else {
+                    this->builder->CreateRetVoid();
                 }
             }
             this->callableFunctions.push_back(this->function->function);
