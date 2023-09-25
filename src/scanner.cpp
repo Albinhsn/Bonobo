@@ -12,10 +12,12 @@ void resetScanner(Scanner *scanner) {
 }
 
 void initScanner(Scanner *scanner, std::string source) {
+    std::cout << "GOT\n";
     trie = new Trie();
     scanner->source = source;
     scanner->current = 0;
     scanner->line = 1;
+    std::cout << "GOT\n";
 }
 
 Token *newToken(std::string lexeme, int line, TokenType type) {

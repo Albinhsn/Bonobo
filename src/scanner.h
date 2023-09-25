@@ -76,7 +76,7 @@ typedef struct Token {
 Token *newToken(std::string lexeme, int line, TokenType type);
 
 typedef struct Scanner {
-  std::string source;
+    std::string source;
     int current;
     int line;
 } Scanner;
