@@ -13,7 +13,7 @@ jobs:
     - name: Install LLVM and Clang
       uses: KyleMayes/install-llvm-action@v1
       with:
-        version: "18.1"
+        version: "16.0"
     - uses: actions/checkout@v3
       with:
         submodules: recursive
