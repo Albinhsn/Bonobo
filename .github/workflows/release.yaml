@@ -1,4 +1,4 @@
-name: test-workflow 
+name: test-workflow
 
 on: [push]
 
@@ -13,6 +13,9 @@ jobs:
       run : |
         sudo apt update
         sudo apt install llvm-15 llvm-15-tools llvm-15-dev clang-15
+        sudo apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 libc++abi-dev libc++abi1 libclang-dev libclang1 liblldb-dev libllvm-ocaml-dev libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm python3-clan
+
+
     - name: build 
       run: make b
     - name: Run Frontend Tests
