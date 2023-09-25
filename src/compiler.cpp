@@ -554,7 +554,6 @@ static void logical(Expr *&expr) {
         if (logicalExpr->op < op) {
             logicalExpr->right = new LogicalExpr(logicalExpr->right, op);
             expr = logicalExpr;
-
         } else {
             expr = new LogicalExpr(logicalExpr, op);
         }

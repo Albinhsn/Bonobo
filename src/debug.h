@@ -4,9 +4,10 @@
 
 #include "compiler.h"
 
-void debugStatements(std::vector<Stmt*> statements);
-void debugStatement(Stmt* statement);
+void debugStatements(std::vector<Stmt *> statements);
+void debugStatement(Stmt *statement);
 void debugExpression(Expr *expr);
+void debugVariable(Variable *var);
 void debugToken(Token *token);
 
 #endif

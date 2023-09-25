@@ -1,8 +1,8 @@
 var a: int = 5;
 printf("%d\n", a);
 
-var b: int = !true;
+var b: bool = !true;
 printf("%d\n", b);
 
-var c: int = !(false);
+var c: bool = !(false);
 printf("%d\n", c);

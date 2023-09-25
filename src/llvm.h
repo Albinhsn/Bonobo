@@ -1,4 +1,5 @@
 #include "common.h"
+#include "debug.h"
 #include "expr.h"
 #include "stmt.h"
 #include "llvm/IR/IRBuilder.h"
@@ -79,7 +80,7 @@ class LLVMCompiler {
         }
         }
     }
-    llvm::Value *getVariable(std::string name) {
+    llvm::Value *lookupVariable(std::string name) {
         if (this->function->enclosing) {
             for (const auto &[key, value] : this->function->funcArgs) {
                 if (key == name) {
@@ -90,6 +91,7 @@ class LLVMCompiler {
                         if (i == value) {
                             return arg;
                         }
+                        ++i;
                     }
                 }
             }
@@ -190,14 +192,14 @@ class LLVMCompiler {
         case LOGICAL_EXPR: {
             LogicalExpr *logicalExpr = (LogicalExpr *)expr;
             llvm::Value *left = compileExpression(logicalExpr->left);
-            llvm::Value *right = compileExpression(logicalExpr->left);
+            llvm::Value *right = compileExpression(logicalExpr->right);
             // Need to type check this?
             switch (logicalExpr->op) {
             case OR_LOGICAL: {
-                return this->builder->CreateOr(left, right);
+                return this->builder->CreateLogicalOr(left, right);
             }
             case AND_LOGICAL: {
-                return this->builder->CreateAnd(left, right);
+                return this->builder->CreateLogicalAnd(left, right);
             }
             }
         }
@@ -247,7 +249,7 @@ class LLVMCompiler {
         }
         case VAR_EXPR: {
             VarExpr *varExpr = (VarExpr *)expr;
-            llvm::Value *var = getVariable(varExpr->name.lexeme);
+            llvm::Value *var = lookupVariable(varExpr->name.lexeme);
             if (var->getType()->isPointerTy()) {
                 if (llvm::AllocaInst *allocaInst =
                         llvm::dyn_cast<llvm::AllocaInst>(var)) {
@@ -366,7 +368,7 @@ class LLVMCompiler {
             llvm::Value *value = compileExpression(assignStmt->value);
             std::string name = assignStmt->name.lexeme;
 
-            llvm::Value *variable = getVariable(name);
+            llvm::Value *variable = lookupVariable(name);
             // Check type is correct?
             this->builder->CreateStore(value, variable);
             break;
@@ -395,7 +397,11 @@ class LLVMCompiler {
             VarStmt *varStmt = (VarStmt *)stmt;
             llvm::Value *value = compileExpression(varStmt->initializer);
             if (!checkValueMatch(varStmt->var, value)) {
-                printf("Invalid type mismatch in var declaration\n");
+
+                printf("Invalid type mismatch in var declaration\nexpected: ");
+                debugVariable(varStmt->var);
+                printf("\nbut got: ");
+                this->debugValueType(value->getType());
                 exit(1);
             }
             llvm::AllocaInst *var =

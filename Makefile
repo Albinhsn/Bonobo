@@ -7,17 +7,11 @@ LLFLILES = ../../src/main.cpp ../../src/compiler.cpp ../../src/scanner.cpp ../..
 c: 
 	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../input
 
-f:
-	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../test/llvm/$(file) && lli out.ll > ../result.txt
-
 llt: 
 	cd ./test/llvm/ && clang++ -o main $(LLVMFLAGS) ../../src/compiler.cpp ../../src/scanner.cpp ../../src/debug.cpp TestLLVM.cpp && ./main
 
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
-
-bt: 
-	cmake -S . -B build && cmake --build build && cd build && ctest --output-on-failure -V
 
 bt: 
 	cmake -S . -B build && cmake --build build && cd build && ctest --output-on-failure -V

@@ -5,6 +5,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
+* remove ability to redeclare funcs
+
 * Struct lookup in compiler "foo.bar";
 
 * Just check for bugs with comments
@@ -19,8 +21,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Check always return something or error if you don't?
 
 * Scoping rules with variables
-
-* Fix func args, add(1,2) doesn't even work
 
 * Need to figure out where we're not type checking etc 
 

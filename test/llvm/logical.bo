@@ -1,6 +1,3 @@
-// Expect: 
-//    true
-//    false
 var a: bool = true and false;
 printf("%d\n", a);
 
