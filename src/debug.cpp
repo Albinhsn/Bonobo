@@ -1,5 +1,20 @@
 #include "debug.h"
 
+
+void debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
+    if (type == llvm::Type::getInt32Ty(*ctx)) {
+        printf("int32\n");
+    } else if (type == llvm::Type::getInt1Ty(*ctx)) {
+        printf("int1\n");
+    } else if (type == llvm::Type::getDoubleTy(*ctx)) {
+        printf("double\n");
+    } else if (type->isPointerTy()) {
+        printf("ptr\n");
+    } else if (type->isArrayTy()) {
+        printf("array\n");
+    }
+}
+
 void debugExpression(Expr *expr) {
     if (expr == nullptr) {
         printf("<null expr>");

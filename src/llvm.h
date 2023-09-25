@@ -2,12 +2,6 @@
 #include "debug.h"
 #include "expr.h"
 #include "stmt.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include <iostream>
-#include <llvm/Support/raw_ostream.h>
-#include <string>
 
 class Function {
   private:
@@ -108,20 +102,6 @@ class LLVMCompiler {
         }
         printf("Unknown variable %s\n", name.c_str());
         exit(1);
-    }
-
-    void debugValueType(llvm::Type *type) {
-        if (type == llvm::Type::getInt32Ty(*this->ctx)) {
-            printf("int32\n");
-        } else if (type == llvm::Type::getInt1Ty(*this->ctx)) {
-            printf("int1\n");
-        } else if (type == llvm::Type::getDoubleTy(*this->ctx)) {
-            printf("double\n");
-        } else if (type->isPointerTy()) {
-            printf("ptr\n");
-        } else if (type->isArrayTy()) {
-            printf("array\n");
-        }
     }
 
     bool checkValueMatch(Variable *var, llvm::Value *value) {
@@ -290,9 +270,9 @@ class LLVMCompiler {
                     llvm::Type::getInt32Ty(*this->ctx), i);
                 if (value->getType() != elementType) {
                     printf("value: ");
-                    debugValueType(value->getType());
+                    debugValueType(value->getType(), this->ctx);
                     printf("elementType: ");
-                    debugValueType(elementType);
+                    debugValueType(elementType, this->ctx);
                     printf("Can't create an array different element then "
                            "specified\n");
                     exit(1);
@@ -401,7 +381,7 @@ class LLVMCompiler {
                 printf("Invalid type mismatch in var declaration\nexpected: ");
                 debugVariable(varStmt->var);
                 printf("\nbut got: ");
-                this->debugValueType(value->getType());
+                debugValueType(value->getType(), this->ctx);
                 exit(1);
             }
             llvm::AllocaInst *var =

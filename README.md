@@ -5,28 +5,23 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Change tests to be cmake rather then budget
+* Rename/Lookover functions, it's getting ridiculous
 
 * remove ability to redeclare funcs
 
-* Struct lookup in compiler "foo.bar";
-
 * Just check for bugs with comments
 
-* Rename/Lookover functions, it's getting ridiculous
+* Struct lookup in compiler "foo.bar";
 
-* Do some sort of big test suite anyway with printf, currently breaking stuff to easily
-    * Write gtest tests with system(command) and check output to files
-
-* Check recursively when compiler gives array_expr it's items to support 2d arrays
+* Support 2d Arrays
+    * Check recursively when compiler gives array_expr it's items to support 2d arrays
 
 * Check always return something or error if you don't?
 
 * Scoping rules with variables
 
-* Need to figure out where we're not type checking etc 
-
 * Some better error handling
+    * Need to figure out where we're not type checking etc 
 
 * Don't change \n prior to scanning, find better place to do it
 

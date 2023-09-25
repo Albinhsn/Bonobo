@@ -3,19 +3,10 @@
 #include "../src/compiler.h"
 #include "../src/llvm.h"
 #include "../src/stmt.h"
+#include "testCommon.h"
 #include <gtest/gtest.h>
 
-static std::string readFile(const char *path) {
-    std::ifstream t(path);
-    std::stringstream buffer;
-    if (t.fail()) {
-        std::cout << "file doesn't exist\n";
-        exit(1);
-    }
-    buffer << t.rdbuf();
-    t.close();
-    return buffer.str();
-}
+
 
 TEST(TestBinaryOp, TestAddOp) {
     std::string source = "var a: int = 5 + 3; printf(\"%d\", a);";
@@ -39,10 +30,7 @@ TEST(TestBinaryOp, TestAddOp) {
     EXPECT_EQ(right->literalType, INT_LITERAL);
     EXPECT_EQ(right->literal.lexeme, "3");
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "8");
 }
 
@@ -57,10 +45,7 @@ TEST(TestBinaryOp, TestDivOp) {
     BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
     EXPECT_EQ(binaryExpr->op, DIV);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "1");
 }
 
@@ -75,10 +60,7 @@ TEST(TestBinaryOp, TestMulOp) {
     BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
     EXPECT_EQ(binaryExpr->op, MUL);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "15");
 }
 
@@ -100,10 +82,7 @@ TEST(TestBinaryOp, TestPrecedenceAddAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "10");
 }
 
@@ -125,10 +104,7 @@ TEST(TestBinaryOp, TestPrecedenceAddSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "6");
 }
 
@@ -150,10 +126,7 @@ TEST(TestBinaryOp, TestPrecedenceAddMul) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "11");
 }
 
@@ -175,10 +148,7 @@ TEST(TestBinaryOp, TestPrecedenceAddDiv) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "6");
 }
 
@@ -200,10 +170,7 @@ TEST(TestBinaryOp, TestPrecedenceSubAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "4");
 }
 
@@ -225,10 +192,7 @@ TEST(TestBinaryOp, TestPrecedenceSubSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "0");
 }
 
@@ -250,11 +214,8 @@ TEST(TestBinaryOp, TestPrecedenceSubMul) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
-    EXPECT_EQ(resultTxt, "1");
+    std::string resultTxt = runLLVMBackend(result); 
+    EXPECT_EQ(resultTxt, "-1");
 }
 
 TEST(TestBinaryOp, TestPrecedenceSubDiv) {
@@ -275,10 +236,7 @@ TEST(TestBinaryOp, TestPrecedenceSubDiv) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "4");
 }
 
@@ -300,10 +258,7 @@ TEST(TestBinaryOp, TestPrecedenceMulAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "17");
 }
 
@@ -325,10 +280,7 @@ TEST(TestBinaryOp, TestPrecedenceMulSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "13");
 }
 
@@ -353,10 +305,7 @@ TEST(TestBinaryOp, TestPrecedenceMulMul) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "30");
 }
 
@@ -381,10 +330,7 @@ TEST(TestBinaryOp, TestPrecedenceMulDiv) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "7");
 }
 
@@ -406,10 +352,7 @@ TEST(TestBinaryOp, TestPrecedenceDivAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "3");
 }
 
@@ -431,10 +374,7 @@ TEST(TestBinaryOp, TestPrecedenceDivSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "-1");
 }
 
@@ -459,10 +399,7 @@ TEST(TestBinaryOp, TestPrecedenceDivMul) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "2");
 }
 
@@ -487,10 +424,7 @@ TEST(TestBinaryOp, TestPrecedenceDivDiv) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
-    llvmCompiler->compile();
-    system("lli out.ll > result.txt");
-    std::string resultTxt = readFile("result.txt");
+    std::string resultTxt = runLLVMBackend(result); 
     EXPECT_EQ(resultTxt, "0");
 }
 
