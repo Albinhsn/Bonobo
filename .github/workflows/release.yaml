@@ -10,13 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Install LLVM
-      run: |
-          sudo echo deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main >> "/etc/apt/sources.list"
-          sudo deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main >> "/etc/apt/sources.list"
-          sudo apt-get update
-          sudo apt-get install -y llvm-16 llvm-16-dev clang-16
-          llvm-config --version
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "16.0"
     - uses: actions/checkout@v3
       with:
         submodules: recursive
