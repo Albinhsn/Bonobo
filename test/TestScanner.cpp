@@ -3,46 +3,46 @@
 #include "../src/scanner.h"
 #include <gtest/gtest.h>
 
-// TEST(TestScanner, TestSingleCharTokens) {
-//     std::string source = "!<>(){}[],.-+;*/:=";
-//     Scanner *scanner = nullptr;
-//     scanner = (Scanner *)malloc(sizeof(Scanner));
-//     initScanner(scanner, source.c_str());
+TEST(TestScanner, TestSingleCharTokens) {
+    std::string source = "!<>(){}[],.-+;*/:=";
+    Scanner *scanner = nullptr;
+    scanner = (Scanner *)malloc(sizeof(Scanner));
+    initScanner(scanner, source);
 
-//     std::vector<Token> tokens = {
-//         (Token){"!", 1, TOKEN_BANG},
-//         (Token){"<", 1, TOKEN_LESS},
-//         (Token){">", 1, TOKEN_GREATER},
-//         (Token){"(", 1, TOKEN_LEFT_PAREN},
-//         (Token){")", 1, TOKEN_RIGHT_PAREN},
-//         (Token){"{", 1, TOKEN_LEFT_BRACE},
-//         (Token){"}", 1, TOKEN_RIGHT_BRACE},
-//         (Token){"[", 1, TOKEN_LEFT_BRACKET},
-//         (Token){"]", 1, TOKEN_RIGHT_BRACKET},
-//         (Token){",", 1, TOKEN_COMMA},
-//         (Token){".", 1, TOKEN_DOT},
-//         (Token){"-", 1, TOKEN_MINUS},
-//         (Token){"+", 1, TOKEN_PLUS},
-//         (Token){";", 1, TOKEN_SEMICOLON},
-//         (Token){"*", 1, TOKEN_STAR},
-//         (Token){"/", 1, TOKEN_SLASH},
-//         (Token){":", 1, TOKEN_COLON},
-//         (Token){"=", 1, TOKEN_EQUAL},
-//         (Token){"EOF", 1, TOKEN_EOF},
-//     };
-//     for (int i = 0; i < tokens.size(); i++) {
-//         Token *scannedToken = scanToken(scanner);
-//         EXPECT_EQ(scannedToken->type, tokens[i].type);
-//         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
-//     }
-//     EXPECT_EQ(scanner->current, source.size());
-// }
+    std::vector<Token> tokens = {
+        (Token){"!", 1, TOKEN_BANG},
+        (Token){"<", 1, TOKEN_LESS},
+        (Token){">", 1, TOKEN_GREATER},
+        (Token){"(", 1, TOKEN_LEFT_PAREN},
+        (Token){")", 1, TOKEN_RIGHT_PAREN},
+        (Token){"{", 1, TOKEN_LEFT_BRACE},
+        (Token){"}", 1, TOKEN_RIGHT_BRACE},
+        (Token){"[", 1, TOKEN_LEFT_BRACKET},
+        (Token){"]", 1, TOKEN_RIGHT_BRACKET},
+        (Token){",", 1, TOKEN_COMMA},
+        (Token){".", 1, TOKEN_DOT},
+        (Token){"-", 1, TOKEN_MINUS},
+        (Token){"+", 1, TOKEN_PLUS},
+        (Token){";", 1, TOKEN_SEMICOLON},
+        (Token){"*", 1, TOKEN_STAR},
+        (Token){"/", 1, TOKEN_SLASH},
+        (Token){":", 1, TOKEN_COLON},
+        (Token){"=", 1, TOKEN_EQUAL},
+        (Token){"EOF", 1, TOKEN_EOF},
+    };
+    for (int i = 0; i < tokens.size(); i++) {
+        Token *scannedToken = scanToken(scanner);
+        EXPECT_EQ(scannedToken->type, tokens[i].type);
+        EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
+    }
+    EXPECT_EQ(scanner->current, source.size());
+}
 
 TEST(TestScanner, TestVarInt) {
     std::string source = "var a: int = !5;";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+    initScanner(scanner, source);
 
     std::vector<Token> tokens = {
         (Token){"var", 3, TOKEN_VAR},       (Token){"a", 1, TOKEN_IDENTIFIER},
@@ -63,7 +63,7 @@ TEST(TestScanner, TestDoubleCharTokens) {
     std::string source = "!=<=>=->";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+    initScanner(scanner, source);
 
     std::vector<Token> tokens = {
         (Token){"!=", 2, TOKEN_BANG_EQUAL},
@@ -85,7 +85,7 @@ TEST(TestScanner, TestLiterals) {
         "arla haren \"Hello,\"; \" Sailor!\" 1.0 2 20.45 123 a1";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+    initScanner(scanner, source);
 
     std::vector<Token> tokens = {
         (Token){"arla", 4, TOKEN_IDENTIFIER},
@@ -113,7 +113,7 @@ TEST(TestScanner, TestKeywords) {
         "struct print else false for fun if nil return true while and or var";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+    initScanner(scanner, source);
 
     std::vector<Token> tokens = {
         (Token){"struct", 6, TOKEN_STRUCT_TYPE},
@@ -145,23 +145,23 @@ TEST(TestScanner, TestFibonnaci) {
                          "fib(a-1) + fib(a-2);\n} fib(35);";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+    initScanner(scanner, source);
 
     std::vector<Token> tokens = {
         (Token){"fun", 3, TOKEN_FUN},
         (Token){"fib", 3, TOKEN_IDENTIFIER},
         (Token){"(", 1, TOKEN_LEFT_PAREN},
         (Token){"a", 1, TOKEN_IDENTIFIER},
-        (Token){")", 1,  TOKEN_RIGHT_PAREN},
-        (Token){"{", 1,  TOKEN_LEFT_BRACE},
+        (Token){")", 1, TOKEN_RIGHT_PAREN},
+        (Token){"{", 1, TOKEN_LEFT_BRACE},
         (Token){"if", 2, TOKEN_IF},
-        (Token){"(", 1,  TOKEN_LEFT_PAREN},
-        (Token){"a", 1,  TOKEN_IDENTIFIER},
-        (Token){"<=", 2,  TOKEN_LESS_EQUAL},
-        (Token){"2", 1,  TOKEN_INT_LITERAL},
-        (Token){")", 1,  TOKEN_RIGHT_PAREN},
-        (Token){"{", 1,  TOKEN_LEFT_BRACE},
-        (Token){"return", 6,  TOKEN_RETURN},
+        (Token){"(", 1, TOKEN_LEFT_PAREN},
+        (Token){"a", 1, TOKEN_IDENTIFIER},
+        (Token){"<=", 2, TOKEN_LESS_EQUAL},
+        (Token){"2", 1, TOKEN_INT_LITERAL},
+        (Token){")", 1, TOKEN_RIGHT_PAREN},
+        (Token){"{", 1, TOKEN_LEFT_BRACE},
+        (Token){"return", 6, TOKEN_RETURN},
         (Token){"1", 1, TOKEN_INT_LITERAL},
         (Token){";", 1, TOKEN_SEMICOLON},
         (Token){"}", 1, TOKEN_RIGHT_BRACE},
