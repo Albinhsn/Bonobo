@@ -10,7 +10,6 @@ jobs:
       run: |
         sudo apt-get update 
         sudo apt-get install -y llvm-15 llvm-15-dev llvm-15-tools clang-15
-        llvm-config --version
     - uses: actions/checkout@v3
       with:
         submodules: recursive
