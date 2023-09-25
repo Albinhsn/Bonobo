@@ -36,6 +36,7 @@ TEST(TestScanner, TestSingleCharTokens) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
+    free(scanner);
 }
 
 TEST(TestScanner, TestVarInt) {
@@ -57,6 +58,7 @@ TEST(TestScanner, TestVarInt) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
+    free(scanner);
 }
 
 TEST(TestScanner, TestDoubleCharTokens) {
@@ -78,6 +80,7 @@ TEST(TestScanner, TestDoubleCharTokens) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
+    free(scanner);
 }
 
 TEST(TestScanner, TestLiterals) {
@@ -106,6 +109,7 @@ TEST(TestScanner, TestLiterals) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
+    free(scanner);
 }
 
 TEST(TestScanner, TestKeywords) {
