@@ -29,12 +29,11 @@ TEST(TestScanner, TestSingleCharTokens) {
         (Token){"=", 1, TOKEN_EQUAL},
         (Token){"EOF", 1, TOKEN_EOF},
     };
-    // for (int i = 0; i < tokens.size(); i++) {
-    int i = 0;
-    Token *scannedToken = scanToken(scanner);
-    EXPECT_EQ(scannedToken->type, tokens[i].type);
-    EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
-    // }
+    for (int i = 0; i < tokens.size(); i++) {
+        Token *scannedToken = scanToken(scanner);
+        EXPECT_EQ(scannedToken->type, tokens[i].type);
+        EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
+    }
     // EXPECT_EQ(scanner->current, source.size());
 }
 
