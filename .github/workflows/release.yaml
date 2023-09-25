@@ -15,9 +15,6 @@ jobs:
         submodules: recursive
     - name: build 
       run: make b
-  test:
-    runs-on: ubuntu-latest
-    steps:
     - name: Run Frontend Tests
       run: make t
     - name: LLVM Backend test
