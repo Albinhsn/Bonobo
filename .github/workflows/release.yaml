@@ -12,8 +12,8 @@ jobs:
     steps:
     - name: Install LLVM
       run: |
-
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo echo deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main >> "/etc/apt/sources.list"
+          sudo deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main >> "/etc/apt/sources.list"
           sudo apt-get update
           sudo apt-get install -y llvm-16 llvm-16-dev clang-16
           llvm-config --version
