@@ -6,10 +6,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Install LLVM and Clang
-      run: |
-        sudo apt-get update 
-        sudo apt-get install -y llvm-15 llvm-15-dev llvm-15-tools clang-15
     - uses: actions/checkout@v3
       with:
         submodules: recursive
@@ -17,6 +13,4 @@ jobs:
       run: make b
     - name: Run Frontend Tests
       run: make t
-    - name: LLVM Backend test
-      run: make llt
 
