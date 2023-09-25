@@ -5,6 +5,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
+* Change tests to be cmake rather then budget
+
 * remove ability to redeclare funcs
 
 * Struct lookup in compiler "foo.bar";
@@ -32,6 +34,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * How does an array know what type it has?
         * It doesn't after you calculated what it contains;
             * Do so and then check its validity?
+
 
 ## TODO LLVM backend
 
