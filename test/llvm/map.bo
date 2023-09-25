@@ -1,3 +1,0 @@
-
-var foo: map[int, int] = {};
-var bar: map[int, int] = {1:2, 3:4};

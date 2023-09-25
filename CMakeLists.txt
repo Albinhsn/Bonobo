@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
+
 set(This bonobo)
 project(${This})
 
-# GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(LLVM REQUIRED CONFIG)
 
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 
@@ -21,6 +25,10 @@ FetchContent_Declare(
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+include_directories(${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
 
 
 set(Sources
@@ -38,3 +46,6 @@ set(Sources
   )
 
 add_library(${This} STATIC ${Sources})
+
+llvm_map_components_to_libnames(llvm_libs support core irreader)
+target_link_libraries(${This} ${llvm_libs})

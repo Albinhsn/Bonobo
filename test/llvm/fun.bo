@@ -1,5 +1,0 @@
-fun foo() -> int{return 5;}
-printf("%d\n", foo());
-
-fun bar(a:int, b:int) -> int{return a + b;}
-printf("%d\n", bar(1,2));
