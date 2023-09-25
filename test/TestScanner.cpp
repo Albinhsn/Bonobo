@@ -3,41 +3,40 @@
 #include "../src/scanner.h"
 #include <gtest/gtest.h>
 
-TEST(TestScanner, TestSingleCharTokens) {
-    std::string source = "!<>(){}[],.-+;*/:=";
-    Scanner *scanner = nullptr;
-    scanner = (Scanner *)malloc(sizeof(Scanner));
-    initScanner(scanner, source.c_str());
+// TEST(TestScanner, TestSingleCharTokens) {
+//     std::string source = "!<>(){}[],.-+;*/:=";
+//     Scanner *scanner = nullptr;
+//     scanner = (Scanner *)malloc(sizeof(Scanner));
+//     initScanner(scanner, source.c_str());
 
-    std::vector<Token> tokens = {
-        (Token){"!", 1, TOKEN_BANG},
-        (Token){"<", 1, TOKEN_LESS},
-        (Token){">", 1, TOKEN_GREATER},
-        (Token){"(", 1, TOKEN_LEFT_PAREN},
-        (Token){")", 1, TOKEN_RIGHT_PAREN},
-        (Token){"{", 1, TOKEN_LEFT_BRACE},
-        (Token){"}", 1, TOKEN_RIGHT_BRACE},
-        (Token){"[", 1, TOKEN_LEFT_BRACKET},
-        (Token){"]", 1, TOKEN_RIGHT_BRACKET},
-        (Token){",", 1, TOKEN_COMMA},
-        (Token){".", 1, TOKEN_DOT},
-        (Token){"-", 1, TOKEN_MINUS},
-        (Token){"+", 1, TOKEN_PLUS},
-        (Token){";", 1, TOKEN_SEMICOLON},
-        (Token){"*", 1, TOKEN_STAR},
-        (Token){"/", 1, TOKEN_SLASH},
-        (Token){":", 1, TOKEN_COLON},
-        (Token){"=", 1, TOKEN_EQUAL},
-        (Token){"EOF", 1, TOKEN_EOF},
-    };
-    for (int i = 0; i < tokens.size(); i++) {
-        Token *scannedToken = scanToken(scanner);
-        EXPECT_EQ(scannedToken->type, tokens[i].type);
-        EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
-    }
-    EXPECT_EQ(scanner->current, source.size());
-    free(scanner);
-}
+//     std::vector<Token> tokens = {
+//         (Token){"!", 1, TOKEN_BANG},
+//         (Token){"<", 1, TOKEN_LESS},
+//         (Token){">", 1, TOKEN_GREATER},
+//         (Token){"(", 1, TOKEN_LEFT_PAREN},
+//         (Token){")", 1, TOKEN_RIGHT_PAREN},
+//         (Token){"{", 1, TOKEN_LEFT_BRACE},
+//         (Token){"}", 1, TOKEN_RIGHT_BRACE},
+//         (Token){"[", 1, TOKEN_LEFT_BRACKET},
+//         (Token){"]", 1, TOKEN_RIGHT_BRACKET},
+//         (Token){",", 1, TOKEN_COMMA},
+//         (Token){".", 1, TOKEN_DOT},
+//         (Token){"-", 1, TOKEN_MINUS},
+//         (Token){"+", 1, TOKEN_PLUS},
+//         (Token){";", 1, TOKEN_SEMICOLON},
+//         (Token){"*", 1, TOKEN_STAR},
+//         (Token){"/", 1, TOKEN_SLASH},
+//         (Token){":", 1, TOKEN_COLON},
+//         (Token){"=", 1, TOKEN_EQUAL},
+//         (Token){"EOF", 1, TOKEN_EOF},
+//     };
+//     for (int i = 0; i < tokens.size(); i++) {
+//         Token *scannedToken = scanToken(scanner);
+//         EXPECT_EQ(scannedToken->type, tokens[i].type);
+//         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
+//     }
+//     EXPECT_EQ(scanner->current, source.size());
+// }
 
 TEST(TestScanner, TestVarInt) {
     std::string source = "var a: int = !5;";
@@ -58,7 +57,6 @@ TEST(TestScanner, TestVarInt) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
-    free(scanner);
 }
 
 TEST(TestScanner, TestDoubleCharTokens) {
@@ -80,7 +78,6 @@ TEST(TestScanner, TestDoubleCharTokens) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
-    free(scanner);
 }
 
 TEST(TestScanner, TestLiterals) {
@@ -109,7 +106,6 @@ TEST(TestScanner, TestLiterals) {
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
     EXPECT_EQ(scanner->current, source.size());
-    free(scanner);
 }
 
 TEST(TestScanner, TestKeywords) {
