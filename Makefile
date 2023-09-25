@@ -4,8 +4,9 @@ FILES = main.cpp compiler.cpp scanner.cpp debug.cpp
 
 LLFLILES = ../../src/main.cpp ../../src/compiler.cpp ../../src/scanner.cpp ../../src/debug.cpp 
 
+
 c: 
-	cd src/ && clang++ -o main $(LLVMFLAGS) $(FILES) && ./main ../input
+	cd src/ && clang++ -O3 -c `llvm-config --cxxflags` $(FILES) && clang++ -o main compiler.o debug.o scanner.o main.o `llvm-config --ldflags --system-libs --libs core` && rm *.o && ./main ../input
 
 llt: 
 	cd ./test/llvm/ && clang++ -o main $(LLVMFLAGS) ../../src/compiler.cpp ../../src/scanner.cpp ../../src/debug.cpp TestLLVM.cpp && ./main
