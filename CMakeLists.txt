@@ -11,6 +11,7 @@ enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(test)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest

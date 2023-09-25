@@ -16,5 +16,8 @@ ex:
 bt: 
 	cmake -S . -B build && cmake --build build && cd build && ctest --output-on-failure -V
 
+b: 
+	cmake -S . -B build && cmake --build build
+
 t: 
 	cd build && ctest --output-on-failure -V
