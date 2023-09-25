@@ -7,29 +7,29 @@ TEST(TestScanner, TestSingleCharTokens) {
     std::string source = "!<>(){}[],.-+;*/:=";
     Scanner *scanner = new Scanner();
     initScanner(scanner, source);
-    EXPECT_EQ(1,1);
 
-    // std::vector<Token> tokens = {
-    //     (Token){"!", 1, TOKEN_BANG},
-    //     (Token){"<", 1, TOKEN_LESS},
-    //     (Token){">", 1, TOKEN_GREATER},
-    //     (Token){"(", 1, TOKEN_LEFT_PAREN},
-    //     (Token){")", 1, TOKEN_RIGHT_PAREN},
-    //     (Token){"{", 1, TOKEN_LEFT_BRACE},
-    //     (Token){"}", 1, TOKEN_RIGHT_BRACE},
-    //     (Token){"[", 1, TOKEN_LEFT_BRACKET},
-    //     (Token){"]", 1, TOKEN_RIGHT_BRACKET},
-    //     (Token){",", 1, TOKEN_COMMA},
-    //     (Token){".", 1, TOKEN_DOT},
-    //     (Token){"-", 1, TOKEN_MINUS},
-    //     (Token){"+", 1, TOKEN_PLUS},
-    //     (Token){";", 1, TOKEN_SEMICOLON},
-    //     (Token){"*", 1, TOKEN_STAR},
-    //     (Token){"/", 1, TOKEN_SLASH},
-    //     (Token){":", 1, TOKEN_COLON},
-    //     (Token){"=", 1, TOKEN_EQUAL},
-    //     (Token){"EOF", 1, TOKEN_EOF},
-    // };
+    std::vector<Token> tokens = {
+        (Token){"!", 1, TOKEN_BANG},
+        (Token){"<", 1, TOKEN_LESS},
+        (Token){">", 1, TOKEN_GREATER},
+        (Token){"(", 1, TOKEN_LEFT_PAREN},
+        (Token){")", 1, TOKEN_RIGHT_PAREN},
+        (Token){"{", 1, TOKEN_LEFT_BRACE},
+        (Token){"}", 1, TOKEN_RIGHT_BRACE},
+        (Token){"[", 1, TOKEN_LEFT_BRACKET},
+        (Token){"]", 1, TOKEN_RIGHT_BRACKET},
+        (Token){",", 1, TOKEN_COMMA},
+        (Token){".", 1, TOKEN_DOT},
+        (Token){"-", 1, TOKEN_MINUS},
+        (Token){"+", 1, TOKEN_PLUS},
+        (Token){";", 1, TOKEN_SEMICOLON},
+        (Token){"*", 1, TOKEN_STAR},
+        (Token){"/", 1, TOKEN_SLASH},
+        (Token){":", 1, TOKEN_COLON},
+        (Token){"=", 1, TOKEN_EQUAL},
+        (Token){"EOF", 1, TOKEN_EOF},
+    };
+    EXPECT_EQ(1,1);
     // for (int i = 0; i < tokens.size(); i++) {
     //     Token *scannedToken = scanToken(scanner);
     //     EXPECT_EQ(scannedToken->type, tokens[i].type);
