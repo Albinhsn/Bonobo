@@ -104,7 +104,7 @@ class LLVMCompiler {
         exit(1);
     }
 
-    bool checkValueMatch(Variable *var, llvm::Value *value) {
+    bool checkVariableValueMatch(Variable *var, llvm::Value *value) {
         if (value->getType() == llvm::Type::getInt32Ty(*this->ctx)) {
             return var->type == INT_VAR;
 
@@ -376,7 +376,7 @@ class LLVMCompiler {
             // ToDo check overwriting existing variable?
             VarStmt *varStmt = (VarStmt *)stmt;
             llvm::Value *value = compileExpression(varStmt->initializer);
-            if (!checkValueMatch(varStmt->var, value)) {
+            if (!checkVariableValueMatch(varStmt->var, value)) {
 
                 printf("Invalid type mismatch in var declaration\nexpected: ");
                 debugVariable(varStmt->var);
@@ -503,6 +503,21 @@ class LLVMCompiler {
         }
         case FUNC_STMT: {
             FuncStmt *funcStmt = (FuncStmt *)stmt;
+
+            // Check if it already exists
+            for (int i = 0; i < this->callableFunctions.size(); ++i) {
+                if (this->callableFunctions[i]->getName().str() ==
+                    funcStmt->name.lexeme) {
+                    printf("Can't redeclare a function\n");
+                    exit(1);
+                }
+            }
+            for (const auto &[key, value] : this->libraryFuncs) {
+                if (key == funcStmt->name.lexeme) {
+                    printf("Can't redeclare a function\n");
+                    exit(1);
+                }
+            }
 
             // Fix params
             std::vector<llvm::Type *> params =

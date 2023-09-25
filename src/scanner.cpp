@@ -108,24 +108,27 @@ void skipWhitespace(Scanner *scanner) {
                     scanner->current++;
                 }
                 scanner->line++;
+                break;
+            } else {
+                scanner->current--;
                 return;
             }
-            scanner->current--;
-            return;
+            break;
         }
         case ' ':
         case '\t':
         case '\r': {
+            scanner->current++;
             break;
         }
         case '\n': {
+            scanner->current++;
             scanner->line++;
             break;
         }
         default:
             return;
         }
-        scanner->current++;
     }
 }
 

@@ -5,10 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Rename/Lookover functions, it's getting ridiculous
-
-* remove ability to redeclare funcs
-
 * Just check for bugs with comments
 
 * Struct lookup in compiler "foo.bar";
@@ -29,6 +25,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * How does an array know what type it has?
         * It doesn't after you calculated what it contains;
             * Do so and then check its validity?
+
+* Can't redeclare var/func, check both
 
 
 ## TODO LLVM backend
