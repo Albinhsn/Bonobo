@@ -26,6 +26,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Some better error handling
 
+* Don't change \n prior to scanning, find better place to do it
 
 * itemType in ArrayDeclaration?
     * How does an array know what type it has?
