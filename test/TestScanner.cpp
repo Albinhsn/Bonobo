@@ -8,6 +8,7 @@ TEST(TestScanner, TestSingleCharTokens) {
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
     initScanner(scanner, source);
+    std::cout << "Inited scanner";
 
     std::vector<Token> tokens = {
         (Token){"!", 1, TOKEN_BANG},
@@ -32,6 +33,7 @@ TEST(TestScanner, TestSingleCharTokens) {
     };
     for (int i = 0; i < tokens.size(); i++) {
         Token *scannedToken = scanToken(scanner);
+        std::cout << "Scanned " << i << "\n";
         EXPECT_EQ(scannedToken->type, tokens[i].type);
         EXPECT_TRUE(scannedToken->lexeme == tokens[i].lexeme);
     }
