@@ -7,10 +7,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* Structs
-    * Return from func
-    * Array of:
-        struct
+* Return from func
+    * Struct
+    * Array
+    * String
 
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
@@ -24,8 +24,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Array
     * String
     * Map
-
-* String concat
 
 * MapExpr
 
