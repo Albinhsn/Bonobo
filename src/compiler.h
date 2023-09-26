@@ -13,25 +13,9 @@ typedef struct Parser {
     Parser() : current(nullptr), hadError(false), previous(nullptr){};
 } Parser;
 
-typedef enum {
-    PREC_NONE,
-    PREC_ASSIGNMENT, // =
-    PREC_OR,         // or
-    PREC_AND,        // and
-    PREC_EQUALITY,   // == !=
-    PREC_COMPARISON, // < > <= >=
-    PREC_TERM,       // + -
-    PREC_FACTOR,     // * /
-    PREC_UNARY,      // ! -
-    PREC_CALL,       // . (), []
-    PREC_PRIMARY
-} Precedence;
-
-typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
 typedef struct Compiler {
     Compiler *enclosing;
-    FunctionType type;
     std::vector<std::string> s;
     std::vector<Stmt *> statements;
 } Compiler;

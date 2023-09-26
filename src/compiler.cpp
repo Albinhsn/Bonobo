@@ -11,7 +11,6 @@ Scanner *scanner;
 static void initCompiler() {
     compiler = new Compiler;
     compiler->enclosing = nullptr;
-    compiler->type = TYPE_SCRIPT;
     compiler->statements = std::vector<Stmt *>();
 }
 

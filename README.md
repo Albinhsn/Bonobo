@@ -5,7 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
 
