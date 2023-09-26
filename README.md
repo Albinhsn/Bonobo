@@ -5,27 +5,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Support 2d Arrays
-    * Check recursively when compiler gives array_expr it's items to support 2d arrays
-
-* itemType in ArrayDeclaration?
-    * Create the array and check its type 
-    * Then return it and check it's validity for the stmt
-    * if creating == [1,2] it doesn't matter
-
-* Scoping rules with variables
-    * Check whether creating smth in a if remains
-
-* Don't change \n prior to scanning, find better place to do it
-
-* Update tests to include
-    * BinaryExpr with double
-    * ComparisonExpr with double
-
-
 ## TODO LLVM backend
-
-* Index
 
 * Structs
     * Declare
@@ -34,7 +14,21 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Return from func
     * Array of:
         struct
+
 * Create a String and an Array type
+
+* Support 2d Arrays
+    * Check recursively when compiler gives array_expr it's items to support 2d arrays
+
+* itemType in ArrayDeclaration?
+    * Create the array and check its type 
+    * Then return it and check it's validity for the stmt
+    * if creating == [1,2] it doesn't matter
+
+* Index
+    * Array
+    * String
+    * Map
 
 * String concat
 

@@ -10,20 +10,20 @@ class LLVMFunction {
   private:
   public:
     LLVMFunction *enclosing;
+    vector<vector<AllocaInst *>> scopedVariables;
     // Scopes
-    vector<AllocaInst *> localVariables;
     map<string, int> funcArgs;
     BasicBlock *entryBlock;
     Function *function;
     FunctionType *funcType;
 
-    LLVMFunction(LLVMFunction *enclosing, FunctionType *funcType,
-                 string name, map<string, int> funcArgs, LLVMContext *ctx,
-                 Module *module) {
+    LLVMFunction(LLVMFunction *enclosing, FunctionType *funcType, string name,
+                 map<string, int> funcArgs, LLVMContext *ctx, Module *module) {
         this->enclosing = enclosing;
         this->funcType = funcType;
         this->function = Function::Create(funcType, Function::ExternalLinkage,
                                           name, *module);
+        this->scopedVariables = vector<vector<AllocaInst *>>(1);
         this->funcArgs = funcArgs;
         this->entryBlock = BasicBlock::Create(*ctx, "entry", this->function);
     }
@@ -33,7 +33,6 @@ class LLVMCompiler {
   private:
     LLVMContext *ctx;
     Module *module;
-    vector<AllocaInst *> globalVariables;
     vector<Stmt *> stmts;
     IRBuilder<> *builder;
     map<string, FunctionCallee> libraryFuncs;
@@ -49,8 +48,11 @@ class LLVMCompiler {
     }
 
     bool nameIsAlreadyDeclared(string name) {
-        for (int i = 0; i < this->globalVariables.size(); ++i) {
-            if (this->globalVariables[i]->getName().str() == name) {
+        for (int i = 0; i < this->function->scopedVariables.back().size();
+             i++) {
+            if (this->function->scopedVariables.back()[i]->getName().str() ==
+                name) {
+                printf("Found scopedVar\n");
                 return true;
             }
         }
@@ -115,29 +117,37 @@ class LLVMCompiler {
                     }
                 }
             }
-            for (int i = 0; i < this->function->localVariables.size(); i++) {
-                if (this->function->localVariables[i]->getName() == name) {
-                    return this->function->localVariables[i];
-                }
-            }
         }
-        for (int i = 0; i < this->globalVariables.size(); i++) {
-            if (this->globalVariables[i]->getName() == name) {
-                return this->globalVariables[i];
+        for (int i = this->function->scopedVariables.size() - 1; i >= 0; i--) {
+            vector<AllocaInst *> scope = this->function->scopedVariables[i];
+            for (int j = 0; j < scope.size(); ++j) {
+                if (scope[j]->getName() == name) {
+                    return scope[j];
+                }
             }
         }
         printf("Unknown variable %s\n", name.c_str());
         exit(1);
     }
 
-    bool checkVariableValueMatch(Variable *var, Value *value) {
+    bool checkVariableValueMatch(Variable *var, Value *&value) {
         if (value->getType() == Type::getInt32Ty(*this->ctx)) {
+            if (var->type == DOUBLE_VAR) {
+                value = this->builder->CreateUIToFP(
+                    value, this->builder->getDoubleTy());
+                return true;
+            }
             return var->type == INT_VAR;
 
         } else if (value->getType() == Type::getInt1Ty(*this->ctx)) {
             return var->type == BOOL_VAR;
 
         } else if (value->getType() == Type::getDoubleTy(*this->ctx)) {
+            if (var->type == INT_VAR) {
+                value = this->builder->CreateFPToUI(
+                    value, this->builder->getInt32Ty());
+                return true;
+            }
             return var->type == DOUBLE_VAR;
         } else if (value->getType()->isPointerTy()) {
             // ToDo this needs to check underlying type as well
@@ -166,7 +176,7 @@ class LLVMCompiler {
         }
         case DOUBLE_LITERAL: {
             return ConstantFP::get(this->builder->getDoubleTy(),
-                                         stod(stringLiteral));
+                                   stod(stringLiteral));
         }
         }
     }
@@ -370,8 +380,7 @@ class LLVMCompiler {
             VarExpr *varExpr = (VarExpr *)expr;
             Value *var = lookupVariable(varExpr->name.lexeme);
             if (var->getType()->isPointerTy()) {
-                if (AllocaInst *allocaInst =
-                        dyn_cast<AllocaInst>(var)) {
+                if (AllocaInst *allocaInst = dyn_cast<AllocaInst>(var)) {
                     if (allocaInst->getType()->isPointerTy()) {
                         Value *loadedValue = this->builder->CreateLoad(
                             allocaInst->getAllocatedType(), allocaInst);
@@ -400,15 +409,6 @@ class LLVMCompiler {
             // Figure ut which type array has
             Type *elementType = nullptr;
             if (arrayExpr->itemType == nullptr) {
-                // if (arrayItems[i]->getType() != elementType) {
-                // printf("value: ");
-                // debugValueType(arrayItems[i]->getType(), this->ctx);
-                // printf("elementType: ");
-                // debugValueType(elementType, this->ctx);
-                // printf("Can't create an array different element then "
-                //        "specified\n");
-                // exit(1);
-                // }
             } else {
                 elementType = getVariableLLVMType(arrayExpr->itemType);
             }
@@ -417,15 +417,13 @@ class LLVMCompiler {
             uint64_t totalSize =
                 arraySize * elementType->getPrimitiveSizeInBits();
 
-            ArrayType *arrayType =
-                ArrayType::get(elementType, arraySize);
+            ArrayType *arrayType = ArrayType::get(elementType, arraySize);
             GlobalVariable *globalArray = new GlobalVariable(
-                *this->module, arrayType, false,
-                GlobalValue::ExternalLinkage,
+                *this->module, arrayType, false, GlobalValue::ExternalLinkage,
                 ConstantAggregateZero::get(arrayType));
             for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
-                Value *index = ConstantInt::get(
-                    Type::getInt32Ty(*this->ctx), i);
+                Value *index =
+                    ConstantInt::get(Type::getInt32Ty(*this->ctx), i);
 
                 ArrayRef<Value *> indices({index});
                 Value *gep =
@@ -544,11 +542,7 @@ class LLVMCompiler {
                 this->builder->CreateAlloca(getVariableLLVMType(varStmt->var),
                                             nullptr, varStmt->var->name.lexeme);
             this->builder->CreateStore(value, var);
-            if (this->function->enclosing) {
-                this->function->localVariables.push_back(var);
-            } else {
-                this->globalVariables.push_back(var);
-            }
+            this->function->scopedVariables.back().push_back(var);
             break;
         }
         case WHILE_STMT: {
@@ -617,18 +611,19 @@ class LLVMCompiler {
             IfStmt *ifStmt = (IfStmt *)stmt;
             Value *condition = compileExpression(ifStmt->condition);
 
-            BasicBlock *thenBlock = BasicBlock::Create(
-                *ctx, "then", this->function->function);
+            BasicBlock *thenBlock =
+                BasicBlock::Create(*ctx, "then", this->function->function);
 
-            BasicBlock *elseBlock = BasicBlock::Create(
-                *ctx, "else", this->function->function);
+            BasicBlock *elseBlock =
+                BasicBlock::Create(*ctx, "else", this->function->function);
 
-            BasicBlock *mergeBlock = BasicBlock::Create(
-                *ctx, "merge", this->function->function);
+            BasicBlock *mergeBlock =
+                BasicBlock::Create(*ctx, "merge", this->function->function);
 
             this->builder->CreateCondBr(condition, thenBlock, elseBlock);
             this->builder->SetInsertPoint(thenBlock);
 
+            this->function->scopedVariables.push_back(vector<AllocaInst *>());
             // This is just bad, especially for multiple returns?
             bool returned = false;
             for (int i = 0; i < ifStmt->thenBranch.size(); ++i) {
@@ -638,12 +633,14 @@ class LLVMCompiler {
                     break;
                 }
             }
+            this->function->scopedVariables.pop_back();
             if (!returned) {
                 this->builder->CreateBr(mergeBlock);
             }
             this->builder->SetInsertPoint(elseBlock);
 
             returned = false;
+            this->function->scopedVariables.push_back(vector<AllocaInst *>());
             for (int i = 0; i < ifStmt->elseBranch.size(); ++i) {
                 compileStatement(ifStmt->elseBranch[i]);
                 if (ifStmt->elseBranch[i]->type == RETURN_STMT) {
@@ -651,6 +648,7 @@ class LLVMCompiler {
                     break;
                 }
             }
+            this->function->scopedVariables.pop_back();
             if (!returned) {
                 this->builder->CreateBr(mergeBlock);
             }
@@ -668,8 +666,7 @@ class LLVMCompiler {
             }
 
             // Fix params
-            vector<Type *> params =
-                vector<Type *>(funcStmt->params.size());
+            vector<Type *> params = vector<Type *>(funcStmt->params.size());
             map<string, int> funcArgs;
             for (int i = 0; i < funcStmt->params.size(); ++i) {
                 params[i] = getVariableLLVMType(funcStmt->params[i]);
@@ -723,8 +720,8 @@ class LLVMCompiler {
             map<string, FunctionCallee>();
         vector<Type *> printfArgs;
         printfArgs.push_back(Type::getInt8PtrTy(*this->ctx));
-        FunctionType *printfType = FunctionType::get(
-            Type::getInt32Ty(*this->ctx), printfArgs, true);
+        FunctionType *printfType =
+            FunctionType::get(Type::getInt32Ty(*this->ctx), printfArgs, true);
         FunctionCallee printfFunc =
             this->module->getOrInsertFunction("printf", printfType);
 

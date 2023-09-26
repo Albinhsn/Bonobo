@@ -25,15 +25,24 @@ TEST(TestIf, TestBasicIfElse2) {
     EXPECT_EQ(resultTxt, "5");
 }
 
-// TEST(TestIf, TestIfScope) {
-//     std::string source =
-//         "if (1 < 2) {var a: int = 5;}else {var a:int = 4;} printf(\"%d\", a);";
+TEST(TestIf, TestBasicIfElse3) {
+    std::string source = "var a:int = 0; var i: int = 3; if(i < 2){a = 5;}else{a = 4;} printf(\"%d %d\", i , a);";
 
-//     std::vector<Stmt *> result = compile(source.c_str());
+    std::vector<Stmt *> result = compile(source.c_str());
 
-//     std::string resultTxt = runLLVMBackend(result);
-//     EXPECT_EQ(resultTxt, "5");
-// }
+    std::string resultTxt = runLLVMBackend(result);
+    EXPECT_EQ(resultTxt, "3 4");
+}
+
+TEST(TestIf, TestIfScope) {
+    std::string source = "var a:int = 1; if (1 < 2) {var a: int = 5;}else {var "
+                         "a:int = 4;} printf(\"%d\", a);";
+
+    std::vector<Stmt *> result = compile(source.c_str());
+
+    std::string resultTxt = runLLVMBackend(result);
+    EXPECT_EQ(resultTxt, "1");
+}
 
 TEST(TestIf, TestBasicIf) {
     std::string source = "if (i < 2) {var a : int = 5;}";

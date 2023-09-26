@@ -6,9 +6,7 @@
 #include "testCommon.h"
 #include <gtest/gtest.h>
 
-
-
-TEST(TestBinaryOp, TestAddOp) {
+TEST(TestBinaryOp, TestIntAddOp) {
     std::string source = "var a: int = 5 + 3; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -30,11 +28,11 @@ TEST(TestBinaryOp, TestAddOp) {
     EXPECT_EQ(right->literalType, INT_LITERAL);
     EXPECT_EQ(right->literal.lexeme, "3");
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "8");
 }
 
-TEST(TestBinaryOp, TestDivOp) {
+TEST(TestBinaryOp, TestIntDivOp) {
     std::string source = "var a: int = 5 / 3; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -45,11 +43,11 @@ TEST(TestBinaryOp, TestDivOp) {
     BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
     EXPECT_EQ(binaryExpr->op, DIV);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "1");
 }
 
-TEST(TestBinaryOp, TestMulOp) {
+TEST(TestBinaryOp, TestIntMulOp) {
     std::string source = "var a: int = 5 * 3; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -60,11 +58,11 @@ TEST(TestBinaryOp, TestMulOp) {
     BinaryExpr *binaryExpr = (BinaryExpr *)varStmt->initializer;
     EXPECT_EQ(binaryExpr->op, MUL);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "15");
 }
 
-TEST(TestBinaryOp, TestPrecedenceAddAdd) {
+TEST(TestBinaryOp, TestIntPrecedenceAddAdd) {
     std::string source = "var a: int = 5 + 3 + 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -82,11 +80,11 @@ TEST(TestBinaryOp, TestPrecedenceAddAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "10");
 }
 
-TEST(TestBinaryOp, TestPrecedenceAddSub) {
+TEST(TestBinaryOp, TestIntPrecedenceAddSub) {
     std::string source = "var a: int = 5 + 3 - 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -104,11 +102,11 @@ TEST(TestBinaryOp, TestPrecedenceAddSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "6");
 }
 
-TEST(TestBinaryOp, TestPrecedenceAddMul) {
+TEST(TestBinaryOp, TestIntPrecedenceAddMul) {
     std::string source = "var a: int = 5 + 3 * 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -126,11 +124,11 @@ TEST(TestBinaryOp, TestPrecedenceAddMul) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "11");
 }
 
-TEST(TestBinaryOp, TestPrecedenceAddDiv) {
+TEST(TestBinaryOp, TestIntPrecedenceAddDiv) {
     std::string source = "var a: int = 5 + 3 / 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -148,11 +146,11 @@ TEST(TestBinaryOp, TestPrecedenceAddDiv) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "6");
 }
 
-TEST(TestBinaryOp, TestPrecedenceSubAdd) {
+TEST(TestBinaryOp, TestIntPrecedenceSubAdd) {
     std::string source = "var a: int = 5 - 3 + 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -170,11 +168,11 @@ TEST(TestBinaryOp, TestPrecedenceSubAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "4");
 }
 
-TEST(TestBinaryOp, TestPrecedenceSubSub) {
+TEST(TestBinaryOp, TestIntPrecedenceSubSub) {
     std::string source = "var a: int = 5 - 3 - 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -192,11 +190,11 @@ TEST(TestBinaryOp, TestPrecedenceSubSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "0");
 }
 
-TEST(TestBinaryOp, TestPrecedenceSubMul) {
+TEST(TestBinaryOp, TestIntPrecedenceSubMul) {
     std::string source = "var a: int = 5 - 3 * 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -214,11 +212,11 @@ TEST(TestBinaryOp, TestPrecedenceSubMul) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "-1");
 }
 
-TEST(TestBinaryOp, TestPrecedenceSubDiv) {
+TEST(TestBinaryOp, TestIntPrecedenceSubDiv) {
     std::string source = "var a: int = 5 - 3 / 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -236,11 +234,11 @@ TEST(TestBinaryOp, TestPrecedenceSubDiv) {
     EXPECT_EQ(right->left->type, LITERAL_EXPR);
     EXPECT_EQ(right->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "4");
 }
 
-TEST(TestBinaryOp, TestPrecedenceMulAdd) {
+TEST(TestBinaryOp, TestIntPrecedenceMulAdd) {
     std::string source = "var a: int = 5 * 3 + 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -258,11 +256,11 @@ TEST(TestBinaryOp, TestPrecedenceMulAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "17");
 }
 
-TEST(TestBinaryOp, TestPrecedenceMulSub) {
+TEST(TestBinaryOp, TestIntPrecedenceMulSub) {
     std::string source = "var a: int = 5 * 3 - 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -280,11 +278,11 @@ TEST(TestBinaryOp, TestPrecedenceMulSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "13");
 }
 
-TEST(TestBinaryOp, TestPrecedenceMulMul) {
+TEST(TestBinaryOp, TestIntPrecedenceMulMul) {
     std::string source = "var a: int = 5 * 3 * 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -305,7 +303,7 @@ TEST(TestBinaryOp, TestPrecedenceMulMul) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "30");
 }
 
@@ -330,11 +328,11 @@ TEST(TestBinaryOp, TestPrecedenceMulDiv) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "7");
 }
 
-TEST(TestBinaryOp, TestPrecedenceDivAdd) {
+TEST(TestBinaryOp, TestIntPrecedenceDivAdd) {
     std::string source = "var a: int = 5 / 3 + 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -352,11 +350,11 @@ TEST(TestBinaryOp, TestPrecedenceDivAdd) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "3");
 }
 
-TEST(TestBinaryOp, TestPrecedenceDivSub) {
+TEST(TestBinaryOp, TestIntPrecedenceDivSub) {
     std::string source = "var a: int = 5 / 3 - 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -374,11 +372,11 @@ TEST(TestBinaryOp, TestPrecedenceDivSub) {
     EXPECT_EQ(left->left->type, LITERAL_EXPR);
     EXPECT_EQ(left->right->type, LITERAL_EXPR);
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "-1");
 }
 
-TEST(TestBinaryOp, TestPrecedenceDivMul) {
+TEST(TestBinaryOp, TestIntPrecedenceDivMul) {
     std::string source = "var a: int = 5 / 3 * 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -399,11 +397,11 @@ TEST(TestBinaryOp, TestPrecedenceDivMul) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "2");
 }
 
-TEST(TestBinaryOp, TestPrecedenceDivDiv) {
+TEST(TestBinaryOp, TestIntPrecedenceDivDiv) {
     std::string source = "var a: int = 5 / 3 / 2; printf(\"%d\", a);";
 
     std::vector<Stmt *> result = compile(source.c_str());
@@ -424,8 +422,34 @@ TEST(TestBinaryOp, TestPrecedenceDivDiv) {
     LiteralExpr *right = (LiteralExpr *)binaryExpr->right;
     EXPECT_EQ(right->literal.lexeme, "2");
 
-    std::string resultTxt = runLLVMBackend(result); 
+    std::string resultTxt = runLLVMBackend(result);
     EXPECT_EQ(resultTxt, "0");
+}
+TEST(TestBinaryOp, TestDoubleIntDiv) {
+    std::string source = "var a: double = 5.0 / 2; printf(\"%lf\", a);";
+
+    std::vector<Stmt *> result = compile(source.c_str());
+
+    std::string resultTxt = runLLVMBackend(result);
+    EXPECT_EQ(resultTxt, "2.500000");
+}
+
+TEST(TestBinaryOp, TestDoubleDoubleDiv) {
+    std::string source = "var a: double = 5.0 / 2.0; printf(\"%lf\", a);";
+
+    std::vector<Stmt *> result = compile(source.c_str());
+
+    std::string resultTxt = runLLVMBackend(result);
+    EXPECT_EQ(resultTxt, "2.500000");
+}
+
+TEST(TestBinaryOp, TestDoubleMulMul) {
+    std::string source = "var a: double = 1.5 * 2.0; printf(\"%lf\", a);";
+
+    std::vector<Stmt *> result = compile(source.c_str());
+
+    std::string resultTxt = runLLVMBackend(result);
+    EXPECT_EQ(resultTxt, "3.000000");
 }
 
 TEST(TestBinaryOp, TestBinaryOpVar) {

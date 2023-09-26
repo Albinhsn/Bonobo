@@ -90,9 +90,19 @@ static Token *parseString(Scanner *scanner) {
     }
 
     scanner->current++;
-    return newToken(
-        scanner->source.substr(current, scanner->current - current - 1),
-        scanner->line, TOKEN_STR_LITERAL);
+    std::string str =
+        scanner->source.substr(current, scanner->current - current - 1);
+    size_t found = str.find("\\n");
+    while (found != std::string::npos) {
+        str.replace(found, 2, "\n");
+        found = str.find("\\n");
+    }
+    found = str.find("\\t");
+    while (found != std::string::npos) {
+        str.replace(found, 2, "\t");
+        found = str.find("\\t");
+    }
+    return newToken(str, scanner->line, TOKEN_STR_LITERAL);
 }
 
 void skipWhitespace(Scanner *scanner) {
