@@ -446,6 +446,47 @@ static void identifier(Expr *&expr) {
     }
 }
 
+static void dot(Expr *&expr) {
+    if (expr == nullptr) {
+        errorAt("Can't add '.' to nothing?\n");
+        return;
+    }
+    switch (expr->type) {
+    case VAR_EXPR: {
+        VarExpr *varExpr = (VarExpr *)expr;
+        consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
+        DotExpr *dotExpr = new DotExpr(varExpr->name, *parser->previous);
+        expr = dotExpr;
+        break;
+    }
+    case BINARY_EXPR: {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        identifier(binaryExpr->right);
+        break;
+    }
+    case LOGICAL_EXPR: {
+        LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+        identifier(logicalExpr->right);
+        break;
+    }
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        identifier(unaryExpr->right);
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        identifier(comparisonExpr->right);
+        break;
+    }
+    default: {
+        printf("%d ", expr->type);
+        printf("woopsie no dot yet\n");
+        exit(1);
+    }
+    }
+}
+
 static bool isChildUnary(Expr *&expr) {
     if (expr == nullptr) {
         return true;
@@ -704,6 +745,10 @@ static Expr *expression(Expr *expr) {
             logical(expr);
             break;
         }
+        case TOKEN_DOT: {
+            dot(expr);
+            break;
+        }
         default: {
             errorAt("Can't parse expr with this token");
         }
@@ -852,7 +897,7 @@ static Stmt *structDeclaration() {
     structStmt->name = *parser->previous;
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     while (!match(TOKEN_RIGHT_BRACE)) {
-        structStmt->fieldNames.push_back(parseVariable());
+        structStmt->fields.push_back(parseVariable());
         consume(TOKEN_SEMICOLON,
                 "Expect semicolon after struct field identifier");
     }

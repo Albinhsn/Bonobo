@@ -7,23 +7,11 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* Rewamp to class for each type
-
-* Redo literals
-
-* Redo Strings
-
-* Redo Arrays
-
 * Structs
-    * Declare
-    * Instance
     * Property
     * Return from func
     * Array of:
         struct
-
-* Create a String and an Array type
 
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays

@@ -261,8 +261,8 @@ void debugStatement(Stmt *statement) {
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)statement;
         printf("struct %s\n{\n", structStmt->name.lexeme.c_str());
-        for (int i = 0; i < structStmt->fieldNames.size(); i++) {
-            debugVariable(structStmt->fieldNames[i]);
+        for (int i = 0; i < structStmt->fields.size(); i++) {
+            debugVariable(structStmt->fields[i]);
             printf(";\n");
         }
         printf("}\n");

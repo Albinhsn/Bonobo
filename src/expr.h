@@ -16,6 +16,7 @@ enum ExprType {
     ARRAY_EXPR,
     MAP_EXPR,
     CALL_EXPR,
+    DOT_EXPR,
 };
 
 enum UnaryOp { BANG_UNARY, NEG_UNARY };
@@ -154,6 +155,18 @@ class VarExpr : public Expr {
     VarExpr(Token name) {
         this->name = name;
         this->type = VAR_EXPR;
+    };
+};
+
+class DotExpr : public Expr {
+  private:
+  public:
+    Token name;
+    Token field;
+    DotExpr(Token name, Token field) {
+        this->type = DOT_EXPR;
+        this->name = name;
+        this->field = field;
     };
 };
 

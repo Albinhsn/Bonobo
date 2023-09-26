@@ -91,10 +91,10 @@ class StructStmt : public Stmt {
   private:
   public:
     Token name;
-    std::vector<Variable *> fieldNames;
+    std::vector<Variable *> fields;
     StructStmt() {
         this->type = STRUCT_STMT;
-        this->fieldNames = std::vector<Variable *>();
+        this->fields = std::vector<Variable *>();
     }
 };
 
