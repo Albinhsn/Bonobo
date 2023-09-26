@@ -80,7 +80,6 @@ class LLVMFunction {
   private:
   public:
     LLVMFunction *enclosing;
-    std::vector<LLVMStruct *> structs;
     std::vector<std::vector<LLVMValue *>> scopedVariables;
     std::map<std::string, int> funcArgs;
     llvm::BasicBlock *entryBlock;
@@ -93,7 +92,6 @@ class LLVMFunction {
         this->funcType = funcType;
         this->function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name, *module);
         this->scopedVariables = std::vector<std::vector<LLVMValue *>>(1);
-        this->structs = std::vector<LLVMStruct *>();
         this->funcArgs = funcArgs;
         this->entryBlock = llvm::BasicBlock::Create(*ctx, "entry", this->function);
     }
@@ -102,6 +100,7 @@ class LLVMFunction {
 class LLVMCompiler {
   private:
     llvm::LLVMContext *ctx;
+    std::vector<LLVMStruct *> structs;
     llvm::Module *module;
     std::vector<Stmt *> stmts;
     llvm::IRBuilder<> *builder;
@@ -200,7 +199,7 @@ class LLVMCompiler {
         return this->builder->getPtrTy();
     }
 
-    LLVMValue *createLLVMValue(llvm::Value *value) {
+    LLVMValue *createLLVMLiteral(llvm::Value *value) {
         llvm::Type *type = value->getType();
         LLVMLiteral *literal = new LLVMLiteral();
         literal->literal = value;
@@ -226,8 +225,8 @@ class LLVMCompiler {
                 return true;
             }
         }
-        for (int i = 0; i < this->function->structs.size(); i++) {
-            if (this->function->structs[i]->name == name) {
+        for (int i = 0; i < this->structs.size(); i++) {
+            if (this->structs[i]->name == name) {
                 return true;
             }
         }
@@ -309,7 +308,7 @@ class LLVMCompiler {
                     for (llvm::Function::arg_iterator arg = this->function->function->arg_begin();
                          arg != this->function->function->arg_end(); ++arg) {
                         if (i == value) {
-                            return createLLVMValue(arg);
+                            return createLLVMLiteral(arg);
                         }
                         ++i;
                     }
@@ -382,7 +381,7 @@ class LLVMCompiler {
             break;
         }
         }
-        return createLLVMValue(literal);
+        return createLLVMLiteral(literal);
     }
     LLVMValue *compileExpression(Expr *expr) {
         switch (expr->type) {
@@ -481,7 +480,7 @@ class LLVMCompiler {
                 printf("Can't do this addition\n");
                 exit(1);
             }
-            return createLLVMValue(result);
+            return createLLVMLiteral(result);
         }
         case GROUPING_EXPR: {
             GroupingExpr *groupingExpr = (GroupingExpr *)expr;
@@ -508,7 +507,7 @@ class LLVMCompiler {
                     break;
                 }
                 }
-                return createLLVMValue(result);
+                return createLLVMLiteral(result);
             }
             printf("Can't do 'and' or 'or' with these types");
             exit(1);
@@ -566,7 +565,7 @@ class LLVMCompiler {
                     break;
                 }
                 }
-                return createLLVMValue(result);
+                return createLLVMLiteral(result);
             } else if (leftType->isDoubleTy() && rightType->isDoubleTy()) {
                 switch (comparisonExpr->op) {
                 case LESS_EQUAL_COMPARISON: {
@@ -590,7 +589,7 @@ class LLVMCompiler {
                     break;
                 }
                 }
-                return createLLVMValue(result);
+                return createLLVMLiteral(result);
             } else if ((leftType->isIntegerTy() && rightType->isDoubleTy()) ||
                        (leftType->isDoubleTy() && rightType->isIntegerTy())) {
                 // Cast the integer
@@ -622,7 +621,7 @@ class LLVMCompiler {
                     break;
                 }
                 }
-                return createLLVMValue(result);
+                return createLLVMLiteral(result);
             }
             printf("Can't do addition with this?\n");
             exit(1);
@@ -645,7 +644,7 @@ class LLVMCompiler {
                 printf("unknown unary expr?\n");
                 exit(1);
             }
-            return createLLVMValue(result);
+            return createLLVMLiteral(result);
         }
         case VAR_EXPR: {
             VarExpr *varExpr = (VarExpr *)expr;
@@ -656,7 +655,7 @@ class LLVMCompiler {
                     if (allocaInst->getType()->isPointerTy()) {
                         llvm::Value *loadedValue =
                             this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
-                        return createLLVMValue(loadedValue);
+                        return createLLVMLiteral(loadedValue);
                     }
                     return var;
                 } else {
@@ -706,17 +705,15 @@ class LLVMCompiler {
             CallExpr *callExpr = (CallExpr *)expr;
             std::string name = callExpr->callee.lexeme;
 
-            for (int i = 0; i < this->function->structs.size(); ++i) {
-                LLVMStruct *strukt = this->function->structs[i];
+            for (int i = 0; i < this->structs.size(); ++i) {
+                LLVMStruct *strukt = this->structs[i];
                 if (strukt->name == name) {
                     LLVMInstance *instance = new LLVMInstance(strukt->structType);
                     std::vector<llvm::Constant *> fieldValues = std::vector<llvm::Constant *>(strukt->fields.size());
-
                     for (int j = 0; j < strukt->fields.size(); j++) {
-
                         LLVMValue *value = compileExpression(callExpr->arguments[j]);
-                        instance->fields[strukt->fields[i]] = value;
-                        fieldValues[i] = llvm::dyn_cast<llvm::Constant>(getValue(value));
+                        instance->fields[strukt->fields[j]] = value;
+                        fieldValues[j] = llvm::dyn_cast<llvm::Constant>(getValue(value));
                     }
                     instance->ptr = new llvm::GlobalVariable(
                         *this->module, strukt->structType, false, llvm::GlobalValue::PrivateLinkage,
@@ -740,7 +737,7 @@ class LLVMCompiler {
                 func = this->function->function;
             }
             if (this->libraryFuncs.count(name)) {
-                return createLLVMValue(this->builder->CreateCall(this->libraryFuncs[name], params));
+                return createLLVMLiteral(this->builder->CreateCall(this->libraryFuncs[name], params));
             }
             if (func == nullptr) {
                 printf("calling unknown func '%s'\n", name.c_str());
@@ -757,7 +754,7 @@ class LLVMCompiler {
                 }
                 ++i;
             }
-            return createLLVMValue(this->builder->CreateCall(func, params));
+            return createLLVMLiteral(this->builder->CreateCall(func, params));
         }
         default: {
             printf("unknown expr\n");
@@ -779,7 +776,7 @@ class LLVMCompiler {
 
             LLVMValue *variable = lookupVariable(name);
             // Check type is correct?
-            createLLVMValue(this->builder->CreateStore(getValue(value), getValue(variable)));
+            createLLVMLiteral(this->builder->CreateStore(getValue(value), getValue(variable)));
             break;
         }
         case RETURN_STMT: {
@@ -901,7 +898,7 @@ class LLVMCompiler {
             }
 
             llvm::StructType *structType = llvm::StructType::create(*this->ctx, fieldTypes, structStmt->name.lexeme);
-            this->function->structs.push_back(new LLVMStruct(structStmt->name.lexeme, structType, fieldNames));
+            this->structs.push_back(new LLVMStruct(structStmt->name.lexeme, structType, fieldNames));
             break;
         }
         case IF_STMT: {
@@ -1028,6 +1025,7 @@ class LLVMCompiler {
         llvm::FunctionType *funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*ctx), false);
         this->function = new LLVMFunction(nullptr, funcType, "main", {}, this->ctx, this->module);
 
+        this->structs = std::vector<LLVMStruct *>();
         this->libraryFuncs = addLibraryFuncs();
         this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
     }

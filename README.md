@@ -8,7 +8,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 ## TODO LLVM backend
 
 * Structs
-    * Property
     * Return from func
     * Array of:
         struct
