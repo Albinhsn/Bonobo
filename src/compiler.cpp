@@ -434,6 +434,11 @@ static void identifier(Expr *&expr) {
         identifier(unaryExpr->right);
         break;
     }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        identifier(comparisonExpr->right);
+        break;
+    }
     default: {
         printf("%d ", expr->type);
         printf("woopsie no identifier yet\n");

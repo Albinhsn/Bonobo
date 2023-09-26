@@ -7,6 +7,7 @@ class Function {
   private:
   public:
     Function *enclosing;
+    // Scopes
     std::vector<llvm::AllocaInst *> localVariables;
     std::map<std::string, int> funcArgs;
     llvm::BasicBlock *entryBlock;
@@ -171,10 +172,14 @@ class LLVMCompiler {
         switch (expr->type) {
         case BINARY_EXPR: {
             BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+
             llvm::Value *left = compileExpression(binaryExpr->left);
+            llvm::Type *leftType = left->getType();
+
             llvm::Value *right = compileExpression(binaryExpr->right);
-            if (left->getType()->isIntegerTy() &&
-                right->getType()->isIntegerTy()) {
+            llvm::Type *rightType = right->getType();
+
+            if (leftType->isIntegerTy() && rightType->isIntegerTy()) {
                 switch (binaryExpr->op) {
                 case ADD: {
                     return this->builder->CreateAdd(left, right);
@@ -189,17 +194,50 @@ class LLVMCompiler {
                     return this->builder->CreateUDiv(left, right);
                 }
                 }
-            } else if (left->getType()->isDoubleTy() &&
-                       right->getType()->isDoubleTy()) {
-            } else if (left->getType()->isIntegerTy() &&
-                       right->getType()->isDoubleTy()) {
-            } else if (left->getType()->isDoubleTy() &&
-                       right->getType()->isIntegerTy()) {
+            } else if (leftType->isDoubleTy() && rightType->isDoubleTy()) {
+                switch (binaryExpr->op) {
+                case ADD: {
+                    return this->builder->CreateFAdd(left, right);
+                }
+                case SUB: {
+                    return this->builder->CreateFSub(left, right);
+                }
+                case MUL: {
+                    return this->builder->CreateFMul(left, right);
+                }
+                case DIV: {
+                    return this->builder->CreateFDiv(left, right);
+                }
+                }
 
+            } else if ((leftType->isIntegerTy() && rightType->isDoubleTy()) ||
+                       (leftType->isDoubleTy() && rightType->isIntegerTy())) {
+                // Cast the integer
+                if (leftType->isIntegerTy()) {
+                    left = this->builder->CreateUIToFP(
+                        left, this->builder->getDoubleTy());
+                } else {
+                    right = this->builder->CreateUIToFP(
+                        right, this->builder->getDoubleTy());
+                }
+
+                switch (binaryExpr->op) {
+                case ADD: {
+                    return this->builder->CreateFAdd(left, right);
+                }
+                case SUB: {
+                    return this->builder->CreateFSub(left, right);
+                }
+                case MUL: {
+                    return this->builder->CreateFMul(left, right);
+                }
+                case DIV: {
+                    return this->builder->CreateFDiv(left, right);
+                }
+                }
             }
             // This should be string concat
-            else if (left->getType()->isPointerTy() &&
-                     right->getType()->isPointerTy()) {
+            else if (leftType->isPointerTy() && rightType->isPointerTy()) {
             }
             printf("Can't do this addition\n");
             exit(1);
@@ -234,25 +272,75 @@ class LLVMCompiler {
         case COMPARISON_EXPR: {
             ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
             llvm::Value *left = compileExpression(comparisonExpr->left);
+            llvm::Type *leftType = left->getType();
             llvm::Value *right = compileExpression(comparisonExpr->right);
+            llvm::Type *rightType = right->getType();
             // Need to check fp as well, string equality, array equality,
             // map equality
-            switch (comparisonExpr->op) {
-            case LESS_EQUAL_COMPARISON: {
-                return this->builder->CreateICmpULE(left, right);
-            }
-            case LESS_COMPARISON: {
-                return this->builder->CreateICmpULT(left, right);
-            }
-            case GREATER_COMPARISON: {
-                return this->builder->CreateICmpUGT(left, right);
-            }
-            case GREATER_EQUAL_COMPARISON: {
-                return this->builder->CreateICmpUGE(left, right);
-            }
-            case EQUAL_EQUAL_COMPARISON: {
-                return this->builder->CreateICmpEQ(left, right);
-            }
+            if (leftType->isIntegerTy() && rightType->isIntegerTy()) {
+                switch (comparisonExpr->op) {
+                case LESS_EQUAL_COMPARISON: {
+                    return this->builder->CreateICmpULE(left, right);
+                }
+                case LESS_COMPARISON: {
+                    return this->builder->CreateICmpULT(left, right);
+                }
+                case GREATER_COMPARISON: {
+                    return this->builder->CreateICmpUGT(left, right);
+                }
+                case GREATER_EQUAL_COMPARISON: {
+                    return this->builder->CreateICmpUGE(left, right);
+                }
+                case EQUAL_EQUAL_COMPARISON: {
+                    return this->builder->CreateICmpEQ(left, right);
+                }
+                }
+            } else if (leftType->isDoubleTy() && rightType->isDoubleTy()) {
+                switch (comparisonExpr->op) {
+                case LESS_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpULE(left, right);
+                }
+                case LESS_COMPARISON: {
+                    return this->builder->CreateFCmpULT(left, right);
+                }
+                case GREATER_COMPARISON: {
+                    return this->builder->CreateFCmpUGT(left, right);
+                }
+                case GREATER_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpUGE(left, right);
+                }
+                case EQUAL_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpOEQ(left, right);
+                }
+                }
+            } else if ((leftType->isIntegerTy() && rightType->isDoubleTy()) ||
+                       (leftType->isDoubleTy() && rightType->isIntegerTy())) {
+                // Cast the integer
+                if (leftType->isIntegerTy()) {
+                    left = this->builder->CreateUIToFP(
+                        left, this->builder->getDoubleTy());
+                } else {
+                    right = this->builder->CreateUIToFP(
+                        right, this->builder->getDoubleTy());
+                }
+
+                switch (comparisonExpr->op) {
+                case LESS_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpULE(left, right);
+                }
+                case LESS_COMPARISON: {
+                    return this->builder->CreateFCmpULT(left, right);
+                }
+                case GREATER_COMPARISON: {
+                    return this->builder->CreateFCmpUGT(left, right);
+                }
+                case GREATER_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpUGE(left, right);
+                }
+                case EQUAL_EQUAL_COMPARISON: {
+                    return this->builder->CreateFCmpOEQ(left, right);
+                }
+                }
             }
         }
         case UNARY_EXPR: {
@@ -426,9 +514,9 @@ class LLVMCompiler {
             VarStmt *varStmt = (VarStmt *)stmt;
 
             if (nameIsAlreadyDeclared(varStmt->var->name.lexeme)) {
-                printf(
-                    "Can't declare variable '%s', name is already declared\n",
-                    varStmt->var->name.lexeme.c_str());
+                printf("Can't declare variable '%s', name is already "
+                       "declared\n",
+                       varStmt->var->name.lexeme.c_str());
                 exit(1);
             }
             llvm::Value *value = compileExpression(varStmt->initializer);
@@ -561,9 +649,9 @@ class LLVMCompiler {
             FuncStmt *funcStmt = (FuncStmt *)stmt;
 
             if (nameIsAlreadyDeclared(funcStmt->name.lexeme)) {
-                printf(
-                    "Can't declare function '%s', name is already declared\n",
-                    funcStmt->name.lexeme.c_str());
+                printf("Can't declare function '%s', name is already "
+                       "declared\n",
+                       funcStmt->name.lexeme.c_str());
                 exit(1);
             }
 
@@ -603,9 +691,9 @@ class LLVMCompiler {
             }
             if (!returned) {
                 if (!this->function->funcType->getReturnType()->isVoidTy()) {
-                    printf(
-                        "Non-void function does not return a value in '%s'\n",
-                        funcStmt->name.lexeme.c_str());
+                    printf("Non-void function does not return a value in "
+                           "'%s'\n",
+                           funcStmt->name.lexeme.c_str());
                     exit(1);
                 } else {
                     this->builder->CreateRetVoid();

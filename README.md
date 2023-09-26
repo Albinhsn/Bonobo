@@ -5,8 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Scoping rules with variables
-    * Check whether creating smth in a if remains
 
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
@@ -16,11 +14,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Then return it and check it's validity for the stmt
     * if creating == [1,2] it doesn't matter
 
-* Different binary expr for fp
-
-* Comparison op for anything other then int
+* Scoping rules with variables
+    * Check whether creating smth in a if remains
 
 * Don't change \n prior to scanning, find better place to do it
+
+* Update tests to include
+    * BinaryExpr with double
+    * ComparisonExpr with double
 
 
 ## TODO LLVM backend
@@ -34,6 +35,9 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Return from func
     * Array of:
         struct
+* Create a String and an Array type
+
+* String concat
 
 * MapExpr
 
