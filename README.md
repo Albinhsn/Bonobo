@@ -5,7 +5,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Util func for creating cast if possible and then loading
+* CHeck where we actually need to cast
+
 
 ## TODO LLVM backend
 
