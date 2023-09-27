@@ -10,8 +10,7 @@ c:
 
 
 tt: 
-	cd ./llvmex && clang++ -o main $(LLVMFLAGS) test.cpp && ./main
-
+	cd ./llvmex && clang++ -c `llvm-config --cxxflags` test.cpp && clang++ -o main test.o `llvm-config --ldflags --system-libs --libs all` && ./main ../input 
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
 
