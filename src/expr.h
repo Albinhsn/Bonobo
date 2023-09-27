@@ -161,9 +161,9 @@ class VarExpr : public Expr {
 class DotExpr : public Expr {
   private:
   public:
-    Token name;
+    Expr *name;
     Token field;
-    DotExpr(Token name, Token field) {
+    DotExpr(Expr *name, Token field) {
         this->type = DOT_EXPR;
         this->name = name;
         this->field = field;

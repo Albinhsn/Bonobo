@@ -1,17 +1,20 @@
 #include "debug.h"
 
-
 void debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
     if (type == llvm::Type::getInt32Ty(*ctx)) {
-        printf("int32\n");
+        printf("int32");
     } else if (type == llvm::Type::getInt1Ty(*ctx)) {
-        printf("int1\n");
+        printf("int1");
     } else if (type == llvm::Type::getDoubleTy(*ctx)) {
-        printf("double\n");
+        printf("double");
     } else if (type->isPointerTy()) {
-        printf("ptr\n");
+        printf("ptr");
     } else if (type->isArrayTy()) {
-        printf("array\n");
+        printf("array");
+    } else if (type->isStructTy()) {
+        printf("%s", type->getStructName().str().c_str());
+    } else {
+        printf("unknown type");
     }
 }
 

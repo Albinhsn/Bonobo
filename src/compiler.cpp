@@ -2,6 +2,7 @@
 #include "common.h"
 #include "debug.h"
 #include "scanner.h"
+#include <iostream>
 #include <vector>
 
 Compiler *compiler;
@@ -128,6 +129,12 @@ static Variable *parseVarType(Variable *var) {
 
         consume(TOKEN_RIGHT_BRACKET, "Need array type");
         return mapVar;
+    } else if (var->type == STRUCT_VAR) {
+        StructVariable *structVar = new StructVariable(var->name);
+        
+        structVar->structName = *parser->previous;
+        return structVar;
+
     } else {
         return var;
     }
@@ -378,8 +385,7 @@ static void operation(Expr *&expr) {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
 
         if (op >= MUL && binaryExpr->op <= SUB) {
-            if (binaryExpr->right != nullptr &&
-                binaryExpr->right->type == BINARY_EXPR) {
+            if (binaryExpr->right != nullptr && binaryExpr->right->type == BINARY_EXPR) {
                 operation(binaryExpr->right);
             } else {
 
@@ -455,7 +461,14 @@ static void dot(Expr *&expr) {
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(varExpr->name, *parser->previous);
+        DotExpr *dotExpr = new DotExpr(varExpr, *parser->previous);
+        expr = dotExpr;
+        break;
+    }
+    case CALL_EXPR: {
+        CallExpr *callExpr = (CallExpr *)expr;
+        consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
+        DotExpr *dotExpr = new DotExpr(callExpr, *parser->previous);
         expr = dotExpr;
         break;
     }
@@ -647,12 +660,9 @@ static void mapExpression(Expr *&expr) {
 }
 
 static Expr *expression(Expr *expr) {
-    while (parser->current->type != TOKEN_SEMICOLON &&
-           parser->current->type != TOKEN_RIGHT_PAREN &&
-           parser->current->type != TOKEN_RIGHT_BRACKET &&
-           parser->current->type != TOKEN_RIGHT_BRACE &&
-           parser->current->type != TOKEN_COLON &&
-           parser->current->type != TOKEN_COMMA) {
+    while (parser->current->type != TOKEN_SEMICOLON && parser->current->type != TOKEN_RIGHT_PAREN &&
+           parser->current->type != TOKEN_RIGHT_BRACKET && parser->current->type != TOKEN_RIGHT_BRACE &&
+           parser->current->type != TOKEN_COLON && parser->current->type != TOKEN_COMMA) {
         advance();
 
         // debugExpression(expr);
@@ -786,13 +796,11 @@ static Stmt *varDeclaration() {
     VarStmt *varStmt = new VarStmt;
     varStmt->type = VAR_STMT;
     varStmt->var = parseVariable();
-
     consume(TOKEN_EQUAL, "Expected assignment at var declaration");
 
     varStmt->initializer = expression(nullptr);
     // Change this xD
-    if (varStmt->initializer->type == ARRAY_EXPR &&
-        varStmt->var->type == ARRAY_VAR) {
+    if (varStmt->initializer->type == ARRAY_EXPR && varStmt->var->type == ARRAY_VAR) {
         ArrayExpr *arrayExpr = (ArrayExpr *)varStmt->initializer;
         ArrayVariable *arrayVar = (ArrayVariable *)varStmt->var;
         arrayExpr->itemType = arrayVar->items;
@@ -898,8 +906,7 @@ static Stmt *structDeclaration() {
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     while (!match(TOKEN_RIGHT_BRACE)) {
         structStmt->fields.push_back(parseVariable());
-        consume(TOKEN_SEMICOLON,
-                "Expect semicolon after struct field identifier");
+        consume(TOKEN_SEMICOLON, "Expect semicolon after struct field identifier");
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after struct end.");
     return structStmt;
@@ -921,9 +928,11 @@ static Stmt *funDeclaration() {
 
     consume(TOKEN_ARROW, "Expect '->' after func params");
     funcStmt->returnType = parseVarType(new Variable());
+    if (funcStmt->returnType->type == STRUCT_VAR) {
+        funcStmt->returnType->name = *parser->previous;
+    }
 
-    consume(TOKEN_LEFT_BRACE,
-            "Expect '{' after returntype in func declaration");
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after returntype in func declaration");
     while (!match(TOKEN_RIGHT_BRACE)) {
         funcStmt->body.push_back(declaration());
     }

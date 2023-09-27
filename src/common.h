@@ -1,9 +1,14 @@
 #ifndef cpplox_common_h
 #define cpplox_common_h
 
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/Support/TargetSelect.h"
 #include <llvm/Support/raw_ostream.h>
 #include <cstdint>
 #include <cstdio>

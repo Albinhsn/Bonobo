@@ -3,23 +3,14 @@
 
 #include "scanner.h"
 
-enum VarType {
-    STR_VAR,
-    INT_VAR,
-    DOUBLE_VAR,
-    BOOL_VAR,
-    MAP_VAR,
-    ARRAY_VAR,
-    STRUCT_VAR,
-    NIL_VAR
-};
+enum VarType { STR_VAR, INT_VAR, DOUBLE_VAR, BOOL_VAR, MAP_VAR, ARRAY_VAR, STRUCT_VAR, NIL_VAR };
 
 class Variable {
   private:
   public:
     Token name;
     VarType type;
-    Variable() { this->name.lexeme = "0"; }
+    Variable() { this->name.lexeme = "never assigned name :)"; }
 };
 
 class ArrayVariable : public Variable {
@@ -30,6 +21,16 @@ class ArrayVariable : public Variable {
         this->name = name;
         this->type = ARRAY_VAR;
         this->items = nullptr;
+    }
+};
+
+class StructVariable : public Variable {
+  private:
+  public:
+    Token structName;
+    StructVariable(Token name) {
+        this->name = name;
+        this->type = STRUCT_VAR;
     }
 };
 

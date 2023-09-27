@@ -42,3 +42,4 @@ callgrind.*
 csrc/
 .clang-format
 out*
+llvmex/

@@ -7,8 +7,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* Return from func
-    * Struct
+* Index
     * Array
     * String
 
@@ -21,7 +20,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * if creating == [1,2] it doesn't matter
 
 * Index
-    * Array
     * String
     * Map
 

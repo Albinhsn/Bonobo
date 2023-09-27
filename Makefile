@@ -6,13 +6,11 @@ LLFLILES = ../../src/main.cpp ../../src/compiler.cpp ../../src/scanner.cpp ../..
 
 
 c: 
-	cd src/ && clang++ -O3 -c `llvm-config --cxxflags` $(FILES) && clang++ -o main compiler.o debug.o scanner.o main.o `llvm-config --ldflags --system-libs --libs core` && rm *.o
+	cd src/ && clang++ -c `llvm-config --cxxflags` $(FILES) && clang++ -o main compiler.o debug.o scanner.o main.o `llvm-config --ldflags --system-libs --libs all` && ./main ../input 
 
-r:
-	cd src && ./main ../input 
 
-llt: 
-	cd ./test/llvm/ && clang++ -o main $(LLVMFLAGS) ../../src/compiler.cpp ../../src/scanner.cpp ../../src/debug.cpp TestLLVM.cpp && ./main
+tt: 
+	cd ./llvmex && clang++ -o main $(LLVMFLAGS) test.cpp && ./main
 
 ex: 
 	cd ./llvmex/ && clang++ -o main $(LLVMFLAGS) $(file) && ./main && lli out.ll
@@ -25,3 +23,5 @@ b:
 
 t: 
 	cd build && ctest --output-on-failure -V
+
+
