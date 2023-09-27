@@ -22,27 +22,27 @@ class Node {
 class Trie {
   private:
     Node *head;
-    std::map<std::string, TokenType> INIT_KEYWORDS = {
-        {"and", TOKEN_AND},
-        {"arr", TOKEN_ARRAY_TYPE},
-        {"bool", TOKEN_BOOL_TYPE},
-        {"double", TOKEN_DOUBLE_TYPE},
-        {"false", TOKEN_FALSE},
-        {"for", TOKEN_FOR},
-        {"fun", TOKEN_FUN},
-        {"else", TOKEN_ELSE},
-        {"int", TOKEN_INT_TYPE},
-        {"if", TOKEN_IF},
-        {"map", TOKEN_MAP_TYPE},
-        {"nil", TOKEN_NIL},
-        {"or", TOKEN_OR},
-        {"print", TOKEN_PRINT},
-        {"return", TOKEN_RETURN},
-        {"str", TOKEN_STR_TYPE},
-        {"struct", TOKEN_STRUCT_TYPE},
-        {"true", TOKEN_TRUE},
-        {"var", TOKEN_VAR},
-        {"while", TOKEN_WHILE}};
+    std::map<std::string, TokenType> INIT_KEYWORDS = {{"and", TOKEN_AND},
+                                                      {"arr", TOKEN_ARRAY_TYPE},
+                                                      {"break", TOKEN_BREAK},
+                                                      {"bool", TOKEN_BOOL_TYPE},
+                                                      {"double", TOKEN_DOUBLE_TYPE},
+                                                      {"false", TOKEN_FALSE},
+                                                      {"for", TOKEN_FOR},
+                                                      {"fun", TOKEN_FUN},
+                                                      {"else", TOKEN_ELSE},
+                                                      {"int", TOKEN_INT_TYPE},
+                                                      {"if", TOKEN_IF},
+                                                      {"map", TOKEN_MAP_TYPE},
+                                                      {"nil", TOKEN_NIL},
+                                                      {"or", TOKEN_OR},
+                                                      {"print", TOKEN_PRINT},
+                                                      {"return", TOKEN_RETURN},
+                                                      {"str", TOKEN_STR_TYPE},
+                                                      {"struct", TOKEN_STRUCT_TYPE},
+                                                      {"true", TOKEN_TRUE},
+                                                      {"var", TOKEN_VAR},
+                                                      {"while", TOKEN_WHILE}};
 
     TokenType findNode(std::string keyword, int depth, Node *curr) {
         if (curr == nullptr) {
@@ -81,9 +81,7 @@ class Trie {
     }
 
   public:
-    TokenType isKeyword(std::string keyword) {
-        return findNode(keyword, 0, head);
-    }
+    TokenType isKeyword(std::string keyword) { return findNode(keyword, 0, head); }
 
     Trie() {
         this->head = new Node(0, '\0');

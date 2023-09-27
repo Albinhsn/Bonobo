@@ -131,7 +131,7 @@ static Variable *parseVarType(Variable *var) {
         return mapVar;
     } else if (var->type == STRUCT_VAR) {
         StructVariable *structVar = new StructVariable(var->name);
-        
+
         structVar->structName = *parser->previous;
         return structVar;
 
@@ -948,6 +948,10 @@ static Stmt *statement() {
         return returnStatement();
     } else if (match(TOKEN_WHILE)) {
         return whileStatement();
+    } else if (match(TOKEN_BREAK)) {
+        BreakStmt *stmt = new BreakStmt();
+        consume(TOKEN_SEMICOLON, "Expect ';' after break");
+        return stmt;
     } else {
         Stmt *stmt = expressionStatement();
         consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
@@ -987,6 +991,7 @@ std::vector<Stmt *> compile(std::string source) {
     }
     bool hadError = parser->hadError;
     // debugStatements(compiler->statements);
+  
 
     delete (scanner);
     free(parser);

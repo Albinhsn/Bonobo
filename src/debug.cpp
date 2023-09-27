@@ -239,6 +239,10 @@ void debugStatement(Stmt *statement) {
         printf(";");
         break;
     }
+    case BREAK_STMT: {
+        printf("break;");
+        break;
+    }
     case FOR_STMT: {
         ForStmt *forStmt = (ForStmt *)statement;
         printf("for(");
@@ -529,6 +533,10 @@ void debugToken(Token *token) {
     }
     case TOKEN_VAR: {
         printf("TOKEN_VAR");
+        break;
+    }
+    case TOKEN_BREAK: {
+        printf("TOKEN_BREAK");
         break;
     }
     case TOKEN_ERROR: {

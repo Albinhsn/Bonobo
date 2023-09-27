@@ -12,13 +12,22 @@ enum StatementType {
     FOR_STMT,
     STRUCT_STMT,
     IF_STMT,
-    FUNC_STMT
+    FUNC_STMT,
+    BREAK_STMT
 };
 
 class Stmt {
   private:
   public:
     StatementType type;
+};
+
+class BreakStmt : public Stmt{
+  private:
+  public:
+  BreakStmt(){
+    this->type = BREAK_STMT;
+  }
 };
 
 class ExprStmt : public Stmt {

@@ -113,6 +113,7 @@ TEST(TestScanner, TestKeywords) {
     std::vector<Token> tokens = {
         (Token){"struct", 6, TOKEN_STRUCT_TYPE},
         (Token){"print", 5, TOKEN_PRINT},
+        (Token){"break", 5, TOKEN_BREAK},
         (Token){"else", 4, TOKEN_ELSE},
         (Token){"false", 5, TOKEN_FALSE},
         (Token){"for", 3, TOKEN_FOR},

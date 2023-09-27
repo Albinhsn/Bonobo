@@ -62,6 +62,7 @@ typedef enum {
     TOKEN_AND,
     TOKEN_OR,
     TOKEN_VAR,
+    TOKEN_BREAK,
     TOKEN_ERROR,
 
     TOKEN_EOF
