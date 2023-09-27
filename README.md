@@ -7,18 +7,17 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Check where we actually need to cast
 
+* Break from within if
+
 ## TODO LLVM backend
-
-
-* Break
 
 * Index
     * Array
     * String
-    * Map
 
 * MapExpr
-
+    * Index map 
+    
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
 
@@ -29,6 +28,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 
 * Write c functions to create a standard library
+    * Or just write functions in bonobo
+
+* i++
+    * Inc/Dec expr
 
 ## TODO x86_64 backend
 
