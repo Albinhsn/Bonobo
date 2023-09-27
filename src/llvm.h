@@ -456,28 +456,34 @@ class LLVMCompiler {
         }
         case INDEX_EXPR: {
             IndexExpr *indexExpr = (IndexExpr *)expr;
+
             llvm::Value *variable = compileExpression(indexExpr->variable);
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(variable)) {
+                variable = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+            }
+
             llvm::Value *index = compileExpression(indexExpr->index);
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(index)) {
+                index = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+            }
 
             if (!index->getType()->isIntegerTy()) {
                 printf("Can't index array with something other then int\n");
                 exit(1);
             }
-            // ToDo check this correctly
-            // if (variable->type != LLVM_STRING) {
-            //     printf("Don't know how to index this yet? %d\n", variable->type);
-            //     exit(1);
-            // }
-            // llvm::Value *var = lookupVariable(str->string);
-            // if (var->type != LLVM_ARRAY) {
-            //     printf("woopsie\n");
-            // }
-            // llvm::Value *indexPtr =
-            //     this->builder->CreateGEP(array->arrayType->getContainedType(0), array->ptr, literal->literal);
-            // llvm::Value *indexValue = this->builder->CreateLoad(array->arrayType->getContainedType(0), indexPtr);
-            // return createLLVMLiteral(indexValue);
-            printf("not implemented yet\n");
-            exit(1);
+            if (variable->getType() == this->internalStructs["string"]) {
+                llvm::Value *str = this->builder->CreateExtractValue(variable, 0);
+                if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(str)) {
+                    debugValueType(allocaInst->getAllocatedType(), this->ctx);
+                    printf("\n");
+                    exit(1);
+                }
+                printf("idk wasn't allocated\n");
+                exit(1);
+
+            } else if (variable->getType() == this->internalStructs["array"]) {
+                llvm::Value *array = this->builder->CreateExtractValue(variable, 0);
+            }
         }
         case ARRAY_EXPR: {
             ArrayExpr *arrayExpr = (ArrayExpr *)expr;
@@ -515,7 +521,10 @@ class LLVMCompiler {
             strGep = this->builder->CreateStructGEP(structType, arrayInstance, 1);
             this->builder->CreateStore(this->builder->getInt32(arraySize), strGep);
 
-            return arrayInstance;
+            // return arrayInstance;
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(arrayInstance)) {
+                return this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+            }
         }
         case MAP_EXPR: {
         }
@@ -655,6 +664,9 @@ class LLVMCompiler {
                 exit(1);
             }
             llvm::Value *value = compileExpression(varStmt->initializer);
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+                value = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+            }
 
             if (!checkVariableValueMatch(varStmt->var, value)) {
 

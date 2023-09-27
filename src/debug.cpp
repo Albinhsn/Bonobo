@@ -200,7 +200,7 @@ const char *debugVarType(VarType varType) {
 }
 
 void debugVariable(Variable *var) {
-    if (var->name.lexeme != "0") {
+    if (var->name.lexeme != "never assigned name :)") {
         printf("%s:", var->name.lexeme.c_str());
     }
     switch (var->type) {

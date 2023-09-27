@@ -5,11 +5,18 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
+* Util func for creating cast if possible and then loading
+
 ## TODO LLVM backend
+
+* MapExpr
+
+* Break
 
 * Index
     * Array
     * String
+    * Map
 
 * Support 2d Arrays
     * Check recursively when compiler gives array_expr it's items to support 2d arrays
@@ -19,13 +26,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Then return it and check it's validity for the stmt
     * if creating == [1,2] it doesn't matter
 
-* Index
-    * String
-    * Map
-
-* MapExpr
-
-* Break
 
 * Write c functions to create a standard library
 
