@@ -105,7 +105,7 @@ TEST(TestScanner, TestLiterals) {
 
 TEST(TestScanner, TestKeywords) {
     std::string source =
-        "struct print else false for fun if nil return true while and or var";
+        "struct print break else false for fun if nil return true while and or var";
     Scanner *scanner = nullptr;
     scanner = (Scanner *)malloc(sizeof(Scanner));
     initScanner(scanner, source);

@@ -3,7 +3,18 @@
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
 
+* Declare a global array with the items
+* allocate same size of same type of items
+* Then memcpy it there
+
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
+
+* Redo Array
+
+* Funcs to make
+    * CreatePointerToStart
+
+* Use strcat for concat string
 
 * Check where we actually need to cast
 

@@ -32,6 +32,7 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 
 
 set(Sources
+  ./src/main.cpp
   ./src/common.h
   ./src/compiler.h
   ./src/compiler.cpp
@@ -47,5 +48,6 @@ set(Sources
 
 add_library(${This} STATIC ${Sources})
 
-llvm_map_components_to_libnames(llvm_libs support core irreader)
+llvm_map_components_to_libnames(llvm_libs support remarks bitstreamreader binaryformat targetparser demangle core irreader)
+
 target_link_libraries(${This} ${llvm_libs})

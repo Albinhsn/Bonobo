@@ -14,10 +14,10 @@ std::string readFile(std::string path) {
     return buffer.str();
 }
 
-std::string runLLVMBackend(std::vector<Stmt*> result){
+std::string runLLVMBackend(std::vector<Stmt *> result) {
     LLVMCompiler *llvmCompiler = new LLVMCompiler(result);
     llvmCompiler->compile();
     system("lli out.ll > result.txt");
-    delete(llvmCompiler);
+    delete (llvmCompiler);
     return readFile("result.txt");
 }

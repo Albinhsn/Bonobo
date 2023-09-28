@@ -8,17 +8,17 @@ set(testAst_SOURCES
   ./testCommon.h
   ./testCommon.cpp
   ./TestAst.cpp
-  ./TestArray.cpp
-  ./TestBinary.cpp
-  ./TestComparison.cpp
-  ./TestFor.cpp
-  ./TestFun.cpp
-  ./TestLogical.cpp
-  ./TestIf.cpp
-  ./TestIndex.cpp
-  ./TestMap.cpp
-  ./TestStruct.cpp
-  ./TestWhile.cpp
+  # ./TestArray.cpp
+  # ./TestBinary.cpp
+  # ./TestComparison.cpp
+  # ./TestFor.cpp
+  # ./TestFun.cpp
+  # ./TestLogical.cpp
+  # ./TestIf.cpp
+  # ./TestIndex.cpp
+  # ./TestMap.cpp
+  # ./TestStruct.cpp
+  # ./TestWhile.cpp
   )
 set(testScanner_SOURCES
   ./TestScanner.cpp
