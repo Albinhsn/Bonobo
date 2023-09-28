@@ -2,14 +2,9 @@
 
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
-
-* Declare a global array with the items
-* allocate same size of same type of items
-* Then memcpy it there
-
 ## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
 
-* Redo Array
+* String/Struct array
 
 * Funcs to make
     * CreatePointerToStart
@@ -25,6 +20,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Index
     * Array
     * String
+
+* 2D array
 
 * MapExpr
     * Index map 

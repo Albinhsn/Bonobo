@@ -34,13 +34,13 @@ int main() {
     std::vector<std::string> failed;
     // Array test
 
-    // std::string first = "var a: arr[int] = [1,2,3];";
-    // nmbr_of_tests++;
-    // runTest("IntArrayTest", first, "", failed);
+    std::string first = "var a: arr[int] = [1,2,3];";
+    nmbr_of_tests++;
+    runTest("IntArrayTest", first, "", failed);
 
-    // std::string second = "var a: arr[bool] = [true, false];";
-    // nmbr_of_tests++;
-    // runTest("BoolArrayTest", second, "", failed);
+    std::string second = "var a: arr[bool] = [true, false];";
+    nmbr_of_tests++;
+    runTest("BoolArrayTest", second, "", failed);
 
     // std::string third = "var a: arr[str] = [\"Hi\", \"Mom\"];";
     // nmbr_of_tests++;
