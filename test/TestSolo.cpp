@@ -34,17 +34,23 @@ int main() {
     std::vector<std::string> failed;
     // Array test
 
-    std::string first = "var a: arr[int] = [1,2,3];";
+    std::string arr1 = "var a: arr[int] = [1,2,3];";
     nmbr_of_tests++;
-    runTest("IntArrayTest", first, "", failed);
+    runTest("IntArrayTest", arr1, "", failed);
 
-    std::string second = "var a: arr[bool] = [true, false];";
+    std::string arr2 = "var a: arr[bool] = [true, false];";
     nmbr_of_tests++;
-    runTest("BoolArrayTest", second, "", failed);
+    runTest("BoolArrayTest", arr2, "", failed);
 
     // std::string third = "var a: arr[str] = [\"Hi\", \"Mom\"];";
     // nmbr_of_tests++;
     // runTest("StrArrayTest", third, "", failed);
+
+    // Index test
+    std::string index = "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "
+                        "true];printf(\"%d %c %d %d\", a[2], b[0], e[0], e[1]);";
+    nmbr_of_tests++;
+    runTest("IndexTest", index, "3 H 1 0", failed);
 
     // String test
     std::string str1 = "var s: str = \"Hello World\"; printf(\"%s\", s);";
@@ -68,7 +74,7 @@ int main() {
     // Struct test
     std::string strukt1 = "struct foo{bar: int;};var f:foo = foo(1); printf(\"%d\", f.bar);";
     nmbr_of_tests++;
-    runTest("StruktTest2", strukt1, "1", failed);
+    runTest("StruktTest1", strukt1, "1", failed);
 
     std::string strukt2 = "struct foo{bar: double;};var f:foo = foo(2.5); printf(\"%lf\", f.bar);";
     nmbr_of_tests++;
@@ -83,6 +89,27 @@ int main() {
     std::string while1 = "var i: int = 0; while(i < 5){printf(\"%d\", i); i = i + 1;}";
     nmbr_of_tests++;
     runTest("WhileTest", while1, "01234", failed);
+    
+    // Func test
+    std::string fun1 = "fun foo() -> int {return 1;} printf(\"%d\", foo());";
+    nmbr_of_tests++;
+    runTest("Func1Test", fun1, "1", failed);
+    
+    std::string fun2 = "fun foo(a: int, b:int) -> int {return a + b;} printf(\"%d\", foo(1,2));";
+    nmbr_of_tests++;
+    runTest("Func2Test", fun2, "3", failed);
+
+    std::string fun3 = "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} printf(\"%d\", foo().bar);";
+    nmbr_of_tests++;
+    runTest("Func3Test", fun3, "2", failed);
+
+    std::string fun4 = "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} var f: bar = foo(); printf(\"%d\", f.bar);";
+    nmbr_of_tests++;
+    runTest("Func4Test", fun4, "2", failed);
+
+    std::string fun5 = "fun foo() -> str {return \"Hi\";} printf(\"%s\", foo());";
+    nmbr_of_tests++;
+    runTest("Func5Test", fun5, "Hi", failed);
 
     if (failed.size() == 0) {
         printf("\nAll test passed\n");

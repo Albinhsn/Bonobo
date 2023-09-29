@@ -2,9 +2,9 @@
 
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
-## Bugs/Poorly implemented stuf/Poorly implemented stuff  LLVM backend
+## ToDo
 
-* String/Struct array
+## Bugs/Poorly implemented stuff LLVM backend
 
 * Funcs to make
     * CreatePointerToStart
@@ -18,10 +18,8 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 ## TODO LLVM backend
 
 * Index
-    * Array
-    * String
+    * String/Struct array
 
-* 2D array
 
 * MapExpr
     * Index map 

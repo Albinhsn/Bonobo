@@ -12,7 +12,7 @@ void debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
     } else if (type->isArrayTy()) {
         printf("array");
     } else if (type->isStructTy()) {
-        printf("%s", type->getStructName().str().c_str());
+        printf("%s struct", type->getStructName().str().c_str());
     } else {
         printf("unknown type");
     }
