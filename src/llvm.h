@@ -5,6 +5,11 @@
 #include <llvm/Support/Casting.h>
 #include <memory>
 
+struct Str {
+    int len;
+    llvm::Value *ptr;
+};
+
 class LLVMStruct {
   private:
   public:
@@ -56,6 +61,7 @@ class LLVMCompiler {
         std::error_code errorCode;
         llvm::raw_fd_ostream outLL("./out.ll", errorCode);
         this->module->print(outLL, nullptr);
+        system("opt -O3 -S out.ll -o out.ll");
     }
 
     bool nameIsAlreadyDeclared(std::string name) {
@@ -236,8 +242,9 @@ class LLVMCompiler {
     llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, llvm::Constant *value) {
         return new llvm::GlobalVariable(*this->module, type, false, llvm::GlobalValue::PrivateLinkage, value);
     }
-    bool isStringTy(llvm::Type *type) {
-        if (llvm::StructType *structType = llvm::dyn_cast<llvm::StructType>(type)) {
+    bool isStringTy(llvm::Value *value) {
+        value = loadAllocaInst(value);
+        if (llvm::StructType *structType = llvm::dyn_cast<llvm::StructType>(value->getType())) {
             if (llvm::ArrayType *arrayType = llvm::dyn_cast<llvm::ArrayType>(structType->getStructElementType(0))) {
                 return arrayType->getArrayElementType() == llvm::Type::getInt8Ty(*this->ctx);
             }
@@ -245,38 +252,42 @@ class LLVMCompiler {
         return false;
     }
 
-    llvm::Value *getStringArray(llvm::Value *value) {
+    Str getStringArray(llvm::Value *value) {
+        Str str;
         llvm::AllocaInst *valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(value);
         llvm::Value *loadedValue = this->builder->CreateLoad(valueAlloca->getAllocatedType(), valueAlloca);
-        llvm::StructType *structType = llvm::dyn_cast<llvm::StructType>(loadedValue->getType());
-        llvm::Value *valueObjPtr = this->builder->CreateInBoundsGEP(
-            valueAlloca->getAllocatedType(), valueAlloca, {this->builder->getInt32(0), this->builder->getInt32(0)});
-        return this->builder->CreateLoad(structType->getStructElementType(0), valueObjPtr);
-    }
-    llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
-        llvm::Value *leftArr = getStringArray(left);
-        int leftSize = leftArr->getType()->getArrayNumElements();
-        llvm::Value *rightArr = getStringArray(right);
-        int rightSize = rightArr->getType()->getArrayNumElements();
 
-        llvm::ArrayType *arrayType = llvm::ArrayType::get(this->builder->getInt8Ty(), leftSize + rightSize);
+        str.ptr = this->builder->CreateInBoundsGEP(valueAlloca->getAllocatedType(), valueAlloca,
+                                                   {this->builder->getInt32(0), this->builder->getInt32(0)});
+        llvm::StructType *structType = llvm::dyn_cast<llvm::StructType>(loadedValue->getType());
+        llvm::Value *arr = this->builder->CreateLoad(structType->getStructElementType(0), str.ptr);
+        str.len = arr->getType()->getArrayNumElements();
+        return str;
+    }
+
+    llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
+        llvm::AllocaInst *valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(left);
+        llvm::Value *loadedValue = this->builder->CreateLoad(valueAlloca->getAllocatedType(), valueAlloca);
+        Str leftStr = getStringArray(left);
+        Str rightStr = getStringArray(right);
+
+        llvm::ArrayType *arrayType = llvm::ArrayType::get(this->builder->getInt8Ty(), leftStr.len + rightStr.len);
 
         // Create the string struct
         std::vector<llvm::Type *> fieldTypes = {arrayType, this->builder->getInt32Ty()};
-        llvm::StructType *structType = llvm::StructType::create(*this->ctx, fieldTypes, "string");
-        llvm::AllocaInst *stringInstance = this->builder->CreateAlloca(structType, nullptr, "string");
+        llvm::StructType *concStructType = llvm::StructType::create(*this->ctx, fieldTypes, "string");
+        llvm::AllocaInst *concStringInstance = this->builder->CreateAlloca(concStructType, nullptr, "string");
 
         // Copy the string into the struct
-        llvm::Value *strGep = this->builder->CreateStructGEP(structType, stringInstance, 0);
-        this->builder->CreateMemCpy(strGep, llvm::MaybeAlign(1), leftArr, llvm::MaybeAlign(1), leftSize);
+        llvm::Value *strGep = this->builder->CreateStructGEP(concStructType, concStringInstance, 0);
+        this->builder->CreateMemCpy(strGep, llvm::MaybeAlign(1), leftStr.ptr, llvm::MaybeAlign(1), leftStr.len);
 
-        this->builder->CreateCall(this->libraryFuncs["strcat"], {strGep, rightArr});
-        printf("GOT\n");
+        this->builder->CreateCall(this->libraryFuncs["strcat"], {strGep, rightStr.ptr});
         // Store the length in the struct
-        strGep = this->builder->CreateStructGEP(structType, stringInstance, 1);
-        this->builder->CreateStore(this->builder->getInt32(leftSize + rightSize), strGep);
+        strGep = this->builder->CreateStructGEP(concStructType, concStringInstance, 1);
+        this->builder->CreateStore(this->builder->getInt32(leftStr.len + rightStr.len), strGep);
 
-        return stringInstance;
+        return concStringInstance;
     }
 
     llvm::Value *compileExpression(Expr *expr) {
@@ -284,17 +295,16 @@ class LLVMCompiler {
         case BINARY_EXPR: {
             BinaryExpr *binaryExpr = (BinaryExpr *)expr;
 
-            llvm::Value *leftOrig = compileExpression(binaryExpr->left);
-            llvm::Value *left = loadAllocaInst(leftOrig);
+            llvm::Value *left = compileExpression(binaryExpr->left);
+            llvm::Value *right = compileExpression(binaryExpr->right);
 
-            llvm::Value *rightOrig = compileExpression(binaryExpr->right);
-            llvm::Value *right = loadAllocaInst(rightOrig);
-
+            if (isStringTy(left) && isStringTy(right)) {
+                return concatStrings(left, right);
+            }
+            left = loadAllocaInst(left);
+            right = loadAllocaInst(right);
             llvm::Type *leftType = left->getType();
             llvm::Type *rightType = right->getType();
-            if (isStringTy(leftType) && isStringTy(rightType)) {
-                return concatStrings(leftOrig, rightOrig);
-            }
 
             // Check that both are literal
             //    Create new LLVMValue after op
@@ -951,15 +961,15 @@ class LLVMCompiler {
         std::map<std::string, llvm::FunctionCallee> libraryFuncs = std::map<std::string, llvm::FunctionCallee>();
 
         std::vector<llvm::Type *> printfArgs = {llvm::Type::getInt8PtrTy(*this->ctx)};
-        llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*this->ctx), printfArgs, true);
+        llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getVoidTy(*this->ctx), printfArgs, true);
         llvm::FunctionCallee printfFunc = this->module->getOrInsertFunction("printf", printfType);
 
         libraryFuncs["printf"] = printfFunc;
 
         std::vector<llvm::Type *> strcatArgs = {llvm::Type::getInt8PtrTy(*this->ctx),
                                                 llvm::Type::getInt8PtrTy(*this->ctx)};
-        llvm::FunctionType *strcatType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*this->ctx), strcatArgs, true);
-        llvm::FunctionCallee strcatFunc = this->module->getOrInsertFunction("printf", strcatType);
+        llvm::FunctionType *strcatType = llvm::FunctionType::get(llvm::Type::getVoidTy(*this->ctx), strcatArgs, true);
+        llvm::FunctionCallee strcatFunc = this->module->getOrInsertFunction("strcat", strcatType);
 
         libraryFuncs["strcat"] = strcatFunc;
 

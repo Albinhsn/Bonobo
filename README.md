@@ -6,20 +6,17 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
-* Funcs to make
-    * CreatePointerToStart
-
-* Use strcat for concat string
-
 * Check where we actually need to cast
 
 * Break from within if
+
+* Improve readability
+    * Look for places to create utility funcs
 
 ## TODO LLVM backend
 
 * Index
     * String/Struct array
-
 
 * MapExpr
     * Index map 
@@ -31,7 +28,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Create the array and check its type 
     * Then return it and check it's validity for the stmt
     * if creating == [1,2] it doesn't matter
-
 
 * Write c functions to create a standard library
     * Or just write functions in bonobo
