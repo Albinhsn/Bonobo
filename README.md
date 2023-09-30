@@ -5,15 +5,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* Improve readability
-    * Look for places to create utility funcs
-        * Create one/two liners for things 
-            * like lookup on first ptr etc
-            * get size of struct
-            * CreateString
-            * lookover concat string
-* Every allocation can be stored as a variable?
-
 * String/Struct array
     * Index them
 
