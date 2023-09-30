@@ -5,6 +5,11 @@
 #include <llvm/Support/Casting.h>
 #include <memory>
 
+struct StrArr {
+    llvm::Value *size;
+    llvm::Value *ptr;
+};
+
 class LLVMStruct {
   private:
   public:
@@ -96,7 +101,7 @@ class LLVMCompiler {
             return this->builder->getInt32Ty();
         }
         case STR_VAR: {
-            return this->builder->getPtrTy();
+            return this->internalStructs["array"];
         }
         case DOUBLE_VAR: {
             return this->builder->getDoubleTy();
@@ -105,7 +110,7 @@ class LLVMCompiler {
             return this->builder->getInt1Ty();
         }
         case ARRAY_VAR: {
-            return this->builder->getPtrTy();
+            return this->internalStructs["array"];
         }
         case STRUCT_VAR: {
             StructVariable *structVar = (StructVariable *)var;
@@ -202,10 +207,20 @@ class LLVMCompiler {
             llvm::Value *strGep = this->builder->CreateStructGEP(stringStruct, stringInstance, 0);
             this->builder->CreateStore(str, strGep);
 
-            strGep = this->builder->CreateStructGEP(stringStruct, stringInstance, 1);
-            this->builder->CreateStore(this->builder->getInt32(size), strGep);
+            llvm::Value *strGep2 = this->builder->CreateStructGEP(stringStruct, stringInstance, 1);
+            this->builder->CreateStore(this->builder->getInt32(size), strGep2);
 
             return stringInstance;
+            // llvm::AllocaInst *concStringInstance = this->builder->CreateAlloca(stringStruct, nullptr, "string");
+            // llvm::Value *mallocResult =
+            //     this->builder->CreateCall(this->libraryFuncs["malloc"], {this->builder->getInt32(size)});
+
+            // llvm::Value *strGep3 = this->builder->CreateStructGEP(stringStruct, concStringInstance, 0);
+            // this->builder->CreateStore(mallocResult, strGep3);
+            // llvm::Value *toCpyTo = this->builder->CreateLoad(this->builder->getPtrTy(), strGep);
+            // this->builder->CreateMemCpy(mallocResult, llvm::MaybeAlign(1), toCpyTo, llvm::MaybeAlign(1),
+            //                             this->builder->getInt32(size));
+            // return concStringInstance;
         }
         case INT_LITERAL: {
             return this->builder->getInt32(stoi(stringLiteral));
@@ -246,33 +261,42 @@ class LLVMCompiler {
         return false;
     }
 
-    llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
+    StrArr getStrArr(llvm::Value *value) {
         llvm::StructType *stringType = this->internalStructs["array"];
-        llvm::AllocaInst *valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(left);
-        llvm::Value *leftPtrGEP = this->builder->CreateStructGEP(stringType, valueAlloca, 0);
-        llvm::Value *leftPtr = this->builder->CreateLoad(this->builder->getPtrTy(), leftPtrGEP);
+        llvm::AllocaInst *valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(value);
+        llvm::Value *leftPtr = this->builder->CreateStructGEP(stringType, valueAlloca, 0);
+        llvm::Value * leftLoaded = this->builder->CreateLoad(this->builder->getPtrTy(), leftPtr);
         llvm::Value *leftSizeGEP = this->builder->CreateStructGEP(stringType, valueAlloca, 1);
-        llvm::Value *leftSize = this->builder->CreateLoad(this->builder->getInt32Ty(), leftPtrGEP);
+        llvm::Value *leftSize = this->builder->CreateLoad(this->builder->getInt32Ty(), leftSizeGEP);
 
-        llvm::AllocaInst *concStringInstance = this->builder->CreateAlloca(stringType, nullptr, "string");
+        StrArr strArr;
+        strArr.size = leftSize;
+        strArr.ptr = leftLoaded;
 
-        llvm::Value *strGep = this->builder->CreateStructGEP(stringType, concStringInstance, 0);
-        llvm::Value * loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), strGep);
+        return strArr;
+    }
 
-        this->builder->CreateMemCpy(loadedPtr, llvm::MaybeAlign(1), leftPtr, llvm::MaybeAlign(1),
-                                    this->builder->CreateSExt(leftSize, builder->getInt64Ty()));
-        valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(right);
-        llvm::Value *rightPtrGEP = this->builder->CreateStructGEP(stringType, valueAlloca, 0);
-        llvm::Value *rightPtr = this->builder->CreateLoad(this->builder->getPtrTy(), rightPtrGEP);
-        llvm::Value *rightSizeGEP = this->builder->CreateStructGEP(stringType, valueAlloca, 1);
-        llvm::Value *rightSize = this->builder->CreateLoad(this->builder->getInt32Ty(), rightPtrGEP);
+    
 
-        this->builder->CreateCall(this->libraryFuncs["strcat"], {strGep, rightPtr});
+    llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
+        llvm::StructType *stringStruct = this->internalStructs["array"];
+        StrArr leftStr = getStrArr(left);
+        StrArr rightStr = getStrArr(right);
+        llvm::Value *newSize = this->builder->CreateAdd(leftStr.size, rightStr.size);
 
-        // Store the length in the struct
-        strGep = this->builder->CreateStructGEP(stringType, concStringInstance, 1);
-        llvm::Value *newSize = this->builder->CreateAdd(leftSize, rightSize);
-        this->builder->CreateStore(newSize, strGep);
+        llvm::AllocaInst *concStringInstance = this->builder->CreateAlloca(stringStruct, nullptr, "string");
+        llvm::Value *mallocResult = this->builder->CreateCall(this->libraryFuncs["malloc"], {newSize});
+        llvm::Value *strGep2 = this->builder->CreateStructGEP(stringStruct, concStringInstance, 1);
+        this->builder->CreateStore(newSize, strGep2);
+
+        llvm::Value *strGep = this->builder->CreateStructGEP(stringStruct, concStringInstance, 0);
+        this->builder->CreateStore(mallocResult, strGep);
+        this->builder->CreateMemCpy(mallocResult, llvm::MaybeAlign(1), leftStr.ptr, llvm::MaybeAlign(1), leftStr.size);
+
+
+        this->builder->CreateCall(this->libraryFuncs["strcat"], {mallocResult, rightStr.ptr}); 
+
+        
         return concStringInstance;
     }
 
@@ -739,6 +763,7 @@ class LLVMCompiler {
             }
 
             llvm::Value *returnValue = compileExpression(returnStmt->value);
+            returnValue = loadAllocaInst(returnValue);
             // ToDo  better check for this
             // Check here if it's an allocaInst and then load it before sending
             // it back
@@ -753,7 +778,6 @@ class LLVMCompiler {
                 printf("Mismatching return in '%s'\n", this->function->function->getName().str().c_str());
                 exit(1);
             }
-
             this->builder->CreateRet(returnValue);
             break;
         }
@@ -992,11 +1016,16 @@ class LLVMCompiler {
 
         std::vector<llvm::Type *> strcatArgs = {llvm::Type::getInt8PtrTy(*this->ctx),
                                                 llvm::Type::getInt8PtrTy(*this->ctx)};
-        llvm::FunctionType *strcatType = llvm::FunctionType::get(llvm::Type::getVoidTy(*this->ctx), strcatArgs, true);
+        llvm::FunctionType *strcatType = llvm::FunctionType::get(this->builder->getPtrTy(), strcatArgs, true);
         llvm::FunctionCallee strcatFunc = this->module->getOrInsertFunction("strcat", strcatType);
 
         libraryFuncs["strcat"] = strcatFunc;
 
+        std::vector<llvm::Type *> mallocArgs = {this->builder->getInt32Ty()};
+        llvm::FunctionType *mallocType = llvm::FunctionType::get(this->builder->getPtrTy(), mallocArgs, true);
+        llvm::FunctionCallee mallocFunc = this->module->getOrInsertFunction("malloc", mallocType);
+
+        libraryFuncs["malloc"] = mallocFunc;
         this->libraryFuncs = libraryFuncs;
     }
     void addInternalStructs() {

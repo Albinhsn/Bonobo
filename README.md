@@ -5,12 +5,17 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* Fix Concat strings
-
-* Fix return struct
-
 * Improve readability
     * Look for places to create utility funcs
+        * Create one/two liners for things 
+            * like lookup on first ptr etc
+            * get size of struct
+            * CreateString
+            * lookover concat string
+* Every allocation can be stored as a variable?
+
+* String/Struct array
+    * Index them
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
@@ -18,9 +23,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 
 ## TODO LLVM backend
-
-* String/Struct array
-    * Index them
 
 * MapExpr
     * Index map 

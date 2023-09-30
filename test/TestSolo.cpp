@@ -64,9 +64,9 @@ int main() {
     runTest("BinTest1", bin1, "11", failed);
 
     // Conc string
-    // std::string conc1 = "var a: str = \"Hi \" + \"Mom\"; printf(\"%s\", a);";
-    // nmbr_of_tests++;
-    // runTest("ConcTest1", conc1, "Hi Mom", failed);
+    std::string conc1 = "var a: str = \"Hi \" + \"Mom\"; printf(\"%s\", a);";
+    nmbr_of_tests++;
+    runTest("ConcTest1", conc1, "Hi Mom", failed);
 
     // FP test
     std::string fp1 = "var a: double = 5.0 * 2.5; printf(\"%lf\", a);";
