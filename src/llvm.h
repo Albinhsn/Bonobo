@@ -300,11 +300,11 @@ class LLVMCompiler {
             exit(1);
         }
 
-        for (int j = 0; j < callExpr->arguments.size(); ++j) {
-            llvm::Value *strGep = this->builder->CreateStructGEP(strukt->structType, struktInstance, j);
-            llvm::Value *paramValue = compileExpression(callExpr->arguments[j]);
-            if (strukt->structType->getContainedType(j) != paramValue->getType()) {
-                printf("Param %d does match it's type\n", j);
+        for (int arg = 0; arg < callExpr->arguments.size(); ++arg) {
+            llvm::Value *strGep = this->builder->CreateStructGEP(strukt->structType, struktInstance, arg);
+            llvm::Value *paramValue = compileExpression(callExpr->arguments[arg]);
+            if (strukt->structType->getContainedType(arg) != paramValue->getType()) {
+                printf("Param %d does match it's type\n", arg);
                 exit(1);
             }
             this->builder->CreateStore(paramValue, strGep);
@@ -348,10 +348,8 @@ class LLVMCompiler {
             (leftType->isDoubleTy() && rightType->isIntegerTy())) {
             if (leftType->isIntegerTy()) {
                 left = this->builder->CreateUIToFP(left, this->builder->getDoubleTy());
-                leftType = this->builder->getDoubleTy();
             } else {
                 right = this->builder->CreateUIToFP(right, this->builder->getDoubleTy());
-                rightType = this->builder->getDoubleTy();
             }
         }
     }
@@ -722,7 +720,6 @@ class LLVMCompiler {
                 exit(1);
             }
             llvm::Value *value = compileExpression(varStmt->initializer);
-
             // if (!checkVariableValueMatch(varStmt->var, value)) {
             //     printf("Invalid type mismatch in var declaration\nexpected: ");
             //     debugVariable(varStmt->var);
@@ -734,7 +731,7 @@ class LLVMCompiler {
 
             // Already allocated
             if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
-                allocaInst->setName(varStmt->var->name.lexeme);
+                allocaInst->setName(varName);
                 this->function->scopedVariables.back().push_back(allocaInst);
                 break;
             }
