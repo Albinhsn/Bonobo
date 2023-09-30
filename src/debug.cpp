@@ -1,7 +1,9 @@
 #include "debug.h"
 
 void debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
-    if (type == llvm::Type::getInt32Ty(*ctx)) {
+    if (type == nullptr) {
+        printf("nullptr");
+    } else if (type == llvm::Type::getInt32Ty(*ctx)) {
         printf("int32");
     } else if (type == llvm::Type::getInt1Ty(*ctx)) {
         printf("int1");

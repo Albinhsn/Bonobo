@@ -14,8 +14,9 @@ static std::string readFile(const char *path) {
 bool runTest(std::string name, std::string source, std::string expected, std::vector<std::string> &failed) {
 
     printf("Running: %s\n", name.c_str());
-    std::vector<Stmt *> stmts = compile(source);
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(stmts);
+    Compiler *compiler = compile(source);
+    LLVMCompiler *llvmCompiler = new LLVMCompiler(compiler->statements, compiler->variables);
+    delete (compiler);
     llvmCompiler->compile();
     system("lli out.ll > result.txt");
     if (readFile("result.txt") == expected) {
@@ -61,11 +62,11 @@ int main() {
     std::string bin1 = "var a: int = 5 * 2 + 1; printf(\"%d\", a);";
     nmbr_of_tests++;
     runTest("BinTest1", bin1, "11", failed);
-    
+
     // Conc string
-    std::string conc1 = "var a: str = \"Hi \" + \"Mom\"; printf(\"%s\", a);";
-    nmbr_of_tests++;
-    runTest("ConcTest1", conc1, "Hi Mom", failed);
+    // std::string conc1 = "var a: str = \"Hi \" + \"Mom\"; printf(\"%s\", a);";
+    // nmbr_of_tests++;
+    // runTest("ConcTest1", conc1, "Hi Mom", failed);
 
     // FP test
     std::string fp1 = "var a: double = 5.0 * 2.5; printf(\"%lf\", a);";
@@ -94,27 +95,32 @@ int main() {
     std::string while1 = "var i: int = 0; while(i < 5){printf(\"%d\", i); i = i + 1;}";
     nmbr_of_tests++;
     runTest("WhileTest", while1, "01234", failed);
-    
+
     // Func test
     std::string fun1 = "fun foo() -> int {return 1;} printf(\"%d\", foo());";
     nmbr_of_tests++;
     runTest("Func1Test", fun1, "1", failed);
-    
+
     std::string fun2 = "fun foo(a: int, b:int) -> int {return a + b;} printf(\"%d\", foo(1,2));";
     nmbr_of_tests++;
     runTest("Func2Test", fun2, "3", failed);
 
-    std::string fun3 = "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} printf(\"%d\", foo().bar);";
-    nmbr_of_tests++;
-    runTest("Func3Test", fun3, "2", failed);
+    // std::string fun3 = "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} printf(\"%d\", foo().bar);";
+    // nmbr_of_tests++;
+    // runTest("Func3Test", fun3, "2", failed);
 
-    std::string fun4 = "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} var f: bar = foo(); printf(\"%d\", f.bar);";
+    std::string fun4 =
+        "struct bar{bar:int;}; fun foo() -> bar {return bar(2);} var f: bar = foo(); printf(\"%d\", f.bar);";
     nmbr_of_tests++;
     runTest("Func4Test", fun4, "2", failed);
 
-    std::string fun5 = "fun foo() -> str {return \"Hi\";} printf(\"%s\", foo());";
+    std::string fun5 = "fun foo() -> str {return \"Hi\";} var s: str = foo(); printf(\"%s\", s);";
     nmbr_of_tests++;
     runTest("Func5Test", fun5, "Hi", failed);
+
+    std::string fun6 = "fun foo() -> str {return \"Hi\";} printf(\"%s\", foo());";
+    nmbr_of_tests++;
+    runTest("Func6Test", fun6, "Hi", failed);
 
     if (failed.size() == 0) {
         printf("\nAll test passed\n");

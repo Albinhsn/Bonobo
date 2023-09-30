@@ -43,3 +43,4 @@ csrc/
 .clang-format
 out*
 llvmex/
+result.txt

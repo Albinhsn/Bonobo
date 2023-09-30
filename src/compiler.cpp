@@ -13,6 +13,7 @@ static void initCompiler() {
     compiler = new Compiler;
     compiler->enclosing = nullptr;
     compiler->statements = std::vector<Stmt *>();
+    compiler->variables = std::vector<Variable *>();
 }
 
 static void endCompiler(Compiler *current) {
@@ -807,6 +808,8 @@ static Stmt *varDeclaration() {
     }
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
+
+    compiler->variables.push_back(varStmt->var);
     return (Stmt *)varStmt;
 }
 
@@ -978,7 +981,7 @@ static void initParser() {
     parser->hadError = false;
 }
 
-std::vector<Stmt *> compile(std::string source) {
+Compiler *compile(std::string source) {
     scanner = new Scanner();
     initScanner(scanner, source);
 
@@ -991,12 +994,9 @@ std::vector<Stmt *> compile(std::string source) {
     }
     bool hadError = parser->hadError;
     // debugStatements(compiler->statements);
-  
 
     delete (scanner);
     free(parser);
-    std::vector<Stmt *> out = compiler->statements;
-    delete (compiler);
 
-    return out;
+    return compiler;
 }

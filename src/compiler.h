@@ -13,19 +13,18 @@ typedef struct Parser {
     Parser() : current(nullptr), hadError(false), previous(nullptr){};
 } Parser;
 
-
 typedef struct Compiler {
     Compiler *enclosing;
-    std::vector<std::string> s;
     std::vector<Stmt *> statements;
+    std::vector<Variable*> variables;
 } Compiler;
 
-std::vector<Stmt *> compile(std::string source);
+Compiler *compile(std::string source);
 
 static Expr *mapDeclaration();
 static Expr *arrayDeclaration();
 static Expr *expression(Expr *expr);
-static Stmt*statement();
-static Stmt*declaration();
+static Stmt *statement();
+static Stmt *declaration();
 
 #endif

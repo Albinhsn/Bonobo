@@ -2,21 +2,25 @@
 
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
+
 ## ToDo
 
-## Bugs/Poorly implemented stuff LLVM backend
+* Fix Concat strings
 
-* Check where we actually need to cast
-
-* Break from within if
+* Fix return struct
 
 * Improve readability
     * Look for places to create utility funcs
 
+## Bugs/Poorly implemented stuff LLVM backend
+
+* Break from within if
+
+
 ## TODO LLVM backend
 
-* Index
-    * String/Struct array
+* String/Struct array
+    * Index them
 
 * MapExpr
     * Index map 

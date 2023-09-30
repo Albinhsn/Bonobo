@@ -23,9 +23,9 @@ int main(int argc, const char *argv[]) {
         exit(1);
     }
     std::string source = readFile(argv[1]);
-    std::vector<Stmt *> stmts = compile(source);
+    Compiler * compiler = compile(source);
 
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(stmts);
+    LLVMCompiler *llvmCompiler = new LLVMCompiler(compiler->statements, compiler->variables);
     llvmCompiler->compile();
     system("lli out.ll");
 
