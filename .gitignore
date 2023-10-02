@@ -44,3 +44,4 @@ csrc/
 out*
 llvmex/
 result.txt
+works.ll
