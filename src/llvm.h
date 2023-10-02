@@ -556,11 +556,22 @@ class LLVMCompiler {
                     printf("\n");
                     exit(1);
                 }
-
-                llvm::Value *loadedArray = loadArray(castedVar);
-
-                llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
-                return this->builder->CreateLoad(type, idxGEP);
+                if (type != this->internalStructs["array"]) {
+                    llvm::Value *loadedArray = loadArray(castedVar);
+                    llvm::Value *idxGEP =
+                        this->builder->CreateInBoundsGEP(type, loadedArray, {this->builder->getInt32(0), index});
+                    return this->builder->CreateLoad(type, idxGEP);
+                } else {
+                    llvm::Value *loadedArray = loadArray(castedVar);
+                    llvm::Value *idxGEP =
+                        this->builder->CreateInBoundsGEP(this->builder->getPtrTy(), loadedArray,
+                                                         this->builder->CreateSExt(index, this->builder->getInt64Ty()));
+                    llvm::Value *loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
+                    llvm::Value *idxGEP2 =
+                        this->builder->CreateInBoundsGEP(this->internalStructs["array"], loadedPtr,
+                                                          {this->builder->getInt32(0), this->builder->getInt32(0)});
+                    return this->builder->CreateLoad(this->internalStructs["array"], idxGEP2);
+                }
             }
             printf("couldn't do it\n");
             exit(1);
@@ -570,16 +581,14 @@ class LLVMCompiler {
 
             // Figure ut which type array has
             llvm::Type *elementType = nullptr;
-            if (arrayExpr->itemType == nullptr) {
-                printf("Don't know how to handle none itemType in arrayExpr\n");
-                exit(1);
-            }
-            if (arrayExpr->itemType->type == INT_VAR) {
-                elementType = this->builder->getInt32Ty();
-            } else if (arrayExpr->itemType->type == DOUBLE_VAR) {
-                elementType = this->builder->getDoubleTy();
-            } else if (arrayExpr->itemType->type == BOOL_VAR) {
-                elementType = this->builder->getInt1Ty();
+            if (arrayExpr->itemType != nullptr) {
+                if (arrayExpr->itemType->type == INT_VAR) {
+                    elementType = this->builder->getInt32Ty();
+                } else if (arrayExpr->itemType->type == DOUBLE_VAR) {
+                    elementType = this->builder->getDoubleTy();
+                } else if (arrayExpr->itemType->type == BOOL_VAR) {
+                    elementType = this->builder->getInt1Ty();
+                }
             }
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
@@ -588,11 +597,12 @@ class LLVMCompiler {
             if (elementType == nullptr) {
                 arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
                                                    {this->builder->getInt32(arrayExpr->items.size() * 8)});
+                storeArray(arrGep, arrayInstance);
 
                 for (int i = 0; i < arrayExpr->items.size(); ++i) {
                     llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
-                    llvm::Value *gep =
-                        this->builder->CreateInBoundsGEP(this->builder->getPtrTy(), arrGep, this->builder->getInt64(i));
+                    llvm::Value *gep = this->builder->CreateInBoundsGEP(
+                        this->builder->getPtrTy(), arrGep,  this->builder->getInt32(i));
                     this->builder->CreateStore(arrValue, gep);
                 }
 
@@ -607,10 +617,9 @@ class LLVMCompiler {
                     createGlobalVariable(arrayType, llvm::ConstantArray::get(arrayType, arrayItems));
                 arrGep = this->builder->CreateGEP(arrayType, globalArray,
                                                   {this->builder->getInt32(0), this->builder->getInt32(0)});
+                storeArray(arrGep, arrayInstance);
             }
-
-            storeArray(arrGep, arrayInstance);
-            storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
+                storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
 
             return arrayInstance;
         }

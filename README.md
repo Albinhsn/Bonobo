@@ -8,6 +8,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * String/Struct array
     * Index them
 
+* fix printf with a[0] and a[1] arr of str
+
+* Fix failed tests
+
 ## Bugs/Poorly implemented stuff LLVM backend
 
 * Break from within if
