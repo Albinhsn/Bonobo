@@ -43,15 +43,23 @@ int main() {
     nmbr_of_tests++;
     runTest("BoolArrayTest", arr2, "", failed);
 
-    std::string third = "var a: arr[str] = [\"Hi\", \"Mom\"]; printf(\"%s\", a[0]);";
+    std::string arr3 = "var a: arr[str] = [\"Hi\", \"Mom\"]; printf(\"%s\", a[0]);";
     nmbr_of_tests++;
-    runTest("StrArrayTest", third, "Hi", failed);
+    runTest("StrArrayTest", arr3, "Hi", failed);
 
     // Index test
     std::string index = "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "
                         "true];printf(\"%d %c %d %d\", a[2], b[0], e[0], e[1]);";
     nmbr_of_tests++;
     runTest("IndexTest", index, "3 H 1 0", failed);
+
+    std::string index2 = "var a: arr[arr[int]] = [[1], [2]]; var b: arr[int] = a[0]; printf(\"%d\", b[0]);";
+    nmbr_of_tests++;
+    runTest("IndexTest2", index2, "1", failed);
+
+    // std::string index3 = "var a: arr[arr[int]] = [[1], [2]];printf(\"%d\", a[0][0]);";
+    // nmbr_of_tests++;
+    // runTest("IndexTest3", index3, "1", failed);
 
     // String test
     std::string str1 = "var s: str = \"Hello World\"; printf(\"%s\", s);";

@@ -5,13 +5,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* String/Struct array
+* Struct array
     * Index them
 
-* fix printf with size > 1 arr of str
-
-* Fix failed tests
-    * Indextest
+* Fix flakey index test
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
