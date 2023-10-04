@@ -319,14 +319,14 @@ class LLVMCompiler {
             return this->builder->getInt1Ty();
         }
         case STR_VAR: {
-            return this->internalStructs["array"];
+            return this->builder->getInt8Ty();
         }
         case DOUBLE_VAR: {
             return this->builder->getDoubleTy();
         }
         case ARRAY_VAR: {
             ArrayVariable *arrayVariable = (ArrayVariable *)var;
-            if (arrayVariable->items->type == ARRAY_VAR) {
+            if (arrayVariable->items->type == ARRAY_VAR || arrayVariable->items->type == STR_VAR) {
                 return this->internalStructs["array"];
             }
             return lookupArrayItemType(arrayVariable->items);
@@ -568,7 +568,7 @@ class LLVMCompiler {
                     exit(1);
                 }
 
-                if (type != this->internalStructs["array"] || var->type == STR_VAR) {
+                if (type != this->internalStructs["array"]) {
                     llvm::Value *loadedArray = loadArray(castedVar);
                     llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
                     return this->builder->CreateLoad(type, idxGEP);
@@ -630,7 +630,7 @@ class LLVMCompiler {
                                                   {this->builder->getInt32(0), this->builder->getInt32(0)});
                 storeArray(arrGep, arrayInstance);
             }
-            storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
+            // storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
 
             return arrayInstance;
         }

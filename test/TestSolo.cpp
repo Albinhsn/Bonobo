@@ -35,9 +35,9 @@ int main() {
     std::vector<std::string> failed;
     // Array test
 
-    std::string arr1 = "var a: arr[int] = [1,2,3];";
+    std::string arr1 = "var a: arr[int] = [1,2,3]; printf(\"%d %d %d\", a[0], a[1], a[2]);";
     nmbr_of_tests++;
-    runTest("IntArrayTest", arr1, "", failed);
+    runTest("IntArrayTest", arr1, "1 2 3", failed);
 
     std::string arr2 = "var a: arr[bool] = [true, false];";
     nmbr_of_tests++;
@@ -46,6 +46,10 @@ int main() {
     std::string arr3 = "var a: arr[str] = [\"Hi\", \"Mom\"]; printf(\"%s\", a[0]);";
     nmbr_of_tests++;
     runTest("StrArrayTest", arr3, "Hi", failed);
+
+    std::string arr4 = "var a: arr[arr[int]] = [[1], [2,3]]; var b: arr[int] = a[1]; printf(\"%d\", b[1]);";
+    nmbr_of_tests++;
+    runTest("IntArrArrayTest", arr4, "3", failed);
 
     // Index test
     std::string index = "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "

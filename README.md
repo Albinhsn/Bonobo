@@ -8,14 +8,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * Struct array
     * Index them
 
-* Fix flakey index test
-
 ## Bugs/Poorly implemented stuff LLVM backend
 
 * Break from within if
     * Store a ptr to the basic block you merge with
         * if none exist you can't break anyway
             * need to be a struct cos you have multiple loops
+
+* a[][] doesn't work
 
 
 ## TODO LLVM backend
