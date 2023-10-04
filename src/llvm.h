@@ -568,20 +568,25 @@ class LLVMCompiler {
                     exit(1);
                 }
 
-                if (type != this->internalStructs["array"]) {
-                    llvm::Value *loadedArray = loadArray(castedVar);
-                    llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
-                    return this->builder->CreateLoad(type, idxGEP);
-                } else {
-                    llvm::Value *loadedArray = loadArray(castedVar);
+                llvm::Value *loadedArray = loadArray(castedVar);
+                if (type == this->internalStructs["array"]) {
                     llvm::Value *idxGEP =
                         this->builder->CreateInBoundsGEP(this->builder->getPtrTy(), loadedArray,
                                                          this->builder->CreateSExt(index, this->builder->getInt64Ty()));
                     llvm::Value *loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
-                    llvm::Value *idxGEP2 =
-                        this->builder->CreateInBoundsGEP(this->internalStructs["array"], loadedPtr,
-                                                         {this->builder->getInt32(0), this->builder->getInt32(0)});
-                    return this->builder->CreateLoad(this->internalStructs["array"], idxGEP2);
+
+                    llvm::Value *idxGEP2 = this->builder->CreateInBoundsGEP(
+                        type, loadedPtr, {this->builder->getInt32(0), this->builder->getInt32(0)});
+                    return this->builder->CreateLoad(type, idxGEP2);
+                } else if (type->isStructTy()) {
+                    llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
+                        type, loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
+                    return this->builder->CreateLoad(type, idxGEP);
+
+                } else {
+
+                    llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
+                    return this->builder->CreateLoad(type, idxGEP);
                 }
             }
             printf("couldn't do it\n");
@@ -603,8 +608,8 @@ class LLVMCompiler {
             }
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
-            llvm::Value *arrGep = nullptr;
             // Is ptr to objects
+            llvm::Value *arrGep = nullptr;
             if (elementType == nullptr) {
                 arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
                                                    {this->builder->getInt32(arrayExpr->items.size() * 8)});
@@ -612,8 +617,9 @@ class LLVMCompiler {
 
                 for (int i = 0; i < arrayExpr->items.size(); ++i) {
                     llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
-                    llvm::Value *gep =
-                        this->builder->CreateInBoundsGEP(this->builder->getPtrTy(), arrGep, this->builder->getInt32(i));
+                    llvm::Value *gep = this->builder->CreateInBoundsGEP(
+                        this->builder->getPtrTy(), arrGep,
+                        this->builder->CreateSExt(this->builder->getInt32(i), this->builder->getInt64Ty()));
                     this->builder->CreateStore(arrValue, gep);
                 }
 

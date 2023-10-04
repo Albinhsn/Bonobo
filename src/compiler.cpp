@@ -805,6 +805,20 @@ static Stmt *varDeclaration() {
         ArrayExpr *arrayExpr = (ArrayExpr *)varStmt->initializer;
         ArrayVariable *arrayVar = (ArrayVariable *)varStmt->var;
         arrayExpr->itemType = arrayVar->items;
+        if (arrayExpr->itemType->type == ARRAY_VAR) {
+            while (true) {
+                Variable *items = arrayVar->items;
+                for (int i = 0; i < arrayExpr->items.size(); ++i) {
+                    ArrayExpr *item = (ArrayExpr *)arrayExpr->items[i];
+                    item->itemType = arrayVar->items;
+                }
+                if (items->type == ARRAY_VAR) {
+                    arrayVar = (ArrayVariable *)items;
+                } else {
+                    break;
+                }
+            }
+        }
     }
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");

@@ -51,6 +51,10 @@ int main() {
     nmbr_of_tests++;
     runTest("IntArrArrayTest", arr4, "3", failed);
 
+    std::string arr5 = "struct foo{bar:int;}; var a: arr[foo] = [foo(1), foo(2), foo(3)]; var b: foo = a[2]; printf(\"%d\", b.bar);";
+    nmbr_of_tests++;
+    runTest("StructArrayTest", arr5, "3", failed);
+
     // Index test
     std::string index = "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "
                         "true];printf(\"%d %c %d %d\", a[2], b[0], e[0], e[1]);";

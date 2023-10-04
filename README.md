@@ -5,8 +5,12 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
+* Something is just wrong with struct array 
+
 * Struct array
     * Index them
+
+* 3D array and more
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
@@ -16,7 +20,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
             * need to be a struct cos you have multiple loops
 
 * a[][] doesn't work
-
 
 ## TODO LLVM backend
 
