@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "expr.h"
 #include "stmt.h"
+#include "variables.h"
 #include <llvm/Support/Casting.h>
 #include <memory>
 
@@ -20,9 +21,11 @@ class LLVMStruct {
   public:
     llvm::StructType *structType;
     std::vector<std::string> fields;
-    LLVMStruct(llvm::StructType *structType, std::vector<std::string> fields) {
+    LLVMStruct(std::vector<llvm::Type *> fieldTypes, std::string structName, std::vector<std::string> fields,
+               llvm::LLVMContext *ctx) {
+
         this->fields = fields;
-        this->structType = structType;
+        this->structType = llvm::StructType::create(*ctx, fieldTypes, structName);
     }
 };
 
@@ -99,6 +102,120 @@ class LLVMCompiler {
 
         return false;
     }
+    bool compileFuncBody(std::vector<Stmt *> body) {
+        for (int i = 0; i < body.size(); ++i) {
+            compileStatement(body[i]);
+            if (body[i]->type == RETURN_STMT) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool compileBranch(std::vector<Stmt *> branch) {
+        for (int i = 0; i < branch.size(); ++i) {
+            if (branch[i]->type == BREAK_STMT) {
+                this->function->broke = true;
+                this->builder->CreateBr(this->function->exitBlock->exitBlock);
+                return false;
+            }
+            compileStatement(branch[i]);
+            if (branch[i]->type == RETURN_STMT) {
+                return true;
+            }
+        }
+        return false;
+    }
+    void enterThenBlock(llvm::Value *condition, llvm::BasicBlock *thenBlock, llvm::BasicBlock *elseBlock) {
+        this->builder->CreateCondBr(condition, thenBlock, elseBlock);
+        this->builder->SetInsertPoint(thenBlock);
+        this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
+    }
+
+    void enterMergeBlock(bool returned, llvm::BasicBlock *mergeBlock) {
+        this->function->scopedVariables.pop_back();
+        if (!returned && !this->function->broke) {
+            this->builder->CreateBr(mergeBlock);
+        }
+        this->builder->SetInsertPoint(mergeBlock);
+    }
+
+    void enterElseBlock(bool returned, llvm::BasicBlock *elseBlock, llvm::BasicBlock *mergeBlock) {
+        this->function->scopedVariables.pop_back();
+        if (!returned && !this->function->broke) {
+            this->builder->CreateBr(mergeBlock);
+        }
+        this->builder->SetInsertPoint(elseBlock);
+        this->function->broke = false;
+        this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
+    }
+
+    llvm::IRBuilder<> *enterFuncScope(FuncStmt *funcStmt) {
+        // Fix params
+        std::vector<llvm::Type *> params = std::vector<llvm::Type *>(funcStmt->params.size());
+        std::map<std::string, int> funcArgs;
+        for (int i = 0; i < funcStmt->params.size(); ++i) {
+            params[i] = getVariableLLVMType(funcStmt->params[i]);
+            funcArgs[funcStmt->params[i]->name.lexeme] = i;
+        }
+
+        // Ret type
+        llvm::Type *returnType = getVariableLLVMType(funcStmt->returnType);
+
+        // Fix func type
+        llvm::FunctionType *funcType = llvm::FunctionType::get(returnType, params, false);
+        this->function =
+            new LLVMFunction(this->function, funcType, funcStmt->name.lexeme, funcArgs, this->ctx, this->module);
+        llvm::IRBuilder<> *prevBuilder = this->builder;
+        this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
+        return prevBuilder;
+    }
+
+    void checkValidFuncDeclaration(FuncStmt *funcStmt) {
+        if (nameIsAlreadyDeclared(funcStmt->name.lexeme)) {
+            printf("Can't declare function '%s', name is already "
+                   "declared\n",
+                   funcStmt->name.lexeme.c_str());
+            exit(1);
+        }
+        if (this->function->enclosing) {
+            printf("Can't declare a function in a function\n");
+            exit(1);
+        }
+    }
+
+    void checkReturnType(bool returned, FuncStmt *funcStmt) {
+        if (!returned) {
+            if (!this->function->funcType->getReturnType()->isVoidTy()) {
+                printf("Non-void function does not return a value in "
+                       "'%s'\n",
+                       funcStmt->name.lexeme.c_str());
+                exit(1);
+            } else {
+                this->builder->CreateRetVoid();
+            }
+        }
+    }
+
+    void exitFuncScope(llvm::IRBuilder<> *prevBuilder) {
+        this->callableFunctions.push_back(this->function->function);
+        this->function = this->function->enclosing;
+        this->builder = prevBuilder;
+    }
+
+    llvm::Type *getArrayElementType(Variable *itemType) {
+        if (itemType != nullptr) {
+            if (itemType->type == INT_VAR) {
+                return this->builder->getInt32Ty();
+            } else if (itemType->type == DOUBLE_VAR) {
+                return this->builder->getDoubleTy();
+            } else if (itemType->type == BOOL_VAR) {
+                return this->builder->getInt1Ty();
+            }
+        }
+        return nullptr;
+    }
+
     llvm::Type *getVariableLLVMType(Variable *var) {
         if (var == nullptr) {
             printf("Variable is none in getVariableLLVMType\n");
@@ -137,9 +254,16 @@ class LLVMCompiler {
         }
         }
     }
-    // llvm::MaybeAlign getAlignmentFromStruct(llvm::StructType *structType) {}
-
     llvm::MaybeAlign getAlignment(llvm::Type *type) { return llvm::MaybeAlign(type->getPrimitiveSizeInBits() / 8); }
+
+    llvm::Function *lookupFunction(std::string name) {
+        for (int i = 0; i < this->callableFunctions.size(); ++i) {
+            if (this->callableFunctions[i]->getName() == name) {
+                return this->callableFunctions[i];
+            }
+        }
+        return this->function->function->getName() == name ? this->function->function : nullptr;
+    }
 
     llvm::Value *lookupVariable(std::string name) {
         if (this->function->enclosing) {
@@ -165,6 +289,76 @@ class LLVMCompiler {
         }
         printf("Unknown variable %s\n", name.c_str());
         exit(1);
+    }
+
+    void compileLoopExit(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, Stmt *stmt = nullptr) {
+        if (!this->function->broke) {
+            if (stmt != nullptr) {
+                compileStatement(stmt);
+            }
+            this->function->broke = false;
+            this->builder->CreateBr(headerBlock);
+        }
+
+        this->function->exitBlock = this->function->exitBlock->prev;
+        this->builder->SetInsertPoint(exitBlock);
+    }
+
+    void compileLoopBody(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, std::vector<Stmt *> body) {
+        for (int i = 0; i < body.size(); ++i) {
+            if (body[i]->type == BREAK_STMT) {
+                this->function->broke = true;
+                this->builder->CreateBr(exitBlock);
+                break;
+            }
+            compileStatement(body[i]);
+        }
+    }
+
+    void compileLoopHeader(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, llvm::BasicBlock *bodyBlock,
+                           Expr *condition) {
+        this->builder->CreateBr(headerBlock);
+        this->builder->SetInsertPoint(headerBlock);
+
+        this->function->exitBlock = new ExitBlock(this->function->exitBlock, exitBlock);
+        this->builder->CreateCondBr(compileExpression(condition), bodyBlock, exitBlock);
+        this->builder->SetInsertPoint(bodyBlock);
+    }
+
+    void checkCallParamCorrectness(llvm::Function *func, std::vector<llvm::Value *> params, std::string funcName) {
+        if (func == nullptr) {
+            printf("calling unknown func '%s'\n", funcName.c_str());
+            exit(1);
+        }
+        if (((int)func->arg_size()) != params.size()) {
+            printf("Calling %s requires %d params but got %d\n", funcName.c_str(), (int)func->arg_size(),
+                   (int)params.size());
+        }
+        int i = 0;
+        for (llvm::Argument &arg : func->args()) {
+            if (arg.getType() != params[i]->getType()) {
+                printf("Invalid arg type in function %s with arg %d\n", funcName.c_str(), i + 1);
+            }
+            ++i;
+        }
+    }
+
+    void checkIndexCorrectness(llvm::Type *type, llvm::Value *index, llvm::Value *loadedVar) {
+        if (type == nullptr) {
+            printf("couldn't find var type\n");
+            exit(1);
+        }
+        if (!index->getType()->isIntegerTy()) {
+            printf("Can't index array with something other then int\n");
+            exit(1);
+        }
+
+        if (!loadedVar->getType()->isStructTy()) {
+            printf("can't index non struct - ");
+            debugValueType(loadedVar->getType(), this->ctx);
+            printf("\n");
+            exit(1);
+        }
     }
 
     bool checkVariableValueMatch(Variable *var, llvm::Value *&value) {
@@ -236,6 +430,7 @@ class LLVMCompiler {
         llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], value, 0);
         return this->builder->CreateLoad(this->builder->getPtrTy(), ptr);
     }
+
     llvm::Value *loadArraySize(llvm::Value *value) {
         llvm::AllocaInst *valueAlloca = llvm::dyn_cast<llvm::AllocaInst>(value);
         llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], value, 1);
@@ -263,8 +458,33 @@ class LLVMCompiler {
     void storeArraySize(llvm::Value *size, llvm::Value *arrayInstance) {
         storeStructField(this->internalStructs["array"], arrayInstance, size, 1);
     }
+
     void storeArray(llvm::Value *array, llvm::Value *arrayInstance) {
         storeStructField(this->internalStructs["array"], arrayInstance, array, 0);
+    }
+
+    void storePtrArrayItems(ArrayExpr *arrayExpr, llvm::AllocaInst *arrayInstance) {
+        for (int i = 0; i < arrayExpr->items.size(); ++i) {
+            llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
+            llvm::Value *gep =
+                this->builder->CreateInBoundsGEP(this->internalStructs["array"], arrayInstance,
+                                                 {this->builder->getInt32(0), this->builder->getInt32(0)});
+            llvm::Value *arrPtr = this->builder->CreateLoad(this->builder->getPtrTy(), gep);
+            llvm::Value *arrInboundPtr = this->builder->CreateInBoundsGEP(
+                this->builder->getPtrTy(), arrPtr,
+                this->builder->CreateSExt(this->builder->getInt32(i), this->builder->getInt64Ty()));
+            this->builder->CreateStore(arrValue, arrInboundPtr);
+        }
+    }
+
+    llvm::GlobalVariable *createGlobalArray(ArrayExpr *arrayExpr, llvm::ArrayType *arrayType) {
+
+        std::vector<llvm::Constant *> arrayItems = std::vector<llvm::Constant *>(arrayExpr->items.size());
+        for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
+            arrayItems[i] = llvm::dyn_cast<llvm::Constant>(compileExpression(arrayExpr->items[i]));
+        }
+
+        return createGlobalVariable(arrayType, llvm::ConstantArray::get(arrayType, arrayItems));
     }
 
     llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, llvm::Constant *value) {
@@ -317,6 +537,15 @@ class LLVMCompiler {
             storeStructField(strukt->structType, structInstance, paramValue, arg);
         }
         return structInstance;
+    }
+
+    llvm::Type *getIndexVarType(std::string varName) {
+        for (int i = 0; i < this->variables.size(); ++i) {
+            if (this->variables[i]->name.lexeme == varName) {
+                return lookupArrayItemType(this->variables[i]);
+            }
+        }
+        return nullptr;
     }
 
     llvm::Type *lookupArrayItemType(Variable *var) {
@@ -550,32 +779,10 @@ class LLVMCompiler {
             llvm::Value *index = compileExpression(indexExpr->index);
 
             if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(variable)) {
-                llvm::Type *type = nullptr;
-                std::string varName = castedVar->getName().str();
-                Variable *var;
-                for (int i = 0; i < this->variables.size(); ++i) {
-                    if (this->variables[i]->name.lexeme == varName) {
-                        var = this->variables[i];
-                        type = lookupArrayItemType(var);
-                        break;
-                    }
-                }
-                if (type == nullptr) {
-                    printf("couldn't find var type\n");
-                    exit(1);
-                }
-                if (!index->getType()->isIntegerTy()) {
-                    printf("Can't index array with something other then int\n");
-                    exit(1);
-                }
+                llvm::Type *type = getIndexVarType(castedVar->getName().str());
 
                 llvm::Value *loadedVar = this->builder->CreateLoad(castedVar->getAllocatedType(), castedVar);
-                if (!loadedVar->getType()->isStructTy()) {
-                    printf("can't index non struct - ");
-                    debugValueType(loadedVar->getType(), this->ctx);
-                    printf("\n");
-                    exit(1);
-                }
+                checkIndexCorrectness(type, index, loadedVar);
 
                 llvm::Value *loadedArray = loadArray(castedVar);
                 if (type == this->internalStructs["array"]) {
@@ -607,16 +814,8 @@ class LLVMCompiler {
             ArrayExpr *arrayExpr = (ArrayExpr *)expr;
 
             // Figure ut which type array has
-            llvm::Type *elementType = nullptr;
-            if (arrayExpr->itemType != nullptr) {
-                if (arrayExpr->itemType->type == INT_VAR) {
-                    elementType = this->builder->getInt32Ty();
-                } else if (arrayExpr->itemType->type == DOUBLE_VAR) {
-                    elementType = this->builder->getDoubleTy();
-                } else if (arrayExpr->itemType->type == BOOL_VAR) {
-                    elementType = this->builder->getInt1Ty();
-                }
-            }
+            llvm::Type *elementType = getArrayElementType(arrayExpr->itemType);
+
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
             // Is ptr to objects
@@ -625,33 +824,16 @@ class LLVMCompiler {
                 arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
                                                    {this->builder->getInt32(arrayExpr->items.size() * 8)});
                 storeArray(arrGep, arrayInstance);
-
-                for (int i = 0; i < arrayExpr->items.size(); ++i) {
-                    llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
-                    llvm::Value *gep =
-                        this->builder->CreateInBoundsGEP(this->internalStructs["array"], arrayInstance,
-                                                         {this->builder->getInt32(0), this->builder->getInt32(0)});
-                    llvm::Value *arrPtr = this->builder->CreateLoad(this->builder->getPtrTy(), gep);
-                    llvm::Value *arrInboundPtr = this->builder->CreateInBoundsGEP(
-                        this->builder->getPtrTy(), arrPtr,
-                        this->builder->CreateSExt(this->builder->getInt32(i), this->builder->getInt64Ty()));
-                    this->builder->CreateStore(arrValue, arrInboundPtr);
-                }
+                storePtrArrayItems(arrayExpr, arrayInstance);
 
             } else {
-                std::vector<llvm::Constant *> arrayItems = std::vector<llvm::Constant *>(arrayExpr->items.size());
-                for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
-                    arrayItems[i] = llvm::dyn_cast<llvm::Constant>(compileExpression(arrayExpr->items[i]));
-                }
                 llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayExpr->items.size());
-
-                llvm::GlobalVariable *globalArray =
-                    createGlobalVariable(arrayType, llvm::ConstantArray::get(arrayType, arrayItems));
+                llvm::GlobalVariable *globalArray = createGlobalArray(arrayExpr, arrayType);
                 arrGep = this->builder->CreateGEP(arrayType, globalArray,
                                                   {this->builder->getInt32(0), this->builder->getInt32(0)});
                 storeArray(arrGep, arrayInstance);
             }
-            // storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
+            storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);
 
             return arrayInstance;
         }
@@ -670,16 +852,7 @@ class LLVMCompiler {
                 params[i] = compileExpression(callExpr->arguments[i]);
             }
 
-            llvm::Function *func = nullptr;
-            for (int i = 0; i < this->callableFunctions.size(); ++i) {
-                if (this->callableFunctions[i]->getName() == name) {
-                    func = this->callableFunctions[i];
-                    break;
-                }
-            }
-            if (this->function->function->getName() == name) {
-                func = this->function->function;
-            }
+            llvm::Function *func = lookupFunction(name);
             if (this->libraryFuncs.count(name)) {
                 for (int i = 0; i < callExpr->arguments.size(); ++i) {
                     if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(params[i])) {
@@ -692,21 +865,8 @@ class LLVMCompiler {
                 }
                 return this->builder->CreateCall(this->libraryFuncs[name], params);
             }
-            if (func == nullptr) {
-                printf("calling unknown func '%s'\n", name.c_str());
-                exit(1);
-            }
-            if (((int)func->arg_size()) != params.size()) {
-                printf("Calling %s requires %d params but got %d\n", name.c_str(), (int)func->arg_size(),
-                       (int)params.size());
-            }
-            int i = 0;
-            for (llvm::Argument &arg : func->args()) {
-                if (arg.getType() != params[i]->getType()) {
-                    printf("Invalid arg type in function %s with arg %d\n", name.c_str(), i + 1);
-                }
-                ++i;
-            }
+
+            checkCallParamCorrectness(func, params, name);
             return this->builder->CreateCall(func, params);
         }
         default: {
@@ -792,76 +952,28 @@ class LLVMCompiler {
         case WHILE_STMT: {
             WhileStmt *whileStmt = (WhileStmt *)stmt;
 
-            llvm::BasicBlock *loopHeaderBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.header", this->function->function);
+            llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*this->ctx, "header", this->function->function);
+            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->function->function);
+            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->function->function);
 
-            llvm::BasicBlock *loopBodyBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.body", this->function->function);
+            compileLoopHeader(headerBlock, exitBlock, bodyBlock, whileStmt->condition);
+            compileLoopBody(headerBlock, exitBlock, whileStmt->body);
+            compileLoopExit(headerBlock, exitBlock);
 
-            llvm::BasicBlock *loopExitBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.exit", this->function->function);
-
-            this->builder->CreateBr(loopHeaderBlock);
-            this->builder->SetInsertPoint(loopHeaderBlock);
-
-            llvm::Value *condition = compileExpression(whileStmt->condition);
-            this->function->exitBlock = new ExitBlock(this->function->exitBlock, loopExitBlock);
-            this->builder->CreateCondBr(condition, loopBodyBlock, loopExitBlock);
-            this->builder->SetInsertPoint(loopBodyBlock);
-            for (int i = 0; i < whileStmt->body.size(); ++i) {
-                if (whileStmt->body[i]->type == BREAK_STMT) {
-                    this->function->broke = true;
-                    this->builder->CreateBr(loopExitBlock);
-                    break;
-                }
-                compileStatement(whileStmt->body[i]);
-            }
-
-            if (!this->function->broke) {
-                this->builder->CreateBr(loopHeaderBlock);
-            }
-            this->function->broke = false;
-
-            this->function->exitBlock = this->function->exitBlock->prev;
-            this->builder->SetInsertPoint(loopExitBlock);
             break;
         }
         case FOR_STMT: {
             ForStmt *forStmt = (ForStmt *)stmt;
 
-            llvm::BasicBlock *loopHeaderBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.header", this->function->function);
-
-            llvm::BasicBlock *loopBodyBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.body", this->function->function);
-
-            llvm::BasicBlock *loopExitBlock =
-                llvm::BasicBlock::Create(*this->ctx, "loop.exit", this->function->function);
+            llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*this->ctx, "header", this->function->function);
+            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->function->function);
+            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->function->function);
 
             compileStatement(forStmt->initializer);
-            this->builder->CreateBr(loopHeaderBlock);
-            this->builder->SetInsertPoint(loopHeaderBlock);
+            compileLoopHeader(headerBlock, exitBlock, bodyBlock, forStmt->condition);
+            compileLoopBody(headerBlock, exitBlock, forStmt->body);
+            compileLoopExit(headerBlock, exitBlock, forStmt->increment);
 
-            llvm::Value *condition = compileExpression(forStmt->condition);
-
-            this->function->exitBlock = new ExitBlock(this->function->exitBlock, loopExitBlock);
-            this->builder->CreateCondBr(condition, loopBodyBlock, loopExitBlock);
-            this->builder->SetInsertPoint(loopBodyBlock);
-            bool broke = false;
-            for (int i = 0; i < forStmt->body.size(); ++i) {
-                if (forStmt->body[i]->type == BREAK_STMT) {
-                    this->builder->CreateBr(loopExitBlock);
-                    broke = true;
-                    break;
-                }
-                compileStatement(forStmt->body[i]);
-            }
-            if (!broke) {
-                compileStatement(forStmt->increment);
-                this->builder->CreateBr(loopHeaderBlock);
-            }
-            this->function->exitBlock = this->function->exitBlock->prev;
-            this->builder->SetInsertPoint(loopExitBlock);
             break;
         }
         case STRUCT_STMT: {
@@ -880,8 +992,7 @@ class LLVMCompiler {
                 fieldNames[i] = structStmt->fields[i]->name.lexeme;
             }
 
-            llvm::StructType *structType = llvm::StructType::create(*this->ctx, fieldTypes, structName);
-            this->structs[structName] = new LLVMStruct(structType, fieldNames);
+            this->structs[structName] = new LLVMStruct(fieldTypes, structName, fieldNames, this->ctx);
             break;
         }
         case IF_STMT: {
@@ -892,107 +1003,19 @@ class LLVMCompiler {
             llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*ctx, "else", this->function->function);
             llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*ctx, "merge", this->function->function);
 
-            this->builder->CreateCondBr(condition, thenBlock, elseBlock);
-            this->builder->SetInsertPoint(thenBlock);
-
-            this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
-            // This is just bad, especially for multiple returns?
-            bool returned = false;
-            for (int i = 0; i < ifStmt->thenBranch.size(); ++i) {
-                if (ifStmt->thenBranch[i]->type == BREAK_STMT) {
-                    this->function->broke = true;
-                    this->builder->CreateBr(this->function->exitBlock->exitBlock);
-                    break;
-                }
-                compileStatement(ifStmt->thenBranch[i]);
-                if (ifStmt->thenBranch[i]->type == RETURN_STMT) {
-                    returned = true;
-                    break;
-                }
-            }
-            this->function->scopedVariables.pop_back();
-            if (!returned && !this->function->broke) {
-                this->builder->CreateBr(mergeBlock);
-            }
-            this->builder->SetInsertPoint(elseBlock);
-
-            returned = false;
-            this->function->broke = false;
-
-            this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
-            for (int i = 0; i < ifStmt->elseBranch.size(); ++i) {
-                if (ifStmt->thenBranch[i]->type == BREAK_STMT) {
-                    this->function->broke = true;
-                    this->builder->CreateBr(this->function->exitBlock->exitBlock);
-                    break;
-                }
-                compileStatement(ifStmt->elseBranch[i]);
-                if (ifStmt->elseBranch[i]->type == RETURN_STMT) {
-                    returned = true;
-                    break;
-                }
-            }
-            this->function->scopedVariables.pop_back();
-            if (!returned && !this->function->broke) {
-                this->builder->CreateBr(mergeBlock);
-            }
-            this->builder->SetInsertPoint(mergeBlock);
+            enterThenBlock(condition, thenBlock, elseBlock);
+            enterElseBlock(compileBranch(ifStmt->thenBranch), elseBlock, mergeBlock);
+            enterMergeBlock(compileBranch(ifStmt->elseBranch), mergeBlock);
             break;
         }
         case FUNC_STMT: {
             FuncStmt *funcStmt = (FuncStmt *)stmt;
+            checkValidFuncDeclaration(funcStmt);
+            llvm::IRBuilder<> *prevBuilder = enterFuncScope(funcStmt);
 
-            if (nameIsAlreadyDeclared(funcStmt->name.lexeme)) {
-                printf("Can't declare function '%s', name is already "
-                       "declared\n",
-                       funcStmt->name.lexeme.c_str());
-                exit(1);
-            }
+            checkReturnType(compileFuncBody(funcStmt->body), funcStmt);
 
-            // Fix params
-            std::vector<llvm::Type *> params = std::vector<llvm::Type *>(funcStmt->params.size());
-            std::map<std::string, int> funcArgs;
-            for (int i = 0; i < funcStmt->params.size(); ++i) {
-                params[i] = getVariableLLVMType(funcStmt->params[i]);
-                funcArgs[funcStmt->params[i]->name.lexeme] = i;
-            }
-
-            // Ret type
-            llvm::Type *returnType = getVariableLLVMType(funcStmt->returnType);
-
-            // Fix func type
-            llvm::FunctionType *funcType = llvm::FunctionType::get(returnType, params, false);
-
-            if (this->function->enclosing) {
-                printf("Can't declare a function in a function\n");
-                exit(1);
-            }
-
-            this->function =
-                new LLVMFunction(this->function, funcType, funcStmt->name.lexeme, funcArgs, this->ctx, this->module);
-            llvm::IRBuilder<> *prevBuilder = this->builder;
-            this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
-            bool returned = false;
-            for (int i = 0; i < funcStmt->body.size(); ++i) {
-                compileStatement(funcStmt->body[i]);
-                if (funcStmt->body[i]->type == RETURN_STMT) {
-                    returned = true;
-                    break;
-                }
-            }
-            if (!returned) {
-                if (!this->function->funcType->getReturnType()->isVoidTy()) {
-                    printf("Non-void function does not return a value in "
-                           "'%s'\n",
-                           funcStmt->name.lexeme.c_str());
-                    exit(1);
-                } else {
-                    this->builder->CreateRetVoid();
-                }
-            }
-            this->callableFunctions.push_back(this->function->function);
-            this->function = this->function->enclosing;
-            this->builder = prevBuilder;
+            exitFuncScope(prevBuilder);
             break;
         }
         }

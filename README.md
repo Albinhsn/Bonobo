@@ -5,17 +5,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-
-## Bugs/Poorly implemented stuff LLVM backend
-
-* Break from within if
-    * Store a ptr to the basic block you merge with
-        * if none exist you can't break anyway
-            * need to be a struct cos you have multiple loops
+* Clean up a lot again :)
 
 * a[][] doesn't work
 
 * 3D array and more
+
+## Bugs/Poorly implemented stuff LLVM backend
+
 
 ## TODO LLVM backend
 
@@ -36,6 +33,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * i++
     * Inc/Dec expr
+
 
 ## TODO x86_64 backend
 
