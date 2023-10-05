@@ -307,7 +307,7 @@ class LLVMCompiler {
             }
             storeStructField(strukt->structType, structInstance, paramValue, arg);
         }
-        return this->builder->CreateLoad(strukt->structType, structInstance);
+        return structInstance;
     }
 
     llvm::Type *lookupArrayItemType(Variable *var) {
@@ -580,8 +580,9 @@ class LLVMCompiler {
                     return this->builder->CreateLoad(type, idxGEP2);
                 } else if (type->isStructTy()) {
                     llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
-                        type, loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
-                    return this->builder->CreateLoad(type, idxGEP);
+                        this->builder->getPtrTy(), loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
+                    llvm::Value *ptr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
+                    return this->builder->CreateLoad(type, ptr);
 
                 } else {
 
@@ -617,10 +618,14 @@ class LLVMCompiler {
 
                 for (int i = 0; i < arrayExpr->items.size(); ++i) {
                     llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
-                    llvm::Value *gep = this->builder->CreateInBoundsGEP(
-                        this->builder->getPtrTy(), arrGep,
+                    llvm::Value *gep =
+                        this->builder->CreateInBoundsGEP(this->internalStructs["array"], arrayInstance,
+                                                         {this->builder->getInt32(0), this->builder->getInt32(0)});
+                    llvm::Value *arrPtr = this->builder->CreateLoad(this->builder->getPtrTy(), gep);
+                    llvm::Value *arrInboundPtr = this->builder->CreateInBoundsGEP(
+                        this->builder->getPtrTy(), arrPtr,
                         this->builder->CreateSExt(this->builder->getInt32(i), this->builder->getInt64Ty()));
-                    this->builder->CreateStore(arrValue, gep);
+                    this->builder->CreateStore(arrValue, arrInboundPtr);
                 }
 
             } else {
