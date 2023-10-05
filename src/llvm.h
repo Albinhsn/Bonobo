@@ -5,9 +5,14 @@
 #include <llvm/Support/Casting.h>
 #include <memory>
 
-struct StrArr {
-    llvm::Value *size;
-    llvm::Value *ptr;
+class ExitBlock {
+  public:
+    ExitBlock *prev;
+    llvm::BasicBlock *exitBlock;
+    ExitBlock(ExitBlock *prev, llvm::BasicBlock *exitBlock) {
+        this->prev = prev;
+        this->exitBlock = exitBlock;
+    }
 };
 
 class LLVMStruct {
@@ -24,15 +29,19 @@ class LLVMStruct {
 class LLVMFunction {
   private:
   public:
+    bool broke;
     LLVMFunction *enclosing;
     std::vector<std::vector<llvm::AllocaInst *>> scopedVariables;
     std::map<std::string, int> funcArgs;
     llvm::BasicBlock *entryBlock;
+    ExitBlock *exitBlock;
     llvm::Function *function;
     llvm::FunctionType *funcType;
 
     LLVMFunction(LLVMFunction *enclosing, llvm::FunctionType *funcType, std::string name,
                  std::map<std::string, int> funcArgs, llvm::LLVMContext *ctx, llvm::Module *module) {
+        this->broke = false;
+        this->exitBlock = nullptr;
         this->enclosing = enclosing;
         this->funcType = funcType;
         this->function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name, *module);
@@ -44,17 +53,17 @@ class LLVMFunction {
 
 class LLVMCompiler {
   private:
-    llvm::LLVMContext *ctx;
-    std::map<std::string, LLVMStruct *> structs;
-    std::vector<Variable *> variables;
-    std::vector<llvm::AllocaInst *> strings;
-    llvm::Module *module;
-    std::vector<Stmt *> stmts;
     llvm::IRBuilder<> *builder;
-    std::map<std::string, llvm::FunctionCallee> libraryFuncs;
-    std::map<std::string, llvm::StructType *> internalStructs;
     std::vector<llvm::Function *> callableFunctions;
+    llvm::LLVMContext *ctx;
     LLVMFunction *function;
+    std::map<std::string, llvm::StructType *> internalStructs;
+    std::map<std::string, llvm::FunctionCallee> libraryFuncs;
+    llvm::Module *module;
+    std::vector<Variable *> variables;
+    std::vector<Stmt *> stmts;
+    std::vector<llvm::AllocaInst *> strings;
+    std::map<std::string, LLVMStruct *> structs;
 
     void endCompiler() {
         this->builder->CreateRet(this->builder->getInt32(0));
@@ -579,8 +588,9 @@ class LLVMCompiler {
                         type, loadedPtr, {this->builder->getInt32(0), this->builder->getInt32(0)});
                     return this->builder->CreateLoad(type, idxGEP2);
                 } else if (type->isStructTy()) {
-                    llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
-                        this->builder->getPtrTy(), loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
+                    llvm::Value *idxGEP =
+                        this->builder->CreateInBoundsGEP(this->builder->getPtrTy(), loadedArray,
+                                                         this->builder->CreateSExt(index, this->builder->getInt64Ty()));
                     llvm::Value *ptr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
                     return this->builder->CreateLoad(type, ptr);
 
@@ -795,22 +805,25 @@ class LLVMCompiler {
             this->builder->SetInsertPoint(loopHeaderBlock);
 
             llvm::Value *condition = compileExpression(whileStmt->condition);
-
+            this->function->exitBlock = new ExitBlock(this->function->exitBlock, loopExitBlock);
             this->builder->CreateCondBr(condition, loopBodyBlock, loopExitBlock);
             this->builder->SetInsertPoint(loopBodyBlock);
-            bool broke = false;
             for (int i = 0; i < whileStmt->body.size(); ++i) {
                 if (whileStmt->body[i]->type == BREAK_STMT) {
-                    broke = true;
+                    this->function->broke = true;
+                    this->builder->CreateBr(loopExitBlock);
                     break;
                 }
                 compileStatement(whileStmt->body[i]);
             }
-            if (!broke) {
+
+            if (!this->function->broke) {
                 this->builder->CreateBr(loopHeaderBlock);
             }
-            this->builder->SetInsertPoint(loopExitBlock);
+            this->function->broke = false;
 
+            this->function->exitBlock = this->function->exitBlock->prev;
+            this->builder->SetInsertPoint(loopExitBlock);
             break;
         }
         case FOR_STMT: {
@@ -831,6 +844,7 @@ class LLVMCompiler {
 
             llvm::Value *condition = compileExpression(forStmt->condition);
 
+            this->function->exitBlock = new ExitBlock(this->function->exitBlock, loopExitBlock);
             this->builder->CreateCondBr(condition, loopBodyBlock, loopExitBlock);
             this->builder->SetInsertPoint(loopBodyBlock);
             bool broke = false;
@@ -846,6 +860,7 @@ class LLVMCompiler {
                 compileStatement(forStmt->increment);
                 this->builder->CreateBr(loopHeaderBlock);
             }
+            this->function->exitBlock = this->function->exitBlock->prev;
             this->builder->SetInsertPoint(loopExitBlock);
             break;
         }
@@ -885,6 +900,8 @@ class LLVMCompiler {
             bool returned = false;
             for (int i = 0; i < ifStmt->thenBranch.size(); ++i) {
                 if (ifStmt->thenBranch[i]->type == BREAK_STMT) {
+                    this->function->broke = true;
+                    this->builder->CreateBr(this->function->exitBlock->exitBlock);
                     break;
                 }
                 compileStatement(ifStmt->thenBranch[i]);
@@ -894,14 +911,21 @@ class LLVMCompiler {
                 }
             }
             this->function->scopedVariables.pop_back();
-            if (!returned) {
+            if (!returned && !this->function->broke) {
                 this->builder->CreateBr(mergeBlock);
             }
             this->builder->SetInsertPoint(elseBlock);
 
             returned = false;
+            this->function->broke = false;
+
             this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
             for (int i = 0; i < ifStmt->elseBranch.size(); ++i) {
+                if (ifStmt->thenBranch[i]->type == BREAK_STMT) {
+                    this->function->broke = true;
+                    this->builder->CreateBr(this->function->exitBlock->exitBlock);
+                    break;
+                }
                 compileStatement(ifStmt->elseBranch[i]);
                 if (ifStmt->elseBranch[i]->type == RETURN_STMT) {
                     returned = true;
@@ -909,7 +933,7 @@ class LLVMCompiler {
                 }
             }
             this->function->scopedVariables.pop_back();
-            if (!returned) {
+            if (!returned && !this->function->broke) {
                 this->builder->CreateBr(mergeBlock);
             }
             this->builder->SetInsertPoint(mergeBlock);

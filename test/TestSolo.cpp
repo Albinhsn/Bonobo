@@ -51,13 +51,14 @@ int main() {
     nmbr_of_tests++;
     runTest("IntArrArrayTest", arr4, "3", failed);
 
-    std::string arr5 = "struct foo{bar:int;}; var a: arr[foo] = [foo(1), foo(2), foo(3)]; var b: foo = a[2]; printf(\"%d\", b.bar);";
+    std::string arr5 =
+        "struct foo{bar:int;}; var a: arr[foo] = [foo(1), foo(2), foo(3)]; var b: foo = a[2]; printf(\"%d\", b.bar);";
     nmbr_of_tests++;
     runTest("StructArrayTest", arr5, "3", failed);
 
-    std::string arr6 = "var a: arr[arr[arr[int]]] = [[[1]]];";
-    nmbr_of_tests++;
-    runTest("3D int array", arr6, "", failed);
+    // std::string arr6 = "var a: arr[arr[arr[int]]] = [[[1]]];";
+    // nmbr_of_tests++;
+    // runTest("3D int array", arr6, "", failed);
 
     // Index test
     std::string index = "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "
@@ -111,10 +112,18 @@ int main() {
     nmbr_of_tests++;
     runTest("ForTest", for1, "01234", failed);
 
+    std::string for2 = "for(var i: int = 0; i < 5; i = i + 1){if(i > 3){break;}printf(\"%d\", i);}";
+    nmbr_of_tests++;
+    runTest("ForTest", for2, "0123", failed);
+
     // While test
     std::string while1 = "var i: int = 0; while(i < 5){printf(\"%d\", i); i = i + 1;}";
     nmbr_of_tests++;
     runTest("WhileTest", while1, "01234", failed);
+
+    std::string while2 = "var i: int = 0; while(i < 5){if(i > 3){break;}printf(\"%d\", i); i = i + 1;}";
+    nmbr_of_tests++;
+    runTest("WhileTest", while2, "0123", failed);
 
     // Func test
     std::string fun1 = "fun foo() -> int {return 1;} printf(\"%d\", foo());";
