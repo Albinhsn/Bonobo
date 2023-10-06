@@ -802,18 +802,19 @@ static Stmt *varDeclaration() {
     varStmt->initializer = expression(nullptr);
     // Change this xD
     if (varStmt->initializer->type == ARRAY_EXPR && varStmt->var->type == ARRAY_VAR) {
-        ArrayExpr *arrayExpr = (ArrayExpr *)varStmt->initializer;
-        ArrayVariable *arrayVar = (ArrayVariable *)varStmt->var;
-        arrayExpr->itemType = arrayVar->items;
-        if (arrayExpr->itemType->type == ARRAY_VAR) {
+        ArrayExpr *expr = (ArrayExpr *)varStmt->initializer;
+        ArrayVariable *var = (ArrayVariable *)varStmt->var;
+        expr->itemType = var->items;
+        if (expr->itemType->type == ARRAY_VAR) {
             while (true) {
-                Variable *items = arrayVar->items;
-                for (int i = 0; i < arrayExpr->items.size(); ++i) {
-                    ArrayExpr *item = (ArrayExpr *)arrayExpr->items[i];
-                    item->itemType = arrayVar->items;
-                }
-                if (items->type == ARRAY_VAR) {
-                    arrayVar = (ArrayVariable *)items;
+                if (var->items->type == ARRAY_VAR) {
+                    ArrayVariable *arrayVar = (ArrayVariable *)var->items;
+                    for (int i = 0; i < expr->items.size(); ++i) {
+                        ArrayExpr *item = (ArrayExpr *)expr->items[i];
+                        item->itemType = arrayVar->items;
+                    }
+                    expr = (ArrayExpr *)expr->items.back();
+                    var = arrayVar;
                 } else {
                     break;
                 }

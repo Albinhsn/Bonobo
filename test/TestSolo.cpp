@@ -51,6 +51,10 @@ int main() {
     nmbr_of_tests++;
     runTest("IntArrArrayTest", arr4, "3", failed);
 
+    std::string arr7 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; var c: arr[int] = b[0]; printf(\"%d\", c[0]);";
+    nmbr_of_tests++;
+    runTest("3DIntArrayTest", arr7, "1", failed);
+
     std::string arr5 =
         "struct foo{bar:int;}; var a: arr[foo] = [foo(1), foo(2), foo(3)]; var b: foo = a[2]; printf(\"%d\", b.bar);";
     nmbr_of_tests++;

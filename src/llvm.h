@@ -23,7 +23,6 @@ class LLVMStruct {
     std::vector<std::string> fields;
     LLVMStruct(std::vector<llvm::Type *> fieldTypes, std::string structName, std::vector<std::string> fields,
                llvm::LLVMContext *ctx) {
-
         this->fields = fields;
         this->structType = llvm::StructType::create(*ctx, fieldTypes, structName);
     }
@@ -516,6 +515,7 @@ class LLVMCompiler {
 
         return concStringInstance;
     }
+
     llvm::Value *createStruct(CallExpr *callExpr) {
         std::string name = callExpr->callee.lexeme;
         LLVMStruct *strukt = this->structs[name];
@@ -807,7 +807,9 @@ class LLVMCompiler {
                     return this->builder->CreateLoad(type, idxGEP);
                 }
             }
-            printf("couldn't do it\n");
+            printf("couldn't cast index variable, was type: ");
+            debugValueType(variable->getType(), this->ctx);
+            printf("\n");
             exit(1);
         }
         case ARRAY_EXPR: {
@@ -819,18 +821,16 @@ class LLVMCompiler {
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
             // Is ptr to objects
-            llvm::Value *arrGep = nullptr;
             if (elementType == nullptr) {
-                arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
-                                                   {this->builder->getInt32(arrayExpr->items.size() * 8)});
+                llvm::Value *arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
+                                                                {this->builder->getInt32(arrayExpr->items.size() * 8)});
                 storeArray(arrGep, arrayInstance);
                 storePtrArrayItems(arrayExpr, arrayInstance);
-
             } else {
                 llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayExpr->items.size());
                 llvm::GlobalVariable *globalArray = createGlobalArray(arrayExpr, arrayType);
-                arrGep = this->builder->CreateGEP(arrayType, globalArray,
-                                                  {this->builder->getInt32(0), this->builder->getInt32(0)});
+                llvm::Value *arrGep = this->builder->CreateGEP(
+                    arrayType, globalArray, {this->builder->getInt32(0), this->builder->getInt32(0)});
                 storeArray(arrGep, arrayInstance);
             }
             storeArraySize(this->builder->getInt32(arrayExpr->items.size()), arrayInstance);

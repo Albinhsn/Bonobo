@@ -2,14 +2,9 @@
 
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
-
 ## ToDo
 
-* Clean up a lot again :)
-
 * a[][] doesn't work
-
-* 3D array and more
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
