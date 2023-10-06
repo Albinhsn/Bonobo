@@ -105,12 +105,25 @@ void debugExpression(Expr *expr) {
         }
         break;
     }
+    case INC_EXPR: {
+        IncExpr *incExpr = (IncExpr *)expr;
+        if (incExpr->op == INC) {
+            printf("++");
+        }
+        if (incExpr->op == DEC) {
+            printf("--");
+        }
+        debugExpression(incExpr->expr);
+        break;
+    }
     case UNARY_EXPR: {
         UnaryExpr *unaryExpr = (UnaryExpr *)expr;
         if (unaryExpr->op == BANG_UNARY) {
             printf("!");
-        } else {
+        } else if (unaryExpr->op == NEG_UNARY) {
             printf("-");
+        } else {
+            printf("+");
         }
         debugExpression(unaryExpr->right);
         break;

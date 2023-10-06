@@ -236,7 +236,6 @@ static void literal(Expr *&expr) {
             literal(binaryExpr->right);
             break;
         }
-
         case LOGICAL_EXPR: {
             LogicalExpr *logicalExpr = (LogicalExpr *)expr;
             literal(logicalExpr->right);
@@ -258,7 +257,6 @@ static void literal(Expr *&expr) {
             break;
         }
         default: {
-            printf("%d \n", expr->type == LOGICAL_EXPR);
             errorAt("Can't add literal to expr");
             break;
         }
@@ -425,6 +423,16 @@ static void identifier(Expr *&expr) {
         return;
     }
     switch (expr->type) {
+    case INC_EXPR: {
+        IncExpr *incExpr = (IncExpr *)expr;
+        if (incExpr->expr == nullptr) {
+            identifier(incExpr->expr);
+            expr = incExpr;
+            break;
+        }
+        errorAt("Can't add identifier to inc expr");
+        break;
+    }
     case BINARY_EXPR: {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
         identifier(binaryExpr->right);
@@ -512,16 +520,77 @@ static bool isChildUnary(Expr *&expr) {
 
     return false;
 }
+static bool isEmptyChildUnary(Expr *&expr) {
+    if (expr == nullptr) {
+        return false;
+    } else if (expr->type == UNARY_EXPR) {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        return unaryExpr->right == nullptr ? false : true;
+    } else if (expr->type == BINARY_EXPR) {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        return isEmptyChildUnary(binaryExpr->right);
+    }
 
+    return false;
+}
+
+static void plus(Expr *&expr) {
+    if (expr == nullptr) {
+        expr = new UnaryExpr(PLUS_UNARY);
+        return;
+    }
+    switch (expr->type) {
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        expr = new IncExpr(nullptr, INC);
+        break;
+    }
+    case BINARY_EXPR: {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        if (binaryExpr->right == nullptr && binaryExpr->op == ADD && binaryExpr->left->type == VAR_EXPR) {
+            expr = new IncExpr(binaryExpr->left, INC);
+        } else if (isChildUnary(binaryExpr->right) || isEmptyChildUnary(binaryExpr->right)) {
+            plus(binaryExpr->right);
+            expr = binaryExpr;
+        } else {
+            expr = new BinaryExpr(expr, ADD);
+        }
+        break;
+    }
+    case LOGICAL_EXPR: {
+        LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+        plus(logicalExpr->right);
+        expr = logicalExpr;
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        plus(comparisonExpr->right);
+        expr = comparisonExpr;
+        break;
+    }
+    default: {
+        expr = new BinaryExpr(expr, ADD);
+        break;
+    }
+    }
+}
 static void minus(Expr *&expr) {
     if (expr == nullptr) {
         expr = new UnaryExpr(NEG_UNARY);
         return;
     }
     switch (expr->type) {
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        expr = new IncExpr(nullptr, DEC);
+        break;
+    }
     case BINARY_EXPR: {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
-        if (isChildUnary(binaryExpr->right)) {
+        if (binaryExpr->right == nullptr && binaryExpr->op == SUB && binaryExpr->left->type == VAR_EXPR) {
+            expr = new IncExpr(binaryExpr->left, DEC);
+        } else if (isChildUnary(binaryExpr->right) || isEmptyChildUnary(binaryExpr->right)) {
             minus(binaryExpr->right);
             expr = binaryExpr;
         } else {
@@ -697,7 +766,7 @@ static Expr *expression(Expr *expr) {
             break;
         }
         case TOKEN_PLUS: {
-            operation(expr);
+            plus(expr);
             break;
         }
         case TOKEN_MINUS: {

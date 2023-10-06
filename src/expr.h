@@ -6,6 +6,7 @@
 
 enum ExprType {
     BINARY_EXPR,
+    INC_EXPR,
     GROUPING_EXPR,
     LOGICAL_EXPR,
     LITERAL_EXPR,
@@ -19,7 +20,7 @@ enum ExprType {
     DOT_EXPR,
 };
 
-enum UnaryOp { BANG_UNARY, NEG_UNARY };
+enum UnaryOp { BANG_UNARY, NEG_UNARY, PLUS_UNARY};
 
 enum LogicalOp { OR_LOGICAL, AND_LOGICAL };
 
@@ -40,10 +41,24 @@ enum LiteralType {
 
 enum BinaryOp { ADD, SUB, MUL, DIV };
 
+enum IncOp { INC, DEC };
+
 class Expr {
   private:
   public:
     ExprType type;
+};
+
+class IncExpr : public Expr {
+  private:
+  public:
+    Expr *expr;
+    IncOp op;
+    IncExpr(Expr *expr, IncOp op) {
+        this->expr = expr;
+        this->op = op;
+        this->type = INC_EXPR;
+    }
 };
 
 class BinaryExpr : public Expr {

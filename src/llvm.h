@@ -35,6 +35,7 @@ class LLVMFunction {
     LLVMFunction *enclosing;
     std::vector<std::vector<llvm::AllocaInst *>> scopedVariables;
     std::map<std::string, int> funcArgs;
+    std::map<llvm::Value *, llvm::Type *> arrayElements;
     llvm::BasicBlock *entryBlock;
     ExitBlock *exitBlock;
     llvm::Function *function;
@@ -210,9 +211,22 @@ class LLVMCompiler {
                 return this->builder->getDoubleTy();
             } else if (itemType->type == BOOL_VAR) {
                 return this->builder->getInt1Ty();
+            } else if (itemType->type == ARRAY_VAR) {
+                return this->internalStructs["array"];
+            } else if (itemType->type == STRUCT_VAR) {
+                StructVariable *structVar = (StructVariable *)itemType;
+                if (this->structs.count(structVar->structName.lexeme)) {
+                    return this->structs[structVar->structName.lexeme]->structType;
+                } else {
+                    printf("trying to lookup unknown struct '%s'\n", structVar->structName.lexeme.c_str());
+                    exit(1);
+                }
+            } else if (itemType->type == STR_VAR) {
+                return this->internalStructs["array"];
             }
         }
-        return nullptr;
+        printf("trying to lookup unknown var \n");
+        exit(1);
     }
 
     llvm::Type *getVariableLLVMType(Variable *var) {
@@ -802,14 +816,37 @@ class LLVMCompiler {
                     return this->builder->CreateLoad(type, ptr);
 
                 } else {
-
                     llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
                     return this->builder->CreateLoad(type, idxGEP);
                 }
+            } else if (variable->getType() == this->internalStructs["array"]) {
+                llvm::Value *loadedArray = loadArray(variable);
+                if (this->function->arrayElements.count(loadedArray) == 0) {
+                    printf("couldn't find array\n");
+                }
+                printf("could find array\n");
+                llvm::Type *type = this->function->arrayElements[loadedArray];
+                exit(1);
             }
             printf("couldn't cast index variable, was type: ");
             debugValueType(variable->getType(), this->ctx);
             printf("\n");
+            exit(1);
+        }
+        case INC_EXPR: {
+            IncExpr *incExpr = (IncExpr *)expr;
+            llvm::Value *value = compileExpression(incExpr->expr);
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+                llvm::Value *loadedValue = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+                llvm::Value *valueOp = nullptr;
+                if (incExpr->op == INC) {
+                    valueOp = this->builder->CreateAdd(loadedValue, this->builder->getInt32(1));
+                } else {
+                    valueOp = this->builder->CreateSub(loadedValue, this->builder->getInt32(1));
+                }
+                return this->builder->CreateStore(valueOp, value);
+            }
+            printf("can't increment non allocation?\n");
             exit(1);
         }
         case ARRAY_EXPR: {
@@ -821,7 +858,7 @@ class LLVMCompiler {
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
             // Is ptr to objects
-            if (elementType == nullptr) {
+            if (elementType == this->internalStructs["array"] || elementType->isStructTy()) {
                 llvm::Value *arrGep = this->builder->CreateCall(this->libraryFuncs["malloc"],
                                                                 {this->builder->getInt32(arrayExpr->items.size() * 8)});
                 storeArray(arrGep, arrayInstance);
@@ -838,6 +875,14 @@ class LLVMCompiler {
             return arrayInstance;
         }
         case MAP_EXPR: {
+            MapExpr *mapExpr = (MapExpr *)expr;
+            std::vector<llvm::Value *> keys = std::vector<llvm::Value *>(mapExpr->keys.size());
+            std::vector<llvm::Value *> values = std::vector<llvm::Value *>(mapExpr->values.size());
+            for (int i = 0; i < keys.size(); ++i) {
+                keys[i] = compileExpression(mapExpr->keys[i]);
+                values[i] = compileExpression(mapExpr->values[i]);
+            }
+            // llvm::Type *elementType = ;
         }
         case CALL_EXPR: {
             CallExpr *callExpr = (CallExpr *)expr;
@@ -1045,9 +1090,6 @@ class LLVMCompiler {
     }
     void addInternalStructs() {
         std::map<std::string, llvm::StructType *> strukts = {};
-        // Map
-        // std::vector<llvm::Type *> mapFieldTypes = {};
-        // strukts["map"] = llvm::StructType::create(*this->ctx, mapFieldTypes, "map");
 
         // Array
         //    Int, Double, Bool, Ptr, Strng is just this
@@ -1056,6 +1098,9 @@ class LLVMCompiler {
         //  Allocated capacity
         std::vector<llvm::Type *> arrayFieldTypes = {this->builder->getPtrTy(), this->builder->getInt32Ty()};
         strukts["array"] = llvm::StructType::create(arrayFieldTypes, "array");
+
+        std::vector<llvm::Type *> mapFieldTypes = {strukts["array"], strukts["array"]};
+        strukts["map"] = llvm::StructType::create(*this->ctx, mapFieldTypes, "map");
 
         this->internalStructs = strukts;
     }

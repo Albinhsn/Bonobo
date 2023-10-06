@@ -4,31 +4,29 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* a[][] doesn't work
-
 ## Bugs/Poorly implemented stuff LLVM backend
+
 
 
 ## TODO LLVM backend
 
+* Declare internal functions to use/support arrays/maps
+
 * MapExpr
-    * Index map 
-    
-* Typecheck 2d Arrays
-    * Check recursively when compiler gives array_expr it's items to support 2d arrays
+    * Create a struct for map, x2 array for keys/values
+    * Create function "native" to maps
 
-* itemType in ArrayDeclaration?
-    * Create the array and check its type 
-    * Then return it and check it's validity for the stmt
-    * if creating == [1,2] it doesn't matter
-    * Maybe just store the same way you do with string, ala you store allocations and their type
+* Index map 
 
-* Write c functions to create a standard library
+* Write c++ data structures and functions to create a standard library
     * Or just write functions in bonobo
 
-* i++
-    * Inc/Dec expr
+* Be able to create and import functions from other module?
 
+* (*/+-)=
+
+* a[][] doesn't work
+    * Prolly need to store smth to track what arrays contains
 
 ## TODO x86_64 backend
 
