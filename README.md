@@ -4,14 +4,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* (*/+-)=
-
 * a[][] doesn't work
     * Prolly need to store smth to track what arrays contains
 
 ## Bugs/Poorly implemented stuff LLVM backend
-
-* Fix BinaryOp function or smth llvm
 
 ## TODO LLVM backend
 

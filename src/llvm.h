@@ -612,6 +612,50 @@ class LLVMCompiler {
         }
     }
 
+    llvm::Value *binaryOp(llvm::Value *left, llvm::Value *right, BinaryOp op) {
+        left = loadAllocaInst(left);
+        right = loadAllocaInst(right);
+
+        // Check that both are literal
+        //    Create new LLVMValue after op
+        if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy()) {
+            switch (op) {
+            case ADD: {
+                return this->builder->CreateAdd(left, right);
+            }
+            case SUB: {
+                return this->builder->CreateSub(left, right);
+            }
+            case MUL: {
+                return this->builder->CreateMul(left, right);
+            }
+            case DIV: {
+                return this->builder->CreateUDiv(left, right);
+            }
+            }
+        }
+
+        castIntDouble(left, right);
+        if (left->getType()->isDoubleTy() && right->getType()->isDoubleTy()) {
+            switch (op) {
+            case ADD: {
+                return this->builder->CreateFAdd(left, right);
+            }
+            case SUB: {
+                return this->builder->CreateFSub(left, right);
+            }
+            case MUL: {
+                return this->builder->CreateFMul(left, right);
+            }
+            case DIV: {
+                return this->builder->CreateFDiv(left, right);
+            }
+            }
+        }
+        printf("Can't do this binary op\n");
+        exit(1);
+    }
+
     llvm::Value *compileExpression(Expr *expr) {
         switch (expr->type) {
         case BINARY_EXPR: {
@@ -623,47 +667,7 @@ class LLVMCompiler {
             if (isStringTy(left) && isStringTy(right)) {
                 return concatStrings(left, right);
             }
-            left = loadAllocaInst(left);
-            right = loadAllocaInst(right);
-
-            // Check that both are literal
-            //    Create new LLVMValue after op
-            if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy()) {
-                switch (binaryExpr->op) {
-                case ADD: {
-                    return this->builder->CreateAdd(left, right);
-                }
-                case SUB: {
-                    return this->builder->CreateSub(left, right);
-                }
-                case MUL: {
-                    return this->builder->CreateMul(left, right);
-                }
-                case DIV: {
-                    return this->builder->CreateUDiv(left, right);
-                }
-                }
-            }
-
-            castIntDouble(left, right);
-            if (left->getType()->isDoubleTy() && right->getType()->isDoubleTy()) {
-                switch (binaryExpr->op) {
-                case ADD: {
-                    return this->builder->CreateFAdd(left, right);
-                }
-                case SUB: {
-                    return this->builder->CreateFSub(left, right);
-                }
-                case MUL: {
-                    return this->builder->CreateFMul(left, right);
-                }
-                case DIV: {
-                    return this->builder->CreateFDiv(left, right);
-                }
-                }
-            }
-            printf("Can't do this binary op\n");
-            exit(1);
+            return binaryOp(left, right, binaryExpr->op);
         }
         case GROUPING_EXPR: {
             GroupingExpr *groupingExpr = (GroupingExpr *)expr;
@@ -932,26 +936,7 @@ class LLVMCompiler {
             llvm::Value *right = compileExpression(compStmt->right);
             llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(lookupVariable(compStmt->name.lexeme));
             llvm::Value *variable = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
-            llvm::Value *result = nullptr;
-            switch (compStmt->op) {
-            case ADD: {
-                result = this->builder->CreateAdd(right, variable);
-                break;
-            }
-            case SUB: {
-                result = this->builder->CreateSub(right, variable);
-                break;
-            }
-            case MUL: {
-                result = this->builder->CreateMul(right, variable);
-                break;
-            }
-            case DIV: {
-                result = this->builder->CreateUDiv(right, variable);
-                break;
-            }
-            }
-            this->builder->CreateStore(result, allocaInst);
+            this->builder->CreateStore(binaryOp(right, variable, compStmt->op), allocaInst);
             break;
         }
         case BREAK_STMT: {
