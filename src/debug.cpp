@@ -245,6 +245,27 @@ void debugVariable(Variable *var) {
 
 void debugStatement(Stmt *statement) {
     switch (statement->type) {
+    case COMP_ASSIGN_STMT: {
+        CompAssignStmt *compStmt = (CompAssignStmt *)statement;
+        printf("%s ", compStmt->name.lexeme.c_str());
+        switch(compStmt->op){
+          case ADD:{
+            printf("+");
+        }
+        case SUB:{
+            printf("-");
+        }
+        case MUL:{
+            printf("*");
+        }
+        case DIV:{
+            printf("/");
+        }
+      }
+      printf(" = ");
+      debugExpression(compStmt->right);
+      printf(";\n");
+    }
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)statement;
         printf("var ");

@@ -4,9 +4,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
+* (*/+-)=
+
+* a[][] doesn't work
+    * Prolly need to store smth to track what arrays contains
+
 ## Bugs/Poorly implemented stuff LLVM backend
 
-
+* Fix BinaryOp function or smth llvm
 
 ## TODO LLVM backend
 
@@ -23,10 +28,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Be able to create and import functions from other module?
 
-* (*/+-)=
-
-* a[][] doesn't work
-    * Prolly need to store smth to track what arrays contains
 
 ## TODO x86_64 backend
 

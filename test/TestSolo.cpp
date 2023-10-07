@@ -51,7 +51,8 @@ int main() {
     nmbr_of_tests++;
     runTest("IntArrArrayTest", arr4, "3", failed);
 
-    std::string arr7 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; var c: arr[int] = b[0]; printf(\"%d\", c[0]);";
+    std::string arr7 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; var c: arr[int] = b[0]; "
+                       "printf(\"%d\", c[0]);";
     nmbr_of_tests++;
     runTest("3DIntArrayTest", arr7, "1", failed);
 
@@ -111,21 +112,26 @@ int main() {
     nmbr_of_tests++;
     runTest("StruktTest2", strukt2, "2.500000", failed);
 
-    // For test
-    std::string for1 = "for(var i: int = 0; i < 5; i = i + 1){printf(\"%d\", i);}";
+    // For tes++t
+    std::string for1 = "for(var i: int = 0; i < 5; i++){printf(\"%d\", i);}";
     nmbr_of_tests++;
-    runTest("ForTest", for1, "01234", failed);
+    runTest("ForTest1 basic", for1, "01234", failed);
 
-    std::string for2 = "for(var i: int = 0; i < 5; i = i + 1){if(i > 3){break;}printf(\"%d\", i);}";
+    std::string for3 = "for(var i: int = 0; i < 5; i+=1){printf(\"%d\", i);}";
     nmbr_of_tests++;
-    runTest("ForTest", for2, "0123", failed);
+    runTest("ForTest3 basic2", for3, "01234", failed);
+
+    std::string for2 = "for(var i: int = 0; i < 5; i++){if(i > 3){break;}printf(\"%d\", i);}";
+    nmbr_of_tests++;
+    runTest("ForTest2 break", for2, "0123", failed);
+
 
     // While test
-    std::string while1 = "var i: int = 0; while(i < 5){printf(\"%d\", i); i = i + 1;}";
+    std::string while1 = "var i: int = 0; while(i < 5){printf(\"%d\", i); i++;}";
     nmbr_of_tests++;
     runTest("WhileTest", while1, "01234", failed);
 
-    std::string while2 = "var i: int = 0; while(i < 5){if(i > 3){break;}printf(\"%d\", i); i = i + 1;}";
+    std::string while2 = "var i: int = 0; while(i < 5){if(i > 3){break;}printf(\"%d\", i); i++;}";
     nmbr_of_tests++;
     runTest("WhileTest", while2, "0123", failed);
 

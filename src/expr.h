@@ -20,7 +20,7 @@ enum ExprType {
     DOT_EXPR,
 };
 
-enum UnaryOp { BANG_UNARY, NEG_UNARY, PLUS_UNARY};
+enum UnaryOp { BANG_UNARY, NEG_UNARY, PLUS_UNARY };
 
 enum LogicalOp { OR_LOGICAL, AND_LOGICAL };
 
@@ -150,6 +150,7 @@ class LiteralExpr : public Expr {
         this->literal = literal;
     }
 };
+
 
 class UnaryExpr : public Expr {
   private:

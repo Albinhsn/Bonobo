@@ -5,6 +5,7 @@
 
 enum StatementType {
     EXPR_STMT,
+    COMP_ASSIGN_STMT,
     ASSIGN_STMT,
     RETURN_STMT,
     VAR_STMT,
@@ -22,12 +23,24 @@ class Stmt {
     StatementType type;
 };
 
-class BreakStmt : public Stmt{
+class CompAssignStmt : public Stmt {
   private:
   public:
-  BreakStmt(){
-    this->type = BREAK_STMT;
-  }
+    BinaryOp op;
+    Token name;
+    Expr *right;
+    CompAssignStmt(BinaryOp op, Token name) {
+        this->type = COMP_ASSIGN_STMT;
+        this->op = op;
+        this->name = name;
+        this->right = nullptr;
+    }
+};
+
+class BreakStmt : public Stmt {
+  private:
+  public:
+    BreakStmt() { this->type = BREAK_STMT; }
 };
 
 class ExprStmt : public Stmt {

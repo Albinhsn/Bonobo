@@ -58,7 +58,6 @@ static void consume(TokenType type, const char *message) {
         advance();
         return;
     }
-
     errorAt(message);
 }
 
@@ -68,6 +67,20 @@ static bool match(TokenType type) {
     }
     advance();
     return true;
+}
+
+static bool nextIsBinaryOp() {
+    switch (parser->current->type) {
+    case TOKEN_PLUS:
+    case TOKEN_MINUS:
+    case TOKEN_STAR:
+    case TOKEN_SLASH: {
+        return true;
+    }
+    default: {
+    }
+    }
+    return false;
 }
 
 static VarType getVarType() {
@@ -905,6 +918,21 @@ static Stmt *expressionStatement() {
             assignStmt->name = ident;
             assignStmt->value = expression(assignStmt->value);
             return assignStmt;
+        } else if (nextIsBinaryOp()) {
+            advance();
+            BinaryOp op = getBinaryOp(parser->previous);
+            if (match(TOKEN_EQUAL)) {
+                CompAssignStmt *stmt = new CompAssignStmt(op, ident);
+                stmt->right = expression(nullptr);
+                return stmt;
+            } else {
+                ExprStmt *exprStmt = new ExprStmt();
+                VarExpr *expr = new VarExpr(ident);
+                BinaryExpr *binaryExpr = new BinaryExpr(expr, op);
+                exprStmt->expression = expression(binaryExpr);
+                return exprStmt;
+            }
+
         } else {
             ExprStmt *exprStmt = new ExprStmt();
             VarExpr *expr = new VarExpr(ident);
