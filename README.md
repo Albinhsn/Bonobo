@@ -9,6 +9,12 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
+* Prolly need to copy and not send index by reference
+
+* A lot of type checking missed
+
+* Improve error handling
+
 ## TODO LLVM backend
 
 * Declare internal functions to use/support arrays/maps
