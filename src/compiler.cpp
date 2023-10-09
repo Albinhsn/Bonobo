@@ -158,7 +158,7 @@ static Variable *parseVariable() {
     Variable *var = new Variable();
 
     consume(TOKEN_IDENTIFIER, "Expected identifier for variable");
-    var->name = *parser->previous;
+    var->name = parser->previous->lexeme;
 
     consume(TOKEN_COLON, "Expected ':' after var name");
     var = parseVarType(var);
@@ -241,7 +241,7 @@ static LiteralType getLiteralType() {
 
 static void literal(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new LiteralExpr(*parser->previous, getLiteralType());
+        expr = new LiteralExpr(parser->previous->lexeme, getLiteralType());
     } else {
         switch (expr->type) {
         case BINARY_EXPR: {
@@ -432,7 +432,7 @@ static void comparison(Expr *&expr) {
 
 static void identifier(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new VarExpr(*parser->previous);
+        expr = new VarExpr(parser->previous->lexeme);
         return;
     }
     switch (expr->type) {
@@ -483,14 +483,14 @@ static void dot(Expr *&expr) {
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(varExpr, *parser->previous);
+        DotExpr *dotExpr = new DotExpr(varExpr, parser->previous->lexeme);
         expr = dotExpr;
         break;
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(callExpr, *parser->previous);
+        DotExpr *dotExpr = new DotExpr(callExpr, parser->previous->lexeme);
         expr = dotExpr;
         break;
     }
@@ -912,7 +912,7 @@ static Stmt *varDeclaration() {
 
 static Stmt *expressionStatement() {
     if (match(TOKEN_IDENTIFIER)) {
-        Token ident = *parser->previous;
+        std::string ident = parser->previous->lexeme;
         if (match(TOKEN_EQUAL)) {
             AssignStmt *assignStmt = new AssignStmt();
             assignStmt->name = ident;
@@ -1017,7 +1017,7 @@ static Stmt *whileStatement() {
 static Stmt *structDeclaration() {
     StructStmt *structStmt = new StructStmt();
     consume(TOKEN_IDENTIFIER, "Expect struct name");
-    structStmt->name = *parser->previous;
+    structStmt->name = parser->previous->lexeme;
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     while (!match(TOKEN_RIGHT_BRACE)) {
         structStmt->fields.push_back(parseVariable());
@@ -1030,7 +1030,7 @@ static Stmt *structDeclaration() {
 static Stmt *funDeclaration() {
     FuncStmt *funcStmt = new FuncStmt();
     consume(TOKEN_IDENTIFIER, "Need function name in func declaration");
-    funcStmt->name = *parser->previous;
+    funcStmt->name = parser->previous->lexeme;
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after func name");
     if (!match(TOKEN_RIGHT_PAREN)) {
@@ -1044,7 +1044,7 @@ static Stmt *funDeclaration() {
     consume(TOKEN_ARROW, "Expect '->' after func params");
     funcStmt->returnType = parseVarType(new Variable());
     if (funcStmt->returnType->type == STRUCT_VAR) {
-        funcStmt->returnType->name = *parser->previous;
+        funcStmt->returnType->name = parser->previous->lexeme;
     }
 
     consume(TOKEN_LEFT_BRACE, "Expect '{' after returntype in func declaration");

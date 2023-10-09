@@ -99,9 +99,9 @@ void debugExpression(Expr *expr) {
     case LITERAL_EXPR: {
         LiteralExpr *literalExpr = (LiteralExpr *)expr;
         if (literalExpr->literalType == STR_LITERAL) {
-            printf("\"%s\"", literalExpr->literal.lexeme.c_str());
+            printf("\"%s\"", literalExpr->literal.c_str());
         } else {
-            printf("%s", literalExpr->literal.lexeme.c_str());
+            printf("%s", literalExpr->literal.c_str());
         }
         break;
     }
@@ -130,12 +130,12 @@ void debugExpression(Expr *expr) {
     }
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
-        printf("%s", varExpr->name.lexeme.c_str());
+        printf("%s", varExpr->name.c_str());
         break;
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
-        printf("%s(", callExpr->callee.lexeme.c_str());
+        printf("%s(", callExpr->callee.c_str());
         for (int i = 0; i < callExpr->arguments.size(); i++) {
             debugExpression(callExpr->arguments[i]);
             if (i < callExpr->arguments.size() - 1) {
@@ -215,8 +215,8 @@ const char *debugVarType(VarType varType) {
 }
 
 void debugVariable(Variable *var) {
-    if (var->name.lexeme != "never assigned name :)") {
-        printf("%s:", var->name.lexeme.c_str());
+    if (var->name != "never assigned name :)") {
+        printf("%s:", var->name.c_str());
     }
     switch (var->type) {
     case ARRAY_VAR: {
@@ -247,7 +247,7 @@ void debugStatement(Stmt *statement) {
     switch (statement->type) {
     case COMP_ASSIGN_STMT: {
         CompAssignStmt *compStmt = (CompAssignStmt *)statement;
-        printf("%s ", compStmt->name.lexeme.c_str());
+        printf("%s ", compStmt->name.c_str());
         switch(compStmt->op){
           case ADD:{
             printf("+");
@@ -303,7 +303,7 @@ void debugStatement(Stmt *statement) {
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)statement;
-        printf("struct %s\n{\n", structStmt->name.lexeme.c_str());
+        printf("struct %s\n{\n", structStmt->name.c_str());
         for (int i = 0; i < structStmt->fields.size(); i++) {
             debugVariable(structStmt->fields[i]);
             printf(";\n");
@@ -343,7 +343,7 @@ void debugStatement(Stmt *statement) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)statement;
-        printf("fun %s(", funcStmt->name.lexeme.c_str());
+        printf("fun %s(", funcStmt->name.c_str());
         for (int i = 0; i < funcStmt->params.size(); i++) {
             debugVariable(funcStmt->params[i]);
             if (i != funcStmt->params.size() - 1) {
@@ -360,7 +360,7 @@ void debugStatement(Stmt *statement) {
     }
     case ASSIGN_STMT: {
         AssignStmt *assignStmt = (AssignStmt *)statement;
-        printf("%s = ", assignStmt->name.lexeme.c_str());
+        printf("%s = ", assignStmt->name.c_str());
         debugExpression(assignStmt->value);
         printf(";");
         break;

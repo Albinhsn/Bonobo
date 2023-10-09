@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "variables.h"
+#include <algorithm>
 #include <llvm/Support/Casting.h>
 #include <memory>
 
@@ -34,22 +35,22 @@ class LLVMFunction {
     bool broke;
     LLVMFunction *enclosing;
     std::vector<std::vector<llvm::AllocaInst *>> scopedVariables;
-    std::map<std::string, int> funcArgs;
+    std::map<std::string, int> functionArguments;
     std::map<llvm::Value *, llvm::Type *> arrayElements;
     llvm::BasicBlock *entryBlock;
     ExitBlock *exitBlock;
     llvm::Function *function;
-    llvm::FunctionType *funcType;
+    llvm::FunctionType *functionType;
 
     LLVMFunction(LLVMFunction *enclosing, llvm::FunctionType *funcType, std::string name,
                  std::map<std::string, int> funcArgs, llvm::LLVMContext *ctx, llvm::Module *module) {
         this->broke = false;
         this->exitBlock = nullptr;
         this->enclosing = enclosing;
-        this->funcType = funcType;
+        this->functionType = funcType;
         this->function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name, *module);
         this->scopedVariables = std::vector<std::vector<llvm::AllocaInst *>>(1);
-        this->funcArgs = funcArgs;
+        this->functionArguments = funcArgs;
         this->entryBlock = llvm::BasicBlock::Create(*ctx, "entry", this->function);
     }
 };
@@ -59,7 +60,7 @@ class LLVMCompiler {
     llvm::IRBuilder<> *builder;
     std::vector<llvm::Function *> callableFunctions;
     llvm::LLVMContext *ctx;
-    LLVMFunction *function;
+    LLVMFunction *llvmFunction;
     std::map<std::string, llvm::StructType *> internalStructs;
     std::map<std::string, llvm::FunctionCallee> libraryFuncs;
     llvm::Module *module;
@@ -78,8 +79,8 @@ class LLVMCompiler {
 
     bool nameIsAlreadyDeclared(std::string name) {
         // Check variables
-        for (int i = 0; i < this->function->scopedVariables.back().size(); i++) {
-            if (this->function->scopedVariables.back()[i]->getName().str() == name) {
+        for (int i = 0; i < this->llvmFunction->scopedVariables.back().size(); i++) {
+            if (this->llvmFunction->scopedVariables.back()[i]->getName().str() == name) {
                 return true;
             }
         }
@@ -102,21 +103,12 @@ class LLVMCompiler {
 
         return false;
     }
-    bool compileFuncBody(std::vector<Stmt *> body) {
-        for (int i = 0; i < body.size(); ++i) {
-            compileStatement(body[i]);
-            if (body[i]->type == RETURN_STMT) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     bool compileBranch(std::vector<Stmt *> branch) {
         for (int i = 0; i < branch.size(); ++i) {
             if (branch[i]->type == BREAK_STMT) {
-                this->function->broke = true;
-                this->builder->CreateBr(this->function->exitBlock->exitBlock);
+                this->llvmFunction->broke = true;
+                this->builder->CreateBr(this->llvmFunction->exitBlock->exitBlock);
                 return false;
             }
             compileStatement(branch[i]);
@@ -129,25 +121,25 @@ class LLVMCompiler {
     void enterThenBlock(llvm::Value *condition, llvm::BasicBlock *thenBlock, llvm::BasicBlock *elseBlock) {
         this->builder->CreateCondBr(condition, thenBlock, elseBlock);
         this->builder->SetInsertPoint(thenBlock);
-        this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
+        this->llvmFunction->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
     }
 
     void enterMergeBlock(bool returned, llvm::BasicBlock *mergeBlock) {
-        this->function->scopedVariables.pop_back();
-        if (!returned && !this->function->broke) {
+        this->llvmFunction->scopedVariables.pop_back();
+        if (!returned && !this->llvmFunction->broke) {
             this->builder->CreateBr(mergeBlock);
         }
         this->builder->SetInsertPoint(mergeBlock);
     }
 
     void enterElseBlock(bool returned, llvm::BasicBlock *elseBlock, llvm::BasicBlock *mergeBlock) {
-        this->function->scopedVariables.pop_back();
-        if (!returned && !this->function->broke) {
+        this->llvmFunction->scopedVariables.pop_back();
+        if (!returned && !this->llvmFunction->broke) {
             this->builder->CreateBr(mergeBlock);
         }
         this->builder->SetInsertPoint(elseBlock);
-        this->function->broke = false;
-        this->function->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
+        this->llvmFunction->broke = false;
+        this->llvmFunction->scopedVariables.push_back(std::vector<llvm::AllocaInst *>());
     }
 
     llvm::IRBuilder<> *enterFuncScope(FuncStmt *funcStmt) {
@@ -155,65 +147,60 @@ class LLVMCompiler {
         std::vector<llvm::Type *> params = std::vector<llvm::Type *>(funcStmt->params.size());
         std::map<std::string, int> funcArgs;
         for (int i = 0; i < funcStmt->params.size(); ++i) {
-            params[i] = getVariableLLVMType(funcStmt->params[i]);
-            funcArgs[funcStmt->params[i]->name.lexeme] = i;
+            params[i] = getLLVMTypeFromVariable(funcStmt->params[i]);
+            funcArgs[funcStmt->params[i]->name] = i;
         }
 
         // Ret type
-        llvm::Type *returnType = getVariableLLVMType(funcStmt->returnType);
+        llvm::Type *returnType = getLLVMTypeFromVariable(funcStmt->returnType);
 
         // Fix func type
         llvm::FunctionType *funcType = llvm::FunctionType::get(returnType, params, false);
-        this->function =
-            new LLVMFunction(this->function, funcType, funcStmt->name.lexeme, funcArgs, this->ctx, this->module);
+        this->llvmFunction =
+            new LLVMFunction(this->llvmFunction, funcType, funcStmt->name, funcArgs, this->ctx, this->module);
         llvm::IRBuilder<> *prevBuilder = this->builder;
-        this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
+        this->builder = new llvm::IRBuilder<>(this->llvmFunction->entryBlock);
         return prevBuilder;
     }
 
     void checkValidFuncDeclaration(FuncStmt *funcStmt) {
-        if (nameIsAlreadyDeclared(funcStmt->name.lexeme)) {
+        if (nameIsAlreadyDeclared(funcStmt->name)) {
             printf("Can't declare function '%s', name is already "
                    "declared\n",
-                   funcStmt->name.lexeme.c_str());
+                   funcStmt->name.c_str());
             exit(1);
         }
-        if (this->function->enclosing) {
+        if (this->llvmFunction->enclosing) {
             printf("Can't declare a function in a function\n");
             exit(1);
         }
     }
 
-    void checkReturnType(bool returned, FuncStmt *funcStmt) {
-        if (!returned) {
-            if (!this->function->funcType->getReturnType()->isVoidTy()) {
-                printf("Non-void function does not return a value in "
-                       "'%s'\n",
-                       funcStmt->name.lexeme.c_str());
-                exit(1);
-            } else {
-                this->builder->CreateRetVoid();
-            }
-        }
-    }
-
     void exitFuncScope(llvm::IRBuilder<> *prevBuilder) {
-        this->callableFunctions.push_back(this->function->function);
-        this->function = this->function->enclosing;
+        this->callableFunctions.push_back(this->llvmFunction->function);
+        this->llvmFunction = this->llvmFunction->enclosing;
         this->builder = prevBuilder;
     }
 
-    llvm::Type *getArrayElementType(Variable *itemType) {
+    llvm::Type *getLLVMTypeFromVariable(Variable *itemType) {
         if (itemType != nullptr) {
-            if (itemType->type == INT_VAR) {
+            switch (itemType->type) {
+            case INT_VAR: {
                 return this->builder->getInt32Ty();
-            } else if (itemType->type == DOUBLE_VAR) {
+            }
+            case DOUBLE_VAR: {
                 return this->builder->getDoubleTy();
-            } else if (itemType->type == BOOL_VAR) {
+            }
+            case BOOL_VAR: {
                 return this->builder->getInt1Ty();
-            } else if (itemType->type == ARRAY_VAR) {
+            }
+            case ARRAY_VAR: {
                 return this->internalStructs["array"];
-            } else if (itemType->type == STRUCT_VAR) {
+            }
+            case STR_VAR: {
+                return this->internalStructs["array"];
+            }
+            case STRUCT_VAR: {
                 StructVariable *structVar = (StructVariable *)itemType;
                 if (this->structs.count(structVar->structName.lexeme)) {
                     return this->structs[structVar->structName.lexeme]->structType;
@@ -221,52 +208,15 @@ class LLVMCompiler {
                     printf("trying to lookup unknown struct '%s'\n", structVar->structName.lexeme.c_str());
                     exit(1);
                 }
-            } else if (itemType->type == STR_VAR) {
-                return this->internalStructs["array"];
+            }
+            default: {
+            }
             }
         }
         printf("trying to lookup unknown var \n");
         exit(1);
     }
 
-    llvm::Type *getVariableLLVMType(Variable *var) {
-        if (var == nullptr) {
-            printf("Variable is none in getVariableLLVMType\n");
-            exit(1);
-        }
-        switch (var->type) {
-        case INT_VAR: {
-            return this->builder->getInt32Ty();
-        }
-        case STR_VAR: {
-            return this->internalStructs["array"];
-        }
-        case DOUBLE_VAR: {
-            return this->builder->getDoubleTy();
-        }
-        case BOOL_VAR: {
-            return this->builder->getInt1Ty();
-        }
-        case ARRAY_VAR: {
-            return this->internalStructs["array"];
-        }
-        case STRUCT_VAR: {
-            StructVariable *structVar = (StructVariable *)var;
-            if (this->structs.count(structVar->name.lexeme)) {
-                return this->structs[structVar->name.lexeme]->structType;
-            }
-            printf("trying to return unknown struct '%s'\n", structVar->structName.lexeme.c_str());
-            exit(1);
-        }
-        case NIL_VAR: {
-            return this->builder->getVoidTy();
-        }
-        default: {
-            printf("unknown llvmType\n");
-            exit(1);
-        }
-        }
-    }
     llvm::MaybeAlign getAlignment(llvm::Type *type) { return llvm::MaybeAlign(type->getPrimitiveSizeInBits() / 8); }
 
     llvm::Function *lookupFunction(std::string name) {
@@ -275,24 +225,22 @@ class LLVMCompiler {
                 return this->callableFunctions[i];
             }
         }
-        return this->function->function->getName() == name ? this->function->function : nullptr;
+        return this->llvmFunction->function->getName() == name ? this->llvmFunction->function : nullptr;
     }
 
-    llvm::Value *lookupVariable(std::string name) {
-        if (this->function->enclosing) {
-            if (this->function->funcArgs.count(name)) {
-                int i = 0, value = this->function->funcArgs[name];
-                for (llvm::Function::arg_iterator arg = this->function->function->arg_begin();
-                     arg != this->function->function->arg_end(); ++arg) {
-                    if (i == value) {
-                        return arg;
-                    }
-                    ++i;
+    llvm::Value *lookupValue(std::string name) {
+        if (this->llvmFunction->enclosing && this->llvmFunction->functionArguments.count(name)) {
+            int i = 0;
+            for (llvm::Function::arg_iterator arg = this->llvmFunction->function->arg_begin();
+                 arg != this->llvmFunction->function->arg_end(); ++arg) {
+                if (i == this->llvmFunction->functionArguments[name]) {
+                    return arg;
                 }
+                ++i;
             }
         }
-        for (int i = this->function->scopedVariables.size() - 1; i >= 0; i--) {
-            std::vector<llvm::AllocaInst *> scopeVars = this->function->scopedVariables[i];
+        for (int i = this->llvmFunction->scopedVariables.size() - 1; i >= 0; i--) {
+            std::vector<llvm::AllocaInst *> scopeVars = this->llvmFunction->scopedVariables[i];
 
             for (int j = 0; j < scopeVars.size(); ++j) {
                 if (scopeVars[j]->getName().str() == name) {
@@ -305,22 +253,22 @@ class LLVMCompiler {
     }
 
     void compileLoopExit(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, Stmt *stmt = nullptr) {
-        if (!this->function->broke) {
+        if (!this->llvmFunction->broke) {
             if (stmt != nullptr) {
                 compileStatement(stmt);
             }
-            this->function->broke = false;
+            this->llvmFunction->broke = false;
             this->builder->CreateBr(headerBlock);
         }
 
-        this->function->exitBlock = this->function->exitBlock->prev;
+        this->llvmFunction->exitBlock = this->llvmFunction->exitBlock->prev;
         this->builder->SetInsertPoint(exitBlock);
     }
 
     void compileLoopBody(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, std::vector<Stmt *> body) {
         for (int i = 0; i < body.size(); ++i) {
             if (body[i]->type == BREAK_STMT) {
-                this->function->broke = true;
+                this->llvmFunction->broke = true;
                 this->builder->CreateBr(exitBlock);
                 break;
             }
@@ -333,7 +281,7 @@ class LLVMCompiler {
         this->builder->CreateBr(headerBlock);
         this->builder->SetInsertPoint(headerBlock);
 
-        this->function->exitBlock = new ExitBlock(this->function->exitBlock, exitBlock);
+        this->llvmFunction->exitBlock = new ExitBlock(this->llvmFunction->exitBlock, exitBlock);
         this->builder->CreateCondBr(compileExpression(condition), bodyBlock, exitBlock);
         this->builder->SetInsertPoint(bodyBlock);
     }
@@ -356,58 +304,27 @@ class LLVMCompiler {
         }
     }
 
-    void checkIndexCorrectness(llvm::Type *type, llvm::Value *index, llvm::Value *loadedVar) {
-        if (type == nullptr) {
-            printf("couldn't find var type\n");
-            exit(1);
-        }
-        if (!index->getType()->isIntegerTy()) {
-            printf("Can't index array with something other then int\n");
-            exit(1);
-        }
-
-        if (!loadedVar->getType()->isStructTy()) {
-            printf("can't index non struct - ");
-            debugValueType(loadedVar->getType(), this->ctx);
-            printf("\n");
-            exit(1);
-        }
-    }
-
     bool checkVariableValueMatch(Variable *var, llvm::Value *&value) {
-        if (value->getType() == llvm::Type::getInt32Ty(*this->ctx)) {
+        llvm::Type *type = value->getType();
+        if (type == this->builder->getInt32Ty()) {
             if (var->type == DOUBLE_VAR) {
                 value = this->builder->CreateUIToFP(value, this->builder->getDoubleTy());
                 return true;
             }
             return var->type == INT_VAR;
-
-        } else if (value->getType() == llvm::Type::getInt1Ty(*this->ctx)) {
+        } else if (type == this->builder->getInt1Ty()) {
             return var->type == BOOL_VAR;
-
-        } else if (value->getType() == llvm::Type::getDoubleTy(*this->ctx)) {
-            if (var->type == INT_VAR) {
-                value = this->builder->CreateFPToUI(value, this->builder->getInt32Ty());
-                return true;
-            }
+        } else if (type == this->builder->getDoubleTy()) {
             return var->type == DOUBLE_VAR;
-        } else if (value->getType()->isStructTy()) {
+        } else if (type->isStructTy()) {
             // ToDo this needs to check underlying type as well
             return var->type == STR_VAR || var->type == ARRAY_VAR || var->type == MAP_VAR || var->type == STRUCT_VAR;
         }
-        if (value->getType()->isPointerTy()) {
-            printf("was pointer\n");
-        } else if (value->getType() == llvm::Type::getInt8Ty(*this->ctx)) {
-            printf("was int8\n");
-        } else {
-            printf("unknown value\n");
-        }
-
         return false;
     }
 
     llvm::Value *compileLiteral(LiteralExpr *expr) {
-        std::string stringLiteral = expr->literal.lexeme;
+        std::string stringLiteral = expr->literal;
         switch (expr->literalType) {
         case STR_LITERAL: {
 
@@ -424,27 +341,21 @@ class LLVMCompiler {
             return this->builder->getInt32(stoi(stringLiteral));
         }
         case BOOL_LITERAL: {
-            if (stringLiteral == "true") {
-                return this->builder->getInt1(1);
-            } else {
-                return this->builder->getInt1(0);
-            }
+            return stringLiteral == "true" ? this->builder->getInt1(1) : this->builder->getInt1(0);
         }
         case DOUBLE_LITERAL: {
             return llvm::ConstantFP::get(this->builder->getDoubleTy(), stod(stringLiteral));
         }
         }
-        printf("how did we get here?\n");
-        exit(1);
     }
 
-    llvm::Value *loadArray(llvm::Value *value) {
-        llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], value, 0);
+    llvm::Value *loadArray(llvm::Value *arrayPtr) {
+        llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], arrayPtr, 0);
         return this->builder->CreateLoad(this->builder->getPtrTy(), ptr);
     }
 
-    llvm::Value *loadArraySize(llvm::Value *value) {
-        llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], value, 1);
+    llvm::Value *loadArraySize(llvm::Value *arrayPtr) {
+        llvm::Value *ptr = this->builder->CreateStructGEP(this->internalStructs["array"], arrayPtr, 1);
         return this->builder->CreateLoad(this->builder->getInt32Ty(), ptr);
     }
 
@@ -453,12 +364,6 @@ class LLVMCompiler {
             return this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
         }
         return value;
-    }
-
-    llvm::AllocaInst *createAllocation(llvm::Value *value, std::string name) {
-        llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(value->getType(), nullptr, name);
-        this->builder->CreateStore(value, allocaInst);
-        return allocaInst;
     }
 
     void storeStructField(llvm::StructType *structType, llvm::Value *structInstance, llvm::Value *toStore, uint field) {
@@ -475,21 +380,21 @@ class LLVMCompiler {
     }
 
     void storePtrArrayItems(ArrayExpr *arrayExpr, llvm::AllocaInst *arrayInstance) {
+        // ToDo document why this behaves this way
         for (int i = 0; i < arrayExpr->items.size(); ++i) {
             llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
-            llvm::Value *gep =
+            llvm::Value *arrayInstanceGEP =
                 this->builder->CreateInBoundsGEP(this->internalStructs["array"], arrayInstance,
                                                  {this->builder->getInt32(0), this->builder->getInt32(0)});
-            llvm::Value *arrPtr = this->builder->CreateLoad(this->builder->getPtrTy(), gep);
-            llvm::Value *arrInboundPtr = this->builder->CreateInBoundsGEP(
-                this->builder->getPtrTy(), arrPtr,
+            llvm::Value *arrayPtr = this->builder->CreateLoad(this->builder->getPtrTy(), arrayInstanceGEP);
+            llvm::Value *arrayInboundPtr = this->builder->CreateInBoundsGEP(
+                this->builder->getPtrTy(), arrayPtr,
                 this->builder->CreateSExt(this->builder->getInt32(i), this->builder->getInt64Ty()));
-            this->builder->CreateStore(arrValue, arrInboundPtr);
+            this->builder->CreateStore(arrValue, arrayInboundPtr);
         }
     }
 
     llvm::GlobalVariable *createGlobalArray(ArrayExpr *arrayExpr, llvm::ArrayType *arrayType) {
-
         std::vector<llvm::Constant *> arrayItems = std::vector<llvm::Constant *>(arrayExpr->items.size());
         for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
             arrayItems[i] = llvm::dyn_cast<llvm::Constant>(compileExpression(arrayExpr->items[i]));
@@ -501,13 +406,9 @@ class LLVMCompiler {
     llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, llvm::Constant *value) {
         return new llvm::GlobalVariable(*this->module, type, false, llvm::GlobalValue::PrivateLinkage, value);
     }
+
     bool isStringTy(llvm::Value *value) {
-        for (int i = 0; i < this->strings.size(); ++i) {
-            if (value == this->strings[i]) {
-                return true;
-            }
-        }
-        return false;
+        return std::find(this->strings.begin(), this->strings.end(), value) != this->strings.end();
     }
 
     llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
@@ -529,7 +430,7 @@ class LLVMCompiler {
     }
 
     llvm::Value *createStruct(CallExpr *callExpr) {
-        std::string name = callExpr->callee.lexeme;
+        std::string name = callExpr->callee;
         LLVMStruct *strukt = this->structs[name];
         llvm::AllocaInst *structInstance = builder->CreateAlloca(strukt->structType, nullptr, name);
 
@@ -540,20 +441,20 @@ class LLVMCompiler {
             exit(1);
         }
 
-        for (int arg = 0; arg < callExpr->arguments.size(); ++arg) {
-            llvm::Value *paramValue = compileExpression(callExpr->arguments[arg]);
-            if (strukt->structType->getContainedType(arg) != paramValue->getType()) {
-                printf("Param %d does match it's type\n", arg);
+        for (int i = 0; i < callExpr->arguments.size(); ++i) {
+            llvm::Value *paramValue = compileExpression(callExpr->arguments[i]);
+            if (strukt->structType->getContainedType(i) != paramValue->getType()) {
+                printf("Param %d does match it's type\n", i);
                 exit(1);
             }
-            storeStructField(strukt->structType, structInstance, paramValue, arg);
+            storeStructField(strukt->structType, structInstance, paramValue, i);
         }
         return structInstance;
     }
 
-    Variable *getIndexVar(std::string varName) {
+    Variable *lookupVariable(std::string varName) {
         for (int i = 0; i < this->variables.size(); ++i) {
-            if (this->variables[i]->name.lexeme == varName) {
+            if (this->variables[i]->name == varName) {
                 return this->variables[i];
             }
         }
@@ -589,6 +490,7 @@ class LLVMCompiler {
             break;
         }
         default: {
+            printf("not implemented?\n");
         }
         }
         printf("Can't lookup this var type ");
@@ -598,15 +500,10 @@ class LLVMCompiler {
     }
 
     void castIntDouble(llvm::Value *&left, llvm::Value *&right) {
-        llvm::Type *leftType = left->getType();
-        llvm::Type *rightType = right->getType();
-        if ((leftType->isIntegerTy() && rightType->isDoubleTy()) ||
-            (leftType->isDoubleTy() && rightType->isIntegerTy())) {
-            if (leftType->isIntegerTy()) {
-                left = this->builder->CreateUIToFP(left, this->builder->getDoubleTy());
-            } else {
-                right = this->builder->CreateUIToFP(right, this->builder->getDoubleTy());
-            }
+        if (left->getType()->isIntegerTy()) {
+            left = this->builder->CreateUIToFP(left, this->builder->getDoubleTy());
+        } else if (right->getType()->isIntegerTy()) {
+            right = this->builder->CreateUIToFP(right, this->builder->getDoubleTy());
         }
     }
 
@@ -660,6 +557,46 @@ class LLVMCompiler {
         llvm::Value *ptr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
         return this->builder->CreateLoad(type, ptr);
     }
+
+    llvm::Value *compileIndex(IndexExpr *indexExpr, Variable *&var) {
+        llvm::Value *indexValue = nullptr;
+        if (indexExpr->variable->type == INDEX_EXPR) {
+            IndexExpr *expr = (IndexExpr *)indexExpr->variable;
+            indexValue = compileIndex(expr, var);
+        } else {
+            indexValue = compileExpression(indexExpr->variable);
+            if (indexExpr->variable->type != VAR_EXPR) {
+                printf("can't index non var?\n");
+                debugExpression(indexExpr->variable);
+                exit(1);
+            }
+            VarExpr *varExpr = (VarExpr *)indexExpr->variable;
+            var = lookupVariable(varExpr->name);
+        }
+
+        llvm::Value *index = compileExpression(indexExpr->index);
+
+        if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
+            Variable *var = lookupVariable(castedVar->getName().str());
+            llvm::Type *type = lookupArrayItemType(var);
+
+            return indexArray(type, loadArray(castedVar), index, var);
+        } else if (indexValue->getType() == this->internalStructs["array"]) {
+            ArrayVariable *arrayVar = (ArrayVariable *)var;
+            var = arrayVar->items;
+            debugVariable(var);
+            printf("\n");
+            llvm::Type *type = lookupArrayItemType(var);
+            llvm::Value *loadedArray = this->builder->CreateExtractValue(indexValue, 0);
+            return indexArray(type, loadedArray, index, var);
+        }
+
+        printf("couldn't cast index variable, was type: ");
+        debugValueType(indexValue->getType(), this->ctx);
+        printf("\n");
+        exit(1);
+    }
+
     llvm::Value *indexArray(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index, Variable *var) {
         if (type == this->internalStructs["array"]) {
             return indexArrayArray(type, loadedArray, index, var);
@@ -676,19 +613,19 @@ class LLVMCompiler {
         llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
             this->builder->getPtrTy(), loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
         llvm::Value *loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
-
+        llvm::Value *idxGEP2 =
+            this->builder->CreateInBoundsGEP(type, loadedPtr, {this->builder->getInt32(0), this->builder->getInt32(0)});
+        return this->builder->CreateLoad(type, idxGEP2);
         // This should allocate and memcpy a new one
-    //  Malloc?
-        llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
-        ArrayVariable *arrVar = (ArrayVariable *)var;
-        ArrayVariable *arr = (ArrayVariable *)arrVar->items;
-        Token token;
-        token.lexeme = allocaInst->getName().str();
-        arr->name = token;
-        this->variables.push_back(arr);
-        this->builder->CreateMemCpy(allocaInst, llvm::MaybeAlign(4), loadedPtr, llvm::MaybeAlign(4),
-                                    this->builder->CreateMul(loadArraySize(loadedPtr), this->builder->getInt32(8)));
-        return allocaInst;
+        //  Malloc?
+        // llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(this->internalStructs["array"], nullptr,
+        // "array"); ArrayVariable *arrVar = (ArrayVariable *)var; ArrayVariable *arr = (ArrayVariable
+        // *)arrVar->items; Token token; token.lexeme = allocaInst->getName().str(); arr->name = token;
+        // this->variables.push_back(arr);
+        // this->builder->CreateMemCpy(allocaInst, llvm::MaybeAlign(4), loadedPtr, llvm::MaybeAlign(4),
+        //                             this->builder->CreateMul(loadArraySize(loadedPtr),
+        //                             this->builder->getInt32(8)));
+        // return allocaInst;
     }
 
     llvm::Value *compileExpression(Expr *expr) {
@@ -735,22 +672,28 @@ class LLVMCompiler {
             DotExpr *dotExpr = (DotExpr *)expr;
 
             // Check this?
-            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(compileExpression(dotExpr->name))) {
-                llvm::Value *loadedValue = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
-                std::string allocatedName = allocaInst->getAllocatedType()->getStructName().str();
+            llvm::Value *value = compileExpression(dotExpr->name);
+            std::string allocatedName = "";
+            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+                value = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+                allocatedName = allocaInst->getAllocatedType()->getStructName().str();
 
-                if (loadedValue->getType()->isStructTy() && this->structs.count(allocatedName)) {
-                    LLVMStruct *strukt = this->structs[allocatedName];
-                    for (int j = 0; j < strukt->fields.size(); j++) {
-                        if (strukt->fields[j] == dotExpr->field.lexeme) {
-                            return this->builder->CreateExtractValue(loadedValue, j);
-                        }
-                    }
-                }
-                printf("Didn't find property '%s' for struct \n", dotExpr->field.lexeme.c_str());
+            } else if (value->getType()->isStructTy()) {
+                allocatedName = value->getType()->getStructName().str();
+            } else {
+                printf("Didn't find property '%s' for struct \n", dotExpr->field.c_str());
                 exit(1);
             }
-            printf("Can't do property lookup on non struct \n");
+            if (value->getType()->isStructTy() && this->structs.count(allocatedName)) {
+                LLVMStruct *strukt = this->structs[allocatedName];
+                for (int j = 0; j < strukt->fields.size(); j++) {
+                    if (strukt->fields[j] == dotExpr->field) {
+                        return this->builder->CreateExtractValue(value, j);
+                    }
+                }
+            }
+            debugValueType(value->getType(), this->ctx);
+            printf("\nCan't do property lookup on non struct \n");
             exit(1);
         }
         case COMPARISON_EXPR: {
@@ -823,26 +766,13 @@ class LLVMCompiler {
         }
         case VAR_EXPR: {
             VarExpr *varExpr = (VarExpr *)expr;
-            return lookupVariable(varExpr->name.lexeme);
+            return lookupValue(varExpr->name);
         }
         case INDEX_EXPR: {
             // ToDo if string -> create new one
             IndexExpr *indexExpr = (IndexExpr *)expr;
-            llvm::Value *variable = compileExpression(indexExpr->variable);
-            llvm::Value *index = compileExpression(indexExpr->index);
-
-            if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(variable)) {
-                Variable *var = getIndexVar(castedVar->getName().str());
-                llvm::Type *type = lookupArrayItemType(var);
-
-                checkIndexCorrectness(type, index, this->builder->CreateLoad(castedVar->getAllocatedType(), castedVar));
-                return indexArray(type, loadArray(castedVar), index, var);
-            }
-
-            printf("couldn't cast index variable, was type: ");
-            debugValueType(variable->getType(), this->ctx);
-            printf("\n");
-            exit(1);
+            Variable *var = new Variable();
+            return compileIndex(indexExpr, var);
         }
         case INC_EXPR: {
             IncExpr *incExpr = (IncExpr *)expr;
@@ -864,7 +794,7 @@ class LLVMCompiler {
             ArrayExpr *arrayExpr = (ArrayExpr *)expr;
 
             // Figure ut which type array has
-            llvm::Type *elementType = getArrayElementType(arrayExpr->itemType);
+            llvm::Type *elementType = getLLVMTypeFromVariable(arrayExpr->itemType);
 
             llvm::AllocaInst *arrayInstance =
                 this->builder->CreateAlloca(this->internalStructs["array"], nullptr, "array");
@@ -897,7 +827,7 @@ class LLVMCompiler {
         }
         case CALL_EXPR: {
             CallExpr *callExpr = (CallExpr *)expr;
-            std::string name = callExpr->callee.lexeme;
+            std::string name = callExpr->callee;
 
             if (this->structs.count(name)) {
                 return createStruct(callExpr);
@@ -941,7 +871,7 @@ class LLVMCompiler {
         case COMP_ASSIGN_STMT: {
             CompAssignStmt *compStmt = (CompAssignStmt *)stmt;
             llvm::Value *right = compileExpression(compStmt->right);
-            llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(lookupVariable(compStmt->name.lexeme));
+            llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(lookupValue(compStmt->name));
             llvm::Value *variable = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
             this->builder->CreateStore(binaryOp(right, variable, compStmt->op), allocaInst);
             break;
@@ -953,7 +883,7 @@ class LLVMCompiler {
         case ASSIGN_STMT: {
             AssignStmt *assignStmt = (AssignStmt *)stmt;
             llvm::Value *value = compileExpression(assignStmt->value);
-            llvm::Value *variable = lookupVariable(assignStmt->name.lexeme);
+            llvm::Value *variable = lookupValue(assignStmt->name);
             // Check type is correct?
             this->builder->CreateStore(value, variable);
             break;
@@ -961,7 +891,7 @@ class LLVMCompiler {
         case RETURN_STMT: {
             ReturnStmt *returnStmt = (ReturnStmt *)stmt;
             // Need to check type is correct;
-            if (!this->function->enclosing) {
+            if (!this->llvmFunction->enclosing) {
                 printf("Can't return outside of a function\n");
                 exit(1);
             }
@@ -971,14 +901,14 @@ class LLVMCompiler {
             // Check here if it's an allocaInst and then load it before sending
             // it back
 
-            if (this->function->funcType->getReturnType() != returnValue->getType()) {
+            if (this->llvmFunction->functionType->getReturnType() != returnValue->getType()) {
                 printf("funcType -> ");
-                debugValueType(this->function->funcType->getReturnType(), this->ctx);
+                debugValueType(this->llvmFunction->functionType->getReturnType(), this->ctx);
                 printf("\n");
                 printf("return -> ");
                 debugValueType(returnValue->getType(), this->ctx);
                 printf("\n");
-                printf("Mismatching return in '%s'\n", this->function->function->getName().str().c_str());
+                printf("Mismatching return in '%s'\n", this->llvmFunction->function->getName().str().c_str());
                 exit(1);
             }
             this->builder->CreateRet(returnValue);
@@ -986,7 +916,7 @@ class LLVMCompiler {
         }
         case VAR_STMT: {
             VarStmt *varStmt = (VarStmt *)stmt;
-            std::string varName = varStmt->var->name.lexeme;
+            std::string varName = varStmt->var->name;
             if (nameIsAlreadyDeclared(varName)) {
                 printf("Can't declare variable '%s', name is already "
                        "declared\n",
@@ -1007,18 +937,24 @@ class LLVMCompiler {
 
             if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
                 allocaInst->setName(varName);
-                this->function->scopedVariables.back().push_back(allocaInst);
+                this->llvmFunction->scopedVariables.back().push_back(allocaInst);
                 break;
             }
-            this->function->scopedVariables.back().push_back(createAllocation(value, varName));
+            // ToDo, figure out when to memcpy
+            if (value->getType() == this->internalStructs["array"]) {
+            }
+            llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(value->getType(), nullptr, varName);
+            this->builder->CreateStore(value, allocaInst);
+            this->llvmFunction->scopedVariables.back().push_back(allocaInst);
             break;
         }
         case WHILE_STMT: {
             WhileStmt *whileStmt = (WhileStmt *)stmt;
 
-            llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*this->ctx, "header", this->function->function);
-            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->function->function);
-            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->function->function);
+            llvm::BasicBlock *headerBlock =
+                llvm::BasicBlock::Create(*this->ctx, "header", this->llvmFunction->function);
+            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->llvmFunction->function);
+            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->llvmFunction->function);
 
             compileLoopHeader(headerBlock, exitBlock, bodyBlock, whileStmt->condition);
             compileLoopBody(headerBlock, exitBlock, whileStmt->body);
@@ -1029,9 +965,10 @@ class LLVMCompiler {
         case FOR_STMT: {
             ForStmt *forStmt = (ForStmt *)stmt;
 
-            llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*this->ctx, "header", this->function->function);
-            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->function->function);
-            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->function->function);
+            llvm::BasicBlock *headerBlock =
+                llvm::BasicBlock::Create(*this->ctx, "header", this->llvmFunction->function);
+            llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*this->ctx, "body", this->llvmFunction->function);
+            llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*this->ctx, "exit", this->llvmFunction->function);
 
             compileStatement(forStmt->initializer);
             compileLoopHeader(headerBlock, exitBlock, bodyBlock, forStmt->condition);
@@ -1042,8 +979,8 @@ class LLVMCompiler {
         }
         case STRUCT_STMT: {
             StructStmt *structStmt = (StructStmt *)stmt;
-            std::string structName = structStmt->name.lexeme;
-            if (nameIsAlreadyDeclared(structStmt->name.lexeme)) {
+            std::string structName = structStmt->name;
+            if (nameIsAlreadyDeclared(structStmt->name)) {
                 printf("Can't declare struct '%s', name is already declared\n", structName.c_str());
                 exit(1);
             }
@@ -1052,8 +989,8 @@ class LLVMCompiler {
             std::vector<std::string> fieldNames = std::vector<std::string>(structStmt->fields.size());
 
             for (int i = 0; i < fieldTypes.size(); ++i) {
-                fieldTypes[i] = getVariableLLVMType(structStmt->fields[i]);
-                fieldNames[i] = structStmt->fields[i]->name.lexeme;
+                fieldTypes[i] = getLLVMTypeFromVariable(structStmt->fields[i]);
+                fieldNames[i] = structStmt->fields[i]->name;
             }
 
             this->structs[structName] = new LLVMStruct(fieldTypes, structName, fieldNames, this->ctx);
@@ -1063,9 +1000,9 @@ class LLVMCompiler {
             IfStmt *ifStmt = (IfStmt *)stmt;
             llvm::Value *condition = compileExpression(ifStmt->condition);
 
-            llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*ctx, "then", this->function->function);
-            llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*ctx, "else", this->function->function);
-            llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*ctx, "merge", this->function->function);
+            llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*ctx, "then", this->llvmFunction->function);
+            llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*ctx, "else", this->llvmFunction->function);
+            llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*ctx, "merge", this->llvmFunction->function);
 
             enterThenBlock(condition, thenBlock, elseBlock);
             enterElseBlock(compileBranch(ifStmt->thenBranch), elseBlock, mergeBlock);
@@ -1077,7 +1014,24 @@ class LLVMCompiler {
             checkValidFuncDeclaration(funcStmt);
             llvm::IRBuilder<> *prevBuilder = enterFuncScope(funcStmt);
 
-            checkReturnType(compileFuncBody(funcStmt->body), funcStmt);
+            bool returned = false;
+            for (int i = 0; i < funcStmt->body.size(); ++i) {
+                compileStatement(funcStmt->body[i]);
+                if (funcStmt->body[i]->type == RETURN_STMT) {
+                    returned = true;
+                    break;
+                }
+            }
+
+            if (!returned) {
+                if (!this->llvmFunction->functionType->getReturnType()->isVoidTy()) {
+                    printf("Non-void function does not return a value in "
+                           "'%s'\n",
+                           funcStmt->name.c_str());
+                    exit(1);
+                }
+                this->builder->CreateRetVoid();
+            }
 
             exitFuncScope(prevBuilder);
             break;
@@ -1132,9 +1086,9 @@ class LLVMCompiler {
         this->module = new llvm::Module("Bonobo", *ctx);
         this->callableFunctions = std::vector<llvm::Function *>();
         llvm::FunctionType *funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*ctx), false);
-        this->function = new LLVMFunction(nullptr, funcType, "main", {}, this->ctx, this->module);
+        this->llvmFunction = new LLVMFunction(nullptr, funcType, "main", {}, this->ctx, this->module);
         this->structs = std::map<std::string, LLVMStruct *>();
-        this->builder = new llvm::IRBuilder<>(this->function->entryBlock);
+        this->builder = new llvm::IRBuilder<>(this->llvmFunction->entryBlock);
         this->strings = {};
         addLibraryFuncs();
         addInternalStructs();

@@ -4,8 +4,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* a[][] doesn't work
-    * Prolly need to store smth to track what arrays contains
+* Assign to index
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
@@ -14,6 +13,9 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 * A lot of type checking missed
 
 * Improve error handling
+    * Store smth about line, errorAt func
+
+* Actually free memory?
 
 ## TODO LLVM backend
 

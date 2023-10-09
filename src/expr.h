@@ -143,14 +143,13 @@ class LiteralExpr : public Expr {
   private:
   public:
     LiteralType literalType;
-    Token literal;
-    LiteralExpr(Token literal, LiteralType literalType) {
+    std::string literal;
+    LiteralExpr(std::string literal, LiteralType literalType) {
         this->type = LITERAL_EXPR;
         this->literalType = literalType;
         this->literal = literal;
     }
 };
-
 
 class UnaryExpr : public Expr {
   private:
@@ -167,8 +166,8 @@ class UnaryExpr : public Expr {
 class VarExpr : public Expr {
   private:
   public:
-    Token name;
-    VarExpr(Token name) {
+    std::string name;
+    VarExpr(std::string name) {
         this->name = name;
         this->type = VAR_EXPR;
     };
@@ -178,8 +177,8 @@ class DotExpr : public Expr {
   private:
   public:
     Expr *name;
-    Token field;
-    DotExpr(Expr *name, Token field) {
+    std::string field;
+    DotExpr(Expr *name, std::string field) {
         this->type = DOT_EXPR;
         this->name = name;
         this->field = field;
@@ -189,9 +188,9 @@ class DotExpr : public Expr {
 class CallExpr : public Expr {
   private:
   public:
-    Token callee;
+    std::string callee;
     std::vector<Expr *> arguments;
-    CallExpr(Token callee) {
+    CallExpr(std::string callee) {
         this->callee = callee;
         this->arguments = std::vector<Expr *>();
         this->type = CALL_EXPR;

@@ -27,9 +27,9 @@ class CompAssignStmt : public Stmt {
   private:
   public:
     BinaryOp op;
-    Token name;
+    std::string name;
     Expr *right;
-    CompAssignStmt(BinaryOp op, Token name) {
+    CompAssignStmt(BinaryOp op, std::string name) {
         this->type = COMP_ASSIGN_STMT;
         this->op = op;
         this->name = name;
@@ -73,7 +73,7 @@ class VarStmt : public Stmt {
 class AssignStmt : public Stmt {
   private:
   public:
-    Token name;
+    std::string name;
     Expr *value;
     AssignStmt() {
         this->value = nullptr;
@@ -112,7 +112,7 @@ class ForStmt : public Stmt {
 class StructStmt : public Stmt {
   private:
   public:
-    Token name;
+    std::string name;
     std::vector<Variable *> fields;
     StructStmt() {
         this->type = STRUCT_STMT;
@@ -137,7 +137,7 @@ class IfStmt : public Stmt {
 class FuncStmt : public Stmt {
   private:
   public:
-    Token name;
+    std::string name;
     Variable *returnType;
     std::vector<Variable *> params;
     std::vector<Stmt *> body;
