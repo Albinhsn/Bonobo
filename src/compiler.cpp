@@ -676,7 +676,6 @@ static void index(Expr *&expr) {
         indexExpr->variable = (VarExpr *)expr;
         indexExpr->index = expression(nullptr);
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
-
         expr = indexExpr;
         break;
     }
@@ -915,7 +914,7 @@ static Stmt *expressionStatement() {
         std::string ident = parser->previous->lexeme;
         if (match(TOKEN_EQUAL)) {
             AssignStmt *assignStmt = new AssignStmt();
-            assignStmt->name = ident;
+            assignStmt->variable = new VarExpr(ident);
             assignStmt->value = expression(assignStmt->value);
             return assignStmt;
         } else if (nextIsBinaryOp()) {
@@ -927,11 +926,33 @@ static Stmt *expressionStatement() {
                 return stmt;
             } else {
                 ExprStmt *exprStmt = new ExprStmt();
-                VarExpr *expr = new VarExpr(ident);
-                BinaryExpr *binaryExpr = new BinaryExpr(expr, op);
+                BinaryExpr *binaryExpr = new BinaryExpr(new VarExpr(ident), op);
                 exprStmt->expression = expression(binaryExpr);
                 return exprStmt;
             }
+
+        } else if (match(TOKEN_LEFT_BRACKET)) {
+            IndexExpr *indexExpr = new IndexExpr;
+
+            indexExpr->variable = new VarExpr(ident);
+            indexExpr->index = expression(nullptr);
+            consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
+            while (match(TOKEN_LEFT_BRACKET)) {
+                IndexExpr *iExpr = new IndexExpr;
+                iExpr->variable = indexExpr;
+                iExpr->index = expression(nullptr);
+                indexExpr = iExpr;
+                consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
+            }
+            if (match(TOKEN_EQUAL)) {
+                AssignStmt *assignStmt = new AssignStmt();
+                assignStmt->variable = indexExpr;
+                assignStmt->value = expression(nullptr);
+                return assignStmt;
+            }
+            ExprStmt *exprStmt = new ExprStmt();
+            exprStmt->expression = expression(indexExpr);
+            return exprStmt;
 
         } else {
             ExprStmt *exprStmt = new ExprStmt();

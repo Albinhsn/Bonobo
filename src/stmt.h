@@ -73,9 +73,10 @@ class VarStmt : public Stmt {
 class AssignStmt : public Stmt {
   private:
   public:
-    std::string name;
+    Expr *variable;
     Expr *value;
     AssignStmt() {
+        this->variable = nullptr;
         this->value = nullptr;
         this->type = ASSIGN_STMT;
     }

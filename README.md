@@ -4,34 +4,38 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
+* Split compileIndex into two funcs, one to load and one to store
+
 * Assign to index
+    * Prolly need to copy and not send index by reference
+
+* Actually free memory?
+
+* errorAt function
+
+* Assign to struct?
 
 ## Bugs/Poorly implemented stuff LLVM backend
-
-* Prolly need to copy and not send index by reference
 
 * A lot of type checking missed
 
 * Improve error handling
     * Store smth about line, errorAt func
-
-* Actually free memory?
+    * Throw different error when arr[int] != [[1,2,3]]
 
 ## TODO LLVM backend
 
-* Declare internal functions to use/support arrays/maps
-
 * MapExpr
     * Create a struct for map, x2 array for keys/values
-    * Create function "native" to maps
+    * Create functions(?) "native" to maps
+    * Index map 
 
-* Index map 
+* Declare internal functions to use/support arrays/maps
 
 * Write c++ data structures and functions to create a standard library
     * Or just write functions in bonobo
 
 * Be able to create and import functions from other module?
-
 
 ## TODO x86_64 backend
 

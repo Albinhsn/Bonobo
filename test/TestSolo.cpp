@@ -43,19 +43,16 @@ int main() {
     nmbr_of_tests++;
     runTest("Array - Bool array", arr2, "", failed);
 
-    std::string arr7 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; var c: arr[int] = b[0]; "
-                       "printf(\"%d\", c[0]);";
-    nmbr_of_tests++;
-    runTest("Array - 3D int array", arr7, "1", failed);
 
     std::string arr5 =
         "struct foo{bar:int;}; var a: arr[foo] = [foo(1), foo(2), foo(3)]; var b: foo = a[2]; printf(\"%d\", b.bar);";
     nmbr_of_tests++;
     runTest("Array - Struct array", arr5, "3", failed);
 
-    std::string arr6 = "var a: arr[arr[arr[int]]] = [[[1]]];";
+    std::string arr6 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; var c: arr[int] = b[0]; "
+                       "printf(\"%d\", c[0]);";
     nmbr_of_tests++;
-    runTest("Array - 3D int array", arr6, "", failed);
+    runTest("Array - 3D int array", arr6, "1", failed);
 
     // Index test
     std::string index =
@@ -75,6 +72,19 @@ int main() {
     std::string index4 = "var a: arr[arr[arr[str]]] = [[[\"Hi\"]]];printf(\"%s\", a[0][0][0]);";
     nmbr_of_tests++;
     runTest("Index - 3D str array", index4, "Hi", failed);
+
+    // Assign to index
+    std::string assignIndex1 = "var a: arr[arr[int]] = [[0,1,2]]; var b:arr[int] = [0,1,5]; a[0] = b; printf(\"%d\", a[0][2]);";
+    nmbr_of_tests++;
+    runTest("AssignIndex - Assign array to 2D array", assignIndex1, "5", failed);
+
+    std::string assignIndex2 = "var a: arr[int] = [0,1,2];  a[2] = 5; printf(\"%d\", a[2]);";
+    nmbr_of_tests++;
+    runTest("AssignIndex - Assign int to int array", assignIndex2, "5", failed);
+
+    std::string assignIndex3 = "var a: arr[arr[int]] = [[0,1,2]];  a[0][2] = 5; printf(\"%d\", a[0][2]);";
+    nmbr_of_tests++;
+    runTest("AssignIndex - Assign int to 2D int array", assignIndex3, "5", failed);
 
     // String test
     std::string str1 = "var s: str = \"Hello World\"; printf(\"%s\", s);";

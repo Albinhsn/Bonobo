@@ -248,23 +248,27 @@ void debugStatement(Stmt *statement) {
     case COMP_ASSIGN_STMT: {
         CompAssignStmt *compStmt = (CompAssignStmt *)statement;
         printf("%s ", compStmt->name.c_str());
-        switch(compStmt->op){
-          case ADD:{
+        switch (compStmt->op) {
+        case ADD: {
             printf("+");
+            break;
         }
-        case SUB:{
+        case SUB: {
             printf("-");
+            break;
         }
-        case MUL:{
+        case MUL: {
             printf("*");
+            break;
         }
-        case DIV:{
+        case DIV: {
             printf("/");
+            break;
         }
-      }
-      printf(" = ");
-      debugExpression(compStmt->right);
-      printf(";\n");
+        }
+        printf(" = ");
+        debugExpression(compStmt->right);
+        printf(";\n");
     }
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)statement;
@@ -360,7 +364,8 @@ void debugStatement(Stmt *statement) {
     }
     case ASSIGN_STMT: {
         AssignStmt *assignStmt = (AssignStmt *)statement;
-        printf("%s = ", assignStmt->name.c_str());
+        debugExpression(assignStmt->variable);
+        printf(" = ");
         debugExpression(assignStmt->value);
         printf(";");
         break;

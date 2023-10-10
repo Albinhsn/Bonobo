@@ -563,15 +563,14 @@ class LLVMCompiler {
         if (indexExpr->variable->type == INDEX_EXPR) {
             IndexExpr *expr = (IndexExpr *)indexExpr->variable;
             indexValue = compileIndex(expr, var);
-        } else {
+        } else if (indexExpr->variable->type == VAR_EXPR) {
             indexValue = compileExpression(indexExpr->variable);
-            if (indexExpr->variable->type != VAR_EXPR) {
-                printf("can't index non var?\n");
-                debugExpression(indexExpr->variable);
-                exit(1);
-            }
             VarExpr *varExpr = (VarExpr *)indexExpr->variable;
             var = lookupVariable(varExpr->name);
+        } else {
+            printf("can't index non var?\n");
+            debugExpression(indexExpr->variable);
+            exit(1);
         }
 
         llvm::Value *index = compileExpression(indexExpr->index);
@@ -583,12 +582,9 @@ class LLVMCompiler {
             return indexArray(type, loadArray(castedVar), index, var);
         } else if (indexValue->getType() == this->internalStructs["array"]) {
             ArrayVariable *arrayVar = (ArrayVariable *)var;
-            var = arrayVar->items;
-            debugVariable(var);
-            printf("\n");
-            llvm::Type *type = lookupArrayItemType(var);
             llvm::Value *loadedArray = this->builder->CreateExtractValue(indexValue, 0);
-            return indexArray(type, loadedArray, index, var);
+
+            return indexArray(lookupArrayItemType(arrayVar->items), loadedArray, index, arrayVar->items);
         }
 
         printf("couldn't cast index variable, was type: ");
@@ -626,6 +622,38 @@ class LLVMCompiler {
         //                             this->builder->CreateMul(loadArraySize(loadedPtr),
         //                             this->builder->getInt32(8)));
         // return allocaInst;
+    }
+
+    llvm::Value *loadIndexedArray(IndexExpr *indexExpr) {
+        if (indexExpr->variable->type == VAR_EXPR) {
+            llvm::Value *loadedTarget = loadArray(compileExpression(indexExpr->variable));
+            VarExpr *varExpr = (VarExpr *)indexExpr->variable;
+            return this->builder->CreateInBoundsGEP(lookupArrayItemType(lookupVariable(varExpr->name)), loadedTarget,
+                                                    compileExpression(indexExpr->index));
+        } else if (indexExpr->variable->type != INDEX_EXPR) {
+            printf("can't index non var?\n");
+            debugExpression(indexExpr->variable);
+            exit(1);
+        }
+
+        IndexExpr *expr = (IndexExpr *)indexExpr->variable;
+        llvm::Value *indexValue = loadIndexedArray(expr);
+        llvm::Value *loadedTarget = loadArray(this->builder->CreateLoad(this->builder->getPtrTy(), indexValue));
+        return this->builder->CreateInBoundsGEP(this->builder->getInt32Ty(), loadedTarget,
+                                                compileExpression(indexExpr->index));
+    }
+
+    void assignToIndexExpr(AssignStmt *assignStmt) {
+        IndexExpr *indexExpr = (IndexExpr *)assignStmt->variable;
+        this->builder->CreateStore(compileExpression(assignStmt->value), loadIndexedArray(indexExpr));
+    }
+
+    void assignToVarExpr(AssignStmt *assignStmt) {
+        llvm::Value *value = compileExpression(assignStmt->value);
+        VarExpr *varExpr = (VarExpr *)assignStmt->variable;
+        llvm::Value *variable = lookupValue(varExpr->name);
+        // Check type is correct?
+        this->builder->CreateStore(value, variable);
     }
 
     llvm::Value *compileExpression(Expr *expr) {
@@ -882,11 +910,20 @@ class LLVMCompiler {
         }
         case ASSIGN_STMT: {
             AssignStmt *assignStmt = (AssignStmt *)stmt;
-            llvm::Value *value = compileExpression(assignStmt->value);
-            llvm::Value *variable = lookupValue(assignStmt->name);
-            // Check type is correct?
-            this->builder->CreateStore(value, variable);
-            break;
+            switch (assignStmt->variable->type) {
+            case VAR_EXPR: {
+                assignToVarExpr(assignStmt);
+                return;
+            }
+            case INDEX_EXPR: {
+                assignToIndexExpr(assignStmt);
+                return;
+            }
+            default: {
+                printf("how did this happen to me\n");
+                exit(1);
+            }
+            }
         }
         case RETURN_STMT: {
             ReturnStmt *returnStmt = (ReturnStmt *)stmt;
