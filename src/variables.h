@@ -10,7 +10,7 @@ class Variable {
   public:
     std::string name;
     VarType type;
-    Variable() { this->name = "never assigned name :)"; }
+    Variable(std::string name = "never assigned name :)") { this->name = name; }
 };
 
 class ArrayVariable : public Variable {
@@ -27,9 +27,10 @@ class ArrayVariable : public Variable {
 class StructVariable : public Variable {
   private:
   public:
-    Token structName;
-    StructVariable(std::string name) {
+  std::string structName;
+    StructVariable(std::string name, std::string structName) {
         this->name = name;
+        this->structName = structName;
         this->type = STRUCT_VAR;
     }
 };

@@ -29,11 +29,11 @@ class CompAssignStmt : public Stmt {
     BinaryOp op;
     std::string name;
     Expr *right;
-    CompAssignStmt(BinaryOp op, std::string name) {
+    CompAssignStmt(BinaryOp op, std::string name, Expr * right) {
         this->type = COMP_ASSIGN_STMT;
         this->op = op;
         this->name = name;
-        this->right = nullptr;
+        this->right = right;
     }
 };
 
@@ -47,8 +47,8 @@ class ExprStmt : public Stmt {
   private:
   public:
     Expr *expression;
-    ExprStmt() {
-        this->expression = nullptr;
+    ExprStmt(Expr * expr) {
+        this->expression = expr;
         this->type = EXPR_STMT;
     }
 };
@@ -57,8 +57,8 @@ class ReturnStmt : public Stmt {
   private:
   public:
     Expr *value;
-    ReturnStmt() {
-        this->value = nullptr;
+    ReturnStmt(Expr * value) {
+        this->value = value;
         this->type = RETURN_STMT;
     }
 };
@@ -75,9 +75,9 @@ class AssignStmt : public Stmt {
   public:
     Expr *variable;
     Expr *value;
-    AssignStmt() {
-        this->variable = nullptr;
-        this->value = nullptr;
+    AssignStmt(Expr * variable, Expr * value) {
+        this->variable = variable;
+        this->value = value;
         this->type = ASSIGN_STMT;
     }
 };
@@ -115,7 +115,8 @@ class StructStmt : public Stmt {
   public:
     std::string name;
     std::vector<Variable *> fields;
-    StructStmt() {
+    StructStmt(std::string name) {
+        this->name = name;
         this->type = STRUCT_STMT;
         this->fields = std::vector<Variable *>();
     }
@@ -142,7 +143,8 @@ class FuncStmt : public Stmt {
     Variable *returnType;
     std::vector<Variable *> params;
     std::vector<Stmt *> body;
-    FuncStmt() {
+    FuncStmt(std::string name) {
+        this->name = name;
         this->type = FUNC_STMT;
         this->body = std::vector<Stmt *>();
         this->params = std::vector<Variable *>();

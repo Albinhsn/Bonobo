@@ -148,6 +148,11 @@ int main() {
     nmbr_of_tests++;
     runTest("Strukt - Int, Double struct", strukt3, "2.500000", failed);
 
+    // Property test
+    std::string prop1= "struct foo{bar: int;};var f:foo = foo(1); f.bar = 5; printf(\"%d\", f.bar);";
+    nmbr_of_tests++;
+    runTest("Strukt Property Assignment - Assign to var", prop1, "5", failed);
+
     // For tes++t
     std::string for1 = "for(var i: int = 0; i < 5; i++){printf(\"%d\", i);}";
     nmbr_of_tests++;

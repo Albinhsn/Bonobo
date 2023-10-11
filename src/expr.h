@@ -202,10 +202,10 @@ class IndexExpr : public Expr {
   public:
     Expr *variable;
     Expr *index;
-    IndexExpr() {
+    IndexExpr(Expr * variable, Expr * index) {
         this->type = INDEX_EXPR;
-        this->index = nullptr;
-        this->variable = nullptr;
+        this->index = index;
+        this->variable = variable;
     }
 };
 

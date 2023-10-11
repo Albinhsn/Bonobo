@@ -4,17 +4,12 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* fix assign different types to index
-
-* Split compileIndex into two funcs, one to load and one to store
-
-* Actually free memory?
-
 * errorAt function
 
 * Assign to struct?
 
 * Assign from index of array, take copy not reference
+    * Needs to happen when we allocate atleast
 
 ## Bugs/Poorly implemented stuff LLVM backend
 

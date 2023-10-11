@@ -202,10 +202,10 @@ class LLVMCompiler {
             }
             case STRUCT_VAR: {
                 StructVariable *structVar = (StructVariable *)itemType;
-                if (this->structs.count(structVar->structName.lexeme)) {
-                    return this->structs[structVar->structName.lexeme]->structType;
+                if (this->structs.count(structVar->structName)) {
+                    return this->structs[structVar->structName]->structType;
                 } else {
-                    printf("trying to lookup unknown struct '%s'\n", structVar->structName.lexeme.c_str());
+                    printf("trying to lookup unknown struct '%s'\n", structVar->structName.c_str());
                     exit(1);
                 }
             }
@@ -484,8 +484,8 @@ class LLVMCompiler {
         }
         case STRUCT_VAR: {
             StructVariable *structVar = (StructVariable *)var;
-            if (this->structs.count(structVar->structName.lexeme)) {
-                return this->structs[structVar->structName.lexeme]->structType;
+            if (this->structs.count(structVar->structName)) {
+                return this->structs[structVar->structName]->structType;
             }
             break;
         }
@@ -650,7 +650,6 @@ class LLVMCompiler {
         IndexExpr *indexExpr = (IndexExpr *)assignStmt->variable;
         Variable *var = new Variable();
         this->builder->CreateStore(compileExpression(assignStmt->value), getPointerToArrayIndex(indexExpr, var));
-        // this->builder->CreateStore(compileExpression(assignStmt->value), loadIndexedArray(indexExpr));
     }
 
     void assignToVarExpr(AssignStmt *assignStmt) {
@@ -659,6 +658,48 @@ class LLVMCompiler {
         llvm::Value *variable = lookupValue(varExpr->name);
         // Check type is correct?
         this->builder->CreateStore(value, variable);
+    }
+
+    llvm::Value *lookupStruct(DotExpr *dotExpr) {
+        llvm::Value *value = compileExpression(dotExpr->name);
+        if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
+            return this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
+        }
+        if (!value->getType()->isStructTy()) {
+            printf("variable isn't struct\n");
+            exit(1);
+        }
+
+        return value;
+    }
+
+    std::string findStructName(DotExpr *dotExpr) { return "foo"; }
+
+    void assignToDotExpr(AssignStmt *assignStmt) {
+        DotExpr *dotExpr = (DotExpr *)assignStmt->variable;
+        std::string structName = findStructName(dotExpr);
+        llvm::Value *struktPtr = nullptr;
+
+        if (dotExpr->name->type == INDEX_EXPR) {
+            Variable *var = lookupVariable(structName);
+            struktPtr = this->builder->CreateLoad(this->builder->getPtrTy(),
+                                                  getPointerToArrayIndex((IndexExpr *)dotExpr->name, var));
+        } else {
+            struktPtr = compileExpression(dotExpr->name);
+        }
+        llvm::Value *value = compileExpression(assignStmt->value);
+
+        if (LLVMStruct *strukt = this->structs[structName]) {
+            for (int j = 0; j < strukt->fields.size(); j++) {
+                if (strukt->fields[j] == dotExpr->field) {
+                    llvm::Value *ptr = this->builder->CreateStructGEP(strukt->structType, struktPtr, j);
+                    this->builder->CreateStore(value, ptr);
+                    return;
+                }
+            }
+            printf("unknown struct field '%s' for '%s'\n", dotExpr->field.c_str(), structName.c_str());
+            exit(1);
+        }
     }
 
     llvm::Value *compileExpression(Expr *expr) {
@@ -705,26 +746,18 @@ class LLVMCompiler {
             DotExpr *dotExpr = (DotExpr *)expr;
 
             // Check this?
-            llvm::Value *value = compileExpression(dotExpr->name);
-            std::string allocatedName = "";
-            if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
-                value = this->builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
-                allocatedName = allocaInst->getAllocatedType()->getStructName().str();
-
-            } else if (value->getType()->isStructTy()) {
-                allocatedName = value->getType()->getStructName().str();
-            } else {
-                printf("Didn't find property '%s' for struct \n", dotExpr->field.c_str());
-                exit(1);
-            }
-            if (value->getType()->isStructTy() && this->structs.count(allocatedName)) {
-                LLVMStruct *strukt = this->structs[allocatedName];
+            llvm::Value *value = lookupStruct(dotExpr);
+            if (LLVMStruct *strukt = this->structs[value->getType()->getStructName().str()]) {
                 for (int j = 0; j < strukt->fields.size(); j++) {
                     if (strukt->fields[j] == dotExpr->field) {
                         return this->builder->CreateExtractValue(value, j);
                     }
                 }
+                printf("unknown struct field '%s' for '%s'\n", dotExpr->field.c_str(),
+                       value->getType()->getStructName().str().c_str());
+                exit(1);
             }
+
             debugValueType(value->getType(), this->ctx);
             printf("\nCan't do property lookup on non struct \n");
             exit(1);
@@ -894,6 +927,7 @@ class LLVMCompiler {
         }
         }
     }
+
     void compileStatement(Stmt *stmt) {
         switch (stmt->type) {
         case EXPR_STMT: {
@@ -922,6 +956,10 @@ class LLVMCompiler {
             }
             case INDEX_EXPR: {
                 assignToIndexExpr(assignStmt);
+                return;
+            }
+            case DOT_EXPR: {
+                assignToDotExpr(assignStmt);
                 return;
             }
             default: {

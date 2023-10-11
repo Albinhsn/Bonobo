@@ -126,43 +126,35 @@ static Variable *parseVarType(Variable *var) {
         ArrayVariable *arrayVar = new ArrayVariable(var->name);
         consume(TOKEN_LEFT_BRACKET, "Need array type");
 
-        Variable *items = new Variable();
-        arrayVar->items = parseVarType(items);
-
+        arrayVar->items = parseVarType(new Variable());
         consume(TOKEN_RIGHT_BRACKET, "Need array type");
+
         return arrayVar;
     } else if (var->type == MAP_VAR) {
         MapVariable *mapVar = new MapVariable(var->name);
         consume(TOKEN_LEFT_BRACKET, "Need array type");
 
         mapVar->keys = parseVarType(new Variable());
-
         consume(TOKEN_COMMA, "Need , before map values");
 
         mapVar->values = parseVarType(new Variable());
-
         consume(TOKEN_RIGHT_BRACKET, "Need array type");
+
         return mapVar;
     } else if (var->type == STRUCT_VAR) {
-        StructVariable *structVar = new StructVariable(var->name);
-
-        structVar->structName = *parser->previous;
-        return structVar;
-
+        return new StructVariable(var->name, parser->previous->lexeme);
     } else {
         return var;
     }
 }
 
 static Variable *parseVariable() {
-    Variable *var = new Variable();
 
     consume(TOKEN_IDENTIFIER, "Expected identifier for variable");
-    var->name = parser->previous->lexeme;
+    Variable *var = new Variable(parser->previous->lexeme);
 
     consume(TOKEN_COLON, "Expected ':' after var name");
-    var = parseVarType(var);
-    return var;
+    return parseVarType(var);
 }
 
 static UnaryOp getUnaryType() {
@@ -337,7 +329,6 @@ static void grouping(Expr *&expr) {
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
         CallExpr *callExpr = new CallExpr(varExpr->name);
-        callExpr->callee = varExpr->name;
         if (!match(TOKEN_RIGHT_PAREN)) {
             while (true) {
                 callExpr->arguments.push_back(expression(nullptr));
@@ -423,8 +414,6 @@ static void comparison(Expr *&expr) {
     if (expr->type == LOGICAL_EXPR) {
         LogicalExpr *logicalExpr = (LogicalExpr *)expr;
         comparison(logicalExpr->right);
-        expr = logicalExpr;
-
     } else {
         expr = new ComparisonExpr(expr, getComparisonOp());
     }
@@ -440,7 +429,6 @@ static void identifier(Expr *&expr) {
         IncExpr *incExpr = (IncExpr *)expr;
         if (incExpr->expr == nullptr) {
             identifier(incExpr->expr);
-            expr = incExpr;
             break;
         }
         errorAt("Can't add identifier to inc expr");
@@ -669,21 +657,13 @@ static void index(Expr *&expr) {
     }
     case INDEX_EXPR: {
         IndexExpr *indexExpr = (IndexExpr *)expr;
-
-        IndexExpr *newIndexExpr = new IndexExpr();
-        newIndexExpr->variable = indexExpr;
-        newIndexExpr->index = expression(nullptr);
-
+        expr = new IndexExpr(indexExpr, expression(nullptr));
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
-        expr = newIndexExpr;
         break;
     }
     case VAR_EXPR: {
-        IndexExpr *indexExpr = new IndexExpr();
-        indexExpr->variable = (VarExpr *)expr;
-        indexExpr->index = expression(nullptr);
+        expr = new IndexExpr(expr, expression(nullptr));
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
-        expr = indexExpr;
         break;
     }
     default: {
@@ -915,63 +895,52 @@ static Stmt *varDeclaration() {
     compiler->variables.push_back(varStmt->var);
     return (Stmt *)varStmt;
 }
+static Stmt *variableStatement(std::string ident) {
+    if (match(TOKEN_EQUAL)) {
+        return new AssignStmt(new VarExpr(ident), expression(nullptr));
+    } else if (nextIsBinaryOp()) {
+        advance();
+        BinaryOp op = getBinaryOp(parser->previous);
+        if (match(TOKEN_EQUAL)) {
+            return new CompAssignStmt(op, ident, expression(nullptr));
+        } else {
+            return new ExprStmt(expression(new BinaryExpr(new VarExpr(ident), op)));
+        }
+
+    } else if (match(TOKEN_LEFT_BRACKET)) {
+        IndexExpr *indexExpr = new IndexExpr(new VarExpr(ident), expression(nullptr));
+        consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
+        while (match(TOKEN_LEFT_BRACKET)) {
+            indexExpr = new IndexExpr(indexExpr, expression(nullptr));
+            consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
+        }
+        if (match(TOKEN_EQUAL)) {
+            return new AssignStmt(indexExpr, expression(nullptr));
+        } else if (match(TOKEN_DOT)) {
+            consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
+            DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme);
+            if (match(TOKEN_EQUAL)) {
+                return new AssignStmt(dotExpr, expression(nullptr));
+            }
+            return new ExprStmt(expression(dotExpr));
+        }
+        return new ExprStmt(expression(indexExpr));
+    } else if (match(TOKEN_DOT)) {
+        consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
+        DotExpr *dotExpr = new DotExpr(new VarExpr(ident), parser->previous->lexeme);
+        if (match(TOKEN_EQUAL)) {
+            return new AssignStmt(dotExpr, expression(nullptr));
+        }
+        return new ExprStmt(expression(dotExpr));
+    }
+    return new ExprStmt(expression(new VarExpr(ident)));
+}
 
 static Stmt *expressionStatement() {
     if (match(TOKEN_IDENTIFIER)) {
-        std::string ident = parser->previous->lexeme;
-        if (match(TOKEN_EQUAL)) {
-            AssignStmt *assignStmt = new AssignStmt();
-            assignStmt->variable = new VarExpr(ident);
-            assignStmt->value = expression(assignStmt->value);
-            return assignStmt;
-        } else if (nextIsBinaryOp()) {
-            advance();
-            BinaryOp op = getBinaryOp(parser->previous);
-            if (match(TOKEN_EQUAL)) {
-                CompAssignStmt *stmt = new CompAssignStmt(op, ident);
-                stmt->right = expression(nullptr);
-                return stmt;
-            } else {
-                ExprStmt *exprStmt = new ExprStmt();
-                BinaryExpr *binaryExpr = new BinaryExpr(new VarExpr(ident), op);
-                exprStmt->expression = expression(binaryExpr);
-                return exprStmt;
-            }
-
-        } else if (match(TOKEN_LEFT_BRACKET)) {
-            IndexExpr *indexExpr = new IndexExpr;
-
-            indexExpr->variable = new VarExpr(ident);
-            indexExpr->index = expression(nullptr);
-            consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
-            while (match(TOKEN_LEFT_BRACKET)) {
-                IndexExpr *iExpr = new IndexExpr;
-                iExpr->variable = indexExpr;
-                iExpr->index = expression(nullptr);
-                indexExpr = iExpr;
-                consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
-            }
-            if (match(TOKEN_EQUAL)) {
-                AssignStmt *assignStmt = new AssignStmt();
-                assignStmt->variable = indexExpr;
-                assignStmt->value = expression(nullptr);
-                return assignStmt;
-            }
-            ExprStmt *exprStmt = new ExprStmt();
-            exprStmt->expression = expression(indexExpr);
-            return exprStmt;
-
-        } else {
-            ExprStmt *exprStmt = new ExprStmt();
-            VarExpr *expr = new VarExpr(ident);
-            exprStmt->expression = expression(expr);
-            return exprStmt;
-        }
-    } else {
-        ExprStmt *exprStmt = new ExprStmt();
-        exprStmt->expression = expression(exprStmt->expression);
-        return exprStmt;
+        return variableStatement(parser->previous->lexeme);
     }
+    return new ExprStmt(expression(nullptr));
 }
 
 static Stmt *forStatement() {
@@ -1022,8 +991,7 @@ static Stmt *ifStatement() {
 }
 
 static Stmt *returnStatement() {
-    ReturnStmt *returnStmt = new ReturnStmt();
-    returnStmt->value = expression(nullptr);
+    ReturnStmt *returnStmt = new ReturnStmt(expression(nullptr));
     consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
 
     return returnStmt;
@@ -1043,9 +1011,8 @@ static Stmt *whileStatement() {
 }
 
 static Stmt *structDeclaration() {
-    StructStmt *structStmt = new StructStmt();
     consume(TOKEN_IDENTIFIER, "Expect struct name");
-    structStmt->name = parser->previous->lexeme;
+    StructStmt *structStmt = new StructStmt(parser->previous->lexeme);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     while (!match(TOKEN_RIGHT_BRACE)) {
         structStmt->fields.push_back(parseVariable());
@@ -1056,9 +1023,8 @@ static Stmt *structDeclaration() {
 }
 
 static Stmt *funDeclaration() {
-    FuncStmt *funcStmt = new FuncStmt();
     consume(TOKEN_IDENTIFIER, "Need function name in func declaration");
-    funcStmt->name = parser->previous->lexeme;
+    FuncStmt *funcStmt = new FuncStmt(parser->previous->lexeme);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after func name");
     if (!match(TOKEN_RIGHT_PAREN)) {
