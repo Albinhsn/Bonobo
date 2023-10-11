@@ -514,6 +514,13 @@ static void dot(Expr *&expr) {
         identifier(comparisonExpr->right);
         break;
     }
+    case INDEX_EXPR: {
+        IndexExpr *indexExpr = (IndexExpr *)expr;
+        consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
+        DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme);
+        expr = dotExpr;
+        break;
+    }
     default: {
         printf("%d ", expr->type);
         printf("woopsie no dot yet\n");

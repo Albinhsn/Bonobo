@@ -4,16 +4,17 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* Split compileIndex into two funcs, one to load and one to store
+* fix assign different types to index
 
-* Assign to index
-    * Prolly need to copy and not send index by reference
+* Split compileIndex into two funcs, one to load and one to store
 
 * Actually free memory?
 
 * errorAt function
 
 * Assign to struct?
+
+* Assign from index of array, take copy not reference
 
 ## Bugs/Poorly implemented stuff LLVM backend
 
@@ -31,11 +32,13 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Index map 
 
 * Declare internal functions to use/support arrays/maps
+    * Append
+    * Get keys
+    * Get values
+    * Error if out of bounds
 
 * Write c++ data structures and functions to create a standard library
     * Or just write functions in bonobo
-
-* Be able to create and import functions from other module?
 
 ## TODO x86_64 backend
 

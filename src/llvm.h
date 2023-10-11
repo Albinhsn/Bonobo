@@ -551,40 +551,32 @@ class LLVMCompiler {
         exit(1);
     }
 
-    llvm::Value *indexStructArray(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index) {
-        llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
-            this->builder->getPtrTy(), loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
-        llvm::Value *ptr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
-        return this->builder->CreateLoad(type, ptr);
-    }
-
-    llvm::Value *compileIndex(IndexExpr *indexExpr, Variable *&var) {
+    llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
         llvm::Value *indexValue = nullptr;
         if (indexExpr->variable->type == INDEX_EXPR) {
             IndexExpr *expr = (IndexExpr *)indexExpr->variable;
-            indexValue = compileIndex(expr, var);
+            indexValue = loadIndex(expr, var);
         } else if (indexExpr->variable->type == VAR_EXPR) {
             indexValue = compileExpression(indexExpr->variable);
             VarExpr *varExpr = (VarExpr *)indexExpr->variable;
             var = lookupVariable(varExpr->name);
-        } else {
+        }
+
+        if (indexValue == nullptr) {
             printf("can't index non var?\n");
             debugExpression(indexExpr->variable);
             exit(1);
         }
 
         llvm::Value *index = compileExpression(indexExpr->index);
-
         if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
-            Variable *var = lookupVariable(castedVar->getName().str());
-            llvm::Type *type = lookupArrayItemType(var);
-
-            return indexArray(type, loadArray(castedVar), index, var);
+            var = lookupVariable(castedVar->getName().str());
+            return getArrayIndex(lookupArrayItemType(var), loadArray(castedVar), index);
         } else if (indexValue->getType() == this->internalStructs["array"]) {
             ArrayVariable *arrayVar = (ArrayVariable *)var;
+            var = arrayVar->items;
             llvm::Value *loadedArray = this->builder->CreateExtractValue(indexValue, 0);
-
-            return indexArray(lookupArrayItemType(arrayVar->items), loadedArray, index, arrayVar->items);
+            return getArrayIndex(lookupArrayItemType(var), loadedArray, index);
         }
 
         printf("couldn't cast index variable, was type: ");
@@ -593,35 +585,46 @@ class LLVMCompiler {
         exit(1);
     }
 
-    llvm::Value *indexArray(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index, Variable *var) {
-        if (type == this->internalStructs["array"]) {
-            return indexArrayArray(type, loadedArray, index, var);
-        } else if (type->isStructTy()) {
-            return indexStructArray(type, loadedArray, index);
-        } else {
-            llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(type, loadedArray, index);
-            return this->builder->CreateLoad(type, idxGEP);
+    llvm::Value *getArrayIndex(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index) {
+        if (type == this->internalStructs["array"] || type->isStructTy()) {
+            type = this->builder->getPtrTy();
         }
+        return this->builder->CreateInBoundsGEP(type, loadedArray, index);
     }
 
-    llvm::Value *indexArrayArray(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index, Variable *var) {
+    llvm::Value *loadIndex(IndexExpr *indexExpr, Variable *&var) {
+        llvm::Value *idxPtr = getPointerToArrayIndex(indexExpr, var);
+        llvm::Type *arrayItemType = lookupArrayItemType(var);
+        if (var->type == ARRAY_VAR) {
+            ArrayVariable *arrayVar = (ArrayVariable *)var;
+            if (arrayVar->items->type == ARRAY_VAR || arrayVar->items->type == STR_VAR) {
+                llvm::Value *loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxPtr);
+                llvm::Value *loadedArrayPtr = this->builder->CreateInBoundsGEP(
+                    arrayItemType, loadedPtr, {this->builder->getInt32(0), this->builder->getInt32(0)});
+                return this->builder->CreateLoad(arrayItemType, loadedArrayPtr);
+            }
+            if (arrayVar->items->type == STRUCT_VAR) {
+                llvm::Value *loadedStructPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxPtr);
+                return this->builder->CreateLoad(arrayItemType, loadedStructPtr);
+            }
+        }
+        return this->builder->CreateLoad(arrayItemType, idxPtr);
+    }
 
-        llvm::Value *idxGEP = this->builder->CreateInBoundsGEP(
-            this->builder->getPtrTy(), loadedArray, this->builder->CreateSExt(index, this->builder->getInt64Ty()));
-        llvm::Value *loadedPtr = this->builder->CreateLoad(this->builder->getPtrTy(), idxGEP);
-        llvm::Value *idxGEP2 =
-            this->builder->CreateInBoundsGEP(type, loadedPtr, {this->builder->getInt32(0), this->builder->getInt32(0)});
-        return this->builder->CreateLoad(type, idxGEP2);
-        // This should allocate and memcpy a new one
-        //  Malloc?
-        // llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(this->internalStructs["array"], nullptr,
-        // "array"); ArrayVariable *arrVar = (ArrayVariable *)var; ArrayVariable *arr = (ArrayVariable
-        // *)arrVar->items; Token token; token.lexeme = allocaInst->getName().str(); arr->name = token;
-        // this->variables.push_back(arr);
-        // this->builder->CreateMemCpy(allocaInst, llvm::MaybeAlign(4), loadedPtr, llvm::MaybeAlign(4),
-        //                             this->builder->CreateMul(loadArraySize(loadedPtr),
-        //                             this->builder->getInt32(8)));
-        // return allocaInst;
+    llvm::Type *getTypeFromNestedIndexExpr(Expr *expr) {
+        if (expr->type == VAR_EXPR) {
+            VarExpr *varExpr = (VarExpr *)expr;
+            ArrayVariable *var = (ArrayVariable *)lookupVariable(varExpr->name);
+            while (true) {
+                ArrayVariable *items = (ArrayVariable *)var->items;
+                if (items->items->type != ARRAY_VAR) {
+                    return lookupArrayItemType(items->items);
+                }
+                items = (ArrayVariable *)items->items;
+            }
+        }
+        IndexExpr *indexExpr = (IndexExpr *)expr;
+        return getTypeFromNestedIndexExpr(indexExpr->variable);
     }
 
     llvm::Value *loadIndexedArray(IndexExpr *indexExpr) {
@@ -637,15 +640,17 @@ class LLVMCompiler {
         }
 
         IndexExpr *expr = (IndexExpr *)indexExpr->variable;
-        llvm::Value *indexValue = loadIndexedArray(expr);
-        llvm::Value *loadedTarget = loadArray(this->builder->CreateLoad(this->builder->getPtrTy(), indexValue));
-        return this->builder->CreateInBoundsGEP(this->builder->getInt32Ty(), loadedTarget,
+        llvm::Value *loadedTarget =
+            loadArray(this->builder->CreateLoad(this->builder->getPtrTy(), loadIndexedArray(expr)));
+        return this->builder->CreateInBoundsGEP(getTypeFromNestedIndexExpr(expr->variable), loadedTarget,
                                                 compileExpression(indexExpr->index));
     }
 
     void assignToIndexExpr(AssignStmt *assignStmt) {
         IndexExpr *indexExpr = (IndexExpr *)assignStmt->variable;
-        this->builder->CreateStore(compileExpression(assignStmt->value), loadIndexedArray(indexExpr));
+        Variable *var = new Variable();
+        this->builder->CreateStore(compileExpression(assignStmt->value), getPointerToArrayIndex(indexExpr, var));
+        // this->builder->CreateStore(compileExpression(assignStmt->value), loadIndexedArray(indexExpr));
     }
 
     void assignToVarExpr(AssignStmt *assignStmt) {
@@ -800,7 +805,7 @@ class LLVMCompiler {
             // ToDo if string -> create new one
             IndexExpr *indexExpr = (IndexExpr *)expr;
             Variable *var = new Variable();
-            return compileIndex(indexExpr, var);
+            return loadIndex(indexExpr, var);
         }
         case INC_EXPR: {
             IncExpr *incExpr = (IncExpr *)expr;
