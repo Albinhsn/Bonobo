@@ -6,8 +6,6 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * errorAt function
 
-* Assign to struct?
-
 * Assign from index of array, take copy not reference
     * Needs to happen when we allocate atleast
 

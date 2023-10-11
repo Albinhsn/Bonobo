@@ -673,7 +673,39 @@ class LLVMCompiler {
         return value;
     }
 
-    std::string findStructName(DotExpr *dotExpr) { return "foo"; }
+    std::string findStructName(Expr *expr) {
+        switch (expr->type) {
+        case DOT_EXPR: {
+            DotExpr *dotExpr = (DotExpr *)expr;
+            return findStructName(dotExpr->name);
+        }
+        case INDEX_EXPR: {
+            IndexExpr *indexExpr = (IndexExpr *)expr;
+            return findStructName(indexExpr->variable);
+        }
+        case VAR_EXPR: {
+            VarExpr *varExpr = (VarExpr *)expr;
+            Variable *var = lookupVariable(varExpr->name);
+            while (var->type == ARRAY_VAR) {
+                ArrayVariable *arrayVar = (ArrayVariable *)var;
+                var = arrayVar->items;
+            }
+            if (var->type != STRUCT_VAR) {
+                printf("wasn't struct?\n");
+                debugVariable(var);
+                printf("\n");
+                exit(1);
+            }
+            StructVariable *struktVar = (StructVariable *)var;
+            return struktVar->structName;
+        }
+        default: {
+            printf("Don't know how to find struct name for: ");
+            debugExpression(expr);
+            exit(1);
+        }
+        }
+    }
 
     void assignToDotExpr(AssignStmt *assignStmt) {
         DotExpr *dotExpr = (DotExpr *)assignStmt->variable;
