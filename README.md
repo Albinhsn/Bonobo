@@ -4,18 +4,23 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* errorAt function
-
-* Assign from index of array, take copy not reference
-    * Needs to happen when we allocate atleast
-
-## Bugs/Poorly implemented stuff LLVM backend
-
 * A lot of type checking missed
 
 * Improve error handling
+    * errorAt function
     * Store smth about line, errorAt func
     * Throw different error when arr[int] != [[1,2,3]]
+
+* Actually free memory
+
+* can't do a = [2];
+
+* Rewrite C style, improve compile time
+    * Just remove stl
+
+## Bugs/Poorly implemented stuff LLVM backend
+
+
 
 ## TODO LLVM backend
 
@@ -30,8 +35,14 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Get values
     * Error if out of bounds
 
+* Assign from index of array, take copy not reference
+    * Needs to happen when we allocate atleast
+
 * Write c++ data structures and functions to create a standard library
     * Or just write functions in bonobo
+
+
+* Mark and Sweep GC
 
 ## TODO x86_64 backend
 

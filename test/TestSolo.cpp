@@ -72,6 +72,11 @@ int main() {
     nmbr_of_tests++;
     runTest("Index - 3D str array", index4, "Hi", failed);
 
+    // std::string index5 =
+    //     "var a: arr[arr[int]] = [[0],[1],[2]]; var b: arr[int] = a[0]; b[0] = 5; printf(\"%d\n\", a[0][0]);";
+    // nmbr_of_tests++;
+    // runTest("Index - Copy index", index5, "0", failed);
+
     // Assign to index
     std::string assignIndex1 =
         "var a: arr[arr[int]] = [[0,1,2]]; var b:arr[int] = [0,1,5]; a[0] = b; printf(\"%d\", a[0][2]);";
@@ -111,6 +116,11 @@ int main() {
     // nmbr_of_tests++;
     // runTest("AssignIndex - Assign arr to 3D array", assignIndex8, "2", failed);
 
+    // Assignment test
+    std::string assign1 = "var a: arr[int] = [0,1]; var b: arr[int] = a; b[0] = 5; printf(\"%d\", a[0]);";
+    nmbr_of_tests++;
+    runTest("Assign - Copy variable assignment", assign1, "5", failed);
+
     // String test
     std::string str1 = "var s: str = \"Hello World\"; printf(\"%s\", s);";
     nmbr_of_tests++;
@@ -149,7 +159,7 @@ int main() {
     runTest("Strukt - Int, Double struct", strukt3, "2.500000", failed);
 
     // Property test
-    std::string prop1= "struct foo{bar: int;};var f:foo = foo(1); f.bar = 5; printf(\"%d\", f.bar);";
+    std::string prop1 = "struct foo{bar: int;};var f:foo = foo(1); f.bar = 5; printf(\"%d\", f.bar);";
     nmbr_of_tests++;
     runTest("Strukt Property Assignment - Assign to var", prop1, "5", failed);
 

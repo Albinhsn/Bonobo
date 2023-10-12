@@ -6,8 +6,6 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
-#include "llvm/Support/TargetSelect.h"
-#include <llvm/Support/raw_ostream.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
