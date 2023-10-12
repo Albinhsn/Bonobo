@@ -1,7 +1,7 @@
 #ifndef VARIABLES_HEADER
 #define VARIABLES_HEADER
 
-#include "scanner.h"
+#include <string>
 
 enum VarType { STR_VAR, INT_VAR, DOUBLE_VAR, BOOL_VAR, MAP_VAR, ARRAY_VAR, STRUCT_VAR, NIL_VAR };
 
@@ -27,7 +27,7 @@ class ArrayVariable : public Variable {
 class StructVariable : public Variable {
   private:
   public:
-  std::string structName;
+    std::string structName;
     StructVariable(std::string name, std::string structName) {
         this->name = name;
         this->structName = structName;

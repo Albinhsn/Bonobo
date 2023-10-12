@@ -22,9 +22,6 @@ static void endCompiler(Compiler *current) {
 }
 
 static void errorAt(const char *message) {
-    if (parser->hadError) {
-        return;
-    }
 
     Token *token = parser->current;
     fprintf(stderr, "[line %d] Error", token->line);
@@ -38,7 +35,6 @@ static void errorAt(const char *message) {
     }
 
     fprintf(stderr, ": %s\n", message);
-    parser->hadError = true;
     exit(1);
 }
 
@@ -233,7 +229,7 @@ static LiteralType getLiteralType() {
 
 static void literal(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new LiteralExpr(parser->previous->lexeme, getLiteralType());
+        expr = new LiteralExpr(parser->previous->lexeme, getLiteralType(), parser->previous->line);
     } else {
         switch (expr->type) {
         case BINARY_EXPR: {
@@ -271,7 +267,7 @@ static void literal(Expr *&expr) {
 
 static void unary(Expr *&expr) {
     if (expr == nullptr) {
-        UnaryExpr *unaryExpr = new UnaryExpr(getUnaryType());
+        UnaryExpr *unaryExpr = new UnaryExpr(getUnaryType(), parser->previous->line);
 
         expr = unaryExpr;
         return;
@@ -300,7 +296,7 @@ static void unary(Expr *&expr) {
 
 static void grouping(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new GroupingExpr(expression(expr));
+        expr = new GroupingExpr(expression(expr), parser->previous->line);
         consume(TOKEN_RIGHT_PAREN, "Grouping wasn't closed");
 
         return;
@@ -328,7 +324,7 @@ static void grouping(Expr *&expr) {
     }
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
-        CallExpr *callExpr = new CallExpr(varExpr->name);
+        CallExpr *callExpr = new CallExpr(varExpr->name, parser->previous->line);
         if (!match(TOKEN_RIGHT_PAREN)) {
             while (true) {
                 callExpr->arguments.push_back(expression(nullptr));
@@ -392,16 +388,16 @@ static void operation(Expr *&expr) {
                 operation(binaryExpr->right);
             } else {
 
-                binaryExpr->right = new BinaryExpr(binaryExpr->right, op);
+                binaryExpr->right = new BinaryExpr(binaryExpr->right, op, binaryExpr->line);
                 expr = binaryExpr;
             }
         } else {
-            expr = new BinaryExpr(binaryExpr, op);
+            expr = new BinaryExpr(binaryExpr, op, binaryExpr->line);
         }
         break;
     }
     default: {
-        expr = new BinaryExpr(expr, op);
+        expr = new BinaryExpr(expr, op, expr->line);
         break;
     }
     }
@@ -415,13 +411,13 @@ static void comparison(Expr *&expr) {
         LogicalExpr *logicalExpr = (LogicalExpr *)expr;
         comparison(logicalExpr->right);
     } else {
-        expr = new ComparisonExpr(expr, getComparisonOp());
+        expr = new ComparisonExpr(expr, getComparisonOp(), expr->line);
     }
 }
 
 static void identifier(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new VarExpr(parser->previous->lexeme);
+        expr = new VarExpr(parser->previous->lexeme, parser->previous->line);
         return;
     }
     switch (expr->type) {
@@ -471,14 +467,14 @@ static void dot(Expr *&expr) {
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(varExpr, parser->previous->lexeme);
+        DotExpr *dotExpr = new DotExpr(varExpr, parser->previous->lexeme, parser->previous->line);
         expr = dotExpr;
         break;
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(callExpr, parser->previous->lexeme);
+        DotExpr *dotExpr = new DotExpr(callExpr, parser->previous->lexeme, parser->previous->line);
         expr = dotExpr;
         break;
     }
@@ -505,7 +501,7 @@ static void dot(Expr *&expr) {
     case INDEX_EXPR: {
         IndexExpr *indexExpr = (IndexExpr *)expr;
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme);
+        DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme, indexExpr->line);
         expr = dotExpr;
         break;
     }
@@ -544,24 +540,23 @@ static bool isEmptyChildUnary(Expr *&expr) {
 
 static void plus(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new UnaryExpr(PLUS_UNARY);
+        expr = new UnaryExpr(PLUS_UNARY, parser->previous->line);
         return;
     }
     switch (expr->type) {
     case UNARY_EXPR: {
-        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
-        expr = new IncExpr(nullptr, INC);
+        expr = new IncExpr(nullptr, INC, expr->line);
         break;
     }
     case BINARY_EXPR: {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
         if (binaryExpr->right == nullptr && binaryExpr->op == ADD && binaryExpr->left->type == VAR_EXPR) {
-            expr = new IncExpr(binaryExpr->left, INC);
+            expr = new IncExpr(binaryExpr->left, INC, binaryExpr->line);
         } else if (isChildUnary(binaryExpr->right) || isEmptyChildUnary(binaryExpr->right)) {
             plus(binaryExpr->right);
             expr = binaryExpr;
         } else {
-            expr = new BinaryExpr(expr, ADD);
+            expr = new BinaryExpr(expr, ADD, expr->line);
         }
         break;
     }
@@ -578,31 +573,30 @@ static void plus(Expr *&expr) {
         break;
     }
     default: {
-        expr = new BinaryExpr(expr, ADD);
+        expr = new BinaryExpr(expr, ADD, expr->line);
         break;
     }
     }
 }
 static void minus(Expr *&expr) {
     if (expr == nullptr) {
-        expr = new UnaryExpr(NEG_UNARY);
+        expr = new UnaryExpr(NEG_UNARY, parser->previous->line);
         return;
     }
     switch (expr->type) {
     case UNARY_EXPR: {
-        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
-        expr = new IncExpr(nullptr, DEC);
+        expr = new IncExpr(nullptr, DEC, expr->line);
         break;
     }
     case BINARY_EXPR: {
         BinaryExpr *binaryExpr = (BinaryExpr *)expr;
         if (binaryExpr->right == nullptr && binaryExpr->op == SUB && binaryExpr->left->type == VAR_EXPR) {
-            expr = new IncExpr(binaryExpr->left, DEC);
+            expr = new IncExpr(binaryExpr->left, DEC, binaryExpr->line);
         } else if (isChildUnary(binaryExpr->right) || isEmptyChildUnary(binaryExpr->right)) {
             minus(binaryExpr->right);
             expr = binaryExpr;
         } else {
-            expr = new BinaryExpr(expr, SUB);
+            expr = new BinaryExpr(expr, SUB, expr->line);
         }
         break;
     }
@@ -619,7 +613,7 @@ static void minus(Expr *&expr) {
         break;
     }
     default: {
-        expr = new BinaryExpr(expr, SUB);
+        expr = new BinaryExpr(expr, SUB, expr->line);
         break;
     }
     }
@@ -657,12 +651,12 @@ static void index(Expr *&expr) {
     }
     case INDEX_EXPR: {
         IndexExpr *indexExpr = (IndexExpr *)expr;
-        expr = new IndexExpr(indexExpr, expression(nullptr));
+        expr = new IndexExpr(indexExpr, expression(nullptr), indexExpr->line);
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
         break;
     }
     case VAR_EXPR: {
-        expr = new IndexExpr(expr, expression(nullptr));
+        expr = new IndexExpr(expr, expression(nullptr), expr->line);
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
         break;
     }
@@ -682,13 +676,13 @@ static void logical(Expr *&expr) {
     if (expr->type == LOGICAL_EXPR) {
         LogicalExpr *logicalExpr = (LogicalExpr *)expr;
         if (logicalExpr->op < op) {
-            logicalExpr->right = new LogicalExpr(logicalExpr->right, op);
+            logicalExpr->right = new LogicalExpr(logicalExpr->right, op, logicalExpr->line);
             expr = logicalExpr;
         } else {
-            expr = new LogicalExpr(logicalExpr, op);
+            expr = new LogicalExpr(logicalExpr, op, logicalExpr->line);
         }
     } else {
-        expr = new LogicalExpr(expr, op);
+        expr = new LogicalExpr(expr, op, expr->line);
     }
 }
 
@@ -837,7 +831,7 @@ static Expr *expression(Expr *expr) {
 }
 
 static Expr *arrayDeclaration() {
-    ArrayExpr *arrayExpr = new ArrayExpr();
+    ArrayExpr *arrayExpr = new ArrayExpr(parser->previous->line);
     if (parser->current->type != TOKEN_RIGHT_BRACKET) {
         do {
             arrayExpr->items.push_back(expression(nullptr));
@@ -848,7 +842,7 @@ static Expr *arrayDeclaration() {
 }
 
 static Expr *mapDeclaration() {
-    MapExpr *mapExpr = new MapExpr();
+    MapExpr *mapExpr = new MapExpr(parser->previous->line);
     if (parser->current->type != TOKEN_RIGHT_BRACE) {
         do {
             mapExpr->keys.push_back(expression(nullptr));
@@ -862,7 +856,7 @@ static Expr *mapDeclaration() {
 }
 
 static Stmt *varDeclaration() {
-    VarStmt *varStmt = new VarStmt;
+    VarStmt *varStmt = new VarStmt(parser->previous->line);
     varStmt->type = VAR_STMT;
     varStmt->var = parseVariable();
     consume(TOKEN_EQUAL, "Expected assignment at var declaration");
@@ -897,55 +891,59 @@ static Stmt *varDeclaration() {
 }
 static Stmt *variableStatement(std::string ident) {
     if (match(TOKEN_EQUAL)) {
-        return new AssignStmt(new VarExpr(ident), expression(nullptr));
+        return new AssignStmt(new VarExpr(ident, parser->previous->line), expression(nullptr), parser->previous->line);
     } else if (nextIsBinaryOp()) {
         advance();
         BinaryOp op = getBinaryOp(parser->previous);
         if (match(TOKEN_EQUAL)) {
-            return new CompAssignStmt(op, ident, expression(nullptr));
+            return new CompAssignStmt(op, ident, expression(nullptr), parser->previous->line);
         } else {
-            return new ExprStmt(expression(new BinaryExpr(new VarExpr(ident), op)));
+            return new ExprStmt(
+                expression(new BinaryExpr(new VarExpr(ident, parser->previous->line), op, parser->previous->line)),
+                parser->previous->line);
         }
 
     } else if (match(TOKEN_LEFT_BRACKET)) {
-        IndexExpr *indexExpr = new IndexExpr(new VarExpr(ident), expression(nullptr));
+        IndexExpr *indexExpr =
+            new IndexExpr(new VarExpr(ident, parser->previous->line), expression(nullptr), parser->previous->line);
         consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
         while (match(TOKEN_LEFT_BRACKET)) {
-            indexExpr = new IndexExpr(indexExpr, expression(nullptr));
+            indexExpr = new IndexExpr(indexExpr, expression(nullptr), parser->previous->line);
             consume(TOKEN_RIGHT_BRACKET, "Expected ']' after index");
         }
         if (match(TOKEN_EQUAL)) {
-            return new AssignStmt(indexExpr, expression(nullptr));
+            return new AssignStmt(indexExpr, expression(nullptr), parser->previous->line);
         } else if (match(TOKEN_DOT)) {
             consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-            DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme);
+            DotExpr *dotExpr = new DotExpr(indexExpr, parser->previous->lexeme, indexExpr->line);
             if (match(TOKEN_EQUAL)) {
-                return new AssignStmt(dotExpr, expression(nullptr));
+                return new AssignStmt(dotExpr, expression(nullptr), dotExpr->line);
             }
-            return new ExprStmt(expression(dotExpr));
+            return new ExprStmt(expression(dotExpr), dotExpr->line);
         }
-        return new ExprStmt(expression(indexExpr));
+        return new ExprStmt(expression(indexExpr), indexExpr->line);
     } else if (match(TOKEN_DOT)) {
         consume(TOKEN_IDENTIFIER, "Expect identifier after '.'");
-        DotExpr *dotExpr = new DotExpr(new VarExpr(ident), parser->previous->lexeme);
+        DotExpr *dotExpr =
+            new DotExpr(new VarExpr(ident, parser->previous->line), parser->previous->lexeme, parser->previous->line);
         if (match(TOKEN_EQUAL)) {
-            return new AssignStmt(dotExpr, expression(nullptr));
+            return new AssignStmt(dotExpr, expression(nullptr), dotExpr->line);
         }
-        return new ExprStmt(expression(dotExpr));
+        return new ExprStmt(expression(dotExpr), dotExpr->line);
     }
-    return new ExprStmt(expression(new VarExpr(ident)));
+    return new ExprStmt(expression(new VarExpr(ident, parser->previous->line)), parser->previous->line);
 }
 
 static Stmt *expressionStatement() {
     if (match(TOKEN_IDENTIFIER)) {
         return variableStatement(parser->previous->lexeme);
     }
-    return new ExprStmt(expression(nullptr));
+    return new ExprStmt(expression(nullptr), parser->current->line);
 }
 
 static Stmt *forStatement() {
+    ForStmt *forStmt = new ForStmt(parser->previous->line);
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
-    ForStmt *forStmt = new ForStmt();
     if (match(TOKEN_SEMICOLON)) {
     } else if (match(TOKEN_VAR)) {
         forStmt->initializer = varDeclaration();
@@ -971,7 +969,7 @@ static Stmt *forStatement() {
 }
 
 static Stmt *ifStatement() {
-    IfStmt *ifStmt = new IfStmt();
+    IfStmt *ifStmt = new IfStmt(parser->previous->line);
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
 
     grouping(ifStmt->condition);
@@ -991,14 +989,14 @@ static Stmt *ifStatement() {
 }
 
 static Stmt *returnStatement() {
-    ReturnStmt *returnStmt = new ReturnStmt(expression(nullptr));
+    ReturnStmt *returnStmt = new ReturnStmt(expression(nullptr), parser->previous->line);
     consume(TOKEN_SEMICOLON, "Expect ';' after expressionStatement");
 
     return returnStmt;
 }
 
 static Stmt *whileStatement() {
-    WhileStmt *whileStmt = new WhileStmt();
+    WhileStmt *whileStmt = new WhileStmt(parser->previous->line);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
     grouping(whileStmt->condition);
@@ -1011,8 +1009,9 @@ static Stmt *whileStatement() {
 }
 
 static Stmt *structDeclaration() {
+    int line = parser->previous->line;
     consume(TOKEN_IDENTIFIER, "Expect struct name");
-    StructStmt *structStmt = new StructStmt(parser->previous->lexeme);
+    StructStmt *structStmt = new StructStmt(parser->previous->lexeme, line);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before struct body.");
     while (!match(TOKEN_RIGHT_BRACE)) {
         structStmt->fields.push_back(parseVariable());
@@ -1023,8 +1022,9 @@ static Stmt *structDeclaration() {
 }
 
 static Stmt *funDeclaration() {
+    int line = parser->previous->line;
     consume(TOKEN_IDENTIFIER, "Need function name in func declaration");
-    FuncStmt *funcStmt = new FuncStmt(parser->previous->lexeme);
+    FuncStmt *funcStmt = new FuncStmt(parser->previous->lexeme, line);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after func name");
     if (!match(TOKEN_RIGHT_PAREN)) {
@@ -1058,7 +1058,7 @@ static Stmt *statement() {
     } else if (match(TOKEN_WHILE)) {
         return whileStatement();
     } else if (match(TOKEN_BREAK)) {
-        BreakStmt *stmt = new BreakStmt();
+        BreakStmt *stmt = new BreakStmt(parser->previous->line);
         consume(TOKEN_SEMICOLON, "Expect ';' after break");
         return stmt;
     } else {
@@ -1084,12 +1084,11 @@ static void initParser() {
     parser = (Parser *)malloc(sizeof(Parser));
     parser->current = nullptr;
     parser->previous = nullptr;
-    parser->hadError = false;
 }
 
 Compiler *compile(std::string source) {
     scanner = new Scanner();
-    initScanner(scanner, source);
+    initScanner(scanner, source.c_str());
 
     initParser();
 
@@ -1098,7 +1097,6 @@ Compiler *compile(std::string source) {
     while (!match(TOKEN_EOF)) {
         compiler->statements.push_back(declaration());
     }
-    bool hadError = parser->hadError;
     // debugStatements(compiler->statements);
 
     delete (scanner);

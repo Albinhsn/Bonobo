@@ -215,10 +215,10 @@ const char *debugVarType(VarType varType) {
 }
 
 void debugVariable(Variable *var) {
-    if(var == nullptr){
-      printf("nullptr?");
-      return;
-  }
+    if (var == nullptr) {
+        printf("nullptr?");
+        return;
+    }
     if (var->name != "never assigned name :)") {
         printf("%s:", var->name.c_str());
     }

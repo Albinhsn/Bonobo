@@ -1,8 +1,6 @@
-#include "common.h"
 #include "scanner.h"
-#include <algorithm>
-#include <cctype>
 #include <map>
+#include <vector>
 
 class Node {
 

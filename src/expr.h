@@ -3,6 +3,7 @@
 
 #include "scanner.h"
 #include "variables.h"
+#include <vector>
 
 enum ExprType {
     BINARY_EXPR,
@@ -47,6 +48,7 @@ class Expr {
   private:
   public:
     ExprType type;
+    int line;
 };
 
 class IncExpr : public Expr {
@@ -54,10 +56,11 @@ class IncExpr : public Expr {
   public:
     Expr *expr;
     IncOp op;
-    IncExpr(Expr *expr, IncOp op) {
+    IncExpr(Expr *expr, IncOp op, int line) {
         this->expr = expr;
         this->op = op;
         this->type = INC_EXPR;
+        this->line = line;
     }
 };
 
@@ -67,11 +70,12 @@ class BinaryExpr : public Expr {
     Expr *left;
     BinaryOp op;
     Expr *right;
-    BinaryExpr(Expr *left, BinaryOp op) {
+    BinaryExpr(Expr *left, BinaryOp op, int line) {
         this->left = left;
         this->op = op;
         this->right = nullptr;
         this->type = BINARY_EXPR;
+        this->line = line;
     }
 };
 
@@ -79,9 +83,10 @@ class GroupingExpr : public Expr {
   private:
   public:
     Expr *expression;
-    GroupingExpr(Expr *expression) {
+    GroupingExpr(Expr *expression, int line) {
         this->type = GROUPING_EXPR;
         this->expression = expression;
+        this->line = line;
     }
 };
 
@@ -92,10 +97,11 @@ class MapExpr : public Expr {
     std::vector<Expr *> keys;
     VarType valueType;
     VarType keyType;
-    MapExpr() {
+    MapExpr(int line) {
         this->type = MAP_EXPR;
         this->values = std::vector<Expr *>();
         this->keys = std::vector<Expr *>();
+        this->line = line;
     }
 };
 
@@ -104,10 +110,11 @@ class ArrayExpr : public Expr {
   public:
     std::vector<Expr *> items;
     Variable *itemType;
-    ArrayExpr() {
+    ArrayExpr(int line) {
         this->type = ARRAY_EXPR;
         this->items = std::vector<Expr *>();
         this->itemType = nullptr;
+        this->line = line;
     }
 };
 
@@ -117,11 +124,12 @@ class LogicalExpr : public Expr {
     Expr *left;
     LogicalOp op;
     Expr *right;
-    LogicalExpr(Expr *left, LogicalOp op) {
+    LogicalExpr(Expr *left, LogicalOp op, int line) {
         this->left = left;
         this->op = op;
         this->right = nullptr;
         this->type = LOGICAL_EXPR;
+        this->line = line;
     }
 };
 
@@ -131,11 +139,12 @@ class ComparisonExpr : public Expr {
     Expr *left;
     ComparisonOp op;
     Expr *right;
-    ComparisonExpr(Expr *left, ComparisonOp op) {
+    ComparisonExpr(Expr *left, ComparisonOp op, int line) {
         this->left = left;
         this->op = op;
         this->right = nullptr;
         this->type = COMPARISON_EXPR;
+        this->line = line;
     }
 };
 
@@ -144,10 +153,11 @@ class LiteralExpr : public Expr {
   public:
     LiteralType literalType;
     std::string literal;
-    LiteralExpr(std::string literal, LiteralType literalType) {
+    LiteralExpr(std::string literal, LiteralType literalType, int line) {
         this->type = LITERAL_EXPR;
         this->literalType = literalType;
         this->literal = literal;
+        this->line = line;
     }
 };
 
@@ -156,10 +166,11 @@ class UnaryExpr : public Expr {
   public:
     UnaryOp op;
     Expr *right;
-    UnaryExpr(UnaryOp op) {
+    UnaryExpr(UnaryOp op, int line) {
         this->op = op;
         this->right = nullptr;
         this->type = UNARY_EXPR;
+        this->line = line;
     };
 };
 
@@ -167,9 +178,10 @@ class VarExpr : public Expr {
   private:
   public:
     std::string name;
-    VarExpr(std::string name) {
+    VarExpr(std::string name, int line) {
         this->name = name;
         this->type = VAR_EXPR;
+        this->line = line;
     };
 };
 
@@ -178,10 +190,11 @@ class DotExpr : public Expr {
   public:
     Expr *name;
     std::string field;
-    DotExpr(Expr *name, std::string field) {
+    DotExpr(Expr *name, std::string field, int line) {
         this->type = DOT_EXPR;
         this->name = name;
         this->field = field;
+        this->line = line;
     };
 };
 
@@ -190,10 +203,11 @@ class CallExpr : public Expr {
   public:
     std::string callee;
     std::vector<Expr *> arguments;
-    CallExpr(std::string callee) {
+    CallExpr(std::string callee, int line) {
         this->callee = callee;
         this->arguments = std::vector<Expr *>();
         this->type = CALL_EXPR;
+        this->line = line;
     };
 };
 
@@ -202,10 +216,11 @@ class IndexExpr : public Expr {
   public:
     Expr *variable;
     Expr *index;
-    IndexExpr(Expr * variable, Expr * index) {
+    IndexExpr(Expr *variable, Expr *index, int line) {
         this->type = INDEX_EXPR;
         this->index = index;
         this->variable = variable;
+        this->line = line;
     }
 };
 

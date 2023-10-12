@@ -1,10 +1,13 @@
 #include "../src/llvm.h"
+#include <fstream>
+#include <sstream>
+
 
 static std::string readFile(const char *path) {
     std::ifstream t(path);
     std::stringstream buffer;
     if (t.fail()) {
-        std::cout << "file doesn't exist\n";
+        printf("file doesn't exist\n");
         exit(1);
     }
     buffer << t.rdbuf();
@@ -15,9 +18,8 @@ bool runTest(std::string name, std::string source, std::string expected, std::ve
 
     printf("Running: %s\n", name.c_str());
     Compiler *compiler = compile(source);
-    LLVMCompiler *llvmCompiler = new LLVMCompiler(compiler->statements, compiler->variables);
-    delete (compiler);
-    llvmCompiler->compile();
+    initCompiler(compiler->variables);
+    compile(compiler->statements);
     system("lli out.ll > result.txt");
     if (readFile("result.txt") == expected) {
         printf("OK: %s\n", name.c_str());
@@ -72,10 +74,15 @@ int main() {
     nmbr_of_tests++;
     runTest("Index - 3D str array", index4, "Hi", failed);
 
-    // std::string index5 =
-    //     "var a: arr[arr[int]] = [[0],[1],[2]]; var b: arr[int] = a[0]; b[0] = 5; printf(\"%d\n\", a[0][0]);";
-    // nmbr_of_tests++;
-    // runTest("Index - Copy index", index5, "0", failed);
+    std::string index5 =
+        "var a: arr[arr[int]] = [[0],[1],[2]]; var b: arr[int] = a[0]; b[0] = 5; printf(\"%d\n\", a[0][0]);";
+    nmbr_of_tests++;
+    runTest("Index - Copy index", index5, "0", failed);
+
+    std::string index6 =
+        "var a:arr [int] = [1]; var b: arr[int] = a;b[0] = 5; printf(\"%d\", a[0]);";
+    nmbr_of_tests++;
+    runTest("Index - Copy array var", index6, "1", failed);
 
     // Assign to index
     std::string assignIndex1 =

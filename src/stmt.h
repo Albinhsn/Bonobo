@@ -20,6 +20,7 @@ enum StatementType {
 class Stmt {
   private:
   public:
+    int line;
     StatementType type;
 };
 
@@ -29,27 +30,32 @@ class CompAssignStmt : public Stmt {
     BinaryOp op;
     std::string name;
     Expr *right;
-    CompAssignStmt(BinaryOp op, std::string name, Expr * right) {
+    CompAssignStmt(BinaryOp op, std::string name, Expr *right, int line) {
         this->type = COMP_ASSIGN_STMT;
         this->op = op;
         this->name = name;
         this->right = right;
+        this->line = line;
     }
 };
 
 class BreakStmt : public Stmt {
   private:
   public:
-    BreakStmt() { this->type = BREAK_STMT; }
+    BreakStmt(int line) {
+        this->line = line;
+        this->type = BREAK_STMT;
+    }
 };
 
 class ExprStmt : public Stmt {
   private:
   public:
     Expr *expression;
-    ExprStmt(Expr * expr) {
+    ExprStmt(Expr *expr, int line) {
         this->expression = expr;
         this->type = EXPR_STMT;
+        this->line = line;
     }
 };
 
@@ -57,9 +63,10 @@ class ReturnStmt : public Stmt {
   private:
   public:
     Expr *value;
-    ReturnStmt(Expr * value) {
+    ReturnStmt(Expr *value, int line) {
         this->value = value;
         this->type = RETURN_STMT;
+        this->line = line;
     }
 };
 
@@ -68,6 +75,9 @@ class VarStmt : public Stmt {
   public:
     Variable *var;
     Expr *initializer;
+  VarStmt(int line){
+        this->line = line;
+  }
 };
 
 class AssignStmt : public Stmt {
@@ -75,10 +85,11 @@ class AssignStmt : public Stmt {
   public:
     Expr *variable;
     Expr *value;
-    AssignStmt(Expr * variable, Expr * value) {
+    AssignStmt(Expr *variable, Expr *value, int line) {
         this->variable = variable;
         this->value = value;
         this->type = ASSIGN_STMT;
+        this->line = line;
     }
 };
 
@@ -87,10 +98,11 @@ class WhileStmt : public Stmt {
   public:
     Expr *condition;
     std::vector<Stmt *> body;
-    WhileStmt() {
+    WhileStmt(int line) {
         this->condition = nullptr;
         this->type = WHILE_STMT;
         this->body = std::vector<Stmt *>();
+        this->line = line;
     }
 };
 
@@ -101,12 +113,13 @@ class ForStmt : public Stmt {
     Expr *condition;
     Stmt *increment;
     std::vector<Stmt *> body;
-    ForStmt() {
+    ForStmt(int line) {
         this->type = FOR_STMT;
         this->initializer = nullptr;
         this->condition = nullptr;
         this->increment = nullptr;
         this->body = std::vector<Stmt *>();
+        this->line = line;
     }
 };
 
@@ -115,10 +128,11 @@ class StructStmt : public Stmt {
   public:
     std::string name;
     std::vector<Variable *> fields;
-    StructStmt(std::string name) {
+    StructStmt(std::string name, int line) {
         this->name = name;
         this->type = STRUCT_STMT;
         this->fields = std::vector<Variable *>();
+        this->line = line;
     }
 };
 
@@ -128,11 +142,12 @@ class IfStmt : public Stmt {
     Expr *condition;
     std::vector<Stmt *> thenBranch;
     std::vector<Stmt *> elseBranch;
-    IfStmt() {
+    IfStmt(int line) {
         this->type = IF_STMT;
         this->condition = nullptr;
         this->thenBranch = std::vector<Stmt *>();
         this->elseBranch = std::vector<Stmt *>();
+        this->line = line;
     }
 };
 
@@ -143,11 +158,12 @@ class FuncStmt : public Stmt {
     Variable *returnType;
     std::vector<Variable *> params;
     std::vector<Stmt *> body;
-    FuncStmt(std::string name) {
+    FuncStmt(std::string name, int line) {
         this->name = name;
         this->type = FUNC_STMT;
         this->body = std::vector<Stmt *>();
         this->params = std::vector<Variable *>();
+        this->line = line;
     }
 };
 

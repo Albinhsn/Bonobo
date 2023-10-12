@@ -27,13 +27,9 @@ Token *newToken(std::string lexeme, int line, TokenType type) {
     return token;
 }
 
-static bool isAtEnd(Scanner *scanner) {
-    return scanner->source[scanner->current] == '\0';
-}
+static bool isAtEnd(Scanner *scanner) { return scanner->source[scanner->current] == '\0'; }
 
-static inline char currentChar(Scanner *scanner) {
-    return scanner->source[scanner->current];
-}
+static inline char currentChar(Scanner *scanner) { return scanner->source[scanner->current]; }
 
 static bool match(Scanner *scanner, char needle) {
     if (!isAtEnd(scanner) && currentChar(scanner) == needle) {
@@ -53,28 +49,21 @@ static Token *parseNumber(Scanner *scanner) {
         while (!isAtEnd(scanner) && isdigit(currentChar(scanner))) {
             scanner->current++;
         }
-        return newToken(
-            scanner->source.substr(current, scanner->current - current),
-            scanner->line, TOKEN_DOUBLE_LITERAL);
+        return newToken(scanner->source.substr(current, scanner->current - current), scanner->line,
+                        TOKEN_DOUBLE_LITERAL);
     } else {
-        return newToken(
-            scanner->source.substr(current, scanner->current - current),
-            scanner->line, TOKEN_INT_LITERAL);
+        return newToken(scanner->source.substr(current, scanner->current - current), scanner->line, TOKEN_INT_LITERAL);
     }
 }
 
-static inline bool isAlpha(char c) {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
-}
+static inline bool isAlpha(char c) { return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_'; }
 
 static Token *parseIdentifier(Scanner *scanner) {
     int current = scanner->current - 1;
-    while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) ||
-           isdigit(currentChar(scanner))) {
+    while (!isAtEnd(scanner) && (isAlpha(currentChar(scanner))) || isdigit(currentChar(scanner))) {
         scanner->current++;
     }
-    std::string ident =
-        scanner->source.substr(current, scanner->current - current);
+    std::string ident = scanner->source.substr(current, scanner->current - current);
     return newToken(ident, scanner->line, trie->isKeyword(ident));
 }
 
@@ -85,13 +74,12 @@ static Token *parseString(Scanner *scanner) {
     }
 
     if (isAtEnd(scanner)) {
-        std::cout << "Hit eof with unterminated string.";
+        printf("Hit eof with unterminated string.");
         exit(1);
     }
 
     scanner->current++;
-    std::string str =
-        scanner->source.substr(current, scanner->current - current - 1);
+    std::string str = scanner->source.substr(current, scanner->current - current - 1);
     size_t found = str.find("\\n");
     while (found != std::string::npos) {
         str.replace(found, 2, "\n");
@@ -229,7 +217,7 @@ Token *scanToken(Scanner *scanner) {
         return newToken("/", scanner->line, TOKEN_SLASH);
     }
     default:
-        std::cout << "Unknown characther " << c << "\n";
+        printf("Unknown characther '%c'\n", c);
         exit(1);
     }
 }
