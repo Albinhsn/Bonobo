@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sstream>
 
-
 static std::string readFile(const char *path) {
     std::ifstream t(path);
     std::stringstream buffer;
@@ -75,12 +74,11 @@ int main() {
     runTest("Index - 3D str array", index4, "Hi", failed);
 
     std::string index5 =
-        "var a: arr[arr[int]] = [[0],[1],[2]]; var b: arr[int] = a[0]; b[0] = 5; printf(\"%d\n\", a[0][0]);";
+        "var a: arr[arr[int]] = [[0],[1],[2]]; var b: arr[int] = a[0]; b[0] = 5; printf(\"%d\", a[0][0]);";
     nmbr_of_tests++;
     runTest("Index - Copy index", index5, "0", failed);
 
-    std::string index6 =
-        "var a:arr [int] = [1]; var b: arr[int] = a;b[0] = 5; printf(\"%d\", a[0]);";
+    std::string index6 = "var a:arr [int] = [1]; var b: arr[int] = a;b[0] = 5; printf(\"%d\", a[0]);";
     nmbr_of_tests++;
     runTest("Index - Copy array var", index6, "1", failed);
 
@@ -118,6 +116,10 @@ int main() {
     nmbr_of_tests++;
     runTest("AssignIndex - Assign struct to 2D array", assignIndex7, "3", failed);
 
+    std::string assignIndex9 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; b[0][0] = 5; printf(\"%d\", a[0][0][0]);";
+    nmbr_of_tests++;
+    runTest("Array - Assign 3D array index to 2D array", assignIndex9, "1", failed);
+
     // std::string assignIndex8 =
     //     "struct foo{bar:int;};var a: arr[arr[arr[int]]] = [[[0], [1]]];  a[0][2] = [2]; printf(\"%d\", a[0][2][0]);";
     // nmbr_of_tests++;
@@ -126,7 +128,7 @@ int main() {
     // Assignment test
     std::string assign1 = "var a: arr[int] = [0,1]; var b: arr[int] = a; b[0] = 5; printf(\"%d\", a[0]);";
     nmbr_of_tests++;
-    runTest("Assign - Copy variable assignment", assign1, "5", failed);
+    runTest("Assign - Copy variable assignment", assign1, "0", failed);
 
     // String test
     std::string str1 = "var s: str = \"Hello World\"; printf(\"%s\", s);";

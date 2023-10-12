@@ -4,26 +4,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## ToDo
 
-* Refactor
-    * What can't i reason about
-    * Things that look ugly probably are, rewrite them in that case
-
-* Figure out if we store the allocation ptr inside the array of ptrs
-
-* Figure out if we stop returning llvm::Value * and create a type for it
-    * i.e. Allocation/Variable
-        * llvm::AllocaInst/llvm::Value
-        * Variable/VarType etc
-
-* A lot of type checking missed
-
-* Improve error handling
-    * Throw different error when arr[int] != [[1,2,3]]
-
-* can't do a = [2];
-
 ## Bugs/Poorly implemented stuff LLVM backend
-
 
 ## TODO LLVM backend
 
@@ -38,11 +19,18 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * Get values
     * Error if out of bounds
 
-* Assign from index of array, take copy not reference
-    * Needs to happen when we allocate atleast
+* A lot of type checking missed
+
+* Improve error handling
+    * Throw different error when arr[int] != [[1,2,3]]
+
+* Fix recursive copying of arrays
+
+* can't do a = [2];
 
 * Write c++ data structures and functions to create a standard library
     * Or just write functions in bonobo
+
 
 
 * Mark and Sweep GC

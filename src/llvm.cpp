@@ -1,4 +1,5 @@
 #include "llvm.h"
+#include "debug.h"
 
 LLVMCompiler *llvmCompiler;
 llvm::IRBuilder<> *builder;
@@ -6,7 +7,7 @@ LLVMFunction *llvmFunction;
 
 static void errorAt(int line, const char *message, ...) {
     va_list args;
-    fprintf(stderr, "[%d] Error", line);
+    fprintf(stderr, "[line %d] Error", line);
     fprintf(stderr, ": %s\n", message);
     exit(1);
 }
@@ -98,8 +99,7 @@ static llvm::Type *getTypeFromVariable(Variable *itemType) {
         }
         }
     }
-    printf("trying to lookup unknown var \n");
-    exit(1);
+    return nullptr;
 }
 
 static void addLibraryFuncs() {
@@ -161,8 +161,8 @@ static void endCompiler() {
 static bool nameIsAlreadyDeclared(std::string name) {
     // Check variables
     std::vector<llvm::AllocaInst *> lastScope = llvmFunction->scopedVariables.back();
-    for (int i = 0; i < lastScope.size(); i++) {
-        if (lastScope[i]->getName().str() == name) {
+    for (auto &var : lastScope) {
+        if (var->getName().str() == name) {
             return true;
         }
     }
@@ -175,9 +175,8 @@ static bool nameIsAlreadyDeclared(std::string name) {
         return true;
     }
     // Check user declared functions
-    std::vector<llvm::Function *> callableFunctions = llvmCompiler->callableFunctions;
-    for (int i = 0; i < callableFunctions.size(); ++i) {
-        if (callableFunctions[i]->getName().str() == name) {
+    for (auto &func : llvmCompiler->callableFunctions) {
+        if (func->getName().str() == name) {
             return true;
         }
     }
@@ -187,14 +186,14 @@ static bool nameIsAlreadyDeclared(std::string name) {
 
 // Returns true if you return inside of the branch
 static bool compileIfBranch(std::vector<Stmt *> branch) {
-    for (int i = 0; i < branch.size(); ++i) {
-        if (branch[i]->type == BREAK_STMT) {
+    for (auto &stmt : branch) {
+        if (stmt->type == BREAK_STMT) {
             llvmFunction->broke = true;
             builder->CreateBr(llvmFunction->exitBlock->exitBlock);
             return false;
         }
-        compileStatement(branch[i]);
-        if (branch[i]->type == RETURN_STMT) {
+        compileStatement(stmt);
+        if (stmt->type == RETURN_STMT) {
             return true;
         }
     }
@@ -217,6 +216,9 @@ static llvm::IRBuilder<> *enterFuncScope(FuncStmt *funcStmt) {
     std::map<std::string, int> funcArgs;
     for (int i = 0; i < funcStmt->params.size(); ++i) {
         params[i] = getTypeFromVariable(funcStmt->params[i]);
+        if (!params[i]) {
+            errorAt(funcStmt->line, "Unable to get variable type for param");
+        }
         funcArgs[funcStmt->params[i]->name] = i;
     }
 
@@ -236,20 +238,20 @@ static void checkValidFuncDeclaration(FuncStmt *funcStmt) {
     if (nameIsAlreadyDeclared(funcStmt->name)) {
         errorAt(funcStmt->line,
                 "Can't declare function '%s', name is already "
-                "declared\n",
+                "declared",
                 funcStmt->name.c_str());
     }
     if (llvmFunction->enclosing) {
-        errorAt(funcStmt->line, "Can't declare a function in a function\n");
+        errorAt(funcStmt->line, "Can't declare a function in a function");
     }
 }
 
 static llvm::MaybeAlign getAlignment(llvm::Type *type) { return llvm::MaybeAlign(type->getPrimitiveSizeInBits() / 8); }
 
 static llvm::Function *lookupFunction(std::string name) {
-    for (int i = 0; i < llvmCompiler->callableFunctions.size(); ++i) {
-        if (llvmCompiler->callableFunctions[i]->getName() == name) {
-            return llvmCompiler->callableFunctions[i];
+    for (auto &func : llvmCompiler->callableFunctions) {
+        if (func->getName() == name) {
+            return func;
         }
     }
     return llvmFunction->function->getName() == name ? llvmFunction->function : nullptr;
@@ -275,7 +277,7 @@ static llvm::Value *lookupValue(std::string name, int line) {
             }
         }
     }
-    errorAt(line, ("Unknown variable" + name).c_str());
+    errorAt(line, ("Unknown variable " + name).c_str());
     exit(1);
 }
 
@@ -293,13 +295,13 @@ static void compileLoopExit(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exi
 }
 
 static void compileLoopBody(llvm::BasicBlock *headerBlock, llvm::BasicBlock *exitBlock, std::vector<Stmt *> body) {
-    for (int i = 0; i < body.size(); ++i) {
-        if (body[i]->type == BREAK_STMT) {
+    for (auto &stmt : body) {
+        if (stmt->type == BREAK_STMT) {
             llvmFunction->broke = true;
             builder->CreateBr(exitBlock);
             break;
         }
-        compileStatement(body[i]);
+        compileStatement(stmt);
     }
 }
 
@@ -388,32 +390,99 @@ static llvm::Value *loadAllocaInst(llvm::Value *value) {
     return value;
 }
 
-static void storePtrArrayItems(ArrayExpr *arrayExpr, llvm::AllocaInst *arrayInstance) {
+static uint32_t getStructSize(llvm::StructType *structType) {
+    uint32_t size = 0;
+    for (auto &subtype : structType->subtypes()) {
+        if (subtype->isStructTy()) {
+            size += getStructSize(llvm::dyn_cast<llvm::StructType>(subtype));
+        } else {
+            size += subtype->getPrimitiveSizeInBits();
+        }
+    }
+    return size;
+}
+
+static llvm::Value *getArraySizeInBytes(llvm::Type *itemType, llvm::Value *arraySize) {
+    uint32_t size;
+    if (itemType->isStructTy()) {
+        size = getStructSize(llvm::dyn_cast<llvm::StructType>(itemType));
+    } else {
+        size = itemType->getPrimitiveSizeInBits() / 8;
+    }
+    return builder->CreateMul(arraySize, builder->getInt32(size));
+}
+static void copyArray(llvm::AllocaInst *allocaVar, llvm::Value *value, Variable *var) {
+    llvm::Value *sourceArraySize = builder->CreateExtractValue(value, 1);
+    llvm::Type *itemType = nullptr;
+    if (var->type == ARRAY_VAR) {
+        ArrayVariable *arrayVar = (ArrayVariable *)var;
+        itemType = lookupArrayItemType(arrayVar);
+    } else if (var->type == STR_VAR) {
+        itemType = builder->getInt8Ty();
+    } else {
+        errorAt(0, "huh");
+    }
+    // ToDo, if itemType is array, then recursively call this :)
+    llvm::Value *arraySize = getArraySizeInBytes(itemType, sourceArraySize);
+
+    builder->CreateMul(sourceArraySize, builder->getInt32(itemType->getPrimitiveSizeInBits() / 8));
+
+    llvm::Value *arrayAllocation = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {arraySize});
+    llvm::Value *sourceArrayPtr = builder->CreateExtractValue(value, 0);
+    builder->CreateMemCpy(arrayAllocation, llvm::MaybeAlign(4), sourceArrayPtr, llvm::MaybeAlign(4), arraySize);
+
+    storeArray(arrayAllocation, allocaVar);
+    storeArraySize(sourceArraySize, allocaVar);
+}
+
+static void copyAllocatedArray(llvm::AllocaInst *destination, llvm::AllocaInst *source, Variable *var) {
+
+    llvm::Value *sourceArraySize = loadArraySize(source);
+    llvm::Type *itemType = nullptr;
+    if (var->type == ARRAY_VAR) {
+        ArrayVariable *arrayVar = (ArrayVariable *)var;
+        itemType = lookupArrayItemType(arrayVar);
+    } else if (var->type == STR_VAR) {
+        itemType = builder->getInt8Ty();
+    } else {
+        errorAt(0, "huh");
+    }
+    llvm::Value *arraySize =
+        builder->CreateMul(sourceArraySize, builder->getInt32(itemType->getPrimitiveSizeInBits() / 8));
+
+    llvm::Value *arrayAllocation = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {arraySize});
+    llvm::Value *sourceArrayPtr = builder->CreateStructGEP(llvmCompiler->internalStructs["array"], source, 0);
+    builder->CreateMemCpy(arrayAllocation, llvm::MaybeAlign(4), sourceArrayPtr, llvm::MaybeAlign(4), arraySize);
+
+    storeArray(arrayAllocation, destination);
+    storeArraySize(sourceArraySize, destination);
+}
+
+static void storePtrArrayItems(std::vector<llvm::Value *> arrayItems, llvm::AllocaInst *arrayInstance) {
     // ToDo document why llvmCompiler behavesllvmCompiler way
-    for (int i = 0; i < arrayExpr->items.size(); ++i) {
-        llvm::Value *arrValue = compileExpression(arrayExpr->items[i]);
+    for (int i = 0; i < arrayItems.size(); ++i) {
         llvm::Value *arrayInstanceGEP = builder->CreateInBoundsGEP(
             llvmCompiler->internalStructs["array"], arrayInstance, {builder->getInt32(0), builder->getInt32(0)});
         llvm::Value *arrayPtr = builder->CreateLoad(builder->getPtrTy(), arrayInstanceGEP);
         llvm::Value *arrayInboundPtr = builder->CreateInBoundsGEP(
             builder->getPtrTy(), arrayPtr, builder->CreateSExt(builder->getInt32(i), builder->getInt64Ty()));
-        builder->CreateStore(arrValue, arrayInboundPtr);
+        builder->CreateStore(arrayItems[i], arrayInboundPtr);
     }
 }
 
-static llvm::GlobalVariable *createGlobalArray(ArrayExpr *arrayExpr, llvm::ArrayType *arrayType) {
-    std::vector<llvm::Constant *> arrayItems = std::vector<llvm::Constant *>(arrayExpr->items.size());
-    for (uint64_t i = 0; i < arrayExpr->items.size(); ++i) {
-        arrayItems[i] = llvm::dyn_cast<llvm::Constant>(compileExpression(arrayExpr->items[i]));
+static llvm::GlobalVariable *createGlobalArray(std::vector<llvm::Value *> arrayItems, llvm::ArrayType *arrayType) {
+    std::vector<llvm::Constant *> constArrayItems = std::vector<llvm::Constant *>(arrayItems.size());
+    for (uint64_t i = 0; i < arrayItems.size(); ++i) {
+        constArrayItems[i] = llvm::dyn_cast<llvm::Constant>(arrayItems[i]);
     }
 
     return new llvm::GlobalVariable(*llvmCompiler->module, arrayType, false, llvm::GlobalValue::PrivateLinkage,
-                                    llvm::ConstantArray::get(arrayType, arrayItems));
+                                    llvm::ConstantArray::get(arrayType, constArrayItems));
 }
 
 static bool isStringTy(llvm::Value *value) {
-    for (int i = 0; i < llvmCompiler->strings.size(); ++i) {
-        if (llvmCompiler->strings[i] == value) {
+    for (auto &str : llvmCompiler->strings) {
+        if (str == value) {
             return true;
         }
     }
@@ -462,9 +531,9 @@ static llvm::Value *createStruct(CallExpr *callExpr) {
 }
 
 static Variable *lookupVariableByName(std::string varName) {
-    for (int i = 0; i < llvmCompiler->variables.size(); ++i) {
-        if (llvmCompiler->variables[i]->name == varName) {
-            return llvmCompiler->variables[i];
+    for (auto &variable : llvmCompiler->variables) {
+        if (variable->name == varName) {
+            return variable;
         }
     }
     return nullptr;
@@ -746,12 +815,11 @@ llvm::Value *compileExpression(Expr *expr) {
         // ToDo clean llvmCompiler mess up
         DotExpr *dotExpr = (DotExpr *)expr;
 
-        // Check llvmCompiler?
         llvm::Value *value = lookupStruct(dotExpr);
         if (LLVMStruct *strukt = llvmCompiler->structs[value->getType()->getStructName().str()]) {
-            for (int j = 0; j < strukt->fields.size(); j++) {
-                if (strukt->fields[j] == dotExpr->field) {
-                    return builder->CreateExtractValue(value, j);
+            for (int i = 0; i < strukt->fields.size(); i++) {
+                if (strukt->fields[i] == dotExpr->field) {
+                    return builder->CreateExtractValue(value, i);
                 }
             }
             printf("unknown struct field '%s' for '%s'\n", dotExpr->field.c_str(),
@@ -857,6 +925,21 @@ llvm::Value *compileExpression(Expr *expr) {
         // Figure ut which type array has
         llvm::Type *elementType = getTypeFromVariable(arrayExpr->itemType);
 
+        std::vector<llvm::Value *> arrayItems(arrayExpr->items.size());
+        for (int i = 0; i < arrayItems.size(); ++i) {
+            arrayItems[i] = compileExpression(arrayExpr->items[i]);
+            if (elementType == nullptr) {
+                elementType = arrayItems[i]->getType();
+            } else if (elementType != arrayItems[i]->getType() && !elementType->isStructTy() &&
+                       arrayItems[i]->getType()->isPointerTy()) {
+                debugValueType(elementType, llvmCompiler->ctx);
+                printf("\n");
+                debugValueType(arrayItems[i]->getType(), llvmCompiler->ctx);
+                printf("\n");
+                errorAt(arrayExpr->line, "Mismatch in array items");
+            }
+        }
+
         llvm::AllocaInst *arrayInstance =
             builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr, "array");
         // Is ptr to objects
@@ -864,10 +947,10 @@ llvm::Value *compileExpression(Expr *expr) {
             llvm::Value *arrGep = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"],
                                                       {builder->getInt32(arrayExpr->items.size() * 8)});
             storeArray(arrGep, arrayInstance);
-            storePtrArrayItems(arrayExpr, arrayInstance);
+            storePtrArrayItems(arrayItems, arrayInstance);
         } else {
             llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayExpr->items.size());
-            llvm::GlobalVariable *globalArray = createGlobalArray(arrayExpr, arrayType);
+            llvm::GlobalVariable *globalArray = createGlobalArray(arrayItems, arrayType);
             llvm::Value *arrGep =
                 builder->CreateGEP(arrayType, globalArray, {builder->getInt32(0), builder->getInt32(0)});
             storeArray(arrGep, arrayInstance);
@@ -991,15 +1074,16 @@ void compileStatement(Stmt *stmt) {
     }
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)stmt;
-        std::string varName = varStmt->var->name;
+        Variable *var = varStmt->var;
+        std::string varName = var->name;
         if (nameIsAlreadyDeclared(varName)) {
             std::string errorMessage = "Can't declare variable '" + varName + "', name is already declared";
             errorAt(varStmt->line, errorMessage.c_str());
         }
         llvm::Value *value = compileExpression(varStmt->initializer);
-        // if (!checkVariableValueMatch(varStmt->var, value)) {
+        // if (!checkVariableValueMatch(var, value)) {
         //     printf("Invalid type mismatch in var declaration\nexpected: ");
-        //     debugVariable(varStmt->var);
+        //     debugVariable(var);
         //     printf("\nbut got: ");
         //     debugValueType(value->getType(), llvmCompiler->ctx);
         //     printf("\n");
@@ -1008,19 +1092,29 @@ void compileStatement(Stmt *stmt) {
 
         if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
             if (varStmt->initializer->type == VAR_EXPR) {
-                // If var is array, retrieve field types, copy the size and array
                 llvm::AllocaInst *allocaVar = builder->CreateAlloca(allocaInst->getAllocatedType(), nullptr, varName);
-                builder->CreateMemCpy(allocaVar, llvm::MaybeAlign(8), allocaInst, llvm::MaybeAlign(8), 16);
+                if (allocaInst->getAllocatedType()->isStructTy() && var->type != STRUCT_VAR) {
+                    copyAllocatedArray(allocaVar, allocaInst, var);
+
+                } else {
+                    builder->CreateMemCpy(allocaVar, llvm::MaybeAlign(8), allocaInst, llvm::MaybeAlign(8), 16);
+                }
                 llvmFunction->scopedVariables.back().push_back(allocaVar);
             } else {
                 allocaInst->setName(varName);
                 llvmFunction->scopedVariables.back().push_back(allocaInst);
             }
-            break;
+        } else if (value->getType() == llvmCompiler->internalStructs["array"]) {
+            llvm::AllocaInst *allocaVar = builder->CreateAlloca(value->getType(), nullptr, varName);
+            copyArray(allocaVar, value, var);
+            llvmFunction->scopedVariables.back().push_back(allocaVar);
+        } else {
+
+            llvm::AllocaInst *allocaInst = builder->CreateAlloca(value->getType(), nullptr, varName);
+            builder->CreateStore(value, allocaInst);
+            llvmFunction->scopedVariables.back().push_back(allocaInst);
         }
-        llvm::AllocaInst *allocaInst = builder->CreateAlloca(value->getType(), nullptr, varName);
-        builder->CreateStore(value, allocaInst);
-        llvmFunction->scopedVariables.back().push_back(allocaInst);
+
         break;
     }
     case WHILE_STMT: {
@@ -1055,8 +1149,7 @@ void compileStatement(Stmt *stmt) {
         std::string structName = structStmt->name;
         if (nameIsAlreadyDeclared(structStmt->name)) {
 
-            errorAt(structStmt->line,
-                    ("Can't declare struct '" + structName + "', name is already declared\n").c_str());
+            errorAt(structStmt->line, ("Can't declare struct '" + structName + "', name is already declared").c_str());
         }
 
         std::vector<llvm::Type *> fieldTypes = std::vector<llvm::Type *>(structStmt->fields.size());
@@ -1102,9 +1195,9 @@ void compileStatement(Stmt *stmt) {
         llvm::IRBuilder<> *prevBuilder = enterFuncScope(funcStmt);
 
         bool returned = false;
-        for (int i = 0; i < funcStmt->body.size(); ++i) {
-            compileStatement(funcStmt->body[i]);
-            if (funcStmt->body[i]->type == RETURN_STMT) {
+        for (auto &stmt : funcStmt->body) {
+            compileStatement(stmt);
+            if (stmt->type == RETURN_STMT) {
                 returned = true;
                 break;
             }
@@ -1126,8 +1219,8 @@ void compileStatement(Stmt *stmt) {
 }
 
 void compile(std::vector<Stmt *> stmts) {
-    for (int i = 0; i < stmts.size(); i++) {
-        compileStatement(stmts[i]);
+    for (auto &stmt : stmts) {
+        compileStatement(stmt);
     }
     endCompiler();
 }
