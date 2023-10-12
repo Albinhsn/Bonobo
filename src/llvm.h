@@ -4,7 +4,6 @@
 #include "stmt.h"
 #include "variables.h"
 #include <algorithm>
-#include <llvm/Support/Casting.h>
 #include <memory>
 
 class ExitBlock {
@@ -1036,24 +1035,26 @@ class LLVMCompiler {
                 exit(1);
             }
             llvm::Value *value = compileExpression(varStmt->initializer);
-            // if (!checkVariableValueMatch(varStmt->var, value)) {
-            //     printf("Invalid type mismatch in var declaration\nexpected: ");
-            //     debugVariable(varStmt->var);
-            //     printf("\nbut got: ");
-            //     debugValueType(value->getType(), this->ctx);
-            //     printf("\n");
-            //     exit(1);
-            // }
+            if (!checkVariableValueMatch(varStmt->var, value)) {
+                printf("Invalid type mismatch in var declaration\nexpected: ");
+                debugVariable(varStmt->var);
+                printf("\nbut got: ");
+                debugValueType(value->getType(), this->ctx);
+                printf("\n");
+                exit(1);
+            }
 
-            // Already allocated
 
             if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
-                allocaInst->setName(varName);
-                this->llvmFunction->scopedVariables.back().push_back(allocaInst);
+                if (varStmt->initializer->type == VAR_EXPR) {
+                    llvm::AllocaInst *allocaVar = this->builder->CreateAlloca(allocaInst->getAllocatedType(), nullptr, varName);
+                    this->builder->CreateMemCpy(allocaVar, llvm::MaybeAlign(8), allocaInst, llvm::MaybeAlign(8), 16);
+                    this->llvmFunction->scopedVariables.back().push_back(allocaVar);
+                } else {
+                    allocaInst->setName(varName);
+                    this->llvmFunction->scopedVariables.back().push_back(allocaInst);
+                }
                 break;
-            }
-            // ToDo, figure out when to memcpy
-            if (value->getType() == this->internalStructs["array"]) {
             }
             llvm::AllocaInst *allocaInst = this->builder->CreateAlloca(value->getType(), nullptr, varName);
             this->builder->CreateStore(value, allocaInst);
