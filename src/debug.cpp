@@ -1,23 +1,24 @@
 #include "debug.h"
 
-void debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
+std::string debugValueType(llvm::Type *type, llvm::LLVMContext *ctx) {
+    std::string out = "unknown type";
     if (type == nullptr) {
-        printf("nullptr");
+        out = "nullptr";
     } else if (type == llvm::Type::getInt32Ty(*ctx)) {
-        printf("int32");
+        out = "int32";
     } else if (type == llvm::Type::getInt1Ty(*ctx)) {
-        printf("int1");
+        out = "int1";
     } else if (type == llvm::Type::getDoubleTy(*ctx)) {
-        printf("double");
+        out = "double";
     } else if (type->isPointerTy()) {
-        printf("ptr");
+        out = "ptr";
     } else if (type->isArrayTy()) {
-        printf("array");
+        out = "array";
     } else if (type->isStructTy()) {
-        printf("%s struct", type->getStructName().str().c_str());
-    } else {
-        printf("unknown type");
+        out = type->getStructName().str() + " struct";
     }
+
+    return out;
 }
 
 void debugExpression(Expr *expr) {
