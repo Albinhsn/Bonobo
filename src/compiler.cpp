@@ -128,13 +128,13 @@ static Variable *parseVarType(Variable *var) {
         return arrayVar;
     } else if (var->type == MAP_VAR) {
         MapVariable *mapVar = new MapVariable(var->name);
-        consume(TOKEN_LEFT_BRACKET, "Need array type");
+        consume(TOKEN_LEFT_BRACKET, "Need map type");
 
         mapVar->keys = parseVarType(new Variable());
-        consume(TOKEN_COMMA, "Need , before map values");
+        consume(TOKEN_COMMA, "Need, before map values");
 
         mapVar->values = parseVarType(new Variable());
-        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        consume(TOKEN_RIGHT_BRACKET, "Need ']' after map type");
 
         return mapVar;
     } else if (var->type == STRUCT_VAR) {
@@ -882,6 +882,9 @@ static Stmt *varDeclaration() {
                 }
             }
         }
+    } else if (varStmt->initializer->type == MAP_EXPR) {
+        MapExpr *mapExpr = (MapExpr *)varStmt->initializer;
+        mapExpr->mapVar = varStmt->var;
     }
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");

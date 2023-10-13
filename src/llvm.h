@@ -64,6 +64,7 @@ class LLVMCompiler {
     llvm::LLVMContext *ctx;
     std::map<std::string, llvm::StructType *> internalStructs;
     std::map<std::string, llvm::FunctionCallee> libraryFuncs;
+    std::vector<llvm::Function*> internalFuncs;
     llvm::Module *module;
     std::vector<Variable *> variables;
     std::vector<llvm::AllocaInst *> strings;

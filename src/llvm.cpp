@@ -103,35 +103,134 @@ static llvm::Type *getTypeFromVariable(Variable *itemType) {
 }
 
 static void addLibraryFuncs() {
-    std::map<std::string, llvm::FunctionCallee> libraryFuncs = std::map<std::string, llvm::FunctionCallee>();
+    llvmCompiler->libraryFuncs = {};
 
     std::vector<llvm::Type *> args = {builder->getPtrTy()};
     llvm::FunctionType *type = llvm::FunctionType::get(builder->getVoidTy(), args, true);
     llvm::FunctionCallee func = llvmCompiler->module->getOrInsertFunction("printf", type);
-    libraryFuncs["printf"] = func;
+    llvmCompiler->libraryFuncs["printf"] = func;
 
     args = {builder->getPtrTy(), builder->getPtrTy()};
     type = llvm::FunctionType::get(builder->getPtrTy(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("strcat", type);
-    libraryFuncs["strcat"] = func;
+    llvmCompiler->libraryFuncs["strcat"] = func;
 
     args = {builder->getInt32Ty()};
     type = llvm::FunctionType::get(builder->getPtrTy(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("malloc", type);
-
-    libraryFuncs["malloc"] = func;
-    llvmCompiler->libraryFuncs = libraryFuncs;
+    llvmCompiler->libraryFuncs["malloc"] = func;
 }
+
+static llvm::Function *createIndexMap() {
+    // Fix func type
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
+                                {llvmCompiler->internalStructs["map"], builder->getInt32Ty()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexMap", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *mapArg = arg++;
+    llvm::Value *keyArg = arg;
+
+    llvm::Value *keyPtr = builder->CreateExtractValue(mapArg, 0);
+    llvm::Value *loadedKeyArray = builder->CreateLoad(llvmCompiler->internalStructs["array"], keyPtr);
+
+    llvm::Value *keyExists = builder->CreateCall(llvmCompiler->internalFuncs[0], {loadedKeyArray, keyArg});
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", function);
+
+    // Enter then block
+    builder->CreateCondBr(builder->CreateICmpNE(keyExists, builder->getInt32(-1)), thenBlock, mergeBlock);
+    builder->SetInsertPoint(thenBlock);
+    // Index the value array
+
+    llvm::Value *valuePtr = builder->CreateExtractValue(mapArg, 1);
+
+    llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), valuePtr, keyExists);
+    llvm::Value *returnValue = builder->CreateLoad(builder->getInt32Ty(), value);
+    builder->CreateRet(returnValue);
+
+    builder->SetInsertPoint(mergeBlock);
+    llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
+    // builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
+    builder->CreateUnreachable();
+
+    return function;
+}
+
+static llvm::Function *createFindIntKey() {
+
+    // Fix func type
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
+                                {llvmCompiler->internalStructs["array"], builder->getInt32Ty()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findIntKey", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *arrayArg = arg++;
+    llvm::Value *arrayPtr = builder->CreateExtractValue(arrayArg, 0);
+    llvm::Value *arraySize = builder->CreateExtractValue(arrayArg, 1);
+
+    llvm::Value *key = arg;
+
+    llvm::AllocaInst *loopVariable = builder->CreateAlloca(builder->getInt32Ty(), nullptr);
+    builder->CreateStore(builder->getInt32(0), loopVariable);
+
+    llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "header", function);
+    llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "body", function);
+    llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "exit", function);
+
+    builder->CreateBr(headerBlock);
+    builder->SetInsertPoint(headerBlock);
+    builder->CreateCondBr(builder->CreateICmpSLE(builder->CreateLoad(builder->getInt32Ty(), loopVariable), arraySize),
+                          bodyBlock, exitBlock);
+    builder->SetInsertPoint(bodyBlock);
+
+    // Index the key array
+    llvm::Value *loadedLoopVariable = builder->CreateLoad(builder->getInt32Ty(), loopVariable);
+    llvm::Value *index = builder->CreateInBoundsGEP(builder->getInt32Ty(), arrayPtr, loadedLoopVariable);
+    llvm::Value *loadedKey = builder->CreateLoad(builder->getInt32Ty(), index);
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", function);
+
+    // Enter then block
+    builder->CreateCondBr(builder->CreateICmpEQ(key, loadedKey), thenBlock, mergeBlock);
+    builder->SetInsertPoint(thenBlock);
+    builder->CreateRet(key);
+
+    builder->SetInsertPoint(mergeBlock);
+    llvm::Value *newLoopVariable =
+        builder->CreateAdd(builder->CreateLoad(builder->getInt32Ty(), loopVariable), builder->getInt32(1));
+    builder->CreateStore(newLoopVariable, loopVariable);
+    builder->CreateBr(headerBlock);
+
+    builder->SetInsertPoint(exitBlock);
+    builder->CreateRet(builder->getInt32(-1));
+
+    return function;
+}
+
+static void addInternalFuncs() {
+    llvmCompiler->internalFuncs = {createFindIntKey()};
+    llvmCompiler->internalFuncs.push_back(createIndexMap());
+}
+
 static void addInternalStructs() {
-    std::map<std::string, llvm::StructType *> strukts = {};
+    llvmCompiler->internalStructs = {};
 
     std::vector<llvm::Type *> fieldTypes = {builder->getPtrTy(), builder->getInt32Ty()};
-    strukts["array"] = llvm::StructType::create(fieldTypes, "array");
+    llvmCompiler->internalStructs["array"] = llvm::StructType::create(fieldTypes, "array");
 
-    fieldTypes = {strukts["array"], strukts["array"]};
-    strukts["map"] = llvm::StructType::create(*llvmCompiler->ctx, fieldTypes, "map");
-
-    llvmCompiler->internalStructs = strukts;
+    fieldTypes = {builder->getPtrTy(), builder->getPtrTy()};
+    llvmCompiler->internalStructs["map"] = llvm::StructType::create(*llvmCompiler->ctx, fieldTypes, "map");
 }
 
 void initCompiler(std::vector<Variable *> variables) {
@@ -148,6 +247,7 @@ void initCompiler(std::vector<Variable *> variables) {
     builder = new llvm::IRBuilder<>(llvmFunction->entryBlock);
     addLibraryFuncs();
     addInternalStructs();
+    addInternalFuncs();
 }
 
 static void endCompiler() {
@@ -339,11 +439,11 @@ static void storeStructField(llvm::StructType *structType, llvm::Value *structIn
     builder->CreateStore(toStore, gep);
 }
 
-static void storeArraySize(llvm::Value *size, llvm::Value *arrayInstance) {
+static void storeArraySizeInStruct(llvm::Value *size, llvm::Value *arrayInstance) {
     storeStructField(llvmCompiler->internalStructs["array"], arrayInstance, size, 1);
 }
 
-static void storeArray(llvm::Value *array, llvm::Value *arrayInstance) {
+static void storeArrayInStruct(llvm::Value *array, llvm::Value *arrayInstance) {
     storeStructField(llvmCompiler->internalStructs["array"], arrayInstance, array, 0);
 }
 
@@ -356,8 +456,8 @@ static llvm::Value *compileLiteral(LiteralExpr *expr) {
             builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr, "string");
         llvmCompiler->strings.push_back(stringInstance);
 
-        storeArray(builder->CreateGlobalString(stringLiteral), stringInstance);
-        storeArraySize(builder->getInt32(stringLiteral.size() + 1), stringInstance);
+        storeArrayInStruct(builder->CreateGlobalString(stringLiteral), stringInstance);
+        storeArraySizeInStruct(builder->getInt32(stringLiteral.size() + 1), stringInstance);
 
         return stringInstance;
     }
@@ -431,8 +531,8 @@ static void copyArray(llvm::AllocaInst *allocaVar, llvm::Value *value, Variable 
     llvm::Value *sourceArrayPtr = builder->CreateExtractValue(value, 0);
     builder->CreateMemCpy(arrayAllocation, llvm::MaybeAlign(4), sourceArrayPtr, llvm::MaybeAlign(4), arraySize);
 
-    storeArray(arrayAllocation, allocaVar);
-    storeArraySize(sourceArraySize, allocaVar);
+    storeArrayInStruct(arrayAllocation, allocaVar);
+    storeArraySizeInStruct(sourceArraySize, allocaVar);
 }
 
 static void copyAllocatedArray(llvm::AllocaInst *destination, llvm::AllocaInst *source, Variable *var) {
@@ -454,8 +554,8 @@ static void copyAllocatedArray(llvm::AllocaInst *destination, llvm::AllocaInst *
     llvm::Value *sourceArrayPtr = builder->CreateStructGEP(llvmCompiler->internalStructs["array"], source, 0);
     builder->CreateMemCpy(arrayAllocation, llvm::MaybeAlign(4), sourceArrayPtr, llvm::MaybeAlign(4), arraySize);
 
-    storeArray(arrayAllocation, destination);
-    storeArraySize(sourceArraySize, destination);
+    storeArrayInStruct(arrayAllocation, destination);
+    storeArraySizeInStruct(sourceArraySize, destination);
 }
 
 static void storePtrArrayItems(std::vector<llvm::Value *> arrayItems, llvm::AllocaInst *arrayInstance) {
@@ -498,8 +598,8 @@ static llvm::Value *concatStrings(llvm::Value *left, llvm::Value *right) {
     llvm::AllocaInst *concStringInstance = builder->CreateAlloca(stringStruct, nullptr, "string");
     llvm::Value *mallocResult = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {newSize});
 
-    storeArraySize(newSize, concStringInstance);
-    storeArray(mallocResult, concStringInstance);
+    storeArraySizeInStruct(newSize, concStringInstance);
+    storeArrayInStruct(mallocResult, concStringInstance);
 
     builder->CreateMemCpy(mallocResult, llvm::MaybeAlign(1), loadArray(left), llvm::MaybeAlign(1), leftSize);
     builder->CreateCall(llvmCompiler->libraryFuncs["strcat"], {mallocResult, loadArray(right)});
@@ -596,7 +696,13 @@ static llvm::Value *getArrayIndex(llvm::Type *type, llvm::Value *loadedArray, ll
     return builder->CreateInBoundsGEP(type, loadedArray, index);
 }
 
+static llvm::Value *indexMap(llvm::Value *map, llvm::Value *index) {
+
+    return builder->CreateCall(llvmCompiler->internalFuncs[1], {map, index});
+}
+
 static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
+    // This should be a func that also checks out of bounds
     llvm::Value *indexValue = nullptr;
     if (indexExpr->variable->type == INDEX_EXPR) {
         IndexExpr *expr = (IndexExpr *)indexExpr->variable;
@@ -616,7 +722,11 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
     llvm::Value *index = compileExpression(indexExpr->index);
     if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
         var = lookupVariableByName(castedVar->getName().str());
-        return getArrayIndex(lookupArrayItemType(var), loadArray(castedVar), index);
+        if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["map"]) {
+            return indexMap(builder->CreateLoad(llvmCompiler->internalStructs["map"], castedVar), index);
+        } else {
+            return getArrayIndex(lookupArrayItemType(var), loadArray(castedVar), index);
+        }
     } else if (indexValue->getType() == llvmCompiler->internalStructs["array"]) {
         ArrayVariable *arrayVar = (ArrayVariable *)var;
         var = arrayVar->items;
@@ -631,10 +741,8 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
 }
 
 llvm::Value *loadIndex(IndexExpr *indexExpr, Variable *&var) {
+    return getPointerToArrayIndex(indexExpr, var);
     llvm::Value *idxPtr = getPointerToArrayIndex(indexExpr, var);
-    if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(idxPtr)) {
-        printf("was allocated\n");
-    }
     llvm::Type *arrayItemType = lookupArrayItemType(var);
     if (var->type == ARRAY_VAR) {
         ArrayVariable *arrayVar = (ArrayVariable *)var;
@@ -711,6 +819,22 @@ static llvm::Value *lookupStruct(DotExpr *dotExpr) {
     }
 
     return value;
+}
+
+static void storeArray(llvm::Type *elementType, llvm::AllocaInst *arrayInstance,
+                       std::vector<llvm::Value *> arrayItems) {
+    if (elementType == llvmCompiler->internalStructs["array"] || elementType->isStructTy()) {
+        llvm::Value *arrGep =
+            builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {builder->getInt32(arrayItems.size() * 8)});
+        storeArrayInStruct(arrGep, arrayInstance);
+        storePtrArrayItems(arrayItems, arrayInstance);
+    } else {
+        llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayItems.size());
+        llvm::GlobalVariable *globalArray = createGlobalArray(arrayItems, arrayType);
+        llvm::Value *arrGep = builder->CreateGEP(arrayType, globalArray, {builder->getInt32(0), builder->getInt32(0)});
+        storeArrayInStruct(arrGep, arrayInstance);
+    }
+    storeArraySizeInStruct(builder->getInt32(arrayItems.size()), arrayInstance);
 }
 
 static std::string findStructName(Expr *expr) {
@@ -926,48 +1050,51 @@ llvm::Value *compileExpression(Expr *expr) {
         llvm::Type *elementType = getTypeFromVariable(arrayExpr->itemType);
 
         std::vector<llvm::Value *> arrayItems(arrayExpr->items.size());
+
         for (int i = 0; i < arrayItems.size(); ++i) {
             arrayItems[i] = compileExpression(arrayExpr->items[i]);
             if (elementType == nullptr) {
                 elementType = arrayItems[i]->getType();
             } else if (elementType != arrayItems[i]->getType() && !elementType->isStructTy() &&
                        arrayItems[i]->getType()->isPointerTy()) {
-                debugValueType(elementType, llvmCompiler->ctx);
-                printf("\n");
-                debugValueType(arrayItems[i]->getType(), llvmCompiler->ctx);
-                printf("\n");
                 errorAt(arrayExpr->line, "Mismatch in array items");
             }
         }
 
         llvm::AllocaInst *arrayInstance =
             builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr, "array");
-        // Is ptr to objects
-        if (elementType == llvmCompiler->internalStructs["array"] || elementType->isStructTy()) {
-            llvm::Value *arrGep = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"],
-                                                      {builder->getInt32(arrayExpr->items.size() * 8)});
-            storeArray(arrGep, arrayInstance);
-            storePtrArrayItems(arrayItems, arrayInstance);
-        } else {
-            llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayExpr->items.size());
-            llvm::GlobalVariable *globalArray = createGlobalArray(arrayItems, arrayType);
-            llvm::Value *arrGep =
-                builder->CreateGEP(arrayType, globalArray, {builder->getInt32(0), builder->getInt32(0)});
-            storeArray(arrGep, arrayInstance);
-        }
-        storeArraySize(builder->getInt32(arrayExpr->items.size()), arrayInstance);
+        storeArray(elementType, arrayInstance, arrayItems);
 
         return arrayInstance;
     }
     case MAP_EXPR: {
         MapExpr *mapExpr = (MapExpr *)expr;
+        MapVariable *var = (MapVariable *)mapExpr->mapVar;
+
         std::vector<llvm::Value *> keys = std::vector<llvm::Value *>(mapExpr->keys.size());
         std::vector<llvm::Value *> values = std::vector<llvm::Value *>(mapExpr->values.size());
+
+        llvm::Type *valueType = getTypeFromVariable(var->values);
+        llvm::Type *keyType = getTypeFromVariable(var->keys);
+
         for (int i = 0; i < keys.size(); ++i) {
             keys[i] = compileExpression(mapExpr->keys[i]);
             values[i] = compileExpression(mapExpr->values[i]);
         }
-        // llvm::Type *elementType = ;
+
+        llvm::AllocaInst *keyInstance = builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr, "array");
+        storeArray(keyType, keyInstance, keys);
+
+        llvm::AllocaInst *valueInstance =
+            builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr, "array");
+        storeArray(valueType, valueInstance, values);
+
+        llvm::AllocaInst *mapInstance = builder->CreateAlloca(llvmCompiler->internalStructs["map"], nullptr, "map");
+
+        storeStructField(llvmCompiler->internalStructs["map"], mapInstance, keyInstance, 0);
+        storeStructField(llvmCompiler->internalStructs["map"], mapInstance, valueInstance, 1);
+
+        return mapInstance;
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;

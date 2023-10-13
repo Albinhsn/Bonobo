@@ -95,8 +95,7 @@ class MapExpr : public Expr {
   public:
     std::vector<Expr *> values;
     std::vector<Expr *> keys;
-    VarType valueType;
-    VarType keyType;
+    Variable * mapVar;
     MapExpr(int line) {
         this->type = MAP_EXPR;
         this->values = std::vector<Expr *>();
