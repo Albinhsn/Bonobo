@@ -549,17 +549,21 @@ static llvm::Value *indexMap(llvm::Value *map, llvm::Value *index, Variable *var
     }
 }
 
-static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
-    // This should be a func that also checks out of bounds
-    llvm::Value *indexValue = nullptr;
+static llvm::Value *getIndexValue(IndexExpr *indexExpr, Variable *&var) {
     if (indexExpr->variable->type == INDEX_EXPR) {
-        IndexExpr *expr = (IndexExpr *)indexExpr->variable;
-        indexValue = loadIndex(expr, var);
+        return loadIndex((IndexExpr *)indexExpr->variable, var);
     } else if (indexExpr->variable->type == VAR_EXPR) {
-        indexValue = compileExpression(indexExpr->variable);
         VarExpr *varExpr = (VarExpr *)indexExpr->variable;
         var = lookupVariableByName(varExpr->name);
+        return compileExpression(varExpr);
     }
+    return nullptr;
+}
+
+static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
+    // This should be a func that also checks out of bounds
+
+    llvm::Value *indexValue = getIndexValue(indexExpr, var);
 
     if (indexValue == nullptr) {
         printf("can't index non var?\n");
@@ -568,6 +572,7 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
     }
 
     llvm::Value *index = compileExpression(indexExpr->index);
+
     if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
         var = lookupVariableByName(castedVar->getName().str());
         if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["map"]) {
@@ -576,15 +581,16 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
             return getArrayIndex(lookupArrayItemType(var), loadArrayFromArrayStruct(castedVar), index);
         }
     } else if (indexValue->getType() == llvmCompiler->internalStructs["array"]) {
-        ArrayVariable *arrayVar = (ArrayVariable *)var;
-        var = arrayVar->items;
-        llvm::Value *loadedArray = builder->CreateExtractValue(indexValue, 0);
-        return getArrayIndex(lookupArrayItemType(var), loadedArray, index);
+        var = ((ArrayVariable *)var)->items;
+        return getArrayIndex(lookupArrayItemType(var), builder->CreateExtractValue(indexValue, 0), index);
+
+    } else if (indexValue->getType() == llvmCompiler->internalStructs["map"]) {
+        return indexMap(indexValue, index, var);
     }
 
-    printf("couldn't cast index variable, was type: ");
-    debugValueType(indexValue->getType(), llvmCompiler->ctx);
-    printf("\n");
+    errorAt(indexExpr->line,
+            ("Couldn't cast index variable, was type: " + debugValueType(indexValue->getType(), llvmCompiler->ctx))
+                .c_str());
     exit(1);
 }
 
@@ -594,15 +600,16 @@ llvm::Value *loadIndex(IndexExpr *indexExpr, Variable *&var) {
         return idxPtr;
     }
     llvm::Type *arrayItemType = lookupArrayItemType(var);
+
     if (var->type == ARRAY_VAR) {
         ArrayVariable *arrayVar = (ArrayVariable *)var;
+        llvm::Value *loadedPtr = builder->CreateLoad(builder->getPtrTy(), idxPtr);
         if (arrayVar->items->type == ARRAY_VAR || arrayVar->items->type == STR_VAR) {
-            llvm::Value *loadedPtr = builder->CreateLoad(builder->getPtrTy(), idxPtr);
             llvm::Value *loadedArrayPtr =
                 builder->CreateInBoundsGEP(arrayItemType, loadedPtr, {builder->getInt32(0), builder->getInt32(0)});
             return builder->CreateLoad(arrayItemType, loadedArrayPtr);
         }
-        if (arrayVar->items->type == STRUCT_VAR) {
+        if (arrayVar->items->type == STRUCT_VAR || arrayVar->items->type == MAP_VAR) {
             llvm::Value *loadedStructPtr = builder->CreateLoad(builder->getPtrTy(), idxPtr);
             return builder->CreateLoad(arrayItemType, loadedStructPtr);
         }
@@ -624,25 +631,6 @@ static llvm::Type *getTypeFromNestedIndexExpr(Expr *expr) {
     }
     IndexExpr *indexExpr = (IndexExpr *)expr;
     return getTypeFromNestedIndexExpr(indexExpr->variable);
-}
-
-static llvm::Value *loadIndexedArray(IndexExpr *indexExpr) {
-    if (indexExpr->variable->type == VAR_EXPR) {
-        llvm::Value *loadedTarget = loadArrayFromArrayStruct(compileExpression(indexExpr->variable));
-        VarExpr *varExpr = (VarExpr *)indexExpr->variable;
-        return builder->CreateInBoundsGEP(lookupArrayItemType(lookupVariableByName(varExpr->name)), loadedTarget,
-                                          compileExpression(indexExpr->index));
-    } else if (indexExpr->variable->type != INDEX_EXPR) {
-        printf("can't index non var?\n");
-        debugExpression(indexExpr->variable);
-        exit(1);
-    }
-
-    IndexExpr *expr = (IndexExpr *)indexExpr->variable;
-    llvm::Value *loadedTarget =
-        loadArrayFromArrayStruct(builder->CreateLoad(builder->getPtrTy(), loadIndexedArray(expr)));
-    return builder->CreateInBoundsGEP(getTypeFromNestedIndexExpr(expr->variable), loadedTarget,
-                                      compileExpression(indexExpr->index));
 }
 
 static void assignToIndexExpr(AssignStmt *assignStmt) {
@@ -936,18 +924,39 @@ llvm::Value *compileExpression(Expr *expr) {
     }
     case MAP_EXPR: {
         MapExpr *mapExpr = (MapExpr *)expr;
-        MapVariable *var = (MapVariable *)mapExpr->mapVar;
 
         std::vector<llvm::Value *> keys = std::vector<llvm::Value *>(mapExpr->keys.size());
         std::vector<llvm::Value *> values = std::vector<llvm::Value *>(mapExpr->values.size());
-
-        llvm::Type *valueType = getTypeFromVariable(var->values);
-        llvm::Type *keyType = getTypeFromVariable(var->keys);
 
         // ToDo type check this
         for (int i = 0; i < keys.size(); ++i) {
             keys[i] = compileExpression(mapExpr->keys[i]);
             values[i] = compileExpression(mapExpr->values[i]);
+        }
+
+        MapVariable *var = (MapVariable *)mapExpr->mapVar;
+        llvm::Type *valueType = nullptr;
+        llvm::Type *keyType = nullptr;
+
+        if (var != nullptr) {
+            valueType = getTypeFromVariable(var->values);
+            keyType = getTypeFromVariable(var->keys);
+        }
+
+        for (int i = 0; i < keys.size(); ++i) {
+            if (var == nullptr) {
+                valueType = values[i]->getType();
+                keyType = keys[i]->getType();
+            }
+            // if ((valueType != values[i]->getType() || keyType != keys[i]->getType()) &&
+            //     ) {
+
+            //     printf("%s - %s\n", debugValueType(valueType, llvmCompiler->ctx).c_str(),
+            //            debugValueType(values[i]->getType(), llvmCompiler->ctx).c_str());
+            //     printf("%s - %s\n", debugValueType(keyType, llvmCompiler->ctx).c_str(),
+            //            debugValueType(keys[i]->getType(), llvmCompiler->ctx).c_str());
+            //     errorAt(mapExpr->line, "Mismatch in map items");
+            // }
         }
 
         llvm::AllocaInst *mapInstance = builder->CreateAlloca(llvmCompiler->internalStructs["map"], nullptr, "map");

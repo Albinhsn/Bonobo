@@ -2,35 +2,32 @@
 
 Toy implementation of a simple language in order to learn C/C++, memory management, LLVM, x86_64 assembly and language design
 
+## Things i'd like to solve in a snd pass
+* Is it possible to type check everything before we start compiling it
+    * if true is good for when we create the next backend
+
+* Type check items
+    * map and array
+
+* Type check variable 
+    * return from func etc
+
 ## TODO LLVM backend
 
-* Cleanup map func stuff
-
-* Just like refactor a alot xD
-    * Figure out what operations you need to do often and create functions for them
-        * This shouldn't really be hard since you do it in IR already
-
-* Refactor index holy shit
-
-* Typecheck index
 * Error if out of bounds
     * Array indexing that is
-* Check if it's even an integer?
-* Compile time type check and runtime out of bounds check
 
 * MapExpr
     * Create functions(?) "native" to maps
         * get keys
+            * .keys
         * get values
+            * .values
         * assign new key
-
-* Think about second pass over ast
-    * Typecheck stuff there is easier?
-
-* Array of maps
 
 * Declare internal functions to use/support arrays/maps
     * Append
+        * is just a realloc and then add an item to the end?
 
 * A lot of type checking missed
 
