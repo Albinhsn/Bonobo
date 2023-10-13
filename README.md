@@ -8,19 +8,18 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
+* Refactor index holy shit
+
 * Error if out of bounds
 * Check if it's even an integer?
 * Compile time type check and runtime out of bounds check
 
 * MapExpr
-    * Create a struct for map, x2 array for keys/values
+    * Check if correct key
     * Create functions(?) "native" to maps
-        * lookup
-        * count/find/in
         * get keys
         * get values
         * assign new key
-    * Index map 
 
 * Declare internal functions to use/support arrays/maps
     * Append

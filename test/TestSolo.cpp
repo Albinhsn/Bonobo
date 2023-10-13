@@ -82,6 +82,14 @@ int main() {
     nmbr_of_tests++;
     runTest("Index - Copy array var", index6, "1", failed);
 
+    std::string index7 = "var a:map[int, int] = {1:1, 2:2}; printf(\"%d\", a[2]);";
+    nmbr_of_tests++;
+    runTest("Index - Idx int map", index7, "2", failed);
+
+    std::string index8 = "var a:map[str, int] = {\"Hi\":1, \"Hey\":2}; printf(\"%d\", a[\"Hey\"]);";
+    nmbr_of_tests++;
+    runTest("Index - Idx str map", index8, "2", failed);
+
     // Assign to index
     std::string assignIndex1 =
         "var a: arr[arr[int]] = [[0,1,2]]; var b:arr[int] = [0,1,5]; a[0] = b; printf(\"%d\", a[0][2]);";
