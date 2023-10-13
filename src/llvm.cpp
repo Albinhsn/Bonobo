@@ -120,7 +120,7 @@ static void addLibraryFuncs() {
     func = llvmCompiler->module->getOrInsertFunction("malloc", type);
     llvmCompiler->libraryFuncs["malloc"] = func;
 
-    args = {builder->getPtrTy(), builder->getPtrTy()};
+    args = {builder->getPtrTy(), builder->getPtrTy(), builder->getInt32Ty()};
     type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("memcmp", type);
     llvmCompiler->libraryFuncs["memcmp"] = func;
@@ -130,7 +130,7 @@ static llvm::Function *createIndexStrMap() {
     // Fix func type
     llvm::FunctionType *funcType =
         llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
-                                {llvmCompiler->internalStructs["map"], builder->getInt32Ty()}, false);
+                                {llvmCompiler->internalStructs["map"], llvmCompiler->internalStructs["array"]}, false);
     llvm::Function *function =
         llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexStrMap", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
@@ -263,7 +263,7 @@ static llvm::Function *createFindStrKey() {
 
     llvm::Value *key1StrPtr = builder->CreateExtractValue(loadedKey, 0);
     llvm::Value *key2StrPtr = builder->CreateExtractValue(key, 0);
-    llvm::Value *memcmpValue = builder->CreateCall(llvmCompiler->libraryFuncs["memcmp"], {key1StrPtr, key2StrPtr});
+    llvm::Value *memcmpValue = builder->CreateCall(llvmCompiler->libraryFuncs["memcmp"], {key1StrPtr, key2StrPtr, key1Length});
     builder->CreateCondBr(builder->CreateICmpEQ(memcmpValue, builder->getInt32(0)), strCmpThenBlock1, mergeBlock);
     builder->SetInsertPoint(strCmpThenBlock1);
 
@@ -819,7 +819,8 @@ static llvm::Value *getArrayIndex(llvm::Type *type, llvm::Value *loadedArray, ll
 
 static llvm::Value *indexMap(llvm::Value *map, llvm::Value *index) {
 
-    return builder->CreateCall(llvmCompiler->internalFuncs[1], {map, index});
+    return builder->CreateCall(llvmCompiler->internalFuncs[1],
+                               {map, builder->CreateLoad(llvmCompiler->internalStructs["array"], index)});
 }
 
 static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
