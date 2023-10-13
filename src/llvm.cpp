@@ -38,13 +38,13 @@ static llvm::Type *lookupArrayItemType(Variable *var) {
         }
         break;
     }
+    case MAP_VAR: {
+        return llvmCompiler->internalStructs["map"];
+    }
     default: {
-        printf("not implemented?\n");
     }
     }
-    printf("Can't lookup llvmCompiler var type ");
-    debugVariable(var);
-    printf("\n");
+    errorAt(0, "Can't lookup this array item type?");
     exit(1);
 }
 static bool checkVariableValueMatch(Variable *var, llvm::Value *&value) {
@@ -396,6 +396,15 @@ static void copyArray(llvm::AllocaInst *allocaVar, llvm::Value *value, Variable 
 
     storeArrayInStruct(arrayAllocation, allocaVar);
     storeArraySizeInStruct(sourceArraySize, allocaVar);
+}
+
+static void copyAllocation(llvm::AllocaInst *destination, llvm::AllocaInst *source, Variable *var) {
+
+    if (source->getAllocatedType()->isStructTy() && var->type != STRUCT_VAR) {
+        copyArray(destination, builder->CreateLoad(source->getAllocatedType(), source), var);
+    } else {
+        builder->CreateMemCpy(destination, llvm::MaybeAlign(8), source, llvm::MaybeAlign(8), 16);
+    }
 }
 
 static void storeArrayAtIndex(llvm::Value *value, llvm::Value *arrayPtr, int idx) {
@@ -1065,22 +1074,15 @@ void compileStatement(Stmt *stmt) {
         //     exit(1);
         // }
 
-        // ToDo fix this
         llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value);
+
         if (allocaInst != nullptr) {
             if (varStmt->initializer->type == VAR_EXPR) {
                 llvm::AllocaInst *allocaVar = builder->CreateAlloca(allocaInst->getAllocatedType(), nullptr, varName);
-                if (allocaInst->getAllocatedType()->isStructTy() && var->type != STRUCT_VAR) {
-                    copyArray(allocaVar, builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst), var);
-
-                } else {
-                    builder->CreateMemCpy(allocaVar, llvm::MaybeAlign(8), allocaInst, llvm::MaybeAlign(8), 16);
-                }
-                llvmFunction->scopedVariables.back().push_back(allocaVar);
-            } else {
-                allocaInst->setName(varName);
-                llvmFunction->scopedVariables.back().push_back(allocaInst);
+                copyAllocation(allocaVar, allocaInst, var);
+                allocaInst = allocaVar;
             }
+            allocaInst->setName(varName);
         } else {
             allocaInst = builder->CreateAlloca(value->getType(), nullptr, varName);
 
@@ -1089,8 +1091,9 @@ void compileStatement(Stmt *stmt) {
             } else {
                 builder->CreateStore(value, allocaInst);
             }
-            llvmFunction->scopedVariables.back().push_back(allocaInst);
         }
+
+        llvmFunction->scopedVariables.back().push_back(allocaInst);
 
         break;
     }
