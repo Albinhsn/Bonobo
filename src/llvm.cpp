@@ -119,9 +119,57 @@ static void addLibraryFuncs() {
     type = llvm::FunctionType::get(builder->getPtrTy(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("malloc", type);
     llvmCompiler->libraryFuncs["malloc"] = func;
+
+    args = {builder->getPtrTy(), builder->getPtrTy()};
+    type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("memcmp", type);
+    llvmCompiler->libraryFuncs["memcmp"] = func;
 }
 
-static llvm::Function *createIndexMap() {
+static llvm::Function *createIndexStrMap() {
+    // Fix func type
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
+                                {llvmCompiler->internalStructs["map"], builder->getInt32Ty()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexStrMap", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *mapArg = arg++;
+    llvm::Value *keyArg = arg;
+
+    llvm::Value *keyPtr = builder->CreateExtractValue(mapArg, 0);
+    llvm::Value *loadedKeyArray = builder->CreateLoad(llvmCompiler->internalStructs["array"], keyPtr);
+
+    llvm::Value *keyExists = builder->CreateCall(llvmCompiler->internalFuncs[0], {loadedKeyArray, keyArg});
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", function);
+
+    // Enter then block
+    builder->CreateCondBr(builder->CreateICmpNE(keyExists, builder->getInt32(-1)), thenBlock, mergeBlock);
+    builder->SetInsertPoint(thenBlock);
+    // Index the value array
+
+    llvm::Value *valuePtr = builder->CreateExtractValue(mapArg, 1);
+    llvm::Value *loadedValuePtr = builder->CreateLoad(llvmCompiler->internalStructs["array"], valuePtr);
+    llvm::Value *extractedArray = builder->CreateExtractValue(loadedValuePtr, 0);
+
+    llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), extractedArray, keyExists);
+    llvm::Value *returnValue = builder->CreateLoad(builder->getInt32Ty(), value);
+    builder->CreateRet(returnValue);
+
+    builder->SetInsertPoint(mergeBlock);
+    llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
+    builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
+    builder->CreateUnreachable();
+
+    return function;
+}
+
+static llvm::Function *createIndexIntMap() {
     // Fix func type
     llvm::FunctionType *funcType =
         llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
@@ -160,6 +208,76 @@ static llvm::Function *createIndexMap() {
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
     builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
     builder->CreateUnreachable();
+
+    return function;
+}
+
+static llvm::Function *createFindStrKey() {
+
+    // Fix func type
+    llvm::FunctionType *funcType = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(*llvmCompiler->ctx),
+        {llvmCompiler->internalStructs["array"], llvmCompiler->internalStructs["array"]}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findStrKey", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *arrayArg = arg++;
+    llvm::Value *arrayPtr = builder->CreateExtractValue(arrayArg, 0);
+    llvm::Value *arraySize = builder->CreateExtractValue(arrayArg, 1);
+
+    llvm::Value *key = arg;
+
+    llvm::AllocaInst *loopVariable = builder->CreateAlloca(builder->getInt32Ty(), nullptr);
+    builder->CreateStore(builder->getInt32(0), loopVariable);
+
+    llvm::BasicBlock *headerBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "header", function);
+    llvm::BasicBlock *bodyBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "body", function);
+    llvm::BasicBlock *exitBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "exit", function);
+
+    builder->CreateBr(headerBlock);
+    builder->SetInsertPoint(headerBlock);
+    builder->CreateCondBr(builder->CreateICmpSLE(builder->CreateLoad(builder->getInt32Ty(), loopVariable), arraySize),
+                          bodyBlock, exitBlock);
+    builder->SetInsertPoint(bodyBlock);
+
+    // Index the key array
+    llvm::Value *loadedLoopVariable = builder->CreateLoad(builder->getInt32Ty(), loopVariable);
+    llvm::Value *index = builder->CreateInBoundsGEP(builder->getPtrTy(), arrayPtr, loadedLoopVariable);
+    llvm::Value *loadedKeyPtr = builder->CreateLoad(builder->getPtrTy(), index);
+    llvm::Value *loadedKey = builder->CreateLoad(llvmCompiler->internalStructs["array"], loadedKeyPtr);
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", function);
+
+    // Enter then block
+    // This should be strcmp
+    llvm::Value *key1Length = builder->CreateExtractValue(loadedKey, 1);
+    llvm::Value *key2Length = builder->CreateExtractValue(key, 1);
+
+    builder->CreateCondBr(builder->CreateICmpEQ(key1Length, key2Length), thenBlock, mergeBlock);
+    builder->SetInsertPoint(thenBlock);
+
+    llvm::BasicBlock *strCmpThenBlock1 = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+
+    llvm::Value *key1StrPtr = builder->CreateExtractValue(loadedKey, 0);
+    llvm::Value *key2StrPtr = builder->CreateExtractValue(key, 0);
+    llvm::Value *memcmpValue = builder->CreateCall(llvmCompiler->libraryFuncs["memcmp"], {key1StrPtr, key2StrPtr});
+    builder->CreateCondBr(builder->CreateICmpEQ(memcmpValue, builder->getInt32(0)), strCmpThenBlock1, mergeBlock);
+    builder->SetInsertPoint(strCmpThenBlock1);
+
+    // Return the index of the key
+    builder->CreateRet(loadedLoopVariable);
+
+    builder->SetInsertPoint(mergeBlock);
+    llvm::Value *newLoopVariable =
+        builder->CreateAdd(builder->CreateLoad(builder->getInt32Ty(), loopVariable), builder->getInt32(1));
+    builder->CreateStore(newLoopVariable, loopVariable);
+    builder->CreateBr(headerBlock);
+
+    builder->SetInsertPoint(exitBlock);
+    builder->CreateRet(builder->getInt32(-1));
 
     return function;
 }
@@ -221,8 +339,9 @@ static llvm::Function *createFindIntKey() {
 }
 
 static void addInternalFuncs() {
-    llvmCompiler->internalFuncs = {createFindIntKey()};
-    llvmCompiler->internalFuncs.push_back(createIndexMap());
+    llvmCompiler->internalFuncs = {createFindStrKey()};
+    // llvmCompiler->internalFuncs.push_back(createIndexIntMap());
+    llvmCompiler->internalFuncs.push_back(createIndexStrMap());
 }
 
 static void addInternalStructs() {

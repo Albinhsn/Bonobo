@@ -123,7 +123,7 @@ static Variable *parseVarType(Variable *var) {
         consume(TOKEN_LEFT_BRACKET, "Need array type");
 
         arrayVar->items = parseVarType(new Variable());
-        consume(TOKEN_RIGHT_BRACKET, "Need array type");
+        consume(TOKEN_RIGHT_BRACKET, "Need ']' after array type");
 
         return arrayVar;
     } else if (var->type == MAP_VAR) {
