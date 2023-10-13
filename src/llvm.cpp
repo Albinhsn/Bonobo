@@ -149,14 +149,16 @@ static llvm::Function *createIndexMap() {
     // Index the value array
 
     llvm::Value *valuePtr = builder->CreateExtractValue(mapArg, 1);
+    llvm::Value *loadedValuePtr = builder->CreateLoad(llvmCompiler->internalStructs["array"], valuePtr);
+    llvm::Value *extractedArray = builder->CreateExtractValue(loadedValuePtr, 0);
 
-    llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), valuePtr, keyExists);
+    llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), extractedArray, keyExists);
     llvm::Value *returnValue = builder->CreateLoad(builder->getInt32Ty(), value);
     builder->CreateRet(returnValue);
 
     builder->SetInsertPoint(mergeBlock);
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
-    // builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
+    builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
     builder->CreateUnreachable();
 
     return function;
