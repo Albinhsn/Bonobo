@@ -2,8 +2,19 @@
 #define VARIABLES_HEADER
 
 #include <string>
+#include <vector>
 
-enum VarType { STR_VAR, INT_VAR, DOUBLE_VAR, BOOL_VAR, MAP_VAR, ARRAY_VAR, STRUCT_VAR, NIL_VAR };
+enum VarType { 
+  FUNC_VAR,
+  STR_VAR,
+  INT_VAR,
+  DOUBLE_VAR,
+  BOOL_VAR,
+  MAP_VAR,
+  ARRAY_VAR,
+  STRUCT_VAR,
+  NIL_VAR 
+};
 
 class Variable {
   private:
@@ -11,6 +22,17 @@ class Variable {
     std::string name;
     VarType type;
     Variable(std::string name = "never assigned name :)") { this->name = name; }
+};
+
+class FuncVariable : public Variable {
+  private:
+  public:
+    Variable *returnType;
+    FuncVariable(std::string name, Variable *returnType) {
+        this->name = name;
+        this->type = FUNC_VAR;
+        this->returnType = returnType;
+    }
 };
 
 class ArrayVariable : public Variable {
@@ -28,9 +50,11 @@ class StructVariable : public Variable {
   private:
   public:
     std::string structName;
-    StructVariable(std::string name, std::string structName) {
+    std::vector<Variable *> fields;
+    StructVariable(std::string name, std::string structName, std::vector<Variable*> fields) {
         this->name = name;
         this->structName = structName;
+    this->fields = fields;
         this->type = STRUCT_VAR;
     }
 };

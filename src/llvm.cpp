@@ -95,7 +95,7 @@ static llvm::Type *getTypeFromVariable(Variable *itemType) {
         case MAP_VAR: {
             return llvmCompiler->internalStructs["map"];
         }
-        case NIL_VAR: {
+        default: {
         }
         }
     }
@@ -566,9 +566,7 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
     llvm::Value *indexValue = getIndexValue(indexExpr, var);
 
     if (indexValue == nullptr) {
-        printf("can't index non var?\n");
-        debugExpression(indexExpr->variable);
-        exit(1);
+        errorAt(indexExpr->line, "Can't index this?");
     }
 
     llvm::Value *index = compileExpression(indexExpr->index);

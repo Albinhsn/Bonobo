@@ -21,9 +21,12 @@ static void endCompiler(Compiler *current) {
     delete (current);
 }
 
-static void errorAt(const char *message) {
+static void errorAt(const char *message, int line = 0) {
 
     Token *token = parser->current;
+    if (line == 0) {
+        line = token->line;
+    }
     fprintf(stderr, "[line %d] Error", token->line);
 
     if (token->type == TOKEN_EOF) {
@@ -138,7 +141,7 @@ static Variable *parseVarType(Variable *var) {
 
         return mapVar;
     } else if (var->type == STRUCT_VAR) {
-        return new StructVariable(var->name, parser->previous->lexeme);
+        return new StructVariable(var->name, parser->previous->lexeme, {});
     } else {
         return var;
     }
@@ -1039,7 +1042,9 @@ static Stmt *funDeclaration() {
     }
 
     consume(TOKEN_ARROW, "Expect '->' after func params");
+
     funcStmt->returnType = parseVarType(new Variable());
+
     if (funcStmt->returnType->type == STRUCT_VAR) {
         funcStmt->returnType->name = parser->previous->lexeme;
     }
@@ -1089,6 +1094,303 @@ static void initParser() {
     parser->previous = nullptr;
 }
 
+static void fixExprEvaluatesToExpr(Expr *expr) {
+    switch (expr->type) {
+    case BINARY_EXPR: {
+        BinaryExpr *binaryExpr = (BinaryExpr *)expr;
+        fixExprEvaluatesToExpr(binaryExpr->left);
+        fixExprEvaluatesToExpr(binaryExpr->right);
+
+        Variable *leftEvaluation = binaryExpr->left->evaluatesTo;
+        Variable *rightEvaluation = binaryExpr->right->evaluatesTo;
+
+        if (leftEvaluation->type == rightEvaluation->type) {
+            binaryExpr->evaluatesTo = leftEvaluation;
+        }
+
+        else if (leftEvaluation->type == DOUBLE_VAR && rightEvaluation->type == INT_VAR ||
+                 leftEvaluation->type == INT_VAR && rightEvaluation->type == DOUBLE_VAR) {
+            Variable *var = new Variable();
+            var->type = DOUBLE_VAR;
+            binaryExpr->evaluatesTo = var;
+        } else {
+            errorAt("Unable to do binaryExpr with these types", binaryExpr->line);
+        }
+
+        break;
+    }
+    case INC_EXPR: {
+        IncExpr *incExpr = (IncExpr *)expr;
+        fixExprEvaluatesToExpr(incExpr->expr);
+
+        VarType varType = incExpr->expr->evaluatesTo->type;
+        if (varType != INT_VAR && varType != DOUBLE_VAR) {
+            errorAt("Unable to do inc/dec expression on this type", incExpr->line);
+        }
+
+        incExpr->evaluatesTo = incExpr->expr->evaluatesTo;
+        break;
+    }
+    case GROUPING_EXPR: {
+        GroupingExpr *groupingExpr = (GroupingExpr *)expr;
+        fixExprEvaluatesToExpr(groupingExpr->expression);
+        groupingExpr->evaluatesTo = groupingExpr->expression->evaluatesTo;
+        break;
+    }
+    case LOGICAL_EXPR: {
+        LogicalExpr *logicalExpr = (LogicalExpr *)expr;
+        fixExprEvaluatesToExpr(logicalExpr->left);
+        fixExprEvaluatesToExpr(logicalExpr->right);
+        if (logicalExpr->left->evaluatesTo->type != logicalExpr->right->evaluatesTo->type) {
+            errorAt("Can't do logical expression with different types", logicalExpr->line);
+        }
+        logicalExpr->evaluatesTo = new Variable();
+        logicalExpr->evaluatesTo->type = BOOL_VAR;
+        break;
+    }
+    case LITERAL_EXPR: {
+        LiteralExpr *literalExpr = (LiteralExpr *)expr;
+        literalExpr->evaluatesTo = new Variable();
+        switch (literalExpr->literalType) {
+        case DOUBLE_LITERAL: {
+            literalExpr->evaluatesTo->type = DOUBLE_VAR;
+            break;
+        }
+        case INT_LITERAL: {
+            literalExpr->evaluatesTo->type = INT_VAR;
+            break;
+        }
+        case BOOL_LITERAL: {
+            literalExpr->evaluatesTo->type = BOOL_VAR;
+            break;
+        }
+        case STR_LITERAL: {
+            literalExpr->evaluatesTo->type = STR_VAR;
+            break;
+        }
+        }
+        break;
+    }
+    case COMPARISON_EXPR: {
+        ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
+        fixExprEvaluatesToExpr(comparisonExpr->left);
+        fixExprEvaluatesToExpr(comparisonExpr->right);
+        if (comparisonExpr->left->evaluatesTo->type != comparisonExpr->right->evaluatesTo->type) {
+            errorAt("Can't do logical expression with different types", comparisonExpr->line);
+        }
+        comparisonExpr->evaluatesTo = new Variable();
+        comparisonExpr->evaluatesTo->type = BOOL_VAR;
+        break;
+    }
+    case UNARY_EXPR: {
+        UnaryExpr *unaryExpr = (UnaryExpr *)expr;
+        fixExprEvaluatesToExpr(unaryExpr->right);
+
+        Variable *evalsTo = unaryExpr->right->evaluatesTo;
+        if (unaryExpr->op == BANG_UNARY && evalsTo->type != BOOL_VAR) {
+            errorAt("Can't do '!' expr with non bool", unaryExpr->line);
+        }
+        if (unaryExpr->op == NEG_UNARY && evalsTo->type != INT_VAR && evalsTo->type != DOUBLE_VAR) {
+            errorAt("Can't do '-' expr with non bool", unaryExpr->line);
+        }
+
+        unaryExpr->evaluatesTo = evalsTo;
+        break;
+    }
+    case INDEX_EXPR: {
+        IndexExpr *indexExpr = (IndexExpr *)expr;
+        fixExprEvaluatesToExpr(indexExpr->index);
+        fixExprEvaluatesToExpr(indexExpr->variable);
+
+        Variable *variable = indexExpr->variable->evaluatesTo;
+        Variable *evalsTo = indexExpr->index->evaluatesTo;
+        if (true) {
+        }
+        break;
+    }
+    case ARRAY_EXPR: {
+        ArrayExpr *arrayExpr = (ArrayExpr *)expr;
+        ArrayVariable *evaluatesTo = new ArrayVariable("");
+        if (arrayExpr->items.size()) {
+            fixExprEvaluatesToExpr(arrayExpr->items[0]);
+            evaluatesTo->items = arrayExpr->items[0]->evaluatesTo;
+        }
+        for (int i = 1; i < arrayExpr->items.size(); ++i) {
+            fixExprEvaluatesToExpr(arrayExpr->items[i]);
+            if (arrayExpr->items[i]->evaluatesTo->type != evaluatesTo->items->type) {
+                errorAt("Mismatch in array item type", arrayExpr->line);
+            }
+        }
+        arrayExpr->evaluatesTo = evaluatesTo;
+        break;
+    }
+    case MAP_EXPR: {
+        MapExpr *mapExpr = (MapExpr *)expr;
+
+        Variable *keyVar = nullptr;
+        for (auto &item : mapExpr->keys) {
+            fixExprEvaluatesToExpr(item);
+            if (keyVar == nullptr) {
+                keyVar = item->evaluatesTo;
+            } else if (keyVar->type != item->evaluatesTo->type) {
+            }
+        }
+        break;
+    }
+    case CALL_EXPR: {
+        CallExpr *callExpr = (CallExpr *)expr;
+        for (auto &var : compiler->variables) {
+            switch (var->type) {
+            case STRUCT_VAR: {
+                StructVariable *structVar = (StructVariable *)var;
+                if (structVar->structName == callExpr->callee) {
+                    callExpr->evaluatesTo = var;
+                    return;
+                }
+                break;
+            }
+            case FUNC_VAR: {
+                FuncVariable *funcVar = (FuncVariable *)var;
+                if (funcVar->name == callExpr->callee) {
+                    callExpr->evaluatesTo = var;
+                    return;
+                }
+                break;
+            }
+            default: {
+                if (var->name == callExpr->callee) {
+                    printf("\n%d\n", var->type);
+                    errorAt(("Can't call this variable - " + var->name).c_str(), callExpr->line);
+                }
+            }
+            }
+        }
+        break;
+    }
+    case DOT_EXPR: {
+        DotExpr *dotExpr = (DotExpr *)expr;
+        fixExprEvaluatesToExpr(dotExpr->name);
+        Variable *var = dotExpr->name->evaluatesTo;
+
+        switch (var->type) {
+        case STRUCT_VAR: {
+            StructVariable *structVar = (StructVariable *)var;
+            for (auto &variable : structVar->fields) {
+                if (variable->name == dotExpr->field) {
+                    dotExpr->evaluatesTo = variable;
+                    break;
+                }
+            }
+            break;
+        }
+        case FUNC_VAR: {
+            FuncVariable *funcVar = (FuncVariable *)var;
+            dotExpr->evaluatesTo = funcVar->returnType;
+            break;
+        }
+        default: {
+        }
+        }
+        break;
+    }
+    case VAR_EXPR: {
+        VarExpr *varExpr = (VarExpr *)expr;
+        for (auto &var : compiler->variables) {
+            if (var->name == varExpr->name) {
+                varExpr->evaluatesTo = var;
+                return;
+            }
+        }
+        errorAt(("Unable to find variable " + varExpr->name).c_str(), varExpr->line);
+        break;
+    }
+    }
+}
+
+static void fixExprEvaluatesToStmt(Stmt *stmt) {
+    switch (stmt->type) {
+    case EXPR_STMT: {
+        ExprStmt *exprStmt = (ExprStmt *)stmt;
+        fixExprEvaluatesToExpr(exprStmt->expression);
+        break;
+    }
+    case COMP_ASSIGN_STMT: {
+        CompAssignStmt *compAssignStmt = (CompAssignStmt *)stmt;
+        fixExprEvaluatesToExpr(compAssignStmt->right);
+        break;
+    }
+    case ASSIGN_STMT: {
+        AssignStmt *assignStmt = (AssignStmt *)stmt;
+        fixExprEvaluatesToExpr(assignStmt->value);
+        fixExprEvaluatesToExpr(assignStmt->variable);
+        break;
+    }
+    case RETURN_STMT: {
+        ReturnStmt *returnStmt = (ReturnStmt *)stmt;
+        fixExprEvaluatesToExpr(returnStmt->value);
+        break;
+    }
+    case VAR_STMT: {
+        VarStmt *varStmt = (VarStmt *)stmt;
+        fixExprEvaluatesToExpr(varStmt->initializer);
+        compiler->variables.push_back(varStmt->var);
+        break;
+    }
+    case WHILE_STMT: {
+        WhileStmt *whileStmt = (WhileStmt *)stmt;
+        fixExprEvaluatesToExpr(whileStmt->condition);
+        for (auto &bodyStmt : whileStmt->body) {
+            fixExprEvaluatesToStmt(bodyStmt);
+        }
+        break;
+    }
+    case FOR_STMT: {
+        ForStmt *forStmt = (ForStmt *)stmt;
+        fixExprEvaluatesToExpr(forStmt->condition);
+        for (auto &bodyStmt : forStmt->body) {
+            fixExprEvaluatesToStmt(bodyStmt);
+        }
+        fixExprEvaluatesToStmt(forStmt->initializer);
+        fixExprEvaluatesToStmt(forStmt->increment);
+        break;
+    }
+    case IF_STMT: {
+        IfStmt *ifStmt = (IfStmt *)stmt;
+        fixExprEvaluatesToExpr(ifStmt->condition);
+        for (auto &bodyStmt : ifStmt->thenBranch) {
+            fixExprEvaluatesToStmt(bodyStmt);
+        }
+        for (auto &bodyStmt : ifStmt->elseBranch) {
+            fixExprEvaluatesToStmt(bodyStmt);
+        }
+        break;
+    }
+    case FUNC_STMT: {
+        FuncStmt *funcStmt = (FuncStmt *)stmt;
+        compiler->variables.push_back(new FuncVariable(funcStmt->name, funcStmt->returnType));
+        // ToDo Please change this xD
+        for (auto &param : funcStmt->params) {
+            compiler->variables.push_back(param);
+        }
+        for (auto &bodyStmt : funcStmt->body) {
+            fixExprEvaluatesToStmt(bodyStmt);
+        }
+        for (auto &param : funcStmt->params) {
+            compiler->variables.pop_back();
+        }
+        break;
+    }
+    case BREAK_STMT: {
+        break;
+    }
+    case STRUCT_STMT: {
+        StructStmt *structStmt = (StructStmt *)stmt;
+        compiler->variables.push_back(new StructVariable("", structStmt->name, structStmt->fields));
+        break;
+    }
+    }
+}
+
 Compiler *compile(std::string source) {
     scanner = new Scanner();
     initScanner(scanner, source.c_str());
@@ -1098,7 +1400,9 @@ Compiler *compile(std::string source) {
     initCompiler();
     advance();
     while (!match(TOKEN_EOF)) {
-        compiler->statements.push_back(declaration());
+        Stmt *stmt = declaration();
+        fixExprEvaluatesToStmt(stmt);
+        compiler->statements.push_back(stmt);
     }
     // debugStatements(compiler->statements);
 

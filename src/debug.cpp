@@ -245,6 +245,12 @@ void debugVariable(Variable *var) {
     case STRUCT_VAR: {
         StructVariable *structVar = (StructVariable *)var;
         printf("struct '%s'", structVar->structName.c_str());
+        break;
+    }
+    case FUNC_VAR: {
+        FuncVariable *funcVar = (FuncVariable *)var;
+        printf("fun '%s'", funcVar->name.c_str());
+        break;
     }
     default: {
         printf("%s", debugVarType(var->type));

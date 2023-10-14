@@ -47,6 +47,7 @@ enum IncOp { INC, DEC };
 class Expr {
   private:
   public:
+    Variable *evaluatesTo;
     ExprType type;
     int line;
 };
@@ -95,7 +96,7 @@ class MapExpr : public Expr {
   public:
     std::vector<Expr *> values;
     std::vector<Expr *> keys;
-    Variable * mapVar;
+    Variable *mapVar;
     MapExpr(int line) {
         this->type = MAP_EXPR;
         this->values = std::vector<Expr *>();
