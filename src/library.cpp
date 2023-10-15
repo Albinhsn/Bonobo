@@ -42,6 +42,50 @@ static llvm::Function *createIndexStrMap(LLVMCompiler *llvmCompiler, llvm::IRBui
     return function;
 }
 
+static llvm::Function *createGetKeys(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    llvm::FunctionType *funcType = llvm::FunctionType::get(llvmCompiler->internalStructs["array"], {llvmBuilder->getPtrTy()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "keys", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Value *arg = function->arg_begin();
+    llvm::Value *loadedArray = builder->CreateLoad(llvmCompiler->internalStructs["map"], arg);
+    llvm::Value *keyPtr = builder->CreateExtractValue(loadedArray, 0);
+    llvm::Value * keys = builder->CreateLoad(llvmCompiler->internalStructs["array"], keyPtr);
+    builder->CreateRet(keys);
+    return function;
+}
+
+static llvm::Function *createGetValues(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    llvm::FunctionType *funcType = llvm::FunctionType::get(llvmCompiler->internalStructs["array"], {llvmBuilder->getPtrTy()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "values", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Value *arg = function->arg_begin();
+    llvm::Value *loadedArray = builder->CreateLoad(llvmCompiler->internalStructs["map"], arg);
+    llvm::Value *keyPtr = builder->CreateExtractValue(loadedArray, 1);
+    llvm::Value * keys = builder->CreateLoad(llvmCompiler->internalStructs["array"], keyPtr);
+    builder->CreateRet(keys);
+    return function;
+}
+
+static llvm::Function *createLen(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    llvm::FunctionType *funcType = llvm::FunctionType::get(llvmBuilder->getInt32Ty(), {llvmBuilder->getPtrTy()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "len", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Value *arg = function->arg_begin();
+    llvm::Value *loadedArray = builder->CreateLoad(llvmCompiler->internalStructs["array"], arg);
+    llvm::Value *arraySize = builder->CreateExtractValue(loadedArray, 1);
+    builder->CreateRet(arraySize);
+    return function;
+}
+
 static llvm::Function *createIndexIntMap(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
     // Fix func type
     llvm::FunctionType *funcType = llvm::FunctionType::get(
@@ -219,6 +263,9 @@ void addInternalFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder
     llvmCompiler->internalFuncs["indexStrMap"] = createIndexStrMap(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["findIntKey"] = createFindIntKey(llvmCompiler);
     llvmCompiler->internalFuncs["indexIntMap"] = createIndexIntMap(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["len"] = createLen(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["keys"] = createGetKeys(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["values"] = createGetValues(llvmCompiler, llvmBuilder);
 }
 
 void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {

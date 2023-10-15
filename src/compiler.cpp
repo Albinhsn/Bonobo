@@ -13,7 +13,18 @@ static void initCompiler() {
     compiler = new Compiler;
     compiler->enclosing = nullptr;
     compiler->statements = std::vector<Stmt *>();
-    compiler->variables = std::vector<Variable *>();
+
+    Variable *intVar = new Variable();
+    intVar->type = INT_VAR;
+
+    Variable *arrVar = new Variable();
+    arrVar->type = ARRAY_VAR;
+
+    compiler->variables = {
+        new FuncVariable("len", intVar),
+        new FuncVariable("keys", arrVar),
+        new FuncVariable("values", arrVar),
+    };
 }
 
 static void endCompiler(Compiler *current) {
@@ -652,19 +663,10 @@ static void index(Expr *&expr) {
         expr = unaryExpr;
         break;
     }
-    case INDEX_EXPR: {
-        IndexExpr *indexExpr = (IndexExpr *)expr;
-        expr = new IndexExpr(indexExpr, expression(nullptr), indexExpr->line);
-        consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
-        break;
-    }
-    case VAR_EXPR: {
+    default: {
         expr = new IndexExpr(expr, expression(nullptr), expr->line);
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index");
         break;
-    }
-    default: {
-        errorAt("Don't know how to index this expr");
     }
     }
 }
@@ -1204,6 +1206,9 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
 
         Variable *variable = indexExpr->variable->evaluatesTo;
         Variable *evalsTo = indexExpr->index->evaluatesTo;
+        if (variable == nullptr) {
+            errorAt("var was nullptr?", 0);
+        }
         if (variable->type == MAP_VAR) {
             MapVariable *mapVar = (MapVariable *)variable;
             if (evalsTo->type != mapVar->keys->type) {
@@ -1213,16 +1218,17 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
         } else if (variable->type == ARRAY_VAR) {
             ArrayVariable *arrayVar = (ArrayVariable *)variable;
             if (evalsTo->type != INT_VAR) {
-                errorAt("Invalid key type", indexExpr->line);
+                errorAt("Invalid key type, can only index array with int", indexExpr->line);
             }
             indexExpr->evaluatesTo = arrayVar->items;
         } else if (variable->type == STR_VAR) {
             if (evalsTo->type != INT_VAR) {
-                errorAt("Invalid key type", indexExpr->line);
+                errorAt("Invalid key type, can only index str with int", indexExpr->line);
             }
             indexExpr->evaluatesTo = variable;
         } else {
-            errorAt("Can't index this type?", indexExpr->line);
+            debugVariable(variable);
+            errorAt("\nCan't index this type?", indexExpr->line);
         }
         break;
     }
@@ -1273,7 +1279,7 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
             case FUNC_VAR: {
                 FuncVariable *funcVar = (FuncVariable *)var;
                 if (funcVar->name == callExpr->callee) {
-                    callExpr->evaluatesTo = var;
+                    callExpr->evaluatesTo = funcVar->returnType;
                     return;
                 }
                 break;
@@ -1425,7 +1431,6 @@ Compiler *compile(std::string source) {
         fixExprEvaluatesToStmt(stmt);
         compiler->statements.push_back(stmt);
     }
-    // debugStatements(compiler->statements);
 
     delete (scanner);
     free(parser);

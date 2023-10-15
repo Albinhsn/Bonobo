@@ -4,19 +4,28 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* figure out what type checks are unneccessary atm
-
-* exit func
-
-* MapExpr
-    * assign new key
+* ToDo refactor
+    * fix array stuff
+        * should be easy to either check or do the thing you need to do with structure
+            * i.e. check which one, get pointer to this etc
 
 * Fix recursive copying of arrays
     * wait why?
         * The flakey test obv
 
-* can't do a = [2];
-    * should be possible now with snd pass?
+* snd pass map?
+
+* Figure out if variables in compiler done properly 
+
+* Clear distinction between library and internal funcs
+
+* Typecheck internalfuncs params?
+
+* append
+    * is just a realloc and then add an item to the end?
+
+* MapExpr
+    * assign new key
 
 * Create a stl
     * i.e. read import statements and import correct file
@@ -25,14 +34,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
         * 
     * file I/O
     * read from stdin
-    * len
-    * get keys
-        * keys()
-    * get values
-        * values()
-    * append()
-        * is just a realloc and then add an item to the end?
-
+    * key in 
 
 * GC
     * Second pass to figure out when to GC?

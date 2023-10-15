@@ -54,6 +54,10 @@ int main() {
     nmbr_of_tests++;
     runTest("Array - 3D int array", arr6, "1", failed);
 
+    std::string arr7 = "var a: arr[int] = [1,2]; a = [2]; printf(\"%d\", a[0]);";
+    nmbr_of_tests++;
+    runTest("Array - 3D int array", arr7, "2", failed);
+
     // Index test
     std::string index =
         "var a: arr[int] = [1,2,3];var b: str = \"Hi!\";var e: arr[bool] = [true, false, "
@@ -98,6 +102,10 @@ int main() {
     nmbr_of_tests++;
     runTest("Index - Invalid idx str map", index10, "Key didn't exist\n", failed);
 
+    std::string index11 = "var a:arr[int] = [1,2]; a[2];";
+    nmbr_of_tests++;
+    runTest("Index - Invalid idx int array", index11, "Trying to index outside of array\nsize: 2\nidx: 2\n", failed);
+
     // Assign to index
     std::string assignIndex1 =
         "var a: arr[arr[int]] = [[0,1,2]]; var b:arr[int] = [0,1,5]; a[0] = b; printf(\"%d\", a[0][2]);";
@@ -132,7 +140,8 @@ int main() {
     nmbr_of_tests++;
     runTest("AssignIndex - Assign struct to 2D array", assignIndex7, "3", failed);
 
-    std::string assignIndex9 = "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; b[0][0] = 5; printf(\"%d\", a[0][0][0]);";
+    std::string assignIndex9 =
+        "var a: arr[arr[arr[int]]] = [[[1]]]; var b: arr[arr[int]] = a[0]; b[0][0] = 5; printf(\"%d\", a[0][0][0]);";
     nmbr_of_tests++;
     runTest("Array - Assign 3D array index to 2D array", assignIndex9, "1", failed);
 
@@ -231,6 +240,22 @@ int main() {
     std::string fun6 = "fun foo() -> str {return \"Hi\";} printf(\"%s\", foo());";
     nmbr_of_tests++;
     runTest("Func - return str", fun6, "Hi", failed);
+
+    std::string fun7 = "var a: arr[int] = [1,2,3,4]; printf(\"%d\", len(a));";
+    nmbr_of_tests++;
+    runTest("Func - len array", fun7, "4", failed);
+
+    std::string fun8 = "var a: str = \"Hello World\"; printf(\"%d\", len(a));";
+    nmbr_of_tests++;
+    runTest("Func - len str", fun8, "12", failed);
+
+    std::string fun9 = "var m: map[int, int] = {1:1, 2:2, 3:5}; var a: arr[int] = keys(m); printf(\"%d\", a[2]);";
+    nmbr_of_tests++;
+    runTest("Func - keys func ", fun9, "3", failed);
+
+    std::string fun10 = "var m: map[int, int] = {1:1, 2:2, 3:5}; var a: arr[int] = values(m); printf(\"%d\", a[2]);";
+    nmbr_of_tests++;
+    runTest("Func - values func ", fun10, "5", failed);
 
     if (failed.size() == 0) {
         printf("\nAll test passed\n");

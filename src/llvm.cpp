@@ -191,9 +191,6 @@ static llvm::IRBuilder<> *enterFuncScope(FuncStmt *funcStmt) {
     std::map<std::string, int> funcArgs;
     for (int i = 0; i < funcStmt->params.size(); ++i) {
         params[i] = getTypeFromVariable(funcStmt->params[i]);
-        if (!params[i]) {
-            errorAt(funcStmt->line, "Unable to get variable type for param");
-        }
         funcArgs[funcStmt->params[i]->name] = i;
     }
 
@@ -207,18 +204,6 @@ static llvm::IRBuilder<> *enterFuncScope(FuncStmt *funcStmt) {
     llvm::IRBuilder<> *prevBuilder = builder;
     builder = new llvm::IRBuilder<>(llvmFunction->entryBlock);
     return prevBuilder;
-}
-
-static void checkValidFuncDeclaration(FuncStmt *funcStmt) {
-    if (nameIsAlreadyDeclared(funcStmt->name)) {
-        errorAt(funcStmt->line,
-                "Can't declare function '%s', name is already "
-                "declared",
-                funcStmt->name.c_str());
-    }
-    if (llvmFunction->enclosing) {
-        errorAt(funcStmt->line, "Can't declare a function in a function");
-    }
 }
 
 static llvm::MaybeAlign getAlignment(llvm::Type *type) { return llvm::MaybeAlign(type->getPrimitiveSizeInBits() / 8); }
@@ -318,8 +303,8 @@ static void storeArraySizeInStruct(llvm::Value *size, llvm::Value *arrayInstance
     storeStructField(llvmCompiler->internalStructs["array"], arrayInstance, size, 1);
 }
 
-static void storeArrayInStruct(llvm::Value *array, llvm::Value *arrayInstance) {
-    storeStructField(llvmCompiler->internalStructs["array"], arrayInstance, array, 0);
+static void storeArrayInStruct(llvm::Value *arrayToStore, llvm::Value *arrayInstance) {
+    storeStructField(llvmCompiler->internalStructs["array"], arrayInstance, arrayToStore, 0);
 }
 
 static llvm::Value *compileLiteral(LiteralExpr *expr) {
@@ -578,20 +563,26 @@ static llvm::Value *indexMap(llvm::Value *map, llvm::Value *index, Variable *var
 }
 
 static llvm::Value *getIndexValue(IndexExpr *indexExpr, Variable *&var) {
-    if (indexExpr->variable->type == INDEX_EXPR) {
+    ExprType varType = indexExpr->variable->type;
+    if (varType == INDEX_EXPR) {
         return loadIndex((IndexExpr *)indexExpr->variable, var);
-    } else if (indexExpr->variable->type == VAR_EXPR) {
+    } else if (varType == VAR_EXPR) {
         VarExpr *varExpr = (VarExpr *)indexExpr->variable;
         var = lookupVariableByName(varExpr->name);
         return compileExpression(varExpr);
+    } else if (varType == CALL_EXPR) {
+        CallExpr *callExpr = (CallExpr *)indexExpr->variable;
+
+        FuncVariable *funcVar = (FuncVariable *)lookupVariableByName(callExpr->callee);
+        var = funcVar->returnType;
+        return compileExpression(callExpr);
     }
-    errorAt(indexExpr->line, "Can't index this?");
+    errorAt(indexExpr->line, "Can't index this type?");
     exit(1);
 }
 
 static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
     // This should be a func that also checks out of bounds
-
     llvm::Value *indexValue = getIndexValue(indexExpr, var);
     llvm::Value *index = compileExpression(indexExpr->index);
 
@@ -674,8 +665,18 @@ static void assignToVarExpr(AssignStmt *assignStmt) {
     llvm::Value *value = compileExpression(assignStmt->value);
     VarExpr *varExpr = (VarExpr *)assignStmt->variable;
     llvm::Value *variable = lookupValue(varExpr->name, varExpr->line);
-    // Check type is correct?
+    VarType evalType = varExpr->evaluatesTo->type;
+    if (evalType == ARRAY_VAR || evalType == STR_VAR) {
+        llvm::AllocaInst *allocVar = llvm::dyn_cast<llvm::AllocaInst>(variable);
+        llvm::Value *loadedValue = builder->CreateLoad(llvmCompiler->internalStructs["array"], value);
+        Variable *var = lookupVariableByName(varExpr->name);
+        copyArray(allocVar, loadedValue, var);
+        return;
+    }
+
     builder->CreateStore(value, variable);
+
+    // Check type is correct?
 }
 
 static llvm::Value *lookupStruct(DotExpr *dotExpr) {
@@ -683,13 +684,7 @@ static llvm::Value *lookupStruct(DotExpr *dotExpr) {
 
     if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
         // ToDo check that this isn't array or map
-        if (!allocaInst->getAllocatedType()->isStructTy()) {
-            errorAt(dotExpr->line, "Variable isn't struct");
-        }
         return builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
-    }
-    if (!value->getType()->isStructTy()) {
-        errorAt(dotExpr->line, "Variable isn't struct");
     }
 
     return value;
@@ -776,10 +771,7 @@ static void assignToDotExpr(AssignStmt *assignStmt) {
                 return;
             }
         }
-        std::string errorMsg = "unknown struct field '" + dotExpr->field + "' for '" + structName + "'\n";
-        errorAt(assignStmt->line, errorMsg.c_str());
     }
-    errorAt(assignStmt->line, "Can't assign to non struct");
 }
 
 llvm::Value *compileExpression(Expr *expr) {
@@ -815,7 +807,6 @@ llvm::Value *compileExpression(Expr *expr) {
             }
             }
         }
-        errorAt(logicalExpr->line, "Can't do logical expr with these types\n");
     }
     case LITERAL_EXPR: {
         return compileLiteral((LiteralExpr *)expr);
@@ -831,7 +822,6 @@ llvm::Value *compileExpression(Expr *expr) {
                 }
             }
         }
-        errorAt(dotExpr->line, "Can't do property lookup on non struct\n");
     }
     case COMPARISON_EXPR: {
         ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;
@@ -881,21 +871,15 @@ llvm::Value *compileExpression(Expr *expr) {
             }
             }
         }
-        errorAt(comparisonExpr->line, "Can't do addition with llvmCompiler?\n");
     }
     case UNARY_EXPR: {
         UnaryExpr *unaryExpr = (UnaryExpr *)expr;
         llvm::Value *value = loadAllocaInst(compileExpression(unaryExpr->right));
-        if (unaryExpr->op == NEG_UNARY) {
-            if (value->getType()->isIntegerTy() || value->getType()->isDoubleTy()) {
-                return builder->CreateMul(value, builder->getInt32(-1));
-            }
-            errorAt(unaryExpr->line, "Can't do '-' with llvmCompiler type\n");
-        } else if (unaryExpr->op == BANG_UNARY) {
+        if (unaryExpr->op == NEG_UNARY && (value->getType()->isIntegerTy() || value->getType()->isDoubleTy())) {
+            return builder->CreateMul(value, builder->getInt32(-1));
+        } else {
             // Check value type?
             return builder->CreateXor(value, 1);
-        } else {
-            errorAt(unaryExpr->line, "unknown unary expr?\n");
         }
     }
     case VAR_EXPR: {
@@ -921,7 +905,6 @@ llvm::Value *compileExpression(Expr *expr) {
             }
             return builder->CreateStore(valueOp, value);
         }
-        errorAt(incExpr->line, "Can't increment non allocated variable\n");
     }
     case ARRAY_EXPR: {
         ArrayExpr *arrayExpr = (ArrayExpr *)expr;
@@ -935,10 +918,6 @@ llvm::Value *compileExpression(Expr *expr) {
 
             if (elementType == nullptr) {
                 elementType = itemType;
-            }
-
-            if (elementType != itemType && !elementType->isStructTy() && itemType->isPointerTy()) {
-                errorAt(arrayExpr->line, "Mismatch in array items");
             }
 
             arrayItems[i] = item;
@@ -976,15 +955,6 @@ llvm::Value *compileExpression(Expr *expr) {
                 valueType = values[i]->getType();
                 keyType = keys[i]->getType();
             }
-            // if ((valueType != values[i]->getType() || keyType != keys[i]->getType()) &&
-            //     ) {
-
-            //     printf("%s - %s\n", debugValueType(valueType, llvmCompiler->ctx).c_str(),
-            //            debugValueType(values[i]->getType(), llvmCompiler->ctx).c_str());
-            //     printf("%s - %s\n", debugValueType(keyType, llvmCompiler->ctx).c_str(),
-            //            debugValueType(keys[i]->getType(), llvmCompiler->ctx).c_str());
-            //     errorAt(mapExpr->line, "Mismatch in map items");
-            // }
         }
 
         llvm::AllocaInst *mapInstance = builder->CreateAlloca(llvmCompiler->internalStructs["map"], nullptr, "map");
@@ -1007,8 +977,10 @@ llvm::Value *compileExpression(Expr *expr) {
         for (int i = 0; i < argSize; ++i) {
             params[i] = compileExpression(callExpr->arguments[i]);
         }
+        if (llvmCompiler->internalFuncs.count(name)) {
+            return builder->CreateCall(llvmCompiler->internalFuncs[name], params);
+        }
 
-        llvm::Function *func = lookupFunction(name);
         if (llvmCompiler->libraryFuncs.count(name)) {
             for (int i = 0; i < argSize; ++i) {
                 if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(params[i])) {
@@ -1022,6 +994,7 @@ llvm::Value *compileExpression(Expr *expr) {
             return builder->CreateCall(llvmCompiler->libraryFuncs[name], params);
         }
 
+        llvm::Function *func = lookupFunction(name);
         checkCallParamCorrectness(func, params, name);
         return builder->CreateCall(func, params);
     }
@@ -1080,13 +1053,6 @@ void compileStatement(Stmt *stmt) {
         // Check here if it's an allocaInst and then load it before sending
         // it back
         llvm::Type *expectedReturnType = llvmFunction->functionType->getReturnType();
-        if (expectedReturnType != returnValue->getType()) {
-            std::string errorMsg = "funcType -> " + debugValueType(expectedReturnType, llvmCompiler->ctx) +
-                                   "\nreturn -> " + debugValueType(returnValue->getType(), llvmCompiler->ctx) +
-                                   "\nMismatching return in '" + llvmFunction->function->getName().str() + "'";
-            errorAt(stmt->line, errorMsg.c_str());
-        }
-
         builder->CreateRet(returnValue);
         break;
     }
@@ -1094,11 +1060,6 @@ void compileStatement(Stmt *stmt) {
         VarStmt *varStmt = (VarStmt *)stmt;
         Variable *var = varStmt->var;
         std::string varName = var->name;
-
-        if (nameIsAlreadyDeclared(varName)) {
-            std::string errorMessage = "Can't declare variable '" + varName + "', name is already declared";
-            errorAt(varStmt->line, errorMessage.c_str());
-        }
 
         llvm::Value *value = compileExpression(varStmt->initializer);
 
@@ -1164,10 +1125,6 @@ void compileStatement(Stmt *stmt) {
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)stmt;
         std::string structName = structStmt->name;
-        if (nameIsAlreadyDeclared(structStmt->name)) {
-
-            errorAt(structStmt->line, ("Can't declare struct '" + structName + "', name is already declared").c_str());
-        }
 
         std::vector<llvm::Type *> fieldTypes = std::vector<llvm::Type *>(structStmt->fields.size());
         std::vector<std::string> fieldNames = std::vector<std::string>(structStmt->fields.size());
@@ -1208,7 +1165,9 @@ void compileStatement(Stmt *stmt) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)stmt;
-        checkValidFuncDeclaration(funcStmt);
+        if (llvmFunction->enclosing) {
+            errorAt(funcStmt->line, "Can't declare a function in a function");
+        }
         llvm::IRBuilder<> *prevBuilder = enterFuncScope(funcStmt);
 
         bool returned = false;
