@@ -90,6 +90,14 @@ int main() {
     nmbr_of_tests++;
     runTest("Index - Idx str map", index8, "2", failed);
 
+    std::string index9 = "var a:map[int, int] = {1:1, 2:2}; a[3];";
+    nmbr_of_tests++;
+    runTest("Index - Invalid idx int map", index9, "Key didn't exist\n", failed);
+
+    std::string index10 = "var a:map[str, int] = {\"Hi\":1, \"Hey\":2}; a[\"H\"];";
+    nmbr_of_tests++;
+    runTest("Index - Invalid idx str map", index10, "Key didn't exist\n", failed);
+
     // Assign to index
     std::string assignIndex1 =
         "var a: arr[arr[int]] = [[0,1,2]]; var b:arr[int] = [0,1,5]; a[0] = b; printf(\"%d\", a[0][2]);";

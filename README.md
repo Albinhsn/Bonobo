@@ -4,24 +4,19 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* Error if array out of bounds
+* figure out what type checks are unneccessary atm
+
+* exit func
 
 * MapExpr
-    * Create functions(?) "native" to maps
-        * get keys
-            * .keys
-        * get values
-            * .values
-        * assign new key
-        * .size()
-
-* ArrayExpr
-    * is just a realloc and then add an item to the end?
-    * .size()
+    * assign new key
 
 * Fix recursive copying of arrays
+    * wait why?
+        * The flakey test obv
 
 * can't do a = [2];
+    * should be possible now with snd pass?
 
 * Create a stl
     * i.e. read import statements and import correct file
@@ -30,6 +25,13 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
         * 
     * file I/O
     * read from stdin
+    * len
+    * get keys
+        * keys()
+    * get values
+        * values()
+    * append()
+        * is just a realloc and then add an item to the end?
 
 
 * GC

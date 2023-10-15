@@ -1,12 +1,11 @@
 #include "library.h"
 
-static llvm::Function *createIndexStrMap(LLVMCompiler *llvmCompiler) {
+static llvm::Function *createIndexStrMap(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
     // Fix func type
-    llvm::FunctionType *funcType =
-        llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvmCompiler->ctx),
-                                {llvmCompiler->internalStructs["map"], llvmCompiler->internalStructs["array"]}, false);
+    llvm::FunctionType *funcType = llvm::FunctionType::get(
+        llvmBuilder->getPtrTy(), {llvmCompiler->internalStructs["map"], llvmCompiler->internalStructs["array"]}, false);
     llvm::Function *function =
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexMap", *llvmCompiler->module);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexStrMap", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
     llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
 
@@ -32,24 +31,24 @@ static llvm::Function *createIndexStrMap(LLVMCompiler *llvmCompiler) {
     llvm::Value *extractedArray = builder->CreateExtractValue(loadedValuePtr, 0);
 
     llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), extractedArray, keyExists);
-    llvm::Value *returnValue = builder->CreateLoad(builder->getInt32Ty(), value);
-    builder->CreateRet(returnValue);
+    builder->CreateRet(value);
 
     builder->SetInsertPoint(mergeBlock);
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
     builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
-    builder->CreateUnreachable();
+    builder->CreateCall(llvmCompiler->libraryFuncs["exit"], {builder->getInt32(1)});
+    builder->CreateRet(keyPtr);
 
     return function;
 }
 
-static llvm::Function *createIndexIntMap(LLVMCompiler *llvmCompiler) {
+static llvm::Function *createIndexIntMap(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
     // Fix func type
     llvm::FunctionType *funcType = llvm::FunctionType::get(
-        llvm::Type::getInt32Ty(*llvmCompiler->ctx),
-        {llvmCompiler->internalStructs["map"], llvm::Type::getInt32Ty(*llvmCompiler->ctx)}, false);
+        llvmBuilder->getPtrTy(), {llvmCompiler->internalStructs["map"], llvm::Type::getInt32Ty(*llvmCompiler->ctx)},
+        false);
     llvm::Function *function =
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexMap", *llvmCompiler->module);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "indexIntMap", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
     llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
 
@@ -75,13 +74,13 @@ static llvm::Function *createIndexIntMap(LLVMCompiler *llvmCompiler) {
     llvm::Value *extractedArray = builder->CreateExtractValue(loadedValuePtr, 0);
 
     llvm::Value *value = builder->CreateInBoundsGEP(builder->getInt32Ty(), extractedArray, keyExists);
-    llvm::Value *returnValue = builder->CreateLoad(builder->getInt32Ty(), value);
-    builder->CreateRet(returnValue);
+    builder->CreateRet(value);
 
     builder->SetInsertPoint(mergeBlock);
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
     builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
-    builder->CreateUnreachable();
+    builder->CreateCall(llvmCompiler->libraryFuncs["exit"], {builder->getInt32(1)});
+    builder->CreateRet(keyPtr);
 
     return function;
 }
@@ -93,7 +92,7 @@ static llvm::Function *createFindStrKey(LLVMCompiler *llvmCompiler) {
         llvm::Type::getInt32Ty(*llvmCompiler->ctx),
         {llvmCompiler->internalStructs["array"], llvmCompiler->internalStructs["array"]}, false);
     llvm::Function *function =
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findKey", *llvmCompiler->module);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findStrKey", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
     llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
     llvm::Function::arg_iterator arg = function->arg_begin();
@@ -112,7 +111,7 @@ static llvm::Function *createFindStrKey(LLVMCompiler *llvmCompiler) {
 
     builder->CreateBr(headerBlock);
     builder->SetInsertPoint(headerBlock);
-    builder->CreateCondBr(builder->CreateICmpSLE(builder->CreateLoad(builder->getInt32Ty(), loopVariable), arraySize),
+    builder->CreateCondBr(builder->CreateICmpSLT(builder->CreateLoad(builder->getInt32Ty(), loopVariable), arraySize),
                           bodyBlock, exitBlock);
     builder->SetInsertPoint(bodyBlock);
 
@@ -164,7 +163,7 @@ static llvm::Function *createFindIntKey(LLVMCompiler *llvmCompiler) {
         llvm::Type::getInt32Ty(*llvmCompiler->ctx),
         {llvmCompiler->internalStructs["array"], llvm::Type::getInt32Ty(*llvmCompiler->ctx)}, false);
     llvm::Function *function =
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findKey", *llvmCompiler->module);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "findIntKey", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
     llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
 
@@ -213,13 +212,13 @@ static llvm::Function *createFindIntKey(LLVMCompiler *llvmCompiler) {
     return function;
 }
 
-void addInternalFuncs(LLVMCompiler *llvmCompiler) {
+void addInternalFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
 
     llvmCompiler->internalFuncs = {};
     llvmCompiler->internalFuncs["findStrKey"] = createFindStrKey(llvmCompiler);
-    llvmCompiler->internalFuncs["indexStrMap"] = createIndexStrMap(llvmCompiler);
+    llvmCompiler->internalFuncs["indexStrMap"] = createIndexStrMap(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["findIntKey"] = createFindIntKey(llvmCompiler);
-    llvmCompiler->internalFuncs["indexIntMap"] = createIndexIntMap(llvmCompiler);
+    llvmCompiler->internalFuncs["indexIntMap"] = createIndexIntMap(llvmCompiler, llvmBuilder);
 }
 
 void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {
@@ -244,6 +243,11 @@ void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {
     type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("memcmp", type);
     llvmCompiler->libraryFuncs["memcmp"] = func;
+
+    args = {builder->getInt32Ty()};
+    type = llvm::FunctionType::get(builder->getVoidTy(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("exit", type);
+    llvmCompiler->libraryFuncs["exit"] = func;
 }
 
 void addInternalStructs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {

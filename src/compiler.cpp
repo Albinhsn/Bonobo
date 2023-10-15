@@ -1204,7 +1204,25 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
 
         Variable *variable = indexExpr->variable->evaluatesTo;
         Variable *evalsTo = indexExpr->index->evaluatesTo;
-        if (true) {
+        if (variable->type == MAP_VAR) {
+            MapVariable *mapVar = (MapVariable *)variable;
+            if (evalsTo->type != mapVar->keys->type) {
+                errorAt("Invalid key type", indexExpr->line);
+            }
+            indexExpr->evaluatesTo = mapVar->values;
+        } else if (variable->type == ARRAY_VAR) {
+            ArrayVariable *arrayVar = (ArrayVariable *)variable;
+            if (evalsTo->type != INT_VAR) {
+                errorAt("Invalid key type", indexExpr->line);
+            }
+            indexExpr->evaluatesTo = arrayVar->items;
+        } else if (variable->type == STR_VAR) {
+            if (evalsTo->type != INT_VAR) {
+                errorAt("Invalid key type", indexExpr->line);
+            }
+            indexExpr->evaluatesTo = variable;
+        } else {
+            errorAt("Can't index this type?", indexExpr->line);
         }
         break;
     }
@@ -1239,6 +1257,9 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
     }
     case CALL_EXPR: {
         CallExpr *callExpr = (CallExpr *)expr;
+        for (auto &arg : callExpr->arguments) {
+            fixExprEvaluatesToExpr(arg);
+        }
         for (auto &var : compiler->variables) {
             switch (var->type) {
             case STRUCT_VAR: {

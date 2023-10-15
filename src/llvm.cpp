@@ -116,7 +116,7 @@ void initCompiler(std::vector<Variable *> variables) {
     builder = new llvm::IRBuilder<>(llvmFunction->entryBlock);
     addLibraryFuncs(llvmCompiler, builder);
     addInternalStructs(llvmCompiler, builder);
-    addInternalFuncs(llvmCompiler);
+    addInternalFuncs(llvmCompiler, builder);
 }
 
 static void endCompiler() {
@@ -531,12 +531,40 @@ static llvm::Value *binaryOp(llvm::Value *left, llvm::Value *right, BinaryOp op,
     errorAt(line, "Can't do binary op");
     exit(1);
 }
+static void checkIndexOutOfBounds(llvm::Value *loadedArrayStruct, llvm::Value *index) {
 
-static llvm::Value *getArrayIndex(llvm::Type *type, llvm::Value *loadedArray, llvm::Value *index) {
+    // Check here whether or not it's out of bounds
+    //    Just if index >= size
+    //        then branch is just exiting?
+    llvm::Value *arraySize = builder->CreateExtractValue(loadedArrayStruct, 1);
+    // Check less then array size
+    llvm::Value *condition1 = builder->CreateICmpSGE(index, arraySize);
+    llvm::BasicBlock *thenBlock1 = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", llvmFunction->function);
+    llvm::BasicBlock *mergeBlock1 = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", llvmFunction->function);
+
+    builder->CreateCondBr(condition1, thenBlock1, mergeBlock1);
+
+    builder->SetInsertPoint(thenBlock1);
+    llvm::Value *exitString = builder->CreateGlobalStringPtr("Trying to index outside of array\nsize: %d\nidx: %d\n");
+    builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitString, arraySize, index});
+    builder->CreateRet(builder->getInt32(1));
+
+    builder->SetInsertPoint(mergeBlock1);
+
+    // Check not negative
+    llvm::Value *condition2 = builder->CreateICmpSLT(index, builder->getInt32(0));
+    llvm::BasicBlock *mergeBlock2 = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", llvmFunction->function);
+    builder->CreateCondBr(condition2, thenBlock1, mergeBlock2);
+    builder->SetInsertPoint(mergeBlock2);
+}
+
+static llvm::Value *getArrayIndex(llvm::Type *type, llvm::Value *loadedArrayStruct, llvm::Value *index) {
     if (type == llvmCompiler->internalStructs["array"] || type->isStructTy()) {
         type = builder->getPtrTy();
     }
-    return builder->CreateInBoundsGEP(type, loadedArray, index);
+    checkIndexOutOfBounds(loadedArrayStruct, index);
+
+    return builder->CreateInBoundsGEP(type, builder->CreateExtractValue(loadedArrayStruct, 0), index);
 }
 
 static llvm::Value *indexMap(llvm::Value *map, llvm::Value *index, Variable *var) {
@@ -557,30 +585,29 @@ static llvm::Value *getIndexValue(IndexExpr *indexExpr, Variable *&var) {
         var = lookupVariableByName(varExpr->name);
         return compileExpression(varExpr);
     }
-    return nullptr;
+    errorAt(indexExpr->line, "Can't index this?");
+    exit(1);
 }
 
 static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var) {
     // This should be a func that also checks out of bounds
 
     llvm::Value *indexValue = getIndexValue(indexExpr, var);
-
-    if (indexValue == nullptr) {
-        errorAt(indexExpr->line, "Can't index this?");
-    }
-
     llvm::Value *index = compileExpression(indexExpr->index);
 
     if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
         var = lookupVariableByName(castedVar->getName().str());
         if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["map"]) {
-            return indexMap(builder->CreateLoad(llvmCompiler->internalStructs["map"], castedVar), index, var);
-        } else {
-            return getArrayIndex(lookupArrayItemType(var), loadArrayFromArrayStruct(castedVar), index);
+            indexValue = builder->CreateLoad(llvmCompiler->internalStructs["map"], castedVar);
+        } else if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["array"]) {
+            return getArrayIndex(lookupArrayItemType(var),
+                                 builder->CreateLoad(castedVar->getAllocatedType(), castedVar), index);
         }
-    } else if (indexValue->getType() == llvmCompiler->internalStructs["array"]) {
+    }
+
+    if (indexValue->getType() == llvmCompiler->internalStructs["array"]) {
         var = ((ArrayVariable *)var)->items;
-        return getArrayIndex(lookupArrayItemType(var), builder->CreateExtractValue(indexValue, 0), index);
+        return getArrayIndex(lookupArrayItemType(var), indexValue, index);
 
     } else if (indexValue->getType() == llvmCompiler->internalStructs["map"]) {
         return indexMap(indexValue, index, var);
@@ -595,8 +622,10 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
 llvm::Value *loadIndex(IndexExpr *indexExpr, Variable *&var) {
     llvm::Value *idxPtr = getPointerToArrayIndex(indexExpr, var);
     if (var->type == MAP_VAR) {
-        return idxPtr;
+        llvm::Type *type = getTypeFromVariable(indexExpr->evaluatesTo);
+        return builder->CreateLoad(type, idxPtr);
     }
+
     llvm::Type *arrayItemType = lookupArrayItemType(var);
 
     if (var->type == ARRAY_VAR) {
@@ -634,6 +663,10 @@ static llvm::Type *getTypeFromNestedIndexExpr(Expr *expr) {
 static void assignToIndexExpr(AssignStmt *assignStmt) {
     IndexExpr *indexExpr = (IndexExpr *)assignStmt->variable;
     Variable *var = new Variable();
+    // Check whether it's a map
+    // Check whether key exists,
+    //    If it does then just replace at the index
+    //    If it doesn't, append both keys and values array
     builder->CreateStore(compileExpression(assignStmt->value), getPointerToArrayIndex(indexExpr, var));
 }
 
@@ -788,7 +821,7 @@ llvm::Value *compileExpression(Expr *expr) {
         return compileLiteral((LiteralExpr *)expr);
     }
     case DOT_EXPR: {
-        // ToDo clean llvmCompiler mess up
+        // ToDo clean this mess up
         DotExpr *dotExpr = (DotExpr *)expr;
         llvm::Value *value = lookupStruct(dotExpr);
         if (LLVMStruct *strukt = llvmCompiler->structs[value->getType()->getStructName().str()]) {
@@ -797,9 +830,6 @@ llvm::Value *compileExpression(Expr *expr) {
                     return builder->CreateExtractValue(value, i);
                 }
             }
-            printf("unknown struct field '%s' for '%s'\n", dotExpr->field.c_str(),
-                   value->getType()->getStructName().str().c_str());
-            exit(1);
         }
         errorAt(dotExpr->line, "Can't do property lookup on non struct\n");
     }
