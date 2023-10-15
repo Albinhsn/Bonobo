@@ -1250,13 +1250,18 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
     }
     case MAP_EXPR: {
         MapExpr *mapExpr = (MapExpr *)expr;
-
-        Variable *keyVar = nullptr;
+        mapExpr->evaluatesTo = mapExpr->mapVar;
+        MapVariable *mapVar = (MapVariable *)mapExpr->mapVar;
         for (auto &item : mapExpr->keys) {
             fixExprEvaluatesToExpr(item);
-            if (keyVar == nullptr) {
-                keyVar = item->evaluatesTo;
-            } else if (keyVar->type != item->evaluatesTo->type) {
+            if (mapVar->keys->type != item->evaluatesTo->type) {
+                errorAt("Mismatch in key for map expression", mapExpr->line);
+            }
+        }
+        for (auto &item : mapExpr->values) {
+            fixExprEvaluatesToExpr(item);
+            if (mapVar->values->type != item->evaluatesTo->type) {
+                errorAt("Mismatch in key for map expression", mapExpr->line);
             }
         }
         break;
