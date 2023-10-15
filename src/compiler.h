@@ -2,6 +2,7 @@
 #define cpplox_compiler_h
 
 #include "expr.h"
+#include "map"
 #include "scanner.h"
 #include "stmt.h"
 
@@ -14,7 +15,7 @@ typedef struct Parser {
 typedef struct Compiler {
     Compiler *enclosing;
     std::vector<Stmt *> statements;
-    std::vector<Variable *> variables;
+    std::map<std::string, Variable *> variables;
 } Compiler;
 
 Compiler *compile(std::string source);

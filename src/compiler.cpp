@@ -21,9 +21,9 @@ static void initCompiler() {
     arrVar->type = ARRAY_VAR;
 
     compiler->variables = {
-        new FuncVariable("len", intVar),
-        new FuncVariable("keys", arrVar),
-        new FuncVariable("values", arrVar),
+        {"len", new FuncVariable("len", intVar)},
+        {"keys", new FuncVariable("keys", arrVar)},
+        {"values", new FuncVariable("values", arrVar)},
     };
 }
 
@@ -894,7 +894,6 @@ static Stmt *varDeclaration() {
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
 
-    compiler->variables.push_back(varStmt->var);
     return (Stmt *)varStmt;
 }
 static Stmt *variableStatement(std::string ident) {
@@ -1271,7 +1270,8 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
         for (auto &arg : callExpr->arguments) {
             fixExprEvaluatesToExpr(arg);
         }
-        for (auto &var : compiler->variables) {
+        if (compiler->variables.count(callExpr->callee)) {
+            Variable *var = compiler->variables[callExpr->callee];
             switch (var->type) {
             case STRUCT_VAR: {
                 StructVariable *structVar = (StructVariable *)var;
@@ -1327,11 +1327,9 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
     }
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
-        for (auto &var : compiler->variables) {
-            if (var->name == varExpr->name) {
-                varExpr->evaluatesTo = var;
-                return;
-            }
+        if (compiler->variables.count(varExpr->name)) {
+            varExpr->evaluatesTo = compiler->variables[varExpr->name];
+            return;
         }
         errorAt(("Unable to find variable " + varExpr->name).c_str(), varExpr->line);
         break;
@@ -1365,7 +1363,7 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)stmt;
         fixExprEvaluatesToExpr(varStmt->initializer);
-        compiler->variables.push_back(varStmt->var);
+        compiler->variables[varStmt->var->name] = varStmt->var;
         break;
     }
     case WHILE_STMT: {
@@ -1378,12 +1376,12 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case FOR_STMT: {
         ForStmt *forStmt = (ForStmt *)stmt;
+        fixExprEvaluatesToStmt(forStmt->initializer);
         fixExprEvaluatesToExpr(forStmt->condition);
+        fixExprEvaluatesToStmt(forStmt->increment);
         for (auto &bodyStmt : forStmt->body) {
             fixExprEvaluatesToStmt(bodyStmt);
         }
-        fixExprEvaluatesToStmt(forStmt->initializer);
-        fixExprEvaluatesToStmt(forStmt->increment);
         break;
     }
     case IF_STMT: {
@@ -1399,16 +1397,16 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)stmt;
-        compiler->variables.push_back(new FuncVariable(funcStmt->name, funcStmt->returnType));
+        compiler->variables[funcStmt->name] = new FuncVariable(funcStmt->name, funcStmt->returnType);
         // ToDo Please change this xD
         for (auto &param : funcStmt->params) {
-            compiler->variables.push_back(param);
+            compiler->variables[param->name] = param;
         }
         for (auto &bodyStmt : funcStmt->body) {
             fixExprEvaluatesToStmt(bodyStmt);
         }
         for (auto &param : funcStmt->params) {
-            compiler->variables.pop_back();
+            compiler->variables.erase(param->name);
         }
         break;
     }
@@ -1417,7 +1415,7 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)stmt;
-        compiler->variables.push_back(new StructVariable("", structStmt->name, structStmt->fields));
+        compiler->variables[structStmt->name] = new StructVariable("", structStmt->name, structStmt->fields);
         break;
     }
     }

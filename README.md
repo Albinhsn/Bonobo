@@ -4,19 +4,15 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-* snd pass map?
+* Fix recursive copying of arrays
+    * for failed test
 
 * Figure out if variables in compiler done properly 
+    * just "do it" like you are in llvmCompiler
+    * Typecheck internalfuncs params?
+        * is this done in snd pass?
+    * is params even checked for normal func calls?
 
-* Typecheck internalfuncs params?
-    * is this done in snd pass?
-
-* Fix recursive copying of arrays
-    * wait why?
-        * The flakey test obv
-
-
-* Clear distinction between library and internal funcs
 
 * append
     * is just a realloc and then add an item to the end?
@@ -36,6 +32,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
     * fix array stuff
         * should be easy to either check or do the thing you need to do with structure
             * i.e. check which one, get pointer to this etc
+    * Clear distinction between library and internal funcs
 
 * GC
     * Second pass to figure out when to GC?
