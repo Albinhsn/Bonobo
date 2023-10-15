@@ -66,6 +66,17 @@ static bool checkVariableValueMatch(Variable *var, llvm::Value *&value) {
     return false;
 }
 
+static Variable *findVariableByName(std::string name) {
+    for (int i = llvmCompiler->variables.size() - 1; i >= 0; i--) {
+        std::map<std::string, Variable *> scope = llvmCompiler->variables[i];
+        if (scope.count(name)) {
+            return scope[name];
+        }
+    }
+    errorAt(0, "Unable to find variable?\n");
+    exit(1);
+}
+
 static llvm::Type *getTypeFromVariable(Variable *itemType) {
     if (itemType != nullptr) {
         switch (itemType->type) {
@@ -102,7 +113,7 @@ static llvm::Type *getTypeFromVariable(Variable *itemType) {
     return nullptr;
 }
 
-void initCompiler(std::map<std::string, Variable *> variables) {
+void initCompiler(std::vector<std::map<std::string, Variable *>> variables) {
     llvmCompiler = new LLVMCompiler;
     llvmCompiler->variables = variables;
     llvmCompiler->ctx = new llvm::LLVMContext();
@@ -559,12 +570,12 @@ static llvm::Value *getIndexValue(IndexExpr *indexExpr, Variable *&var) {
         return loadIndex((IndexExpr *)indexExpr->variable, var);
     } else if (varType == VAR_EXPR) {
         VarExpr *varExpr = (VarExpr *)indexExpr->variable;
-        var = llvmCompiler->variables[varExpr->name];
+        var = findVariableByName(varExpr->name);
         return compileExpression(varExpr);
     } else if (varType == CALL_EXPR) {
         CallExpr *callExpr = (CallExpr *)indexExpr->variable;
 
-        FuncVariable *funcVar = (FuncVariable *)llvmCompiler->variables[callExpr->callee];
+        FuncVariable *funcVar = (FuncVariable *)findVariableByName(callExpr->callee);
         var = funcVar->returnType;
         return compileExpression(callExpr);
     }
@@ -578,7 +589,7 @@ static llvm::Value *getPointerToArrayIndex(IndexExpr *indexExpr, Variable *&var)
     llvm::Value *index = compileExpression(indexExpr->index);
 
     if (llvm::AllocaInst *castedVar = llvm::dyn_cast<llvm::AllocaInst>(indexValue)) {
-        var = llvmCompiler->variables[castedVar->getName().str()];
+        var = findVariableByName(castedVar->getName().str());
         if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["map"]) {
             indexValue = builder->CreateLoad(llvmCompiler->internalStructs["map"], castedVar);
         } else if (castedVar->getAllocatedType() == llvmCompiler->internalStructs["array"]) {
@@ -629,7 +640,7 @@ llvm::Value *loadIndex(IndexExpr *indexExpr, Variable *&var) {
 static llvm::Type *getTypeFromNestedIndexExpr(Expr *expr) {
     if (expr->type == VAR_EXPR) {
         VarExpr *varExpr = (VarExpr *)expr;
-        ArrayVariable *var = (ArrayVariable *)llvmCompiler->variables[varExpr->name];
+        ArrayVariable *var = (ArrayVariable *)findVariableByName(varExpr->name);
         while (true) {
             ArrayVariable *items = (ArrayVariable *)var->items;
             if (items->items->type != ARRAY_VAR) {
@@ -660,21 +671,18 @@ static void assignToVarExpr(AssignStmt *assignStmt) {
     if (evalType == ARRAY_VAR || evalType == STR_VAR) {
         llvm::AllocaInst *allocVar = llvm::dyn_cast<llvm::AllocaInst>(variable);
         llvm::Value *loadedValue = builder->CreateLoad(llvmCompiler->internalStructs["array"], value);
-        Variable *var = llvmCompiler->variables[varExpr->name];
+        Variable *var = findVariableByName(varExpr->name);
         copyArray(allocVar, loadedValue, var);
         return;
     }
 
     builder->CreateStore(value, variable);
-
-    // Check type is correct?
 }
 
 static llvm::Value *lookupStruct(DotExpr *dotExpr) {
     llvm::Value *value = compileExpression(dotExpr->name);
 
     if (llvm::AllocaInst *allocaInst = llvm::dyn_cast<llvm::AllocaInst>(value)) {
-        // ToDo check that this isn't array or map
         return builder->CreateLoad(allocaInst->getAllocatedType(), allocaInst);
     }
 
@@ -718,7 +726,7 @@ static std::string findStructName(Expr *expr) {
     }
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
-        Variable *var = llvmCompiler->variables[varExpr->name];
+        Variable *var = findVariableByName(varExpr->name);
         while (var->type == ARRAY_VAR) {
             ArrayVariable *arrayVar = (ArrayVariable *)var;
             var = arrayVar->items;
@@ -746,7 +754,7 @@ static void assignToDotExpr(AssignStmt *assignStmt) {
     llvm::Value *structPtr = nullptr;
 
     if (dotExpr->name->type == INDEX_EXPR) {
-        Variable *var = llvmCompiler->variables[structName];
+        Variable *var = findVariableByName(structName);
         structPtr = builder->CreateLoad(builder->getPtrTy(), getPointerToArrayIndex((IndexExpr *)dotExpr->name, var));
     } else {
         structPtr = compileExpression(dotExpr->name);
@@ -803,7 +811,6 @@ llvm::Value *compileExpression(Expr *expr) {
         return compileLiteral((LiteralExpr *)expr);
     }
     case DOT_EXPR: {
-        // ToDo clean this mess up
         DotExpr *dotExpr = (DotExpr *)expr;
         llvm::Value *value = lookupStruct(dotExpr);
         if (LLVMStruct *strukt = llvmCompiler->structs[value->getType()->getStructName().str()]) {
@@ -813,6 +820,7 @@ llvm::Value *compileExpression(Expr *expr) {
                 }
             }
         }
+        errorAt(0, "Unable to lookup struct for dotExpr?");
     }
     case COMPARISON_EXPR: {
         ComparisonExpr *comparisonExpr = (ComparisonExpr *)expr;

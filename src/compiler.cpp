@@ -17,14 +17,15 @@ static void initCompiler() {
     Variable *intVar = new Variable();
     intVar->type = INT_VAR;
 
-    Variable *arrVar = new Variable();
-    arrVar->type = ARRAY_VAR;
+    Variable *nilVar = new Variable();
+    nilVar->type = NIL_VAR;
 
-    compiler->variables = {
-        {"len", new FuncVariable("len", intVar)},
-        {"keys", new FuncVariable("keys", arrVar)},
-        {"values", new FuncVariable("values", arrVar)},
-    };
+    compiler->variables = {{
+        {"len", new FuncVariable("len", intVar, {new ArrayVariable("")})},
+        {"printf", new FuncVariable("len", nilVar, {})},
+        {"keys", new FuncVariable("keys", new ArrayVariable(""), {new MapVariable("")})},
+        {"values", new FuncVariable("values", new ArrayVariable(""), {new MapVariable("")})},
+    }};
 }
 
 static void endCompiler(Compiler *current) {
@@ -951,6 +952,7 @@ static Stmt *expressionStatement() {
 static Stmt *forStatement() {
     ForStmt *forStmt = new ForStmt(parser->previous->line);
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+
     if (match(TOKEN_SEMICOLON)) {
     } else if (match(TOKEN_VAR)) {
         forStmt->initializer = varDeclaration();
@@ -963,6 +965,7 @@ static Stmt *forStatement() {
         forStmt->condition = expression(nullptr);
         consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
     }
+
     if (!match(TOKEN_RIGHT_PAREN)) {
         forStmt->increment = expressionStatement();
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
@@ -1030,6 +1033,9 @@ static Stmt *structDeclaration() {
 
 static Stmt *funDeclaration() {
     int line = parser->previous->line;
+    if (compiler->variables.size() != 1) {
+        errorAt("Can only declare functions in outer scope", line);
+    }
     consume(TOKEN_IDENTIFIER, "Need function name in func declaration");
     FuncStmt *funcStmt = new FuncStmt(parser->previous->lexeme, line);
 
@@ -1093,6 +1099,17 @@ static void initParser() {
     parser = (Parser *)malloc(sizeof(Parser));
     parser->current = nullptr;
     parser->previous = nullptr;
+}
+
+static void checkParamMatch(std::vector<Variable *> vars, std::vector<Expr *> exprs, int line) {
+    if (vars.size() != exprs.size()) {
+        errorAt("Number of params doesn't match", line);
+    }
+    for (int i = 0; i < vars.size(); i++) {
+        if (vars[i]->type != exprs[i]->evaluatesTo->type && vars[i]->type != ARRAY_VAR && exprs[i]->evaluatesTo->type != STR_VAR) {
+            errorAt("Mismatch in call params types", line);
+        }
+    }
 }
 
 static void fixExprEvaluatesToExpr(Expr *expr) {
@@ -1233,18 +1250,19 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
     }
     case ARRAY_EXPR: {
         ArrayExpr *arrayExpr = (ArrayExpr *)expr;
-        ArrayVariable *evaluatesTo = new ArrayVariable("");
-        if (arrayExpr->items.size()) {
-            fixExprEvaluatesToExpr(arrayExpr->items[0]);
-            evaluatesTo->items = arrayExpr->items[0]->evaluatesTo;
-        }
-        for (int i = 1; i < arrayExpr->items.size(); ++i) {
+        for (int i = 0; i < arrayExpr->items.size(); ++i) {
             fixExprEvaluatesToExpr(arrayExpr->items[i]);
-            if (arrayExpr->items[i]->evaluatesTo->type != evaluatesTo->items->type) {
+            if (arrayExpr->itemType == nullptr) {
+                arrayExpr->itemType = arrayExpr->items[i]->evaluatesTo;
+            }
+
+            if (arrayExpr->items[i]->evaluatesTo->type != arrayExpr->itemType->type) {
                 errorAt("Mismatch in array item type", arrayExpr->line);
             }
         }
-        arrayExpr->evaluatesTo = evaluatesTo;
+        ArrayVariable *arrayVar = new ArrayVariable("");
+        arrayVar->items = arrayExpr->itemType;
+        arrayExpr->evaluatesTo = arrayVar;
         break;
     }
     case MAP_EXPR: {
@@ -1270,31 +1288,39 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
         for (auto &arg : callExpr->arguments) {
             fixExprEvaluatesToExpr(arg);
         }
-        if (compiler->variables.count(callExpr->callee)) {
-            Variable *var = compiler->variables[callExpr->callee];
-            switch (var->type) {
-            case STRUCT_VAR: {
-                StructVariable *structVar = (StructVariable *)var;
-                if (structVar->structName == callExpr->callee) {
-                    callExpr->evaluatesTo = var;
-                    return;
+        // check whether params match
+        // figureut return type aka evaluatesto
+        for (auto &scope : compiler->variables) {
+            if (scope.count(callExpr->callee)) {
+                Variable *var = scope[callExpr->callee];
+                switch (var->type) {
+                case STRUCT_VAR: {
+                    StructVariable *structVar = (StructVariable *)var;
+                    if (structVar->structName == callExpr->callee) {
+                        checkParamMatch(structVar->fields, callExpr->arguments, callExpr->line);
+                        callExpr->evaluatesTo = var;
+                        return;
+                    }
+                    break;
                 }
-                break;
-            }
-            case FUNC_VAR: {
-                FuncVariable *funcVar = (FuncVariable *)var;
-                if (funcVar->name == callExpr->callee) {
-                    callExpr->evaluatesTo = funcVar->returnType;
-                    return;
+                case FUNC_VAR: {
+                    FuncVariable *funcVar = (FuncVariable *)var;
+                    if (funcVar->name == callExpr->callee) {
+                        if (funcVar->name != "printf") {
+                            checkParamMatch(funcVar->params, callExpr->arguments, callExpr->line);
+                        }
+                        callExpr->evaluatesTo = funcVar->returnType;
+                        return;
+                    }
+                    break;
                 }
-                break;
-            }
-            default: {
-                if (var->name == callExpr->callee) {
-                    printf("\n%d\n", var->type);
-                    errorAt(("Can't call this variable - " + var->name).c_str(), callExpr->line);
+                default: {
+                    if (var->name == callExpr->callee) {
+                        printf("\n%d\n", var->type);
+                        errorAt(("Can't call this variable - " + var->name).c_str(), callExpr->line);
+                    }
                 }
-            }
+                }
             }
         }
         break;
@@ -1327,12 +1353,15 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
     }
     case VAR_EXPR: {
         VarExpr *varExpr = (VarExpr *)expr;
-        if (compiler->variables.count(varExpr->name)) {
-            varExpr->evaluatesTo = compiler->variables[varExpr->name];
-            return;
+        for (int i = compiler->variables.size() - 1; i >= 0; i--) {
+            std::map<std::string, Variable *> scope = compiler->variables.back();
+            if (scope.count(varExpr->name)) {
+                varExpr->evaluatesTo = scope[varExpr->name];
+                return;
+            }
+            errorAt(("Unable to find variable " + varExpr->name).c_str(), varExpr->line);
+            break;
         }
-        errorAt(("Unable to find variable " + varExpr->name).c_str(), varExpr->line);
-        break;
     }
     }
 }
@@ -1362,8 +1391,11 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case VAR_STMT: {
         VarStmt *varStmt = (VarStmt *)stmt;
+        if (compiler->variables.back().count(varStmt->var->name)) {
+            errorAt(("Can't redeclare a variable in the same scope - " + varStmt->var->name).c_str(), varStmt->line);
+        }
         fixExprEvaluatesToExpr(varStmt->initializer);
-        compiler->variables[varStmt->var->name] = varStmt->var;
+        compiler->variables.back()[varStmt->var->name] = varStmt->var;
         break;
     }
     case WHILE_STMT: {
@@ -1397,17 +1429,18 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)stmt;
-        compiler->variables[funcStmt->name] = new FuncVariable(funcStmt->name, funcStmt->returnType);
+        compiler->variables.back()[funcStmt->name] =
+            new FuncVariable(funcStmt->name, funcStmt->returnType, funcStmt->params);
         // ToDo Please change this xD
+        std::map<std::string, Variable *> prevVariables = compiler->variables.back();
+        compiler->variables.push_back({});
         for (auto &param : funcStmt->params) {
-            compiler->variables[param->name] = param;
+            compiler->variables.back()[param->name] = param;
         }
         for (auto &bodyStmt : funcStmt->body) {
             fixExprEvaluatesToStmt(bodyStmt);
         }
-        for (auto &param : funcStmt->params) {
-            compiler->variables.erase(param->name);
-        }
+        compiler->variables.pop_back();
         break;
     }
     case BREAK_STMT: {
@@ -1415,7 +1448,7 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)stmt;
-        compiler->variables[structStmt->name] = new StructVariable("", structStmt->name, structStmt->fields);
+        compiler->variables.back()[structStmt->name] = new StructVariable("", structStmt->name, structStmt->fields);
         break;
     }
     }
@@ -1434,6 +1467,7 @@ Compiler *compile(std::string source) {
         fixExprEvaluatesToStmt(stmt);
         compiler->statements.push_back(stmt);
     }
+    // debugStatements(compiler->statements);
 
     delete (scanner);
     free(parser);

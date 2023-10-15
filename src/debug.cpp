@@ -181,8 +181,11 @@ void debugExpression(Expr *expr) {
         printf("}");
         break;
     }
-    default: {
-        printf("unknown expr");
+    case DOT_EXPR: {
+        DotExpr *dotExpr = (DotExpr *)expr;
+        debugExpression(dotExpr->name);
+        printf(".%s", dotExpr->field.c_str());
+        break;
     }
     }
 }

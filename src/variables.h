@@ -4,17 +4,7 @@
 #include <string>
 #include <vector>
 
-enum VarType { 
-  FUNC_VAR,
-  STR_VAR,
-  INT_VAR,
-  DOUBLE_VAR,
-  BOOL_VAR,
-  MAP_VAR,
-  ARRAY_VAR,
-  STRUCT_VAR,
-  NIL_VAR 
-};
+enum VarType { FUNC_VAR, STR_VAR, INT_VAR, DOUBLE_VAR, BOOL_VAR, MAP_VAR, ARRAY_VAR, STRUCT_VAR, NIL_VAR };
 
 class Variable {
   private:
@@ -28,10 +18,12 @@ class FuncVariable : public Variable {
   private:
   public:
     Variable *returnType;
-    FuncVariable(std::string name, Variable *returnType) {
+    std::vector<Variable *> params;
+    FuncVariable(std::string name, Variable *returnType, std::vector<Variable *> params) {
         this->name = name;
         this->type = FUNC_VAR;
         this->returnType = returnType;
+        this->params = params;
     }
 };
 
@@ -51,10 +43,10 @@ class StructVariable : public Variable {
   public:
     std::string structName;
     std::vector<Variable *> fields;
-    StructVariable(std::string name, std::string structName, std::vector<Variable*> fields) {
+    StructVariable(std::string name, std::string structName, std::vector<Variable *> fields) {
         this->name = name;
         this->structName = structName;
-    this->fields = fields;
+        this->fields = fields;
         this->type = STRUCT_VAR;
     }
 };

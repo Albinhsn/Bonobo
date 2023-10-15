@@ -56,7 +56,7 @@ int main() {
 
     std::string arr7 = "var a: arr[int] = [1,2]; a = [2]; printf(\"%d\", a[0]);";
     nmbr_of_tests++;
-    runTest("Array - 3D int array", arr7, "2", failed);
+    runTest("Array - Assign array", arr7, "2", failed);
 
     // Index test
     std::string index =
@@ -256,11 +256,10 @@ int main() {
     std::string fun10 = "var m: map[int, int] = {1:1, 2:2, 3:5}; var a: arr[int] = values(m); printf(\"%d\", a[2]);";
     nmbr_of_tests++;
     runTest("Func - values func ", fun10, "5", failed);
-
+    printf("\nRan %d tests\n", nmbr_of_tests);
     if (failed.size() == 0) {
-        printf("\nAll test passed\n");
+        printf("All test passed\n");
     } else {
-        printf("----------\n");
         for (int i = 0; i < failed.size(); ++i) {
             printf("%s\n", failed[i].c_str());
         }

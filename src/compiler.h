@@ -15,7 +15,7 @@ typedef struct Parser {
 typedef struct Compiler {
     Compiler *enclosing;
     std::vector<Stmt *> statements;
-    std::map<std::string, Variable *> variables;
+    std::vector<std::map<std::string, Variable *>> variables;
 } Compiler;
 
 Compiler *compile(std::string source);

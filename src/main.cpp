@@ -23,8 +23,6 @@ int main(int argc, const char *argv[]) {
     std::string source = readFile(argv[1]);
     Compiler *compiler = compile(source);
 
-    std::vector<Variable *> variables = compiler->variables;
-    std::vector<Stmt *> stmts = compiler->statements;
     initCompiler(compiler->variables);
     compile(compiler->statements);
     system("lli out.ll");

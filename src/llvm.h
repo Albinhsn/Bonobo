@@ -66,11 +66,11 @@ class LLVMCompiler {
     std::map<std::string, llvm::FunctionCallee> libraryFuncs;
     std::map<std::string, llvm::Function *> internalFuncs;
     llvm::Module *module;
-    std::map<std::string, Variable *> variables;
+    std::vector<std::map<std::string, Variable *>> variables;
     std::vector<llvm::AllocaInst *> strings;
     std::map<std::string, LLVMStruct *> structs;
 };
-void initCompiler(std::map<std::string, Variable *> variables);
+void initCompiler(std::vector<std::map<std::string, Variable *>> variables);
 void compile(std::vector<Stmt *> stmts);
 llvm::Value *compileExpression(Expr *expr);
 void compileStatement(Stmt *stmt);
