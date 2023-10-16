@@ -132,6 +132,13 @@ static void endCompiler() {
     std::error_code errorCode;
     llvm::raw_fd_ostream outLL("./out.ll", errorCode);
     llvmCompiler->module->print(outLL, nullptr);
+    delete (builder);
+    delete (llvmFunction);
+    delete (llvmCompiler->module);
+    delete (llvmCompiler->ctx);
+    for (auto &[key, value] : llvmCompiler->variables[0]) {
+        delete (value);
+    }
 }
 
 llvm::Value *callMalloc(llvm::Value *size) { return builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {size}); }
@@ -382,9 +389,9 @@ static void copyArray(llvm::AllocaInst *allocaVar, llvm::Value *value, Variable 
     llvm::Value *sourceArrayPtr = builder->CreateExtractValue(value, 0);
 
     llvm::Type *itemType = lookupArrayItemType(var);
-    llvm::Value *arraySize = getArraySizeInBytes(itemType, sourceArraySize);
-
-    builder->CreateMul(sourceArraySize, builder->getInt32(itemType->getPrimitiveSizeInBits() / 8));
+    // if the itemType is int8Ty, then no need to get it, it's just sourceArraySize
+    llvm::Value *arraySize =
+        itemType == builder->getInt8Ty() ? sourceArraySize : getArraySizeInBytes(itemType, sourceArraySize);
 
     llvm::Value *arrayAllocation = callMalloc(arraySize);
     builder->CreateMemCpy(arrayAllocation, llvm::MaybeAlign(4), sourceArrayPtr, llvm::MaybeAlign(4), arraySize);
@@ -1232,6 +1239,7 @@ void compileStatement(Stmt *stmt) {
 
         llvmCompiler->callableFunctions.push_back(llvmFunction->function);
         llvmFunction = llvmFunction->enclosing;
+        delete (builder);
         builder = prevBuilder;
         break;
     }
@@ -1241,6 +1249,7 @@ void compileStatement(Stmt *stmt) {
 void compile(std::vector<Stmt *> stmts) {
     for (auto &stmt : stmts) {
         compileStatement(stmt);
+        freeStmt(stmt);
     }
     endCompiler();
 }

@@ -4,21 +4,25 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
+* Im freeee
+
 * Create a stl
     * Split
         * split(str, str)
             * splitC(ptr, len, ptr len)
                 * -> (ptr, len), malloced array of ptrs to new memcpyd strings
-    * read file
-        * just read entire file :)
-    * key in / find 
-        * iterate over keys and see if you find it xD
+
+* check redeclaration of func, struct or var?
+
+* Fix test for readfile
 
 * GC
     * Second pass to figure out when to GC?
+        * you can figure this out when you fix evaluations
         * This is only malloced arrays
 
 * ToDo refactor
+    * Just send around item not allocation to it
     * fix array stuff
         * fix index stuff now?
         * should be easy to either check or do the thing you need to do with structure

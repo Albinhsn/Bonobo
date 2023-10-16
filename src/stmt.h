@@ -75,9 +75,7 @@ class VarStmt : public Stmt {
   public:
     Variable *var;
     Expr *initializer;
-  VarStmt(int line){
-        this->line = line;
-  }
+    VarStmt(int line) { this->line = line; }
 };
 
 class AssignStmt : public Stmt {
@@ -166,5 +164,7 @@ class FuncStmt : public Stmt {
         this->line = line;
     }
 };
+
+void freeStmt(Stmt * stmt);
 
 #endif

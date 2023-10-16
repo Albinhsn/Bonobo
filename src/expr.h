@@ -224,4 +224,6 @@ class IndexExpr : public Expr {
     }
 };
 
+void freeExpr(Expr *expr);
+
 #endif

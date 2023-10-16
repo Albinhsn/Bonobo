@@ -37,7 +37,59 @@ static llvm::Function *createIndexStrMap(LLVMCompiler *llvmCompiler, llvm::IRBui
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
     builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
     builder->CreateCall(llvmCompiler->libraryFuncs["exit"], {builder->getInt32(1)});
-    builder->CreateRet(keyPtr);
+    builder->CreateUnreachable();
+
+    return function;
+}
+
+static llvm::Function *createReadFile(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    // allocate "r" string
+
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvmCompiler->internalStructs["array"], {llvmBuilder->getPtrTy()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "readFile", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Value *arg = function->arg_begin();
+    llvm::Value *loadedArg = builder->CreateLoad(llvmCompiler->internalStructs["array"], arg);
+    llvm::Value *strPtr = builder->CreateExtractValue(loadedArg, 0);
+
+    llvm::Value *openedFilePtr =
+        builder->CreateCall(llvmCompiler->libraryFuncs["fopen"], {strPtr, builder->CreateGlobalStringPtr("r")});
+
+    llvm::Value *filePtrCmp = builder->CreateICmpEQ(openedFilePtr, llvm::Constant::getNullValue(builder->getPtrTy()));
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", function);
+    builder->CreateCondBr(filePtrCmp, thenBlock, mergeBlock);
+
+    builder->SetInsertPoint(thenBlock);
+    builder->CreateCall(llvmCompiler->libraryFuncs["printf"],
+                        {builder->CreateGlobalStringPtr("Couldn't open the file\n")});
+    builder->CreateCall(llvmCompiler->libraryFuncs["exit"], {builder->getInt32(2)});
+    builder->CreateUnreachable();
+
+    builder->SetInsertPoint(mergeBlock);
+    builder->CreateCall(llvmCompiler->libraryFuncs["fseek"],
+                        {openedFilePtr, builder->getInt32(0), builder->getInt32(2)});
+    llvm::Value *fileSize = builder->CreateCall(llvmCompiler->libraryFuncs["ftell"], {openedFilePtr});
+    builder->CreateCall(llvmCompiler->libraryFuncs["fseek"],
+                        {openedFilePtr, builder->getInt32(0), builder->getInt32(0)});
+
+    llvm::Value *newStringPtr = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {fileSize});
+    builder->CreateCall(llvmCompiler->libraryFuncs["fread"],
+                        {newStringPtr, builder->getInt32(1), fileSize, openedFilePtr});
+    builder->CreateCall(llvmCompiler->libraryFuncs["fclose"], {openedFilePtr});
+
+    llvm::AllocaInst *newString = builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr);
+    llvm::Value *loadedAllocatedString = builder->CreateLoad(llvmCompiler->internalStructs["array"], newString);
+
+    llvm::Value *newStringAfterInsertedStringPtr = builder->CreateInsertValue(loadedAllocatedString, newStringPtr, 0);
+    llvm::Value *newStringAfterInsertedStringSize = builder->CreateInsertValue(newStringAfterInsertedStringPtr, fileSize, 1);
+
+    builder->CreateRet(newStringAfterInsertedStringSize);
 
     return function;
 }
@@ -126,7 +178,7 @@ static llvm::Function *createIndexIntMap(LLVMCompiler *llvmCompiler, llvm::IRBui
     llvm::Value *exitStr = builder->CreateGlobalString("Key didn't exist\n");
     builder->CreateCall(llvmCompiler->libraryFuncs["printf"], {exitStr});
     builder->CreateCall(llvmCompiler->libraryFuncs["exit"], {builder->getInt32(1)});
-    builder->CreateRet(keyPtr);
+    builder->CreateUnreachable();
 
     return function;
 }
@@ -290,9 +342,8 @@ static llvm::Function *createIntKeyExists(LLVMCompiler *llvmCompiler, llvm::IRBu
     return function;
 }
 static llvm::Function *createStrKeyExists(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
-    llvm::FunctionType *funcType =
-        llvm::FunctionType::get(llvm::Type::getInt1Ty(*llvmCompiler->ctx),
-                                {llvmBuilder->getPtrTy(), llvmBuilder->getPtrTy()}, false);
+    llvm::FunctionType *funcType = llvm::FunctionType::get(llvm::Type::getInt1Ty(*llvmCompiler->ctx),
+                                                           {llvmBuilder->getPtrTy(), llvmBuilder->getPtrTy()}, false);
     llvm::Function *function =
         llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "strKeyExists", *llvmCompiler->module);
     llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
@@ -335,6 +386,7 @@ void addInternalFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder
     llvmCompiler->internalFuncs["len"] = createLen(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["keys"] = createGetKeys(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["values"] = createGetValues(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["readfile"] = createReadFile(llvmCompiler, llvmBuilder);
 }
 
 void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {
@@ -369,6 +421,31 @@ void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {
     type = llvm::FunctionType::get(builder->getVoidTy(), args, true);
     func = llvmCompiler->module->getOrInsertFunction("exit", type);
     llvmCompiler->libraryFuncs["exit"] = func;
+
+    args = {builder->getPtrTy(), builder->getPtrTy()};
+    type = llvm::FunctionType::get(builder->getPtrTy(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("fopen", type);
+    llvmCompiler->libraryFuncs["fopen"] = func;
+
+    args = {builder->getPtrTy(), builder->getInt32Ty(), builder->getInt32Ty()};
+    type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("fseek", type);
+    llvmCompiler->libraryFuncs["fseek"] = func;
+
+    args = {builder->getPtrTy()};
+    type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("ftell", type);
+    llvmCompiler->libraryFuncs["ftell"] = func;
+
+    args = {builder->getPtrTy(), builder->getInt32Ty(), builder->getInt32Ty(), builder->getPtrTy()};
+    type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("fread", type);
+    llvmCompiler->libraryFuncs["fread"] = func;
+
+    args = {builder->getPtrTy()};
+    type = llvm::FunctionType::get(builder->getInt32Ty(), args, true);
+    func = llvmCompiler->module->getOrInsertFunction("fclose", type);
+    llvmCompiler->libraryFuncs["fclose"] = func;
 }
 
 void addInternalStructs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {

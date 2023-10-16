@@ -252,7 +252,7 @@ void debugVariable(Variable *var) {
     }
     case FUNC_VAR: {
         FuncVariable *funcVar = (FuncVariable *)var;
-        printf("fun '%s'", funcVar->name.c_str());
+        printf(" fun");
         break;
     }
     default: {

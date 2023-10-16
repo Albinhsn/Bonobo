@@ -30,6 +30,7 @@ static void initCompiler() {
         {"key_exists", new FuncVariable("key_exists", boolVar, {})},
         {"values", new FuncVariable("values", new ArrayVariable(""), {new MapVariable("")})},
         {"append", new FuncVariable("append", new ArrayVariable(""), {})},
+        {"readfile", new FuncVariable("readfile", new ArrayVariable(""), {})},
     }};
 }
 
@@ -1046,10 +1047,9 @@ static Stmt *funDeclaration() {
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after func name");
     if (!match(TOKEN_RIGHT_PAREN)) {
-        funcStmt->params.push_back(parseVariable());
-        while (match(TOKEN_COMMA)) {
+        do {
             funcStmt->params.push_back(parseVariable());
-        }
+        } while (match(TOKEN_COMMA));
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after func params");
     }
 
@@ -1113,6 +1113,10 @@ static void checkParamMatch(std::vector<Variable *> vars, std::vector<Expr *> ex
     for (int i = 0; i < vars.size(); i++) {
         if (vars[i]->type != exprs[i]->evaluatesTo->type && vars[i]->type != ARRAY_VAR &&
             exprs[i]->evaluatesTo->type != STR_VAR) {
+            debugVariable(vars[i]);
+            printf(" - ");
+            debugVariable(exprs[i]->evaluatesTo);
+            printf("\n");
             errorAt("Mismatch in call params types", line);
         }
     }
@@ -1324,6 +1328,14 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
                                 errorAt("Can't append item of different type", callExpr->line);
                             }
 
+                        } else if (funcName == "readfile") {
+                            if (callExpr->arguments.size() != 1) {
+                                errorAt("Number of params doesn't match, expected 1", callExpr->line);
+                            }
+                            if (callExpr->arguments[0]->evaluatesTo->type != STR_VAR) {
+                                errorAt("First arg must be file name (string)", callExpr->line);
+                            }
+
                         } else if (funcName == "key_exists") {
                             if (callExpr->arguments.size() != 2) {
                                 errorAt("Number of params doesn't match, expected 2", callExpr->line);
@@ -1463,7 +1475,6 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
         compiler->variables.back()[funcStmt->name] =
             new FuncVariable(funcStmt->name, funcStmt->returnType, funcStmt->params);
         // ToDo Please change this xD
-        std::map<std::string, Variable *> prevVariables = compiler->variables.back();
         compiler->variables.push_back({});
         for (auto &param : funcStmt->params) {
             compiler->variables.back()[param->name] = param;
