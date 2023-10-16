@@ -4,20 +4,21 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 ## TODO LLVM backend
 
-
-* Figure out if variables in compiler done properly 
-    * Typecheck internalfuncs params?
-        * is this done in snd pass?
-    * is params even checked for normal func calls?
-
-* Fix recursive copying of arrays
-    * for failed test
+* malloc every array :)
+    * create the global thing, malloc the size, then memcpy it
 
 * append
-    * is just a realloc and then add an item to the end?
+    * append literal
+
+* The road to generic is by creating the neccessary function during compilation in llvm
+    * also let's us add funcs whenever we need to not everything all the time
+        * also let's us call the functions the same?
+    * create a function like createOrCallX with the type
 
 * MapExpr
     * assign new key
+        * figure out if key exists
+            * otherwise append both keys and values
 
 * Create a stl
     * i.e. read import statements and import correct file

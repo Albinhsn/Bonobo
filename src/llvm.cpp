@@ -380,8 +380,7 @@ static llvm::Value *getArraySizeInBytes(llvm::Type *itemType, llvm::Value *array
 static void copyArray(llvm::AllocaInst *allocaVar, llvm::Value *value, Variable *var) {
     llvm::Value *sourceArraySize = builder->CreateExtractValue(value, 1);
     llvm::Value *sourceArrayPtr = builder->CreateExtractValue(value, 0);
-    //
-    // ToDo, if itemType is array, then recursively call this :)
+
     llvm::Type *itemType = lookupArrayItemType(var);
     llvm::Value *arraySize = getArraySizeInBytes(itemType, sourceArraySize);
 
@@ -403,19 +402,12 @@ static void copyAllocation(llvm::AllocaInst *destination, llvm::AllocaInst *sour
     }
 }
 
-static void storeArrayAtIndex(llvm::Value *value, llvm::Value *arrayPtr, int idx) {
-    llvm::Value *arrayInboundPtr = builder->CreateInBoundsGEP(builder->getPtrTy(), arrayPtr, builder->getInt32(idx));
-    builder->CreateStore(value, arrayInboundPtr);
-}
-
-static llvm::GlobalVariable *createGlobalArray(std::vector<llvm::Value *> arrayItems, llvm::ArrayType *arrayType) {
-    std::vector<llvm::Constant *> constArrayItems = std::vector<llvm::Constant *>(arrayItems.size());
-    for (uint64_t i = 0; i < arrayItems.size(); ++i) {
-        constArrayItems[i] = llvm::dyn_cast<llvm::Constant>(arrayItems[i]);
+static void storeArrayAtIndex(llvm::Type *elementType, llvm::Value *value, llvm::Value *arrayPtr, int idx) {
+    if (elementType->isStructTy()) {
+        elementType = builder->getPtrTy();
     }
-
-    return new llvm::GlobalVariable(*llvmCompiler->module, arrayType, false, llvm::GlobalValue::PrivateLinkage,
-                                    llvm::ConstantArray::get(arrayType, constArrayItems));
+    llvm::Value *arrayInboundPtr = builder->CreateInBoundsGEP(elementType, arrayPtr, builder->getInt32(idx));
+    builder->CreateStore(value, arrayInboundPtr);
 }
 
 static bool isStringTy(llvm::Value *value) {
@@ -691,19 +683,12 @@ static llvm::Value *lookupStruct(DotExpr *dotExpr) {
 
 static void storeArray(llvm::Type *elementType, llvm::AllocaInst *arrayInstance,
                        std::vector<llvm::Value *> arrayItems) {
-    if (elementType == llvmCompiler->internalStructs["array"] || elementType->isStructTy()) {
 
-        storeArrayInStruct(callMalloc(arrayItems.size() * 8), arrayInstance);
-        for (int i = 0; i < arrayItems.size(); ++i) {
-            storeArrayAtIndex(arrayItems[i], loadArrayFromArrayStruct(arrayInstance), i);
-        }
-
-    } else {
-        llvm::ArrayType *arrayType = llvm::ArrayType::get(elementType, arrayItems.size());
-        llvm::GlobalVariable *globalArray = createGlobalArray(arrayItems, arrayType);
-
-        storeArrayInStruct(builder->CreateInBoundsGEP(arrayType, globalArray, builder->getInt32(0)), arrayInstance);
+    storeArrayInStruct(callMalloc(arrayItems.size() * 8), arrayInstance);
+    for (int i = 0; i < arrayItems.size(); ++i) {
+        storeArrayAtIndex(elementType, arrayItems[i], loadArrayFromArrayStruct(arrayInstance), i);
     }
+
     storeArraySizeInStruct(builder->getInt32(arrayItems.size()), arrayInstance);
 }
 
@@ -976,6 +961,7 @@ llvm::Value *compileExpression(Expr *expr) {
         for (int i = 0; i < argSize; ++i) {
             params[i] = compileExpression(callExpr->arguments[i]);
         }
+
         if (llvmCompiler->internalFuncs.count(name)) {
             return builder->CreateCall(llvmCompiler->internalFuncs[name], params);
         }
