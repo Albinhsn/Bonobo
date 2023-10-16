@@ -20,11 +20,16 @@ static void initCompiler() {
     Variable *nilVar = new Variable();
     nilVar->type = NIL_VAR;
 
+    Variable *boolVar = new Variable();
+    boolVar->type = BOOL_VAR;
+
     compiler->variables = {{
         {"len", new FuncVariable("len", intVar, {new ArrayVariable("")})},
-        {"printf", new FuncVariable("len", nilVar, {})},
+        {"printf", new FuncVariable("printf", nilVar, {})},
         {"keys", new FuncVariable("keys", new ArrayVariable(""), {new MapVariable("")})},
+        {"key_exists", new FuncVariable("key_exists", boolVar, {})},
         {"values", new FuncVariable("values", new ArrayVariable(""), {new MapVariable("")})},
+        {"append", new FuncVariable("append", new ArrayVariable(""), {})},
     }};
 }
 
@@ -1106,7 +1111,8 @@ static void checkParamMatch(std::vector<Variable *> vars, std::vector<Expr *> ex
         errorAt("Number of params doesn't match", line);
     }
     for (int i = 0; i < vars.size(); i++) {
-        if (vars[i]->type != exprs[i]->evaluatesTo->type && vars[i]->type != ARRAY_VAR && exprs[i]->evaluatesTo->type != STR_VAR) {
+        if (vars[i]->type != exprs[i]->evaluatesTo->type && vars[i]->type != ARRAY_VAR &&
+            exprs[i]->evaluatesTo->type != STR_VAR) {
             errorAt("Mismatch in call params types", line);
         }
     }
@@ -1288,8 +1294,7 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
         for (auto &arg : callExpr->arguments) {
             fixExprEvaluatesToExpr(arg);
         }
-        // check whether params match
-        // figureut return type aka evaluatesto
+
         for (auto &scope : compiler->variables) {
             if (scope.count(callExpr->callee)) {
                 Variable *var = scope[callExpr->callee];
@@ -1305,8 +1310,33 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
                 }
                 case FUNC_VAR: {
                     FuncVariable *funcVar = (FuncVariable *)var;
-                    if (funcVar->name == callExpr->callee) {
-                        if (funcVar->name != "printf") {
+                    std::string funcName = funcVar->name;
+                    if (funcName == callExpr->callee) {
+                        if (funcName == "append") {
+                            if (callExpr->arguments.size() != 2) {
+                                errorAt("Number of params doesn't match, expected 2", callExpr->line);
+                            }
+                            if (callExpr->arguments[0]->evaluatesTo->type != ARRAY_VAR) {
+                                errorAt("First arg must be array", callExpr->line);
+                            }
+                            ArrayVariable *arrayVar = (ArrayVariable *)callExpr->arguments[0]->evaluatesTo;
+                            if (arrayVar->items->type != callExpr->arguments[1]->evaluatesTo->type) {
+                                errorAt("Can't append item of different type", callExpr->line);
+                            }
+
+                        } else if (funcName == "key_exists") {
+                            if (callExpr->arguments.size() != 2) {
+                                errorAt("Number of params doesn't match, expected 2", callExpr->line);
+                            }
+                            if (callExpr->arguments[0]->evaluatesTo->type != MAP_VAR) {
+                                errorAt("First arg must be map", callExpr->line);
+                            }
+                            MapVariable *mapVar = (MapVariable *)callExpr->arguments[0]->evaluatesTo;
+                            if (mapVar->keys->type != callExpr->arguments[1]->evaluatesTo->type) {
+                                errorAt("Can't lookup key of different type", callExpr->line);
+                            }
+
+                        } else if (funcName != "printf") {
                             checkParamMatch(funcVar->params, callExpr->arguments, callExpr->line);
                         }
                         callExpr->evaluatesTo = funcVar->returnType;
@@ -1323,6 +1353,7 @@ static void fixExprEvaluatesToExpr(Expr *expr) {
                 }
             }
         }
+        errorAt(("Trying to call unknown func " + callExpr->callee).c_str(), callExpr->line);
         break;
     }
     case DOT_EXPR: {

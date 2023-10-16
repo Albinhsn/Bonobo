@@ -58,39 +58,6 @@ static llvm::Function *createGetKeys(LLVMCompiler *llvmCompiler, llvm::IRBuilder
     return function;
 }
 
-static llvm::Function *createAppendArray(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
-    llvm::FunctionType *funcType =
-        llvm::FunctionType::get(llvmBuilder->getVoidTy(), {llvmBuilder->getPtrTy(), llvmBuilder->getPtrTy()}, false);
-    llvm::Function *function =
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "appendTo2DArray", *llvmCompiler->module);
-    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
-    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
-
-    llvm::Function::arg_iterator arg = function->arg_begin();
-    llvm::Value *arrayArgPtr = arg++;
-    llvm::Value *valueArg = arg;
-
-    llvm::Value *arrayArg = builder->CreateLoad(llvmCompiler->internalStructs["array"], arrayArgPtr);
-    llvm::Value *arrayPtr = builder->CreateExtractValue(arrayArg, 0);
-
-    llvm::Value *arraySize = builder->CreateExtractValue(arrayArg, 1);
-
-    llvm::Value *newSize = builder->CreateAdd(arraySize, builder->getInt32(1));
-
-    // Call realloc to increase the size of the ptr
-    llvm::Value *reallocatedPtr = builder->CreateCall(llvmCompiler->libraryFuncs["realloc"], {arrayPtr, newSize});
-
-    // Copy over the last item
-    llvm::Value *reallocatedArrayGEP = builder->CreateInBoundsGEP(builder->getPtrTy(), reallocatedPtr, newSize);
-    builder->CreateStore(valueArg, reallocatedArrayGEP);
-
-    builder->CreateInsertValue(arrayArg, reallocatedPtr, 0);
-    builder->CreateInsertValue(arrayArg, newSize, 1);
-    builder->CreateRetVoid();
-
-    return function;
-}
-
 static llvm::Function *createGetValues(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
     llvm::FunctionType *funcType =
         llvm::FunctionType::get(llvmCompiler->internalStructs["array"], {llvmBuilder->getPtrTy()}, false);
@@ -290,6 +257,71 @@ static llvm::Function *createFindIntKey(LLVMCompiler *llvmCompiler) {
 
     return function;
 }
+static llvm::Function *createIntKeyExists(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvm::Type::getInt1Ty(*llvmCompiler->ctx),
+                                {llvmBuilder->getPtrTy(), llvm::Type::getInt32Ty(*llvmCompiler->ctx)}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "intKeyExists", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *mapPtr = arg++;
+    llvm::Value *map = builder->CreateLoad(llvmCompiler->internalStructs["map"], mapPtr);
+    llvm::Value *key = arg;
+
+    llvm::Value *keysPtr = builder->CreateExtractValue(map, 0);
+    llvm::Value *keys = builder->CreateLoad(llvmCompiler->internalStructs["array"], keysPtr);
+
+    llvm::Value *keyExists = builder->CreateCall(llvmCompiler->internalFuncs["findIntKey"], {keys, key});
+
+    llvm::Value *cmp = builder->CreateICmpEQ(keyExists, builder->getInt32(-1));
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "else", function);
+
+    builder->CreateCondBr(cmp, thenBlock, elseBlock);
+    builder->SetInsertPoint(thenBlock);
+    builder->CreateRet(builder->getInt1(0));
+
+    builder->SetInsertPoint(elseBlock);
+    builder->CreateRet(builder->getInt1(1));
+
+    return function;
+}
+static llvm::Function *createStrKeyExists(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
+    llvm::FunctionType *funcType =
+        llvm::FunctionType::get(llvm::Type::getInt1Ty(*llvmCompiler->ctx),
+                                {llvmBuilder->getPtrTy(), llvmBuilder->getPtrTy()}, false);
+    llvm::Function *function =
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "strKeyExists", *llvmCompiler->module);
+    llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "entry", function);
+    llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+
+    llvm::Function::arg_iterator arg = function->arg_begin();
+    llvm::Value *mapPtr = arg++;
+    llvm::Value *map = builder->CreateLoad(llvmCompiler->internalStructs["map"], mapPtr);
+    llvm::Value *keyPtr = arg;
+    llvm::Value *key = builder->CreateLoad(llvmCompiler->internalStructs["array"], keyPtr);
+
+    llvm::Value *keysPtr = builder->CreateExtractValue(map, 0);
+    llvm::Value *keys = builder->CreateLoad(llvmCompiler->internalStructs["array"], keysPtr);
+
+    llvm::Value *keyExists = builder->CreateCall(llvmCompiler->internalFuncs["findStrKey"], {keys, key});
+
+    llvm::Value *cmp = builder->CreateICmpEQ(keyExists, builder->getInt32(-1));
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", function);
+    llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "else", function);
+
+    builder->CreateCondBr(cmp, thenBlock, elseBlock);
+    builder->SetInsertPoint(thenBlock);
+    builder->CreateRet(builder->getInt1(0));
+
+    builder->SetInsertPoint(elseBlock);
+    builder->CreateRet(builder->getInt1(1));
+
+    return function;
+}
 
 void addInternalFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder) {
 
@@ -298,10 +330,11 @@ void addInternalFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *llvmBuilder
     llvmCompiler->internalFuncs["indexStrMap"] = createIndexStrMap(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["findIntKey"] = createFindIntKey(llvmCompiler);
     llvmCompiler->internalFuncs["indexIntMap"] = createIndexIntMap(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["strKeyExists"] = createStrKeyExists(llvmCompiler, llvmBuilder);
+    llvmCompiler->internalFuncs["intKeyExists"] = createIntKeyExists(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["len"] = createLen(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["keys"] = createGetKeys(llvmCompiler, llvmBuilder);
     llvmCompiler->internalFuncs["values"] = createGetValues(llvmCompiler, llvmBuilder);
-    llvmCompiler->internalFuncs["appendArray"] = createAppendArray(llvmCompiler, llvmBuilder);
 }
 
 void addLibraryFuncs(LLVMCompiler *llvmCompiler, llvm::IRBuilder<> *builder) {

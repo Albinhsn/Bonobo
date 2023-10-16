@@ -97,11 +97,7 @@ static llvm::Type *getTypeFromVariable(Variable *itemType) {
         }
         case STRUCT_VAR: {
             StructVariable *structVar = (StructVariable *)itemType;
-            if (llvmCompiler->structs.count(structVar->structName)) {
-                return llvmCompiler->structs[structVar->structName]->structType;
-            }
-            printf("trying to lookup unknown struct '%s'\n", structVar->structName.c_str());
-            exit(1);
+            return llvmCompiler->structs[structVar->structName]->structType;
         }
         case MAP_VAR: {
             return llvmCompiler->internalStructs["map"];
@@ -228,6 +224,28 @@ static llvm::Function *lookupFunction(std::string name) {
     return llvmFunction->function->getName() == name ? llvmFunction->function : nullptr;
 }
 
+static void callAppend(llvm::Value *arrayArgPtr, llvm::Value *valueArg) {
+    llvm::Type *itemType = valueArg->getType();
+
+    llvm::Value *arrayArg = builder->CreateLoad(llvmCompiler->internalStructs["array"], arrayArgPtr);
+    llvm::Value *arrayPtr = builder->CreateExtractValue(arrayArg, 0);
+
+    llvm::Value *arraySize = builder->CreateExtractValue(arrayArg, 1);
+
+    llvm::Value *newSize = builder->CreateAdd(arraySize, builder->getInt32(1));
+
+    // Call realloc to increase the size of the ptr
+    llvm::Value *reallocatedPtr = builder->CreateCall(llvmCompiler->libraryFuncs["realloc"], {arrayPtr, newSize});
+
+    // Copy over the last item
+    llvm::Value *reallocatedArrayGEP = builder->CreateInBoundsGEP(itemType, reallocatedPtr, arraySize);
+    builder->CreateStore(valueArg, reallocatedArrayGEP);
+
+    llvm::Value *tmpArr1 = builder->CreateInsertValue(arrayArg, reallocatedPtr, 0);
+    llvm::Value *tmpArr2 = builder->CreateInsertValue(arrayArg, newSize, 1);
+    builder->CreateStore(tmpArr2, arrayArgPtr);
+}
+
 static llvm::Value *lookupValue(std::string name, int line) {
     if (llvmFunction->enclosing && llvmFunction->functionArguments.count(name)) {
         int i = 0;
@@ -284,24 +302,6 @@ static void compileLoopHeader(llvm::BasicBlock *headerBlock, llvm::BasicBlock *e
     llvmFunction->exitBlock = new ExitBlock(llvmFunction->exitBlock, exitBlock);
     builder->CreateCondBr(compileExpression(condition), bodyBlock, exitBlock);
     builder->SetInsertPoint(bodyBlock);
-}
-
-static void checkCallParamCorrectness(llvm::Function *func, std::vector<llvm::Value *> params, std::string funcName) {
-    if (func == nullptr) {
-        printf("calling unknown func '%s'\n", funcName.c_str());
-        exit(1);
-    }
-    if (((int)func->arg_size()) != params.size()) {
-        printf("Calling %s requires %d params but got %d\n", funcName.c_str(), (int)func->arg_size(),
-               (int)params.size());
-    }
-    int i = 0;
-    for (llvm::Argument &arg : func->args()) {
-        if (arg.getType() != params[i]->getType()) {
-            printf("Invalid arg type in function %s with arg %d\n", funcName.c_str(), i + 1);
-        }
-        ++i;
-    }
 }
 
 static void storeStructField(llvm::StructType *structType, llvm::Value *structInstance, llvm::Value *toStore,
@@ -645,14 +645,63 @@ static llvm::Type *getTypeFromNestedIndexExpr(Expr *expr) {
     return getTypeFromNestedIndexExpr(indexExpr->variable);
 }
 
+static void assignToMap(IndexExpr *indexVar, llvm::Value *value) {
+    MapVariable *mapVar = (MapVariable *)indexVar->variable->evaluatesTo;
+    llvm::Type *mapValueType = getTypeFromVariable(mapVar->values);
+    llvm::Value *mapPtr = compileExpression(indexVar->variable);
+    llvm::Value *map = builder->CreateLoad(llvmCompiler->internalStructs["map"], mapPtr);
+
+    llvm::Value *key = compileExpression(indexVar->index);
+
+    llvm::Value *keysPtr = builder->CreateExtractValue(map, 0);
+    llvm::Value *keys = builder->CreateLoad(llvmCompiler->internalStructs["array"], keysPtr);
+
+    llvm::Value *valuesPtr = builder->CreateExtractValue(map, 1);
+    llvm::Value *values = builder->CreateLoad(llvmCompiler->internalStructs["array"], valuesPtr);
+
+    llvm::Value *keyExists = nullptr;
+    if (mapVar->keys->type == STR_VAR) {
+        keyExists = builder->CreateCall(llvmCompiler->internalFuncs["findStrKey"], {keys, key});
+    } else {
+
+        keyExists = builder->CreateCall(llvmCompiler->internalFuncs["findIntKey"], {keys, key});
+    }
+    llvm::Value *cmp = builder->CreateICmpEQ(keyExists, builder->getInt32(-1));
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "then", llvmFunction->function);
+    llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "else", llvmFunction->function);
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*llvmCompiler->ctx, "merge", llvmFunction->function);
+
+    builder->CreateCondBr(cmp, thenBlock, elseBlock);
+    builder->SetInsertPoint(thenBlock);
+    // insert
+    callAppend(keysPtr, key);
+    callAppend(valuesPtr, value);
+    builder->CreateBr(mergeBlock);
+
+    // overwrite
+    builder->SetInsertPoint(elseBlock);
+    llvm::Value *extractedArray = builder->CreateExtractValue(values, 0);
+
+    llvm::Value *valueGEP = builder->CreateInBoundsGEP(mapValueType, extractedArray, keyExists);
+    builder->CreateStore(value, valueGEP);
+
+    builder->CreateBr(mergeBlock);
+    builder->SetInsertPoint(mergeBlock);
+}
+
 static void assignToIndexExpr(AssignStmt *assignStmt) {
     IndexExpr *indexExpr = (IndexExpr *)assignStmt->variable;
+    llvm::Value *value = compileExpression(assignStmt->value);
     Variable *var = new Variable();
+    if (indexExpr->variable->evaluatesTo->type == MAP_VAR) {
+        assignToMap(indexExpr, value);
+        return;
+    }
     // Check whether it's a map
     // Check whether key exists,
     //    If it does then just replace at the index
     //    If it doesn't, append both keys and values array
-    builder->CreateStore(compileExpression(assignStmt->value), getPointerToArrayIndex(indexExpr, var));
+    builder->CreateStore(value, getPointerToArrayIndex(indexExpr, var));
 }
 
 static void assignToVarExpr(AssignStmt *assignStmt) {
@@ -961,6 +1010,17 @@ llvm::Value *compileExpression(Expr *expr) {
         for (int i = 0; i < argSize; ++i) {
             params[i] = compileExpression(callExpr->arguments[i]);
         }
+        if (name == "append") {
+            callAppend(params[0], params[1]);
+            return builder->getInt32(0);
+        }
+        if (name == "key_exists") {
+            if (params[1]->getType()->isPointerTy()) {
+                return builder->CreateCall(llvmCompiler->internalFuncs["strKeyExists"], params);
+            } else {
+                return builder->CreateCall(llvmCompiler->internalFuncs["intKeyExists"], params);
+            }
+        }
 
         if (llvmCompiler->internalFuncs.count(name)) {
             return builder->CreateCall(llvmCompiler->internalFuncs[name], params);
@@ -980,7 +1040,6 @@ llvm::Value *compileExpression(Expr *expr) {
         }
 
         llvm::Function *func = lookupFunction(name);
-        checkCallParamCorrectness(func, params, name);
         return builder->CreateCall(func, params);
     }
     }
