@@ -6,11 +6,10 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Im freeee
 
-* check redeclaration of func, struct or var?
-
 * GC
     * Second pass to figure out when to GC?
         * you can figure this out when you fix evaluations
+            * i.e create GC statements, and check if(gc) 
         * This is only malloced arrays
 
 * ToDo refactor

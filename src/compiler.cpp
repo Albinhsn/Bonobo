@@ -1472,6 +1472,9 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case FUNC_STMT: {
         FuncStmt *funcStmt = (FuncStmt *)stmt;
+        if (compiler->variables.back().count(funcStmt->name)) {
+            errorAt("Func name is already declared in this scope", funcStmt->line);
+        }
         compiler->variables.back()[funcStmt->name] =
             new FuncVariable(funcStmt->name, funcStmt->returnType, funcStmt->params);
         // ToDo Please change this xD
@@ -1490,6 +1493,9 @@ static void fixExprEvaluatesToStmt(Stmt *stmt) {
     }
     case STRUCT_STMT: {
         StructStmt *structStmt = (StructStmt *)stmt;
+        if (compiler->variables.back().count(structStmt->name)) {
+            errorAt("Struct name is already declared in this scope", structStmt->line);
+        }
         compiler->variables.back()[structStmt->name] = new StructVariable("", structStmt->name, structStmt->fields);
         break;
     }
