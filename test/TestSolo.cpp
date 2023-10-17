@@ -275,6 +275,11 @@ int main() {
     nmbr_of_tests++;
     runTest("Internal - append struct", internal8, "2 2", failed);
 
+    std::string internal9 =
+        "var s: str = readfile(\"./test_file.txt\"); printf(\"%s\", s);";
+    nmbr_of_tests++;
+    runTest("Internal - readfile", internal9, "This is a test file", failed);
+
     // map tests
     std::string map1 = "var m:map[int, int] = {0:0}; m[1] = 5; printf(\"%d\", m[1]);";
     nmbr_of_tests++;

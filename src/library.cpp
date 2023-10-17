@@ -78,16 +78,21 @@ static llvm::Function *createReadFile(LLVMCompiler *llvmCompiler, llvm::IRBuilde
     builder->CreateCall(llvmCompiler->libraryFuncs["fseek"],
                         {openedFilePtr, builder->getInt32(0), builder->getInt32(0)});
 
-    llvm::Value *newStringPtr = builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {fileSize});
+    llvm::Value *newStringPtr =
+        builder->CreateCall(llvmCompiler->libraryFuncs["malloc"], {fileSize});
     builder->CreateCall(llvmCompiler->libraryFuncs["fread"],
                         {newStringPtr, builder->getInt32(1), fileSize, openedFilePtr});
+    llvm::Value *newStringPtrGep = builder->CreateInBoundsGEP(builder->getInt8Ty(), newStringPtr, builder->CreateSub(fileSize, builder->getInt32(1)));
+    builder->CreateStore(builder->getInt8(0), newStringPtrGep);
+
     builder->CreateCall(llvmCompiler->libraryFuncs["fclose"], {openedFilePtr});
 
     llvm::AllocaInst *newString = builder->CreateAlloca(llvmCompiler->internalStructs["array"], nullptr);
     llvm::Value *loadedAllocatedString = builder->CreateLoad(llvmCompiler->internalStructs["array"], newString);
 
     llvm::Value *newStringAfterInsertedStringPtr = builder->CreateInsertValue(loadedAllocatedString, newStringPtr, 0);
-    llvm::Value *newStringAfterInsertedStringSize = builder->CreateInsertValue(newStringAfterInsertedStringPtr, fileSize, 1);
+    llvm::Value *newStringAfterInsertedStringSize =
+        builder->CreateInsertValue(newStringAfterInsertedStringPtr, fileSize, 1);
 
     builder->CreateRet(newStringAfterInsertedStringSize);
 

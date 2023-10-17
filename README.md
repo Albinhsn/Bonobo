@@ -6,15 +6,7 @@ Toy implementation of a simple language in order to learn C/C++, memory manageme
 
 * Im freeee
 
-* Create a stl
-    * Split
-        * split(str, str)
-            * splitC(ptr, len, ptr len)
-                * -> (ptr, len), malloced array of ptrs to new memcpyd strings
-
 * check redeclaration of func, struct or var?
-
-* Fix test for readfile
 
 * GC
     * Second pass to figure out when to GC?
